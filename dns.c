@@ -271,15 +271,29 @@ char nullstring[] = "";
 
 /* Code */
 
+
+#ifdef CorruptCheck
+#define TOT_SLACK 2
+#define HEAD_SLACK 1
+/* Need an entry for sparc systems here too. 
+   Don't try this on Sparc for now. */
+#else
+#ifdef sparc
+#define TOT_SLACK 2
+#define HEAD_SLACK 2
+#else
+#define TOT_SLACK 1
+#define HEAD_SLACK 1
+#endif
+#endif
+
+
 void *statmalloc(size_t size){
    void *p;
    size_t mallocsize;
    mem+= size;
-#ifdef CorruptCheck
-   mallocsize = size + (sizeof(dword)) + sizeof(dword);
-#else
-   mallocsize = size + (sizeof(dword));
-#endif
+   mallocsize = size + TOT_SLACK * sizeof(dword);
+
    p = malloc(mallocsize);
    if (!p){
       fprintf(stderr,"malloc() of %u bytes failed: %s\n",size,strerror(errno));
@@ -292,7 +306,7 @@ void *statmalloc(size_t size){
    *(byte *)((char *)p + size + sizeof(dword) + sizeof(byte) * 2) = 0xbe;
    *(byte *)((char *)p + size + sizeof(dword) + sizeof(byte) * 3) = 0xef;
 #endif
-   p = (void *)((dword *)p + 1);
+   p = (void *)((dword *)p + HEAD_SLACK);
 #ifdef WipeMallocs
    memset(p,0xf0,size);
 #endif
@@ -301,12 +315,12 @@ void *statmalloc(size_t size){
 
 void statfree(void *p){
    if (p){
-      if (*((dword *)p - 1) == 0){
+      if (*((dword *)p - HEAD_SLACK) == 0){
          fprintf(stderr,"ERROR: Attempt to free pointer twice.\n");
          *(int*)0=0;
          exit(-1);
       } else {
-         if (*((dword *)p - 1) > 8192){
+         if (*((dword *)p - HEAD_SLACK) > 8192){
             fprintf(stderr,"ERROR: Corrupted free() buffer. (header)\n");
             *(int*)0=0;
             exit(-1);
@@ -321,12 +335,12 @@ void statfree(void *p){
             exit(-1);
          }
 #endif
-         mem-= *((dword *)p - 1);
+         mem-= *((dword *)p - HEAD_SLACK);
 #ifdef WipeFrees
-         memset(p,0xfe,*((dword *)p - 1));
+         memset(p,0xfe,*((dword *)p - HEAD_SLACK));
          *((dword *)p - 1) = 0;
 #endif
-         free((dword *)p - 1);
+         free((dword *)p - HEAD_SLACK);
       }
    }
 }
@@ -430,7 +444,7 @@ struct resolve *allocresolve(){
       fprintf(stderr,"statmalloc() failed: %s\n",strerror(errno));
       exit(-1);
    }
-   bzero(rp,sizeof(struct resolve));
+   memset(rp,0, sizeof(struct resolve));
    return rp;
 }
 
