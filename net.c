@@ -551,7 +551,6 @@ void net_end_transit()
   }
 }
 
-
 int net_send_batch() 
 {
   int n_unknown=0, i;
@@ -568,16 +567,23 @@ int net_send_batch()
       bitpattern = - (int)(256 + 255*(rand()/(RAND_MAX+0.1)));
     }
   }
+
   net_send_query(batch_at);
 
   for (i=fstTTL-1;i<batch_at;i++) {
     if (host[i].addr == 0)
       n_unknown++;
 
-    if ((host[i].addr == remoteaddress.sin_addr.s_addr) ||
-        (host[i].addr == host[batch_at].addr))
+    /* The second condition in the next "if" statement was added in mtr-0.56, 
+	but I don't remember why. It makes mtr stop skipping sections of unknown
+	hosts. Removed in 0.65. 
+	If the line proves neccesary, it should at least NOT trigger that line 
+	when host[i].addr == 0 -- REW */
+    if ((host[i].addr == remoteaddress.sin_addr.s_addr) 
+	/* || (host[i].addr == host[batch_at].addr)  */)
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
+
   if (	// success in reaching target
       (host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
       // fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?)

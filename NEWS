@@ -1,4 +1,10 @@
 WHAT'S NEW?
+  v0.65 Dancer Vesperman noted that mtr no longer traces past
+        a section of non-responding hosts. Apparently I added
+        a line in net.c that didn't make sense in mtr-0.56. I 
+        can't find the reason for adding that line, so someone 
+        who thinks (s)he needs it, should holler. 
+
   v0.64 Philippe suggests to do the time_t thingy before socket.h. 
         Apparently, MAC OS X doesn't compile socket.h otherwise.
 
