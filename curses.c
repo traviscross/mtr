@@ -92,7 +92,7 @@ void mtr_curses_hosts(int startstat) {
       getyx(stdscr, y, x);
       move(y, startstat);
 
-      printw("  %3d%% %4d%4d %5d%5d%7d", 
+      printw("  %3d%% %3d %3d %4d %4d %6d", 
              net_percent(at),
              net_returned(at), net_xmit(at),
              net_best(at), net_avg(at), net_worst(at));

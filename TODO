@@ -1,0 +1,23 @@
+
+- Stuff to implement:
+
+  - Allow mtr to log the return packets, for later analysis.
+
+  - Request timestamping at the remote site.
+       Andreas Fasbender has an algorithm that will allow us to 
+       convert these measurements into one-way measurements, not just
+       round-trip.
+
+  - Allow mtr to also send larger packets. 
+       This will enable us to get a feel for the speed of the links
+       we're traversing. (Van Jacobson was working on this His tool
+       was slow, mtr will rock with this feature.... :-)
+       (Anybody have the statistics experience to tell me how
+       to do the data analysis?)
+
+  - Allow MTR to keep on getting the icmp host unreachables, and
+    work through that. Some hosts don't answer PINGs.
+
+- Bugs to fix?
+  - ?
+

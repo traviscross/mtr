@@ -1,5 +1,15 @@
 WHAT'S NEW?
 
+  v0.22 
+        Roger has take over maintenance. 
+        mtr now uses an "int" to pass options to the kernel. 
+        Makes things work on Solaris and *BSD I'm told. 
+        mtr doesn't fire off a flurry of packets when a new
+        second comes around. Instead they are spaced evenly
+        around the whole second. This allows people with a 
+        relatively slow first link to do meaningful measurements
+        of whatever is behind that.
+
   v0.21
         mtr now drops root permissions after it acquires the raw
         sockets it needs.

@@ -342,26 +342,40 @@ void net_end_transit() {
   }
 }
 
+
+extern float WaitTime;
+extern struct timeval intervaltime;
+#include <stdio.h>
+#include <math.h>
+
 void net_send_batch() {
-  int at;
-  int n_unknown = 10;
+  static int n_unknown = 10;
+  static int at;
 
-  for(at = 0;n_unknown && (at < MaxHost); at++) {
-    if(host[at].addr == 0) {
-      net_send_query(at + 1);
-      n_unknown--;
-    } else {
-      net_send_ping(at);
-    }
-
-    if(host[at].addr == remoteaddress.sin_addr.s_addr) {
-      break;
-    }
+  if(host[at].addr == 0) {
+    net_send_query(at + 1);
+    n_unknown--;
+  } else {
+    net_send_ping(at);
   }
+  
+  if ((host[at].addr == remoteaddress.sin_addr.s_addr) ||
+      (n_unknown == 0)) {
+    float wt = WaitTime / (float) at;
+
+    intervaltime.tv_sec = (int)(wt);
+    intervaltime.tv_usec = 1000000.0 * (wt - floor(wt));
+    at = 0;
+    n_unknown = 10;
+    return;
+  }
+
+  at++;
 }
 
+
 int net_preopen() {
-  char trueopt = 1;
+  int trueopt = 1;
 
   sendsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
   if(sendsock == -1)
@@ -370,8 +384,11 @@ int net_preopen() {
 #ifdef IP_HDRINCL
   /*  FreeBSD wants this to avoid sending out packets with protocol type RAW
       to the network.  */
-  if(setsockopt(sendsock, 0, IP_HDRINCL, &trueopt, sizeof(trueopt)))
+  if(setsockopt(sendsock, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt)))
+  {
+    perror("setsockopt(IP_HDRINCL,1)");
     return -1;
+  }
 #endif
 
   recvsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);

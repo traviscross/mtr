@@ -34,19 +34,23 @@ extern int MaxPing;
 extern float WaitTime;
 double dnsinterval;
 
+struct timeval intervaltime;
+
 void select_loop() {
   fd_set readfd;
   int anyset;
   int action, maxfd;
   int dnsfd, netfd;
   int NumPing;
-  struct timeval lasttime, thistime, selecttime, intervaltime;
+  struct timeval lasttime, thistime, selecttime;
+  float wt;
 
   NumPing = 0;
   anyset = 0;
   gettimeofday(&lasttime, NULL);
-  intervaltime.tv_sec = (int)WaitTime;
-  intervaltime.tv_usec = 1000000.0 * (WaitTime - floor(WaitTime));
+  wt = WaitTime/10;
+  intervaltime.tv_sec = (int)wt;
+  intervaltime.tv_usec = 1000000.0 * (wt - floor(wt));
 
   while(1) {
     FD_ZERO(&readfd);

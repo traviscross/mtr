@@ -21,7 +21,7 @@ from or write to any system files which they wouldn't normally have
 permission to write to.  The only priveledge gained is access to the
 raw socket descriptors, which would allow the malicious user to listen
 to all ICMP packets arriving at the system, and send forged packets
-with arbitrary ncontents.
+with arbitrary contents.
 
 If you have further questions or comments about security issues,
 please direct them to the mtr mailing list.  See README for details.
