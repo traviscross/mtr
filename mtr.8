@@ -1,0 +1,175 @@
+.TH MTR 8 "December 28, 1997" "mtr" "mtr"
+
+
+.SH NAME
+mtr \- a network diagnostic tool
+
+
+.SH SYNOPSIS
+.B mtr 
+[\c
+.B \-hvrctgi\c
+]
+[\c
+.B \-\-help\c
+]
+[\c
+.B \-\-version\c
+]
+[\c
+.B \-\-report\c
+]
+[\c
+.B \-\-report\-cycles\ COUNT\c
+]
+[\c
+.B \-\-curses\c
+]
+[\c
+.B \-\-gtk\c
+]
+[\c
+.B \-\-interval\ SECONDS\c
+]
+.B HOSTNAME
+
+
+.SH DESCRIPTION
+
+.B mtr 
+combines the functionaly of the 
+.B traceroute
+and 
+.B ping
+programs in a single network diagnostic tool.
+
+.PP
+As 
+.B mtr 
+starts, it investigates the network connection between the host 
+.B mtr
+runs on and 
+.BR HOSTNAME . 
+After it determines the address of each network hop between the
+machines, it sends a sequence ICMP ECHO requests to each one to
+determine the quality of the link to each machine.  As it does this,
+it prints running statistics about each machine.
+
+
+.SH OPTIONS
+
+.TP
+.B \-h
+.TP
+.B \-\-help
+.br
+Print the summary of command line argument options.
+
+.TP
+.B \-v
+.TP
+.B \-\-version
+.br
+Print the installed version of mtr.  
+
+.TP
+.B \-r
+.TP
+.B \-\-report
+.br
+This option puts 
+.B mtr
+into 
+.B report
+mode.  When in this mode,
+.B mtr
+will run for the number of cycles specified by the 
+.B \-c
+option, and then print statistics and exit.  
+.TP
+\c
+This mode is useful for generating statistics about network quality.  
+Note that each running instance of 
+.B mtr
+generates a significant amount of network traffic.  Using 
+.B mtr
+at to measure the quality of your network may result in decreased
+network performance.  
+
+.TP
+.B \-c\ COUNT
+.TP
+.B \-\-report\-cycles\ COUNT
+Use this option to set the number of pings sent to determine
+both the machines on the network and the reliability of 
+those machines.  Each cycle lasts one second.  This option
+is only useful with the
+.B -r
+option. 
+
+.TP
+.B \-t
+.TP
+.B \-\-curses
+.br
+Use this option to force 
+.B mtr 
+to use the curses based terminal
+interface (if available).
+
+.TP
+.B \-g
+.TP
+.B \-\-gtk
+.br
+Use this option to force
+.B mtr 
+to use the GTK+ based X11 window interface (if available).  
+GTK+ must have been available on the system when 
+.B mtr 
+was built for this to work.  See the GTK+ web page at 
+.B http://www.gimp.org/gtk/
+for more information about GTK+.
+
+.TP
+.B \-i\ SECONDS
+.TP
+.B \-\-interval\ SECONDS
+.br
+Use this option to specify the positive number of seconds between ICMP
+ECHO requests.  The default value for this parameter is one second.
+
+.SH BUGS
+
+Some modern routers give a lower priority to ICMP ECHO packets than 
+to other network traffic.  Consequently, the reliability of these
+routers reported by 
+.B mtr
+will be significantly lower than the actual reliability of 
+these routers.  
+
+
+.SH CONTACT INFORMATION
+
+.PP
+For the latest version, see the mtr web page at 
+.BR http://www.mkimball.org/mtr.html .
+
+.PP
+Subscribe to the mtr mailing list.  All mtr related announcements
+are posted to the mtr mailing list.  To subscribe, send email to
+.B majordomo@lists.xmission.com
+with 
+.B subscribe\ mtr
+in the body of the message.  To send a message to the mailing list, mail to 
+.BR mtr@lists.xmission.com .
+
+.PP
+Bug reports and feature requests should be sent to the mtr
+mailing list.
+
+
+.SH "SEE ALSO"
+
+traceroute(8),
+ping(8).

@@ -1,0 +1,44 @@
+WHAT IS MTR?
+
+  mtr combines the functionaly of the 'traceroute' and 'ping' programs 
+  in a single network diagnostic tool.
+
+  As mtr starts, it investigates the network connection between the host
+  mtr runs on and a user-specified destination host.  After it
+  determines the address of each network hop between the machines, 
+  it sends a sequence ICMP ECHO requests to each one to determine the 
+  quality of the link to each machine.  As it does this, it prints
+  running statistics about each machine.
+
+  mtr is distributed under the GNU General Public License. 
+  See the COPYING file for details.  
+
+INSTALLING
+
+  To begin mtr, first use the included configure script:
+
+	./configure
+
+  The configure script will generate a Makefile.  Build mtr:
+
+	make
+
+  After compiling, install:
+
+	make install
+
+  Note that mtr must be suid-root because it requires access to raw IP 
+  sockets.  See SECURITY for security information.
+
+WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
+
+  See the mtr web page at 'http://www.mkimball.org/mtr.html'.
+
+  Subscribe to the mtr mailing list.  All mtr related announcements
+  are posted to the mtr mailing list.  To subscribe, send email to
+  'majordomo@lists.xmission.com' with 'subscribe mtr' in the body of
+  the message.  To send a message to the mailing list, mail to 
+  'mtr@lists.xmission.com'.
+
+  Bug reports and feature requests should be sent to the mtr 
+  mailing list.

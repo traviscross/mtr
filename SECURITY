@@ -1,0 +1,27 @@
+SECURITY ISSUES RELATED TO MTR
+
+Since mtr is installed as suid-root, some concern over security is
+justified.  Since version 0.21 of mtr, does the following two things
+after it is launched:
+
+*  mtr requests a pair of raw sockets from the kernel.  
+*  mtr sets the effective uid to match the real uid.
+
+See main() in mtr.c and net_preopen() in net.c for the details of this
+process.  Note that no code from GTK+ or curses is executed before the
+drop in permissions.
+
+This should severely limit the possibilities of using mtr to breach
+system security.  This means the worst case scenerio is as follows:
+
+Due to some oversight in the mtr code, a malicious user is able to
+overrun one of mtr's internal buffers with binary code that is
+eventually executed.  The malicious user is still not able to read
+from or write to any system files which they wouldn't normally have
+permission to write to.  The only priveledge gained is access to the
+raw socket descriptors, which would allow the malicious user to listen
+to all ICMP packets arriving at the system, and send forged packets
+with arbitrary ncontents.
+
+If you have further questions or comments about security issues,
+please direct them to the mtr mailing list.  See README for details.

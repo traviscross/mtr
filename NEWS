@@ -1,0 +1,37 @@
+WHAT'S NEW?
+
+  v0.21
+        mtr now drops root permissions after it acquires the raw
+        sockets it needs.
+	mtr should be a bit happier about building under SCO and
+        Solaris.
+	Fixed the problem with packets arriving after a reset.
+
+  v0.20
+	The build process for mtr now uses automake.
+        Fixed a build problem for Irix.
+        Now uses non-blocking DNS code, so mtr can attempt
+        to do reverse lookup on multiple hosts at once.
+	Fewer packets are sent out each cycle, so mtr
+	doesn't hog quite so much bandwidth.
+
+  v0.19
+	Fixed a type-o in curses.c
+
+  v0.18
+	Fixed the network code to work properly under FreeBSD.  
+	Hopefully this will fix some other operating systems too.
+	Also, fixed a build problem and the DNS hanging bug.
+
+  v0.17
+        Fixed the configure script to always like with the math
+	library.  Added an icon.
+
+  v0.16
+	Added one #include to select.c.  Some people were unable
+	to build mtr without this line.  
+
+  v0.15
+	Both the build process and the networking code have
+	been cleaned up and reorganized.  mtr now builds 
+	cleanly with GTK+ 0.99.8.  

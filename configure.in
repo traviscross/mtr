@@ -1,0 +1,48 @@
+AC_INIT(mtr.c)
+AM_INIT_AUTOMAKE(mtr, 0.21)
+
+AC_SUBST(GTK_OBJ)
+AC_SUBST(CURSES_OBJ)
+
+GTK_OBJ=gtk.o
+CURSES_OBJ=curses.o
+
+AC_PROG_CC
+
+AC_CHECK_SIZEOF(unsigned char, 1)
+AC_CHECK_SIZEOF(unsigned short, 2)
+AC_CHECK_SIZEOF(unsigned int, 4)
+AC_CHECK_SIZEOF(unsigned long, 4)
+
+AC_CHECK_FUNC(initscr, , 
+  AC_CHECK_LIB(ncurses, initscr, , 
+    AC_CHECK_LIB(curses, initscr, , 
+	AC_MSG_WARN(Building without curses display support)
+	AC_DEFINE(NO_CURSES)
+	CURSES_OBJ=)))
+AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h)
+AC_CHECK_HEADERS(sys/xti.h)
+
+AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
+
+AM_PATH_GTK(1.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
+		   LIBS="$LIBS $GTK_LIBS",
+		   AC_MSG_WARN(Building without GTK+ display support)
+		   AC_DEFINE(NO_GTK)
+		   GTK_OBJ=)
+
+AC_CHECK_FUNC(socket, , 
+  AC_CHECK_LIB(socket, socket, , AC_MSG_ERROR(No socket library found)))
+
+AC_CHECK_FUNC(gethostbyname, ,
+  AC_CHECK_LIB(nsl, gethostbyname, , AC_MSG_ERROR(No nameservice library found)))
+
+AC_CHECK_FUNC(res_mkquery, , 
+  AC_CHECK_LIB(resolv, res_mkquery, , AC_MSG_ERROR(No resolver library found)))
+
+AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
+AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))
+
+AM_CONFIG_HEADER(config.h)
+AC_OUTPUT(Makefile img/Makefile)
+
