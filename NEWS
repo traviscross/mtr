@@ -1,4 +1,18 @@
 WHAT'S NEW?
+  v0.63 Suggestion by RCW: Add -lm at line 70 of Configure.in.
+        On my system no ill effects ensued, so this version released 
+        so that he can test if it still works on his sytem. 
+
+        Let me add that it's stupid that I have to specify that this
+        this program now requires Automake version 1.5 to build, where
+        Automake was intended to make software independent of different
+        versions of build software!
+
+        For those concerned about the above statement: If you're just
+        trying to compile and use MTR, there is no need for automake. 
+        Just when you're messing with the configure and build system of
+        mtr is automake a tool you need. 
+	
   v0.62 Apparently someone changed gethostbyname into gethostbyname2
         in mtr.c in an attempt to add IPV6 support. For systems without
         ipv6 support, the old gethostbyname should be used! Linux 

@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.62)
+AM_INIT_AUTOMAKE(mtr, 0.63)
 
 
 AC_SUBST(GTK_OBJ)
@@ -52,7 +52,7 @@ WANTS_GTK2=$enableval, WANTS_GTK2=no)
 if test "x$WANTS_GTK" = "xyes"; then
 	if test "x$WANTS_GTK2" = "xyes"; then
                 AM_PATH_GTK_2_0(2.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
-                           LIBS="$LIBS $GTK_LIBS",
+                           LIBS="$LIBS $GTK_LIBS -lm",
                            AC_MSG_WARN(Building without GTK2 display support)
                            AC_DEFINE(NO_GTK)
                            GTK_OBJ="")
