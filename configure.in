@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.59)
+AM_INIT_AUTOMAKE(mtr, 0.60)
 
 
 AC_SUBST(GTK_OBJ)
@@ -45,12 +45,24 @@ AC_ARG_WITH(gtk,
 [  --without-gtk           Do not try to use GTK+ at all],
 WANTS_GTK=$withval, WANTS_GTK=yes)
 
+AC_ARG_ENABLE(gtk2,
+[  --enable-gtk2           Compile against GTK2 instead of GTK+],
+WANTS_GTK2=$enableval, WANTS_GTK2=no)
+   
 if test "x$WANTS_GTK" = "xyes"; then
-	AM_PATH_GTK(1.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
-			   LIBS="$LIBS $GTK_LIBS",
-			   AC_MSG_WARN(Building without GTK+ display support)
-			   AC_DEFINE(NO_GTK)
-			   GTK_OBJ="")
+	if test "x$WANTS_GTK2" = "xyes"; then
+                AM_PATH_GTK_2_0(2.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
+                           LIBS="$LIBS $GTK_LIBS",
+                           AC_MSG_WARN(Building without GTK2 display support)
+                           AC_DEFINE(NO_GTK)
+                           GTK_OBJ="")
+        else
+		AM_PATH_GTK(1.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
+                           LIBS="$LIBS $GTK_LIBS",
+                           AC_MSG_WARN(Building without GTK+ display support)
+                           AC_DEFINE(NO_GTK)
+                           GTK_OBJ="")
+	fi
 else
 	AC_DEFINE(NO_GTK)
 	GTK_OBJ=""
