@@ -32,7 +32,7 @@ int net_percent(int at);
 int net_best(int at);
 int net_worst(int at);
 int net_avg(int at);
-void net_send_batch();
+int net_send_batch();
 void net_end_transit();
 
 /* Added by Brian Casey, December 1997 bcasey@imagiware.com*/

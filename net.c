@@ -348,7 +348,7 @@ extern struct timeval intervaltime;
 #include <stdio.h>
 #include <math.h>
 
-void net_send_batch() {
+int net_send_batch() {
   static int n_unknown = 10;
   static int at;
 
@@ -367,10 +367,11 @@ void net_send_batch() {
     intervaltime.tv_usec = 1000000.0 * (wt - floor(wt));
     at = 0;
     n_unknown = 10;
-    return;
+    return 1;
   }
 
   at++;
+  return 0;
 }
 
 

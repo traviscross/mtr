@@ -89,8 +89,8 @@ void select_loop() {
         lasttime = thistime;
         if(NumPing >= MaxPing && !Interactive)
           break;
-        NumPing++;
-        net_send_batch();
+        if (net_send_batch())
+	  NumPing++;
       }
 
       selecttime.tv_usec = (thistime.tv_usec - lasttime.tv_usec);
