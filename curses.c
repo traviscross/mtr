@@ -109,12 +109,15 @@ void mtr_curses_hosts(int startstat) {
 
     if(addr != 0) {
       name = dns_lookup(addr);
+      if (! net_up(at))
+	attron(A_BOLD);
       if(name != NULL) {
 	printw("%s", name);
       } else {
 	printw("%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
 	       (addr >> 8) & 0xff, addr & 0xff);
       }
+      attroff(A_BOLD);
 
       getyx(stdscr, y, x);
       move(y, startstat);
@@ -224,12 +227,15 @@ void mtr_curses_graph(int startstat, int cols) {
 			continue;
 		}
 
+		if (! net_up(at))
+			attron(A_BOLD);
 		name = dns_lookup(addr);
 		if (name) {
 			printw("%s", name);
 		} else {
 			printw("%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) && 0xff, (addr >> 8) & 0xff, addr & 0xff);
 		}
+		attroff(A_BOLD);
 
 		getyx(stdscr, y, x);
 		move(y, startstat);

@@ -283,6 +283,8 @@ void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
 void gtk_update_row(GtkCList *List, int row) {
   int addr;
   char str[256], *name;
+  GdkColor color;
+  GdkColormap *cmap;
 
   addr = net_addr(row);
   name = "???";
@@ -294,6 +296,18 @@ void gtk_update_row(GtkCList *List, int row) {
       name = str;
     }
   }
+
+  cmap = gtk_widget_get_colormap(ReportBody);
+  if (net_up(row)) {
+    gdk_color_black(cmap, &color);
+  } else {
+    color.red = 0xffffff;
+    color.green = 0;
+    color.blue = 0;
+  }
+  gdk_color_alloc (cmap, &color);
+  gtk_clist_set_foreground(List, row, &color);
+
   gtk_set_field(List, row, 0, name);
 
   gtk_set_field_num(List, row, 1, "%d%%", net_percent(row));

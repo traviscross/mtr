@@ -85,6 +85,8 @@ struct nethost {
   uint32 addr;
   int xmit;
   int returned;
+  int sent;
+  int up;
   long long total;
   int last;
   int best;
@@ -166,6 +168,9 @@ int new_sequence(int index) {
   memset(&sequence[seq].time, 0, sizeof(sequence[seq].time));
   
   host[index].transit = 1;
+  if (host[index].sent)
+    host[index].up = 0;
+  host[index].sent = 1;
   net_save_xmit(index);
   
   return seq;
@@ -254,6 +259,8 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
 
   host[index].total += totusec;
   host[index].returned++;
+  host[index].sent = 0;
+  host[index].up = 1;
   host[index].transit = 0;
 
   net_save_return(index, sequence[seq].saved_seq, totusec);
@@ -359,6 +366,10 @@ int net_transit(int at) {
    return host[at].transit;
 }
 
+int net_up(int at) { 
+   return host[at].up;
+}
+
 void net_end_transit() {
   int at;
 
@@ -454,6 +465,8 @@ void net_reset() {
     host[at].xmit = 0;
     host[at].transit = 0;
     host[at].returned = 0;
+    host[at].sent = 0;
+    host[at].up = 0;
     host[at].total = 0;
     host[at].best = 0;
     host[at].worst = 0;
