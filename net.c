@@ -41,8 +41,6 @@
 #include "display.h"
 
 
-#define MaxTransit 4
-
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
     Solaris  */
@@ -53,6 +51,7 @@ struct ICMPHeader {
   uint16 id;
   uint16 sequence;
 };
+
 
 /*  Structure of an IP header.  */
 struct IPHeader {
@@ -68,6 +67,7 @@ struct IPHeader {
   uint32 daddr;
 };
   
+
 #define ICMP_ECHO		8
 #define ICMP_ECHOREPLY		0
 
@@ -79,8 +79,6 @@ struct IPHeader {
 #ifndef SOL_IP
 #define SOL_IP 0
 #endif
-
-#define saddr_correction(addr) BSDfix ? addr : 0
 
 struct nethost {
   uint32 addr;
@@ -105,37 +103,47 @@ struct nethost {
   int saved_seq_offset;
 };
 
+
 struct sequence {
-    int index;
-    int transit;
-    int saved_seq;
-    struct timeval time;
+  int index;
+  int transit;
+  int saved_seq;
+  struct timeval time;
 };
 
 
 /* Configuration parameter: How many queries to unknown hosts do we
    send? (This limits the amount of traffic generated if a host is not
-   reachable) */
+   reachable) -- REW */
 #define MAX_UNKNOWN_HOSTS 5
 
+
+/* There is something stupid with BSD. We now detect this automatically */
+static int BSDfix = 0;
+#define saddr_correction(addr) BSDfix ? addr : 0
 
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
 
-int timestamp;
-int sendsock;
-int recvsock;
+int    timestamp;
+int    sendsock;
+int    recvsock;
 struct sockaddr_in sourceaddress;
 struct sockaddr_in remoteaddress;
 
+/* XXX How do I code this to be IPV6 compatible??? -- REW */
+struct in_addr localaddr;
+
 static int batch_at = 0;
 static int numhosts = 10;
+
 extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
 extern int packetsize;		/* packet size used by ping */
 extern int bitpattern;		/* packet bit pattern used by ping */
 extern int tos;			/* type of service set in ping packet*/
+
 
 
 /* return the number of microseconds to wait before sending the next
@@ -149,14 +157,15 @@ int calc_deltatime (float waittime)
 
 /* This doesn't work for odd sz. I don't know enough about this to say
    that this is wrong. It doesn't seem to cripple mtr though. -- REW */
-int checksum(void *data, int sz) {
+int checksum(void *data, int sz) 
+{
   unsigned short *ch;
   unsigned int sum;
 
   sum = 0;
   ch = data;
   sz = sz / 2;
-  while(sz--) {
+  while (sz--) {
     sum += *(ch++);
   }
   
@@ -166,14 +175,13 @@ int checksum(void *data, int sz) {
 }
 
 
-static int BSDfix = 0;
-
-int new_sequence(int index) {
+int new_sequence(int index) 
+{
   static int next_sequence = 0;
   int seq;
 
   seq = next_sequence++;
-  if(next_sequence >= MaxSequence)
+  if (next_sequence >= MaxSequence)
     next_sequence = 0;
 
   sequence[seq].index = index;
@@ -189,6 +197,7 @@ int new_sequence(int index) {
   
   return seq;
 }
+
 
 /*  Attempt to find the host at a particular number of hops away  */
 void net_send_query(int index) 
@@ -247,19 +256,21 @@ void net_send_query(int index)
   first = 0;
 }
 
+
 /*   We got a return on something we sent out.  Record the address and
      time.  */
-void net_process_ping(int seq, uint32 addr, struct timeval now) {
+void net_process_ping(int seq, uint32 addr, struct timeval now) 
+{
   int index;
   int totusec;
   int oldavg;	/* usedByMin */
   int oldjavg;	/* usedByMin */
   int i;	/* usedByMin */
 
-  if(seq < 0 || seq >= MaxSequence)
+  if (seq < 0 || seq >= MaxSequence)
     return;
 
-  if(!sequence[seq].transit)
+  if (!sequence[seq].transit)
     return;
   sequence[seq].transit = 0;
 
@@ -269,7 +280,7 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
             (now.tv_usec - sequence[seq].time.tv_usec);
   /* impossible? if( totusec < 0 ) totusec = 0 */;
 
-  if(host[index].addr == 0) {
+  if (host[index].addr == 0) {
     host[index].addr = addr;	// should be out of if as addr can change
     display_rawhost(index, host[index].addr);
 
@@ -287,10 +298,10 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
   }
 
   host[index].jitter = totusec - host[index].last;
-  if( host[index].jitter < 0 ) host[index].jitter = - host[index].jitter;
+  if (host[index].jitter < 0 ) host[index].jitter = - host[index].jitter;
   host[index].last = totusec;
 
-  if(host[index].returned < 1) {
+  if (host[index].returned < 1) {
     host[index].best = host[index].worst = host[index].gmean = totusec;
     host[index].avg  = host[index].var  = 0;
 
@@ -302,17 +313,17 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
    *  safe guard 1) best[index]>=best[index-1] if index>0
    *             2) best >= average-20,000 usec (good number?)
    *  Min
-  if( index > 0 ) {
-    if(totusec < host[index].best &&
-       totusec>= host[index-1].best ) host[index].best  = totusec;
+  if (index > 0) {
+    if (totusec < host[index].best &&
+       totusec>= host[index-1].best) host[index].best  = totusec;
   } else {
-    if(totusec < host[index].best ) host[index].best  = totusec;
+    if(totusec < host[index].best) host[index].best  = totusec;
   }
    */
-  if(totusec < host[index].best ) host[index].best  = totusec;
-  if(totusec > host[index].worst) host[index].worst = totusec;
+  if (totusec < host[index].best ) host[index].best  = totusec;
+  if (totusec > host[index].worst) host[index].worst = totusec;
 
-  if(host[index].jitter > host[index].jworst)
+  if (host[index].jitter > host[index].jworst)
 	host[index].jworst = host[index].jitter;
 
   host[index].returned++;
@@ -338,10 +349,12 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
   display_rawping(index, totusec);
 }
 
+
 /*  We know a packet has come in, because the main select loop has called us,
     now we just need to read it, see if it is for us, and if it is a reply 
     to something we sent, then call net_process_ping()  */
-void net_process_return() {
+void net_process_return() 
+{
   char packet[MAXPACKET];
   struct sockaddr_in fromaddr;
   int fromaddrsize;
@@ -378,9 +391,12 @@ void net_process_return() {
   }
 }
 
+
 int net_addr(int at) {
   return ntohl(host[at].addr);
 }
+
+
 int net_addrs(int at, int i) {
   return ntohl(host[at].addrs[i]);
 }
@@ -389,39 +405,49 @@ int net_addrs(int at, int i) {
 
 int net_loss(int at) 
 {
-  if((host[at].xmit - host[at].transit) == 0) return 0;
+  if ((host[at].xmit - host[at].transit) == 0) 
+    return 0;
   /* times extra 1000 */
   return 1000*(100 - (100.0 * host[at].returned / (host[at].xmit - host[at].transit)) );
 }
+
 
 int net_drop(int at) 
 {
   return (host[at].xmit - host[at].transit) - host[at].returned;
 }
 
+
 int net_last(int at) 
 {
   return (host[at].last);
 }
+
 
 int net_best(int at) 
 {
   return (host[at].best);
 }
 
+
 int net_worst(int at) 
 {
   return (host[at].worst);
 }
 
+
 int net_avg(int at) 
 {
   return (host[at].avg);
 }
+
+
 int net_gmean(int at) 
 {
   return (host[at].gmean);
 }
+
+
 int net_stdev(int at) 
 {
   if( host[at].returned > 1 ) {
@@ -430,11 +456,31 @@ int net_stdev(int at)
     return( 0 );
   }
 }
+
+
 /* jitter stuff */
-int net_jitter(int at) { return (host[at].jitter); }
-int net_jworst(int at) { return (host[at].jworst); }
-int net_javg(int at) { return (host[at].javg); }
-int net_jinta(int at) { return (host[at].jinta); }
+int net_jitter(int at) 
+{ 
+  return (host[at].jitter); 
+}
+
+
+int net_jworst(int at) 
+{ 
+  return (host[at].jworst); 
+}
+
+
+int net_javg(int at) 
+{ 
+  return (host[at].javg); 
+}
+
+
+int net_jinta(int at) 
+{ 
+  return (host[at].jinta); 
+}
 /* end jitter */
 
 
@@ -457,6 +503,7 @@ int net_max()
   return max;
 }
 
+
 /* add by Min (wonder its named net_min;-)) because of ttl stuff */
 int net_min () 
 {
@@ -469,20 +516,31 @@ int net_returned(int at)
 { 
   return host[at].returned;
 }
+
+
 int net_xmit(int at) 
 { 
   return host[at].xmit;
 }
+
 
 int net_transit(int at) 
 { 
   return host[at].transit;
 }
 
+
 int net_up(int at) 
 {
    return host[at].up;
 }
+
+
+struct in_addr *net_localaddr (void)
+{
+  return &localaddr;
+}
+
 
 void net_end_transit() 
 {
@@ -492,7 +550,6 @@ void net_end_transit()
     host[at].transit = 0;
   }
 }
-
 
 
 int net_send_batch() 
@@ -542,35 +599,46 @@ int net_preopen()
   int trueopt = 1;
 
   sendsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-  if(sendsock < 0)
+  if (sendsock < 0)
     return -1;
 
 #ifdef IP_HDRINCL
   /*  FreeBSD wants this to avoid sending out packets with protocol type RAW
       to the network.  */
-  if(setsockopt(sendsock, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt)))
-  {
+  if (setsockopt(sendsock, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt))) {
     perror("setsockopt(IP_HDRINCL,1)");
     return -1;
   }
 #endif
 
   recvsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-  if(recvsock < 0)
+  if (recvsock < 0)
     return -1;
 
   return 0;
 }
+
  
 int net_open(int addr) 
 {
+  struct sockaddr_in name; 
+  int len; 
+
   net_reset();
 
   remoteaddress.sin_family = AF_INET;
   remoteaddress.sin_addr.s_addr = addr;
 
+  len = sizeof (name); 
+  getsockname (recvsock, (struct sockaddr *)&name, &len);
+  localaddr = name.sin_addr;
+#if 0
+  printf ("got localaddr: %x\n", *(int *)&localaddr); 
+#endif
+
   return 0;
 }
+
 
 void net_reopen(int addr) 
 {
@@ -587,6 +655,7 @@ void net_reopen(int addr)
   net_send_batch();
 }
 
+
 void net_reset() 
 {
   int at;
@@ -595,7 +664,7 @@ void net_reset()
   batch_at = fstTTL - 1;	/* above replacedByMin */
   numhosts = 10;
 
-  for(at = 0; at < MaxHost; at++) {
+  for (at = 0; at < MaxHost; at++) {
     host[at].xmit = 0;
     host[at].transit = 0;
     host[at].returned = 0;
@@ -617,18 +686,50 @@ void net_reset()
     host[at].saved_seq_offset = -SAVED_PINGS+2;
   }
   
-  for(at = 0; at < MaxSequence; at++) {
+  for (at = 0; at < MaxSequence; at++) {
     sequence[at].transit = 0;
   }
 
   gettimeofday(&reset, NULL);
 }
 
+
+int net_set_interfaceaddress (char *InterfaceAddress)
+{
+  int i1, i2, i3, i4;
+  char dummy;
+
+  if (!InterfaceAddress) return 0; 
+
+  sourceaddress.sin_family = AF_INET;
+  sourceaddress.sin_port = 0;
+  sourceaddress.sin_addr.s_addr = 0;
+
+  if(sscanf(InterfaceAddress, "%u.%u.%u.%u%c", &i1, &i2, &i3, &i4, &dummy) != 4) {
+    printf("mtr: bad interface address: %s\n", InterfaceAddress);
+    exit(1);
+  }
+
+  ((unsigned char*)&sourceaddress.sin_addr)[0] = i1;
+  ((unsigned char*)&sourceaddress.sin_addr)[1] = i2;
+  ((unsigned char*)&sourceaddress.sin_addr)[2] = i3;
+  ((unsigned char*)&sourceaddress.sin_addr)[3] = i4;
+
+  if(bind(sendsock, (struct sockaddr*)&sourceaddress, sizeof(sourceaddress)) == -1) {
+    perror("mtr: failed to bind to interface");
+    exit(1);
+  }
+  return 0; 
+}
+
+
+
 void net_close() 
 {
   close(sendsock);
   close(recvsock);
 }
+
 
 int net_waitfd() 
 {
@@ -641,6 +742,7 @@ int* net_saved_pings(int at)
   return host[at].saved;
 }
 
+
 void net_save_increment() 
 {
   int at;
@@ -651,12 +753,14 @@ void net_save_increment()
   }
 }
 
+
 void net_save_xmit(int at) 
 {
   if (host[at].saved[SAVED_PINGS-1] != -2) 
     net_save_increment();
   host[at].saved[SAVED_PINGS-1] = -1;
 }
+
 
 void net_save_return(int at, int seq, int ms) 
 {

@@ -22,6 +22,7 @@
 int net_preopen();
 int net_open(int address);
 void net_reopen(int address);
+int net_set_interfaceaddress (char *InterfaceAddress); 
 void net_reset();
 void net_close();
 int net_waitfd();
@@ -44,7 +45,7 @@ int net_jworst(int at);
 int net_javg(int at);
 int net_jinta(int at);
 int net_addrs(int at, int i);
-
+struct in_addr *net_localaddr(void); 
 
 int net_send_batch();
 void net_end_transit();

@@ -23,6 +23,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
@@ -471,6 +474,7 @@ void mtr_curses_redraw()
   int  hd_len = 0;
   char buf[1024];
   char fmt[16];
+  
 
   erase();
   getmaxyx(stdscr, maxy, maxx);
@@ -482,7 +486,7 @@ void mtr_curses_redraw()
   pwcenter("My traceroute  [v" VERSION "]");
   attroff(A_BOLD);
 
-  mvprintw(1, 0, "%s", LocalHostname);
+  mvprintw(1, 0, "%s (%s)", LocalHostname, inet_ntoa(*net_localaddr()));
   printw("(tos=0x%X ", tos);
   printw("psize=%d ", abs(packetsize) );
   printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));

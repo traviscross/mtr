@@ -1,4 +1,10 @@
 WHAT'S NEW?
+  v0.61 Attempt to get/print the local IP address. Now shows as
+        0.0.0.0 :-( Hints and tips appreciated! -- REW
+        Lots of blank space reformatting.
+        moved the interface address setting to net.c (where it
+        belongs). 
+
   v0.60 John Thacker submitted a surprisingly simple patch to
         enable linking against GTK2.  (up to 2.4.0)
 
