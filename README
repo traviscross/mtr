@@ -53,6 +53,12 @@ INSTALLING
   in a setuid program, then there is something to say for moving them
   to the "trusted" directory.)
 
+  On Solaris, linking usually fails to find "wattr" or something like that.
+  Somehow, I can't seem to be able to automate "configure" finding the right
+  libs on Solaris. So, the solution is that you cut-and-paste the line
+  doing the linking into a terminal window, and add "-lcurses" by hand. 
+  Then it will link. Help on how to catch this in autoconf appreciated.
+
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
@@ -65,5 +71,7 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
   the message.  To send a message to the mailing list, mail to 
   'mtr@lists.xmission.com'.
 
-  Bug reports and feature requests should be sent to the mtr 
-  mailing list.
+  Bug reports and feature requests should be submitted into the 
+  jitterbug bug-tracking system at http://www.BitWizard.nl/cgi-bin/mtr .
+  If you don't have web-access, mail the mailinglist. 
+

@@ -1,0 +1,11 @@
+2001-04-15  root  <alane@geeksrus.net>
+
+	* Added this file so that automake won't complain.
+	* Commented out the test for res_init in configure.in;
+	it does not work for GLIBC2 systems (e.g., RedHat 7+).
+	* Fixed the subordinate CHECK_LIBS on the test for res_mkquery,
+	so that they test for res_mkquery, not res_init.
+	
+	  
+	  
+

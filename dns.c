@@ -26,6 +26,7 @@
 #include <config.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/errno.h>
 #include <sys/socket.h>

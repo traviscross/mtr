@@ -67,7 +67,7 @@ void parse_arg(int argc, char **argv) {
 
   opt = 0;
   while(1) {
-    opt = getopt_long(argc, argv, "hvrc:tklnsi:p:", long_options, NULL);
+    opt = getopt_long(argc, argv, "hvrc:tgklnsi:p:", long_options, NULL);
     if(opt == -1)
       break;
 
