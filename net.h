@@ -43,6 +43,8 @@ int net_jitter(int at);
 int net_jworst(int at);
 int net_javg(int at);
 int net_jinta(int at);
+int net_addrs(int at, int i);
+
 
 int net_send_batch();
 void net_end_transit();
@@ -89,32 +91,8 @@ struct fields {
   int (*net_xxx)();
 };
 
-static struct fields data_fields[MAXFLD] = {
-  /* Remark, Header, Format, Width, CallBackFunc */
-  { "<sp>: Space between fields", " ",  " ",        1, &net_drop  },   /* 0 */
-  { "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },   /* 1 */
-  { "D: Dropped Packets",     "Drop",   " %4d",     5, &net_drop  },   /* 2 */
-  { "R: Received Packets",    "Rcv",    " %5d",     6, &net_returned}, /* 3 */
-  { "S: Sent Packets",        "Snt",    " %5d",     6, &net_xmit  },   /* 4 */
-  { "N: Newest RTT(ms)",      "Last",   " %5.1f",   6, &net_last  },   /* 5 */
-  { "B: Min/Best RTT(ms)",    "Best",   " %5.1f",   6, &net_best  },   /* 6 */
-  { "A: Average RTT(ms)",     "Avg",    " %5.1f",   6, &net_avg   },   /* 7 */
-  { "W: Max/Worst RTT(ms)",   "Wrst",   " %5.1f",   6, &net_worst },   /* 8 */
-  { "V: Standard Deviation",  "StDev",  " %5.1f",   6, &net_stdev },   /* 9 */
-  { "G: Geometric Mean",      "Gmean",  " %5.1f",   6, &net_gmean },   /* 10 */
-  { "J: Current Jitter",      "Jttr",   " %4.1f",   5, &net_jitter},   /* 11 */
-  { "M: Jitter Mean/Avg.",    "Javg",   " %4.1f",   5, &net_javg  },   /* 12 */
-  { "X: Worst Jitter",        "Jmax",   " %4.1f",   5, &net_jworst},   /* 13 */
-  { "I: Interarrival Jitter", "Jint",   " %4.1f",   5, &net_jinta },   /* 14 */
-  { 0, 0, 0, 0, 0 }
-};
+extern struct fields data_fields[MAXFLD];
+
 
 /* keys: the value in the array is the index number in data_fields[] */
-static int fld_index[] = {
-   0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,           /* ' ', 0,1..9 */
-   7,  6, -1,  2, -1, -1, 10, -1, 14, 11, -1,  1, 12,   /* A..M */
-   5, -1, -1, -1,  3,  4, -1, -1,  9,  8, 13, -1, -1,   /* N..Z */
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* a..m */
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* n..z */
-  -1
-};
+extern  int fld_index[];

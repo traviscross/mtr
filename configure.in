@@ -1,5 +1,6 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.55)
+AM_INIT_AUTOMAKE(mtr, 0.56)
+
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
@@ -74,6 +75,49 @@ AC_CHECK_FUNC(res_mkquery, ,
 
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))
+
+
+dnl Add C flags to display more warnings
+AC_MSG_CHECKING(for C flags to get more warnings)
+ac_save_CFLAGS="$CFLAGS"
+if test "x$ac_cv_prog_gcc" = "xyes" ; then
+  dnl gcc is the easiest C compiler
+  warning_CFLAGS="-Wall"
+else
+  dnl Vendor supplied C compilers are a bit tricky
+  case "$host_os" in
+    dnl SGI IRIX with the MipsPRO C compiler
+    irix*)
+      CFLAGS="$CFLAGS -fullwarn"
+      AC_TRY_COMPILE([#include <stdio.h>],[printf("test");],
+        warning_CFLAGS="-fullwarn",)
+      ;;
+
+    dnl SunOS 4.x with the SparcWorks(?) acc compiler
+    sunos*)
+        if "$CC" = "acc" ; then
+          CFLAGS="$CFLAGS -vc"
+          AC_TRY_COMPILE([#include <stdio.h>],[printf("test");],
+            warning_CFLAGS="-vc",)
+        fi
+      ;;
+
+    dnl Unknown, do nothing
+    *)
+      warning_CFLAGS="none"
+      ;;
+  esac
+fi
+CFLAGS="$ac_save_CFLAGS"
+if test "$warning_CFLAGS" = "none" ; then
+  AC_MSG_RESULT(none)
+else
+  CFLAGS="$CFLAGS $warning_CFLAGS"
+  AC_MSG_RESULT($warning_CFLAGS)
+fi
+
+
+
 
 AM_CONFIG_HEADER(config.h)
 AC_OUTPUT(Makefile img/Makefile)

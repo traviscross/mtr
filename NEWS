@@ -1,4 +1,7 @@
 WHAT'S NEW?
+  v0.56 Fixed compile warnings. Now compiles with -Wall. If your
+	compiler finds things mine didn't feel free to shout. 
+
   v0.55 Cleanup patch. I'm going to do some maintenance on MTR, 
         but I want to be able to say: Can you see which version
 	fixed/broke things for you, so you're going to see a 

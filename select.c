@@ -45,7 +45,6 @@ int display_offset = 0;
 
 void select_loop() {
   fd_set readfd;
-  int action;
   int anyset = 0;
   int maxfd = 0;
   int dnsfd, netfd;

@@ -22,6 +22,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 #include "raw.h"
@@ -30,6 +33,7 @@
 
 static int havename[MaxHost];
 
+#if 0
 static char *addr_to_str(int addr)
 {
   static char buf[20];
@@ -41,7 +45,7 @@ static char *addr_to_str(int addr)
 	   (addr >> 24) & 0xff);
   return buf;
 }
-
+#endif
 
 void raw_rawping (int host, int msec)
 {
@@ -55,12 +59,19 @@ void raw_rawping (int host, int msec)
     }
   }
   printf ("p %d %d\n", host, msec);
+  fflush (stdout); 
 }
 
 
 void raw_rawhost (int host, int ip_addr)
 {
-  printf ("h %d %s\n", host, addr_to_str (ip_addr));
+  struct in_addr in;
+
+  in.s_addr = ip_addr;
+
+  printf ("h %d %s\n", 
+	  host, inet_ntoa(in));
+  fflush (stdout); 
 }
 
 

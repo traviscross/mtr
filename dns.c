@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <time.h>
 
 #ifdef NO_STRERROR
 extern int sys_nerr;
@@ -1087,7 +1088,7 @@ void dns_ack(){
                break;
       if (i == _res.nscount){
          sprintf(tempstring,"Resolver error: Received reply from unknown source: %s",
-          strlongip(from.sin_addr.s_addr));
+         inet_ntoa(from.sin_addr));
          restell(tempstring);
       } else
          parserespacket((byte *)resrecvbuf,r);

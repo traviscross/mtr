@@ -516,10 +516,11 @@ int net_send_batch()
   for (i=fstTTL-1;i<batch_at;i++) {
     if (host[i].addr == 0)
       n_unknown++;
-    if (host[i].addr == remoteaddress.sin_addr.s_addr)
+
+    if ((host[i].addr == remoteaddress.sin_addr.s_addr) ||
+        (host[i].addr == host[batch_at].addr))
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
-
   if (	// success in reaching target
       (host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
       // fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?)

@@ -19,7 +19,12 @@
 */
 
 #include <config.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
 #ifndef NO_GTK
 #include <stdlib.h>
@@ -200,7 +205,7 @@ GtkWidget *ReportBody;
 
 GtkWidget *GetRow(int index) {
   int addr;
-  char str[256], *name;
+  char *name;
   GtkWidget *Row, *Label;
 
   Row = gtk_fixed_new();
