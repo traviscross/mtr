@@ -220,12 +220,12 @@ typedef struct {
 #define sucknetlong(x) (((long)*(x) << 24) | ((x)[1] << 16) | ((x)[2] << 8) | (((x)+= 4)[-1]))
 #else
 
-#define sucknetword(x)  ((word)  (((x)[0] <<  8) | ((x)[1] <<  0))),(x)+=2
-#define sucknetshort(x) ((short) (((x)[0] <<  8) | ((x)[1] <<  0))),(x)+=2
-#define sucknetdword(x) ((dword) (((x)[0] << 24) | ((x)[1] << 16) | \
-                                  ((x)[2] <<  8) | ((x)[3] <<  0))),(x)+=4
-#define sucknetlong(x)  ((long)  (((x)[0] << 24) | ((x)[1] << 16) | \
-                                  ((x)[2] <<  8) | ((x)[3] <<  0))),(x)+=4
+#define sucknetword(x)  ((x)+=2,((word)  (((x)[-2] <<  8) | ((x)[-1] <<  0))))
+#define sucknetshort(x) ((x)+=2,((short) (((x)[-2] <<  8) | ((x)[-1] <<  0))))
+#define sucknetdword(x) ((x)+=4,((dword) (((x)[-4] << 24) | ((x)[-3] << 16) | \
+                                          ((x)[-2] <<  8) | ((x)[-1] <<  0))))
+#define sucknetlong(x)  ((x)+=4,((long)  (((x)[-4] << 24) | ((x)[-3] << 16) | \
+                                          ((x)[-2] <<  8) | ((x)[-1] <<  0))))
 #endif
 
 enum {
@@ -751,7 +751,7 @@ void restell(char *s){
 void dorequest(char *s,int type,word id){
    packetheader *hp;
    int r,i;
-   int buf[(MaxPacketsize/4)+1];
+   int buf[(MaxPacketsize/sizeof (int))+1];
    r = res_mkquery(QUERY,s,C_IN,type,NULL,0,NULL,buf,MaxPacketsize);
    if (r == -1){
       restell("Resolver error: Query too large.");
