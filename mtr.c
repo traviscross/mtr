@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <sys/socket.h> 
 
 #include "mtr-curses.h"
 #include "getopt.h"

@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.49 Fix compilation problems on several platforms.
+
+  v0.48 Draw names in red (GTK) or bold (Curses) if host doesn't 
+        respond. 
 
   v0.47 Fixed a (believed-) non-exploitable bufferoverflow. 
         Thanks Damian. 
