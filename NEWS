@@ -1,4 +1,9 @@
 WHAT'S NEW?
+  v0.62 Apparently someone changed gethostbyname into gethostbyname2
+        in mtr.c in an attempt to add IPV6 support. For systems without
+        ipv6 support, the old gethostbyname should be used! Linux 
+        has the call even if you don't enable IPV6. Thanks Gary (rsub)
+
   v0.61 Attempt to get/print the local IP address. Now shows as
         0.0.0.0 :-( Hints and tips appreciated! -- REW
         Lots of blank space reformatting.

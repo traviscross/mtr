@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 #endif
    
   if (host == NULL) {
-    host = gethostbyname2(Hostname, af);
+    host = gethostbyname(Hostname);
   }
   
   if (host == NULL) {
