@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.33 Fixed the Linux glibc resolver problems.
+        Fixed the off-by-one problem with -c option. 
+
   v0.32 Fixed the FreeBSD bug detection stuff. 
 
   v0.31 Fixed a few documentation issues. -- Matt

@@ -46,7 +46,9 @@ void select_loop() {
   struct timeval lasttime, thistime, selecttime;
   float wt;
 
-  NumPing = 0;
+  /* This starts at -1, because the first packet sent is not counted
+     as a ping. That confuses people.  */
+  NumPing = -1; 
   anyset = 0;
   gettimeofday(&lasttime, NULL);
   DeltaTime = WaitTime/10;
