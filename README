@@ -75,3 +75,8 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
   jitterbug bug-tracking system at http://www.BitWizard.nl/cgi-bin/mtr .
   If you don't have web-access, mail the mailinglist. 
 
+  Patches can be submitted by Email to me, or submitted to the 
+  bug tracking system. Please use unified diffs. 
+
+-- REW
+

@@ -31,7 +31,6 @@
 extern int dns;
 extern char LocalHostname[];
 extern char *Hostname;
-extern char fld_active[];
 extern int fstTTL;
 extern int maxTTL;
 extern int packetsize;
@@ -52,20 +51,12 @@ void report_close() {
 
   sprintf(buf, "HOST: %-33s", LocalHostname);
   for( i=0; i<MAXFLD; i++ ) {
-    if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-      j = fld_active[i] - 'a' + 11 + 26;
-    } else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-      j = fld_active[i] - 'A' + 11;
-    } else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-      j = fld_active[i] - '0' +1;
-    } else if( fld_active[i] == ' ' ) {
-      j = 0;
-    } else {
-      continue;     /* ignore unknown */
-    }
-    sprintf( fmt, "%%%ds", data_fields[fld_index[j]].length );
-    sprintf( buf +33+ len, fmt, data_fields[fld_index[j]].title );
-    len +=  data_fields[fld_index[j]].length;
+    j = fld_index[fld_active[i]];
+    if (j < 0) continue;
+
+    sprintf( fmt, "%%%ds", data_fields[j].length );
+    sprintf( buf +33+ len, fmt, data_fields[j].title );
+    len +=  data_fields[j].length;
   }
   printf("%s\n",buf);
 
@@ -92,27 +83,18 @@ void report_close() {
     len=0;
     sprintf( buf, " %2d. %-33s", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
-      if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-        j = fld_active[i] - 'a' + 11 + 26;
-      } else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-        j = fld_active[i] - 'A' + 11;
-      } else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-        j = fld_active[i] - '0' +1;
-      } else if( fld_active[i] == ' ' ) {
-        j = 0;
-      } else {
-        continue;     /* ignore stuff don't understand */
-      }
+      j = fld_index[fld_active [i]];
+      if (j < 0) continue;
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[ fld_index[j] ].format, 'f' ) ) {
-	sprintf( buf +33+ len, data_fields[ fld_index[j] ].format,
-		data_fields[ fld_index[j] ].net_xxx(at) /1000.0 );
+      if( index( data_fields[j].format, 'f' ) ) {
+	sprintf( buf +33+ len, data_fields[j].format,
+		data_fields[j].net_xxx(at) /1000.0 );
       } else {
-	sprintf( buf +33+ len, data_fields[ fld_index[j] ].format,
-		data_fields[ fld_index[j] ].net_xxx(at) );
+	sprintf( buf +33+ len, data_fields[j].format,
+		data_fields[j].net_xxx(at) );
       }
-      len +=  data_fields[fld_index[j]].length;
+      len +=  data_fields[j].length;
     }
     printf("%s\n",buf);
   }
@@ -165,33 +147,23 @@ void xml_close() {
 
     printf("    <HUB COUNT=%d HOST=%s>\n", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
-      if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-        j = fld_active[i] - 'a' + 11 + 26;
-      } else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-        j = fld_active[i] - 'A' + 11;
-      } else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-        j = fld_active[i] - '0' +1;
-      } else if( fld_active[i] == ' ' ) {
-        continue;     /* ignore space */
-        j = 0;
-      } else {
-        continue;     /* ignore stuff don't understand */
-      }
+      j = fld_index[fld_active[i]];
+      if (j < 0) continue;
 
       strcpy(name, "        <%s>");
-      strcat(name, data_fields[ fld_index[j] ].format);
+      strcat(name, data_fields[j].format);
       strcat(name, "</%s>\n");
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[ fld_index[j] ].format, 'f' ) ) {
+      if( index( data_fields[j].format, 'f' ) ) {
 	printf( name,
-		data_fields[fld_index[j]].title,
-		data_fields[ fld_index[j] ].net_xxx(at) /1000.0,
-		data_fields[fld_index[j]].title );
+		data_fields[j].title,
+		data_fields[j].net_xxx(at) /1000.0,
+		data_fields[j].title );
       } else {
 	printf( name,
-		data_fields[fld_index[j]].title,
-		data_fields[ fld_index[j] ].net_xxx(at),
-		data_fields[fld_index[j]].title );
+		data_fields[j].title,
+		data_fields[j].net_xxx(at),
+		data_fields[j].title );
       }
     }
     printf("    </HUB>\n");
@@ -224,19 +196,10 @@ void csv_close() {
   /* Header */
   printf("HUPCOUNT, HOST");
   for( i=0; i<MAXFLD; i++ ) {
-      if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-        j = fld_active[i] - 'a' + 11 + 26;
-      } else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-        j = fld_active[i] - 'A' + 11;
-      } else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-        j = fld_active[i] - '0' +1;
-      } else if( fld_active[i] == ' ' ) {
-        continue;     /* ignore space */
-        j = 0;
-      } else {
-        continue;     /* ignore stuff don't understand */
-      }
-      printf( ", %s", data_fields[fld_index[j]].title );
+      j = fld_index[fld_active[i]];
+      if (j < 0) continue; 
+
+      printf( ", %s", data_fields[j].title );
   }
   printf("\n");
 
@@ -262,24 +225,14 @@ void csv_close() {
 
     printf("%d, %s", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
-      if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-        j = fld_active[i] - 'a' + 11 + 26;
-      } else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-        j = fld_active[i] - 'A' + 11;
-      } else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-        j = fld_active[i] - '0' +1;
-      } else if( fld_active[i] == ' ' ) {
-        continue;     /* ignore space */
-        j = 0;
-      } else {
-        continue;     /* ignore stuff don't understand */
-      }
+      j = fld_index[fld_active[j]];
+      if (j < 0) continue; 
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[ fld_index[j] ].format, 'f' ) ) {
-	printf( ", %.2f", data_fields[ fld_index[j] ].net_xxx(at) /1000.0);
+      if( index( data_fields[j].format, 'f' ) ) {
+	printf( ", %.2f", data_fields[j].net_xxx(at) / 1000.0);
       } else {
-	printf( ", %d", data_fields[ fld_index[j] ].net_xxx(at) );
+	printf( ", %d",   data_fields[j].net_xxx(at) );
       }
     }
     printf("\n");

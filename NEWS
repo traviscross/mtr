@@ -1,4 +1,12 @@
 WHAT'S NEW?
+  v0.59 Josh Martin suggested to add some bounds checking to 
+        the dynamic field code. This caused me to delve in, and
+        rewrite some things. Now 50 lines of code less, but cleaner
+        code. :-)
+
+  v0.58 I don't remember. Fogot to update this. :-( Check the 
+        patch.
+
   v0.57 Lots of whitespace cleanups. And a DNS fix: Don't do DNS
         lookups in raw mode with -n specified. 
 

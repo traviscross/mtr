@@ -61,45 +61,12 @@
 #include <time.h>
 
 extern char LocalHostname[];
-extern char fld_active[];
 extern int fstTTL;
 extern int maxTTL;
 extern int packetsize;
 extern int bitpattern;
 extern int tos;
 extern float WaitTime;
-
-
-struct fields data_fields[MAXFLD] = {
-  /* Remark, Header, Format, Width, CallBackFunc */
-  { "<sp>: Space between fields", " ",  " ",        1, &net_drop  },   /* 0 */
-  { "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },   /* 1 */
-  { "D: Dropped Packets",     "Drop",   " %4d",     5, &net_drop  },   /* 2 */
-  { "R: Received Packets",    "Rcv",    " %5d",     6, &net_returned}, /* 3 */
-  { "S: Sent Packets",        "Snt",    " %5d",     6, &net_xmit  },   /* 4 */
-  { "N: Newest RTT(ms)",      "Last",   " %5.1f",   6, &net_last  },   /* 5 */
-  { "B: Min/Best RTT(ms)",    "Best",   " %5.1f",   6, &net_best  },   /* 6 */
-  { "A: Average RTT(ms)",     "Avg",    " %5.1f",   6, &net_avg   },   /* 7 */
-  { "W: Max/Worst RTT(ms)",   "Wrst",   " %5.1f",   6, &net_worst },   /* 8 */
-  { "V: Standard Deviation",  "StDev",  " %5.1f",   6, &net_stdev },   /* 9 */
-  { "G: Geometric Mean",      "Gmean",  " %5.1f",   6, &net_gmean },   /* 10 */
-  { "J: Current Jitter",      "Jttr",   " %4.1f",   5, &net_jitter},   /* 11 */
-  { "M: Jitter Mean/Avg.",    "Javg",   " %4.1f",   5, &net_javg  },   /* 12 */
-  { "X: Worst Jitter",        "Jmax",   " %4.1f",   5, &net_jworst},   /* 13 */
-  { "I: Interarrival Jitter", "Jint",   " %4.1f",   5, &net_jinta },   /* 14 */
-  { 0, 0, 0, 0, 0 }
-};
-
-
-/* keys: the value in the array is the index number in data_fields[] */
-int fld_index[] = {
-   0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,           /* ' ', 0,1..9 */
-   7,  6, -1,  2, -1, -1, 10, -1, 14, 11, -1,  1, 12,   /* A..M */
-   5, -1, -1, -1,  3,  4, -1, -1,  9,  8, 13, -1, -1,   /* N..Z */
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* a..m */
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* n..z */
-  -1
-};
 
 
 void pwcenter(char *str) 
@@ -254,10 +221,12 @@ int mtr_curses_keyaction()
     refresh();
 
     i = 0;
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
-      if( (c>= 'A' && c<= 'Z') || c==' ') {
-        buf[i++] = c; /* only accept [ A-Z], can be extend to [a-z0-9] */
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
+      if( strchr(available_options, c) ) {
+        attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
+        buf[i++] = c; /* Only permit values in "available_options" be entered */
+      } else {
+        printf("\a"); /* Illegal character. Beep, ring the bell. */
       }
     }
     buf[i] = '\0';
@@ -334,42 +303,34 @@ void mtr_curses_hosts(int startstat)
       /* changedByMin */
       hd_len = 0;
       for( i=0; i<MAXFLD; i++ ) {
-	// assume only a-zA-Z are valid options, and error checking
-	// is done in the input side?
-	if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-	  j = fld_active[i] - 'a' + 11 + 26; 
-	} else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-	  j = fld_active[i] - 'A' + 11; 
-	} else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-	  j = fld_active[i] - '0' +1; 
-	} else if( fld_active[i] == ' ' ) {
-	  j = 0;
-	} else {
-	  continue;	/* ignore stuff don't understand */
-	}
+	/* Ignore options that don't exist */
+	/* On the other hand, we now check the input side. Shouldn't happen, 
+	   can't be careful enough. */
+	j = fld_index[fld_active[i]];
+	if (j == -1) continue; 
 
 	/* temporay hack for stats usec to ms... */
-	if( index( data_fields[ fld_index[j] ].format, 'f' ) ) {
-	  sprintf(buf + hd_len, data_fields[ fld_index[j] ].format,
-		data_fields[ fld_index[j] ].net_xxx(at) /1000.0 );
+	if( index( data_fields[j].format, 'f' ) ) {
+	  sprintf(buf + hd_len, data_fields[j].format,
+		data_fields[j].net_xxx(at) /1000.0 );
 	} else {
-	  sprintf(buf + hd_len, data_fields[ fld_index[j] ].format,
-		data_fields[ fld_index[j] ].net_xxx(at) );
+	  sprintf(buf + hd_len, data_fields[j].format,
+		data_fields[j].net_xxx(at) );
 	}
-	hd_len +=  data_fields[ fld_index[j] ].length;
+	hd_len +=  data_fields[j].length;
       }
       buf[hd_len] = 0;
       printw("%s", buf);
 
       /* Multi path by Min */
-      for( i=0; i<MAXPATH; i++ ) {
+      for (i=0; i < MAXPATH; i++ ) {
         addrs = net_addrs(at, i);
-	if( addrs == addr ) continue;
-	if( addrs == 0 ) break;
+	if (addrs == addr) continue;
+	if (addrs == 0) break;
 
         name = dns_lookup(addrs);
         if (! net_up(at)) attron(A_BOLD);
-        if(name != NULL) {
+        if (name != NULL) {
 	  printw("\n    %s", name);
         } else {
 	  printw("\n    %d.%d.%d.%d",
@@ -549,24 +510,13 @@ void mtr_curses_redraw()
   
   if (display_mode == 0) {
     /* changedByMin */
-    for( i=0; i<MAXFLD; i++ ) {
-	// assume only 0-9A-Za-z are valid options, and error checking
-	// is down on the input side
-	if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
-	  j = fld_active[i] - 'a' + 11 + 26; 
-	} else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
-	  j = fld_active[i] - 'A' + 11; 
-	} else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
-	  j = fld_active[i] - '0' +1; 
-	} else if( fld_active[i] == ' ' ) {
-	  j = 0;
-	} else {
-	  continue;	/* ignore unknown */
-	}
+    for (i=0; i < MAXFLD; i++ ) {
+	j = fld_index[fld_active[i]];
+	if (j < 0) continue;
 
-	sprintf( fmt, "%%%ds", data_fields[fld_index[j]].length );
-        sprintf( buf + hd_len, fmt, data_fields[fld_index[j]].title );
-	hd_len +=  data_fields[fld_index[j]].length;
+	sprintf( fmt, "%%%ds", data_fields[j].length );
+        sprintf( buf + hd_len, fmt, data_fields[j].title );
+	hd_len +=  data_fields[j].length;
     }
     attron(A_BOLD);
     mvprintw(rowstat - 1, 0, " Host");
@@ -605,6 +555,7 @@ void mtr_curses_redraw()
   refresh();
 }
 
+
 void mtr_curses_open() 
 {
   initscr();
@@ -614,11 +565,13 @@ void mtr_curses_open()
   mtr_curses_redraw();
 }
 
+
 void mtr_curses_close() 
 {  
   printw("\n");
   endwin();
 }
+
 
 void mtr_curses_clear() 
 {

@@ -75,13 +75,51 @@ int maxTTL = 30;		/* inline with traceroute */
 int af = DEFAULT_AF;
 
 /* default display field(defined by key in net.h) and order */
-char fld_active[2*MAXFLD] = "LS NABWV";
+unsigned char fld_active[2*MAXFLD] = "LS NABWV";
+char fld_index[256];
+char available_options[MAXFLD];
 
+
+struct fields data_fields[MAXFLD] = {
+  /* key, Remark, Header, Format, Width, CallBackFunc */
+  {' ', "<sp>: Space between fields", " ",  " ",        1, &net_drop  },   /* 0 */
+  {'L', "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },   /* 1 */
+  {'D', "D: Dropped Packets",     "Drop",   " %4d",     5, &net_drop  },   /* 2 */
+  {'R', "R: Received Packets",    "Rcv",    " %5d",     6, &net_returned}, /* 3 */
+  {'S', "S: Sent Packets",        "Snt",    " %5d",     6, &net_xmit  },   /* 4 */
+  {'N', "N: Newest RTT(ms)",      "Last",   " %5.1f",   6, &net_last  },   /* 5 */
+  {'B', "B: Min/Best RTT(ms)",    "Best",   " %5.1f",   6, &net_best  },   /* 6 */
+  {'A', "A: Average RTT(ms)",     "Avg",    " %5.1f",   6, &net_avg   },   /* 7 */
+  {'W', "W: Max/Worst RTT(ms)",   "Wrst",   " %5.1f",   6, &net_worst },   /* 8 */
+  {'V', "V: Standard Deviation",  "StDev",  " %5.1f",   6, &net_stdev },   /* 9 */
+  {'G', "G: Geometric Mean",      "Gmean",  " %5.1f",   6, &net_gmean },   /* 10 */
+  {'J', "J: Current Jitter",      "Jttr",   " %4.1f",   5, &net_jitter},   /* 11 */
+  {'M', "M: Jitter Mean/Avg.",    "Javg",   " %4.1f",   5, &net_javg  },   /* 12 */
+  {'X', "X: Worst Jitter",        "Jmax",   " %4.1f",   5, &net_jworst},   /* 13 */
+  {'I', "I: Interarrival Jitter", "Jint",   " %4.1f",   5, &net_jinta },   /* 14 */
+  {'\0', 0, 0, 0, 0, 0 }
+};
+
+
+void init_fld_options (void)
+{
+  int i;
+
+  for (i=0;i < 256;i++)
+    fld_index[i] = -1;
+
+  for (i=0;data_fields[i].key != 0;i++) {
+    available_options[i] = data_fields[i].key;
+    fld_index[data_fields[i].key] = i;
+  }
+  available_options[i] = 0;
+}
 
 
 void parse_arg(int argc, char **argv) 
 {
   int opt;
+  int i;
   static struct option long_options[] = {
     { "version", 0, 0, 'v' },
     { "help", 0, 0, 'h' },
@@ -187,13 +225,23 @@ void parse_arg(int argc, char **argv)
       if( maxTTL < 1) {                       /* prevent 0 hop */
 	maxTTL = 1;
       }
-      if( fstTTL > maxTTL ) {         /* don't know the pos of -m or -f */
+      if (fstTTL > maxTTL) {         /* don't know the pos of -m or -f */
 	fstTTL = maxTTL;
       }
       break;
     case 'o':
-      /* XXX no error checking on the input string, lazy */
-      strncpy (fld_active, optarg, MAXFLD-1 );
+      /* Check option before passing it on to fld_active. */
+      if (strlen (optarg) > MAXFLD) {
+	fprintf (stderr, "Too many fields: %s\n", optarg);
+        exit (1);
+      }
+      for (i=0; optarg[i]; i++) {
+        if(!strchr(available_options, optarg[i])) {
+          fprintf (stderr, "Unknown field identifier: %c\n", optarg[i]);
+          exit (1);
+        }
+      }
+      strcpy (fld_active, optarg);
       break;
     case 'b':
       bitpattern = atoi (optarg);
@@ -281,6 +329,10 @@ int main(int argc, char **argv) {
   srand(getpid());
   
   display_detect(&argc, &argv);
+
+  /* The field options are now in a static array all together, 
+     but that requires a run-time initialization. -- REW */
+  init_fld_options ();
 
   parse_mtr_options (getenv ("MTR_OPTIONS"));
 

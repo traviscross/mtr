@@ -82,8 +82,12 @@ int net_duplicate(int at, int seq);
 #endif
 
 
+/* XXX This doesn't really belong in this header file, but as the
+   right c-files include it, it will have to do for now. -- REW */
+
 /* dynamic field drawing */
 struct fields {
+  CONST unsigned char key;
   CONST char *descr;
   CONST char *title;
   CONST char *format;
@@ -95,4 +99,7 @@ extern struct fields data_fields[MAXFLD];
 
 
 /* keys: the value in the array is the index number in data_fields[] */
-extern  int fld_index[];
+extern char fld_index[];
+extern unsigned char fld_active[];
+extern char available_options[];
+
