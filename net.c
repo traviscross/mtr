@@ -91,6 +91,7 @@ struct nethost {
   int worst;
   int transit;
   int saved[SAVED_PINGS];
+  int saved_seq_offset;
 };
 
 struct sequence {
@@ -459,6 +460,7 @@ void net_reset() {
     for (i=0; i<SAVED_PINGS; i++) {
       host[at].saved[i] = -2;	/* unsent */
     }
+    host[at].saved_seq_offset = -SAVED_PINGS+2;
   }
   
   for(at = 0; at < MaxSequence; at++) {
@@ -482,18 +484,27 @@ int* net_saved_pings(int at) {
 	return host[at].saved;
 }
 
+void net_save_increment() 
+{
+  int at;
+  for (at = 0; at < MaxHost; at++) {
+    memmove(host[at].saved, host[at].saved+1, (SAVED_PINGS-1)*sizeof(int));
+    host[at].saved[SAVED_PINGS-1] = -2;
+    host[at].saved_seq_offset += 1;
+  }
+}
+
 void net_save_xmit(int at) {
-	int tmp[SAVED_PINGS];
-	memcpy(tmp, &host[at].saved[1], (SAVED_PINGS-1)*sizeof(int));
-	memcpy(host[at].saved, tmp, (SAVED_PINGS-1)*sizeof(int));
-	host[at].saved[SAVED_PINGS-1] = -1;
+  if (host[at].saved[SAVED_PINGS-1] != -2) 
+    net_save_increment();
+  host[at].saved[SAVED_PINGS-1] = -1;
 }
 
 void net_save_return(int at, int seq, int ms) {
 	int idx;
-	idx = SAVED_PINGS - (host[at].xmit - seq) - 1;
-	if (idx < 0) {
-		return;
+	idx = seq - host[at].saved_seq_offset;
+	if (idx < 0 || idx > SAVED_PINGS) {
+	  return;
 	}
 	host[at].saved[idx] = ms;
 }

@@ -1189,11 +1189,12 @@ char *dns_lookup2(ip_t ip){
    return NULL;
 }
 
+int use_dns = 1;
 
 char *dns_lookup(ip_t ip){
   char *t;
 
   if (!dns) return strlongip (ip);
   t = dns_lookup2 (ip);
-  return t?t:strlongip(ip);
+  return (t&&use_dns)?t:strlongip(ip);
 }

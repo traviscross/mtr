@@ -1,8 +1,16 @@
 WHAT'S NEW?
 
+  v0.45 People are pressuring me to release new versions with their
+        changes. That's fine. Now this version just adds dynamic
+        switching between numeric / dns names, and some minor
+        stuff I forgot. This release serves as a code-sycn-release.
+        new version with even more new stuff in about two weeks!
+        I'm afraid I don't know how to fix the MaxOS-X compilation
+        problems in the source. Help wanted... 
+
   v0.44 David Stone adds the "last" column to the gtk version. 
 
-  v0.43 Compile fixes. 
+  v0.43 Compile fixes.
 
   v0.41 Added afr's patch to allow disabeling of gtk without Robn's hack. 
         Made report mode report the newly added extra resolution. 
