@@ -18,7 +18,7 @@
 */
 
 enum { ActionNone, ActionQuit, ActionReset, ActionDisplay, ActionClear,
-	ActionPause, ActionResume, ActionDNS };
+	ActionPause, ActionResume, ActionDNS, ActionScrollDown, ActionScrollUp };
 enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, DisplayRaw };
 
 /*  Prototypes for display.c  */
@@ -35,3 +35,4 @@ void display_clear();
 extern int display_mode;
 extern int use_dns;
 extern int dns;
+extern int display_offset; /* only used in text mode */

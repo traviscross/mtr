@@ -39,6 +39,7 @@ extern float WaitTime;
 double dnsinterval;
 
 static struct timeval intervaltime;
+int display_offset = 0;
 
 
 void select_loop() {
@@ -162,6 +163,15 @@ void select_loop() {
       if (action == ActionDNS && dns) {
 	use_dns = !use_dns;
 	display_clear();
+      }
+
+      if (action == ActionScrollDown) {
+        display_offset += 5;
+      } else if (action == ActionScrollUp) {
+        display_offset -= 5;
+	if (display_offset < 0) {
+	  display_offset = 0;
+	}
       }
 
       anyset = 1;

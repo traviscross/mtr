@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.54 Added "scrolling" patch from Roland Illig, to allow 
+        scrolling in text mode. I've always wanted this......
+ 
+  v0.53 Added fix for raw mode. 
 
   v0.52 Mostly cleanups from Brett Johnson on MacOS X. It may 
         clean up some compilation problems on MacOS X as well. 

@@ -61,6 +61,7 @@
 #include <time.h>
 extern char LocalHostname[];
 
+
 void pwcenter(char *str) {
   int maxx, maxy;
   int cx;
@@ -73,7 +74,7 @@ void pwcenter(char *str) {
 }
 
 int mtr_curses_keyaction() {
-  char c = getch();
+  int c = getch();
 
   if(tolower(c) == 'q')
     return ActionQuit;
@@ -91,6 +92,10 @@ int mtr_curses_keyaction() {
     return ActionDisplay;
   if (tolower(c) == 'n')
     return ActionDNS;
+  if (c == '+')
+    return ActionScrollDown;
+  if (c == '-')
+    return ActionScrollUp;
 
   return 0;
 }
@@ -104,7 +109,7 @@ void mtr_curses_hosts(int startstat) {
 
   max = net_max();
 
-  for(at = 0; at < max; at++) {
+  for(at = display_offset; at < max; at++) {
     printw("%2d. ", at + 1);
     addr = net_addr(at);
 
@@ -154,7 +159,7 @@ void mtr_gen_scale(void) {
 		scale[i] = 0;
 	}
 	max = net_max();
-	for (at = 0; at < max; at++) {
+	for (at = display_offset; at < max; at++) {
 		saved = net_saved_pings(at);
 		for (i = 0; i < SAVED_PINGS; i++) {
 			if (saved[i] < 0) continue;
@@ -218,7 +223,7 @@ void mtr_curses_graph(int startstat, int cols) {
 
 	max = net_max();
 
-	for (at = 0; at < max; at++) {
+	for (at = display_offset; at < max; at++) {
 		printw("%2d. ", at+1);
 
 		addr = net_addr(at);
