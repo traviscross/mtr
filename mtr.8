@@ -38,6 +38,9 @@ mtr \- a network diagnostic tool
 .B \-\-gtk\c
 ]
 [\c
+.B \-\-address\ IP.ADD.RE.SS\c
+]
+[\c
 .B \-\-interval\ SECONDS\c
 ]
 [\c
@@ -181,6 +184,16 @@ Use this option to tell
 to use the raw output format. This format is better suited for
 archival of the measurement results. It could be parsed to 
 be presented into any of the other display methods. 
+
+.TP
+.B \-a\ IP.ADD.RE.SS
+.TP
+.B \-\-address\ IP.ADD.RE.SS
+.br
+Use this option to bind outgoing packets' socket to specific interface,
+so that any packet will be sent through this interface. NOTE that this
+option doesn't apply to DNS requests (which could be and could not be 
+what you want).
 
 .TP
 .B \-i\ SECONDS

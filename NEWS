@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.45 Included patch to be able to specify outgoing interface 
+        address.
+
   v0.45 People are pressuring me to release new versions with their
         changes. That's fine. Now this version just adds dynamic
         switching between numeric / dns names, and some minor

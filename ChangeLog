@@ -1,3 +1,6 @@
+2002-02-09  bodq  <bohdan@vstu.edu.ua>
+	* Added --address option to bind to given IP addess
+
 2001-04-15  root  <alane@geeksrus.net>
 
 	* Added this file so that automake won't complain.

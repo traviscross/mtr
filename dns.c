@@ -982,7 +982,7 @@ void parserespacket(byte *s,int l){
                   restell("Resolver error: Specified rdata length exceeds packet size.");
                   return;
                }
-               if (datatype == qdatatype){
+               if (datatype == qdatatype || datatype == T_CNAME){
                   if (debug){
                      sprintf(tempstring,"Resolver: TTL: %s",strtdiff(sendstring,ttl));
                      restell(tempstring);
@@ -1014,6 +1014,7 @@ void parserespacket(byte *s,int l){
                            }
                            break;
                         case T_PTR:
+                        case T_CNAME:
                            *namestring = '\0';
                            r = dn_expand(s,s + l,c,namestring,MAXDNAME);
                            if (r == -1){
@@ -1028,6 +1029,10 @@ void parserespacket(byte *s,int l){
                               restell("Resolver error: Domain name too long.");
                               failrp(rp);
                               return;
+                           }
+                           if (datatype == T_CNAME){
+                              strcpy(stackstring,namestring);
+                              break;
                            }
                            if (!rp->hostname){
                               rp->hostname = (char *)statmalloc(strlen(namestring) + 1);
