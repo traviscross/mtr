@@ -18,13 +18,12 @@ INSTALLING
   Slightly more hints are in the file INSTALL. If this doesn't work
   you could try reading that too.... 
 
-  To begin compiling mtr, first use the included configure script:
-
-	./configure
-
-  The configure script will generate a Makefile.  Build mtr:
+  Compiling mtr should be as simple as:
 
 	make
+
+  It should first call the "configure" script and then run "make" again
+  with the makefile that "configure" just generated. 
 
   After compiling, install:
 
@@ -40,9 +39,19 @@ INSTALLING
 
   It seems the --no_gtk (whatever) doesn't work. Feel free to submit 
   a patch for this, I'm not that familiar with autoconf (it works for
-  me :-).
+  me :-). 
 
-  
+  On Solaris (and possibly other systems) the "gtk" library may be
+  installed in a directory where the dynamic linker refuses to look when
+  a binary is setuid. Roman Shterenzon reports that adding 
+        -Wl,-rpath=/usr/lib
+  to the commandline will work if you are using gnu LD. He tells me that
+  you're out of luck when you use the sun LD. That's not quite true, as
+  you can move the gtk libraries to /usr/lib instead of leaving them in
+  /usr/local/lib.  (when the ld tells you that /usr/local/lib is untrusted
+  and /usr/lib is trusted, and you trust hte gtk libs enough to want them
+  in a setuid program, then there is something to say for moving them
+  to the "trusted" directory.)
 
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?

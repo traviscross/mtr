@@ -38,6 +38,8 @@ Oh, Feel free to provide suggestions for this list.
 
   - allow "keyboard navigation" in the GTK version. 
 
+  - Keep all packets and make the "best" and "worst" columns show the
+    xx-th percentile....
 
 
 - Bugs to fix?

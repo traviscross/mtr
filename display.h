@@ -32,4 +32,4 @@ int display_keyaction();
 void display_loop();
 void display_clear();
 
-int display_mode;
+extern int display_mode;

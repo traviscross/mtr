@@ -37,6 +37,7 @@
 #endif
 
 int DisplayMode;
+int display_mode;
 int Interactive = 1;
 int PrintVersion = 0;
 int PrintHelp = 0;
@@ -158,7 +159,7 @@ int main(int argc, char **argv) {
   net_preopen_result = net_preopen ();
 
   /*  Now drop to user permissions  */
-  if(seteuid(getuid())) {
+  if(setuid(getuid())) {
     printf("mtr: Unable to drop permissions.\n");
     exit(1);
   }

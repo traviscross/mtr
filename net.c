@@ -282,7 +282,7 @@ void net_process_return() {
 
   header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
   if(header->type == ICMP_ECHOREPLY) {
-    if(header->id != getpid())
+    if(header->id != (uint16)getpid())
       return;
 
     net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
@@ -293,7 +293,7 @@ void net_process_return() {
     
     header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader) + 
 				sizeof(struct ICMPHeader) + sizeof(struct IPHeader));
-    if(header->id != getpid())
+    if(header->id != (uint16)getpid())
       return;
 
     net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
