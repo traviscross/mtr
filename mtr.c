@@ -45,7 +45,7 @@ float WaitTime = 1.0;
 char *Hostname = NULL;
 char LocalHostname[128];
 int dns = 1;
-int packetsize = 64;
+int packetsize = MINPACKET;
 
 void parse_arg(int argc, char **argv) {
   int opt;
@@ -116,10 +116,13 @@ void parse_arg(int argc, char **argv) {
   if(DisplayMode == DisplayReport)
     Interactive = 0;
 
-  if(optind != argc - 1)
+  if(optind > argc - 1)
     return;
 
-  Hostname = argv[optind];
+  Hostname = argv[optind++];
+
+  if (argc > optind) 
+    packetsize = atoi(argv[optind]);
 
 }
 
@@ -181,7 +184,8 @@ int main(int argc, char **argv) {
     printf("usage: %s [-hvrctglsni] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns]\n"      /* BL */
-	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
+           "\t\t[--psize=bytes/-p=bytes]\n"            /* ok */
+	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
     exit(0);
   }
   if (Hostname == NULL) Hostname = "localhost";

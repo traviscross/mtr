@@ -31,7 +31,7 @@
 extern int dns;
 
 void report_open() {
-  printf("%-40s LOSS  RCVD  SENT BEST   AVG  WORST\n", "HOST");
+  printf("%-38s  LOSS  RCVD SENT    BEST     AVG   WORST\n", "HOST");
   fflush(stdout);
 }
 
@@ -62,10 +62,20 @@ void report_close() {
       }
     }
 
-    printf("%-40s%5d%%%6d%5d%6d%6d%6d\n", name,     
+    /* Coding tip: 
+
+       NEVER EVER use a format like "%6d%6d%6d". This will nicely
+       format your three numbers in 18 spaces just like " %5d %5d %5d"
+       and save you three bytes of static string space. However, when
+       the numbers suddenly become a bit larger than you expected
+       you'll end up with unexpected results: just one huge number
+       instead of three separate numbers. This especially matters if
+       the reader of the info is a program and not human.  */
+
+    printf("%-38s %4d%% %5d %4d %7.2f %7.2f %7.2f\n", name,     
 	     net_percent(at),
              net_returned(at), net_xmit(at),
-             net_best(at)/1000, net_avg(at)/1000, net_worst(at)/1000);
+             net_best(at)/1000.0, net_avg(at)/1000.0, net_worst(at)/1000.0);
   }
 }
 

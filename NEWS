@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.41 Added afr's patch to allow disabeling of gtk without Robn's hack. 
+        Made report mode report the newly added extra resolution. 
+
   v0.40 Fixed some problems with HPUX and SunOS.
 	Included Olav Kvittem's patch to do packetsize option.
 	Made the timekeeping in micro seconds.
