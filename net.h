@@ -35,6 +35,9 @@ int net_avg(int at);
 int net_send_batch();
 void net_end_transit();
 
+int calc_deltatime (float WaitTime);
+
+
 /* Added by Brian Casey, December 1997 bcasey@imagiware.com*/
 int net_returned(int at);
 int net_xmit(int at);

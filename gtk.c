@@ -32,11 +32,24 @@
 #include "img/mtr_icon.xpm"
 #endif
 
+
+gint gtk_ping(gpointer data);
+
+
 extern char *Hostname;
 extern float WaitTime;
-extern float DeltaTime;
-
 static int tag;
+static GtkWidget *Pause_Button;
+
+
+void gtk_add_ping_timeout (void)
+{
+  int dt;
+
+  dt = calc_deltatime (WaitTime);
+  tag = gtk_timeout_add(dt / 1000, gtk_ping, NULL);
+}
+
 
 void gtk_do_init(int *argc, char ***argv) {
   static int done = 0;
@@ -53,7 +66,6 @@ int gtk_detect(int *argc, char ***argv) {
     /* If we do this here, gtk_init exits on an error. This happens
        BEFORE the user has had a chance to tell us not to use the 
        display... */
-    /*    gtk_do_init(argc, argv); */
     return TRUE;
   } else {
     return FALSE;
@@ -73,13 +85,12 @@ gint Restart_clicked(GtkWidget *Button, gpointer data) {
   return FALSE;
 }
 
-gint gtk_ping(gpointer data);
 
 gint Pause_clicked(GtkWidget *Button, gpointer data) {
   static int paused = 0;
 
   if (paused) {
-    tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
+    gtk_add_ping_timeout ();
   } else {
     gtk_timeout_remove (tag);
   }
@@ -89,12 +100,37 @@ gint Pause_clicked(GtkWidget *Button, gpointer data) {
   return FALSE;
 }
 
+/*
+ * There is a small problem with the following code:
+ * The timeout is canceled and removed in order to ensure that
+ * it takes effect (consider what happens if you set the timeout to 999,
+ * then try to undo the change); is a better approach possible? -- CMR
+ *
+ * What's the problem with this? (-> "I don't think so)  -- REW
+ */
+
+gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button) {
+  WaitTime = gtk_spin_button_get_value_as_float(GTK_SPIN_BUTTON(Button));
+  gtk_timeout_remove (tag);
+  gtk_add_ping_timeout ();
+  gtk_redraw();
+
+  return FALSE;
+}
+
 gint Host_activate(GtkWidget *Entry, gpointer data) {
   int addr;
 
   addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(Entry)));
-  if(addr)
+  if(addr) {
     net_reopen(addr);
+    /* If we are "Paused" at this point it is usually because someone
+       entered a non-existing host. Therefore do the go-ahead... --REW */
+    gtk_toggle_button_set_state( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
+  } else {
+    gtk_toggle_button_set_state( GTK_TOGGLE_BUTTON( Pause_Button ) , 1);
+    gtk_entry_append_text( GTK_ENTRY(Entry), ": not found" );
+  }
 
   return FALSE;
 }
@@ -109,6 +145,7 @@ void Toolbar_fill(GtkWidget *Toolbar) {
   GtkWidget *Button;
   GtkWidget *Label;
   GtkWidget *Entry;
+  GtkAdjustment *Adjustment;
 
   Button = gtk_button_new_with_label("Quit");
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
@@ -122,10 +159,24 @@ void Toolbar_fill(GtkWidget *Toolbar) {
 		     GTK_SIGNAL_FUNC(Restart_clicked), NULL);
   gtk_widget_show(Button);
 
-  Button = gtk_check_button_new_with_label("Pause");
-  gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-  gtk_signal_connect(GTK_OBJECT(Button), "clicked",
+  Pause_Button = gtk_toggle_button_new_with_label("Pause");
+  gtk_box_pack_end(GTK_BOX(Toolbar), Pause_Button, FALSE, FALSE, 0);
+  gtk_signal_connect(GTK_OBJECT(Pause_Button), "clicked",
                     GTK_SIGNAL_FUNC(Pause_clicked), NULL);
+  gtk_widget_show(Pause_Button);
+
+  Adjustment = (GtkAdjustment *)gtk_adjustment_new(WaitTime,
+                                                  0.00, 999.99,
+                                                  1.0, 10.0,
+                                                  0.0);
+  Button = gtk_spin_button_new(Adjustment, 0.5, 2);
+  gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(Button), TRUE);
+  /* gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(Button), FALSE); */
+  /* gtk_spin_button_set_set_update_policy(GTK_SPIN_BUTTON(Button),
+     GTK_UPDATE_IF_VALID); */
+  gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
+  gtk_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
+                    GTK_SIGNAL_FUNC(WaitTime_changed), Button);
   gtk_widget_show(Button);
  
   Label = gtk_label_new("Hostname");
@@ -338,7 +389,7 @@ gint gtk_ping(gpointer data) {
   gtk_redraw();
   net_send_batch();
   gtk_timeout_remove (tag);
-  tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
+  gtk_add_ping_timeout ();
   return TRUE;
 }
 
@@ -354,8 +405,7 @@ void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) {
 
 
 void gtk_loop() {
-  DeltaTime = WaitTime/10;
-  tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
+  gtk_add_ping_timeout ();
   gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
   gdk_input_add(dns_waitfd(), GDK_INPUT_READ, gtk_dns_data, NULL);
 

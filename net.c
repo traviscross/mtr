@@ -36,8 +36,6 @@
 #include "net.h"
 
 
-extern float WaitTime, DeltaTime;
-int timestamp;
 
 #define MaxTransit 4
 
@@ -107,10 +105,23 @@ static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
 
+int timestamp;
 int sendsock;
 int recvsock;
 struct sockaddr_in remoteaddress;
 static int batch_at = 0;
+
+
+
+static int numhosts = 10;
+
+/* return the number of microseconds to wait before sending the next
+   ping */
+int calc_deltatime (float waittime)
+{
+  waittime /= numhosts;
+  return 1000000 * waittime;
+}
 
 
 /* This doesn't work for odd sz. I don't know enough about this to say
@@ -358,7 +369,7 @@ int net_send_batch() {
 
   if ((host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
       (n_unknown > MAX_UNKNOWN_HOSTS)) {
-    DeltaTime = WaitTime / (float) (batch_at+1);
+    numhosts = batch_at+1;
     batch_at = 0;
     return 1;
   }
@@ -420,6 +431,7 @@ void net_reset() {
   int i;
 
   batch_at = 0;
+  numhosts = 10;
 
   for(at = 0; at < MaxHost; at++) {
     host[at].xmit = 0;

@@ -1,5 +1,10 @@
 WHAT'S NEW?
 
+  v0.36 Added Craigs change-the-interval-on-the-fly patch.
+        Added Moritz Barsnick's "do something sensible if host not found" 
+	    patch.
+        Some cleanup of both Craigs and Moritz' patches.
+
   v0.35 Added Craig Milo Rogers pause/resume for GTK patch.
         Added Craig Milo Rogers cleanup of "reset". (restart at the beginning)
         Net_open used to send a first packet. After that the display-driver 
