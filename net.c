@@ -31,11 +31,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+#include <errno.h>
 
 #include "net.h"
 
 
 extern float WaitTime, DeltaTime;
+int timestamp;
 
 #define MaxTransit 4
 
@@ -66,8 +68,12 @@ struct IPHeader {
   
 #define ICMP_ECHO		8
 #define ICMP_ECHOREPLY		0
+
+#define ICMP_TSTAMP		13
+#define ICMP_TSTAMPREPLY	14
+
 #define ICMP_TIME_EXCEEDED	11
-  
+
 #ifndef SOL_IP
 #define SOL_IP 0
 #endif
@@ -77,6 +83,7 @@ struct packetdata {
     int ttl;
     int sec;
     int msec;
+    int seq;
 };
 
 struct nethost {
@@ -87,6 +94,7 @@ struct nethost {
   int best;
   int worst;
   int transit;
+  int saved[SAVED_PINGS];
 };
 
 static struct nethost host[MaxHost];
@@ -112,6 +120,9 @@ int checksum(void *data, int sz) {
   return (~sum & 0xffff);  
 }
 
+
+static int BSDfix = 0;
+
 void net_send_ping(int index) {
   char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader) 
 	     + sizeof(struct packetdata)];
@@ -127,6 +138,7 @@ void net_send_ping(int index) {
   addr.sin_addr.s_addr = host[index].addr;
   host[index].xmit++;
   host[index].transit = 1;
+  net_save_xmit(index);
 
   memset(packet, 0, packetsize);
 
@@ -136,7 +148,7 @@ void net_send_ping(int index) {
 
   ip->version = 0x45;
   ip->tos = 0;
-  ip->len = htons (packetsize);
+  ip->len = BSDfix? packetsize: htons (packetsize);
   ip->id = 0;
   ip->frag = 0;
   ip->ttl = 127;
@@ -144,12 +156,13 @@ void net_send_ping(int index) {
   ip->saddr = 0;
   ip->daddr = host[index].addr;
   
-  icmp->type = ICMP_ECHO;
+  icmp->type = timestamp?ICMP_TSTAMP:ICMP_ECHO;
   icmp->id = getpid();
   icmp->sequence = 0;
 
   data->ttl = 0;
   data->index = index;
+  data->seq = host[index].xmit;
 
   gettimeofday(&now, NULL);
   data->sec = now.tv_sec;
@@ -169,6 +182,8 @@ void net_send_query(int hops) {
   struct ICMPHeader *icmp;
   struct packetdata *data;
   int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + sizeof(struct packetdata);
+  int rv;
+  static int first=1;
 
   memset(packet, 0, packetsize);
 
@@ -178,7 +193,7 @@ void net_send_query(int hops) {
 
   ip->version = 0x45;
   ip->tos = 0;
-  ip->len = htons (packetsize);
+  ip->len = BSDfix ? packetsize: htons (packetsize);
   ip->id = 0;
   ip->frag = 0;
   ip->ttl = hops;
@@ -196,8 +211,19 @@ void net_send_query(int hops) {
   icmp->checksum = checksum(icmp, packetsize - sizeof(struct IPHeader));
   ip->check = checksum(ip, packetsize);
 
-  sendto(sendsock, packet, packetsize, 0, 
+  
+  rv = sendto(sendsock, packet, packetsize, 0, 
 	 (struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
+  if (first && (rv == EINVAL)) {
+    first = 0;
+    ip->len = packetsize;
+    rv = sendto(sendsock, packet, packetsize, 0, 
+		(struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
+    if (rv >= 0) {
+      fprintf (stderr, "You've got a broken (FreeBSD?) system\n");
+      BSDfix = 1;
+    }
+  }
 }
 
 void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
@@ -212,6 +238,10 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
        || (data->sec == reset.tv_sec && (1000*data->msec) < reset.tv_usec))
       /* discard this data point, stats were reset after it was generated */
       return;
+
+    if (net_duplicate(data->index, data->seq)) {
+	return;
+    }
     
     totmsec = (now.tv_sec - data->sec) * 1000 +
               ((now.tv_usec/1000) - data->msec);
@@ -231,6 +261,7 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
     host[data->index].total += totmsec;
     host[data->index].returned++;
     host[data->index].transit = 0;
+    net_save_return(data->index, data->seq, totmsec);
   } else {
     at = data->ttl - 1;
     if(at < 0 || at > MaxHost)
@@ -288,10 +319,10 @@ int net_addr(int at) {
 }
 
 int net_percent(int at) {
-  if(host[at].xmit == 0) 
+  if((host[at].xmit - host[at].transit) == 0) 
     return 0;
 
-  return 100 - (100 * (host[at].returned + host[at].transit) / host[at].xmit);
+  return 100 - (100 * host[at].returned / (host[at].xmit - host[at].transit));
 }
 
 int net_best(int at) {
@@ -348,21 +379,28 @@ void net_end_transit() {
 
 
 int net_send_batch() {
-  static int n_unknown = 10;
   static int at;
+  int n_unknown, i;
 
   if(host[at].addr == 0) {
     net_send_query(at + 1);
-    n_unknown--;
   } else {
     net_send_ping(at);
   }
-  
+
+  n_unknown = 0;
+
+  for (i=0;i<at;i++) {
+    if (host[i].addr == 0)
+      n_unknown++;
+    if (host[i].addr == remoteaddress.sin_addr.s_addr)
+      n_unknown = 100; /* Make sure we drop into "we should restart" */
+  }
+
   if ((host[at].addr == remoteaddress.sin_addr.s_addr) ||
-      (n_unknown == 0)) {
+      (n_unknown > 5)) {
     DeltaTime = WaitTime / (float) (at+1);
     at = 0;
-    n_unknown = 10;
     return 1;
   }
 
@@ -396,6 +434,8 @@ int net_preopen() {
 }
  
 int net_open(int addr) {
+  net_reset();
+
   remoteaddress.sin_family = AF_INET;
   remoteaddress.sin_addr.s_addr = addr;
 
@@ -420,6 +460,7 @@ void net_reopen(int addr) {
 
 void net_reset() {
   int at;
+  int i;
 
   for(at = 0; at < MaxHost; at++) {
     host[at].xmit = host[at].transit;
@@ -427,6 +468,9 @@ void net_reset() {
     host[at].total = 0;
     host[at].best = 0;
     host[at].worst = 0;
+    for (i=0; i<SAVED_PINGS; i++) {
+      host[at].saved[i] = -2;	/* unsent */
+    }
   }
   gettimeofday(&reset, NULL);
 }
@@ -440,4 +484,44 @@ int net_waitfd() {
   return recvsock;
 }
 
+int* net_saved_pings(int at) {
+	return host[at].saved;
+}
 
+void net_save_xmit(int at) {
+	int tmp[SAVED_PINGS];
+	memcpy(tmp, &host[at].saved[1], (SAVED_PINGS-1)*sizeof(int));
+	memcpy(host[at].saved, tmp, (SAVED_PINGS-1)*sizeof(int));
+	host[at].saved[SAVED_PINGS-1] = -1;
+}
+
+int net_duplicate(int at, int seq) {
+	int idx;
+	idx = SAVED_PINGS - (host[at].xmit - seq) - 1;
+	if (idx < 0) {
+		/* long in the past - assume received */
+		return 2;
+	}
+	if (idx >= SAVED_PINGS) {
+		/* ehhhh - back to the future? */
+		return 3;
+	}
+	if (host[at].saved[idx] == -2) {
+		/* say what?  must be an old ping */
+		return 4;
+	}
+	if (host[at].saved[idx] != -1) {
+		/* it's a dup */
+		return 5;
+	}
+	return 0;
+}
+
+void net_save_return(int at, int seq, int ms) {
+	int idx;
+	idx = SAVED_PINGS - (host[at].xmit - seq) - 1;
+	if (idx < 0) {
+		return;
+	}
+	host[at].saved[idx] = ms;
+}

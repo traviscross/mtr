@@ -170,3 +170,18 @@ void display_loop() {
   }
 }
 
+
+void display_clear() {
+  switch(DisplayMode) {
+  case DisplayCurses:
+    mtr_curses_clear();
+    break;
+  case DisplayReport:
+  case DisplaySplit:            /* BL */
+  case DisplayRaw:
+    break;
+
+  case DisplayGTK:
+    break;
+  }
+}

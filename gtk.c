@@ -147,12 +147,14 @@ GtkWidget *GetRow(int index) {
 
 GtkWidget *Scrollarea_create() {
   GtkWidget *List;
+  GtkWidget *scroll;
   int count;
 
   for(count = 0; Report_Positions[count]; count++);
 
   List = GTK_WIDGET(gtk_clist_new_with_titles(count, Report_Text));
-  gtk_clist_set_policy(GTK_CLIST(List), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
   for(count = 0; Report_Positions[count + 1]; count++) {
     gtk_clist_set_column_width(GTK_CLIST(List), count, 
 			       Report_Positions[count + 1] - 
@@ -162,9 +164,11 @@ GtkWidget *Scrollarea_create() {
   for(count = 1; Report_Positions[count]; count++) {
     gtk_clist_set_column_justification(GTK_CLIST(List), count, GTK_JUSTIFY_RIGHT);
   }
+  gtk_container_add(GTK_CONTAINER(scroll), List);
+  gtk_widget_show(List);
 
   ReportBody = List;
-  return List;
+  return scroll;
 }
 
 void gtk_add_row(GtkWidget *List) {

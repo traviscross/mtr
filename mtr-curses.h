@@ -22,3 +22,4 @@ void mtr_curses_open();
 void mtr_curses_close();
 void mtr_curses_redraw();
 int mtr_curses_keyaction();
+void mtr_curses_clear();

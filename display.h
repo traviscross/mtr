@@ -17,7 +17,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-enum { ActionNone, ActionQuit, ActionReset };
+enum { ActionNone, ActionQuit, ActionReset, ActionDisplay, ActionClear };
 enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, DisplayRaw };
 
 /*  Prototypes for display.c  */
@@ -29,3 +29,6 @@ void display_rawping(int hostnum, int msec);
 void display_rawhost(int hostnum, int ip_addr);
 int display_keyaction();
 void display_loop();
+void display_clear();
+
+int display_mode;

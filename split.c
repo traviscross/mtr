@@ -32,6 +32,19 @@
 #include "split.h"
 */
 
+#include <config.h>
+
+#if defined(HAVE_NCURSES_H)
+#  include <ncurses.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
+#  include <ncurses/curses.h>
+#elif defined(HAVE_CURSES_H)
+#  include <curses.h>
+#else
+#  error No curses header file available
+#endif
+
+
 
 extern char *Hostname;
 extern int WaitTime;

@@ -134,6 +134,12 @@ void select_loop() {
       if(action == ActionReset) 
 	net_reset();
 
+      if (action == ActionDisplay) 
+        display_mode = (display_mode+1) % 3;
+
+      if (action == ActionClear) 
+	display_clear();
+
       anyset = 1;
     }
 

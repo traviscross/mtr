@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
   display_open();
   dns_open();
 
+  display_mode = 0;
   display_loop();
 
   net_end_transit();

@@ -40,5 +40,10 @@ int net_returned(int at);
 int net_xmit(int at);
 int net_transit(int at);
 
+#define SAVED_PINGS 50
+int* net_saved_pings(int at);
+void net_save_xmit(int at);
+void net_save_return(int at, int seq, int ms);
+int net_duplicate(int at, int seq);
 
 #define MaxHost 256

@@ -30,5 +30,24 @@
 
 
 - Bugs to fix?
-  - ?
+
+  - Do something useful if host couldn't be resolved. 
+
+- Nice to have:
+
+  - stop sending packets when a new host is getting entered. 
+
+  - Show state ("looking up host") while doing the DNS lookup for a new
+    host.
+
+  - Check why it still tries to go for X11 display if DISPLAY is unset.
+    (I saw code to handle this)
+
+  - Revert to curses mode even if DISPLAY is set, but a problem
+    prevents us from running in X11 mode.
+       -->  The problem is that gtk_init simply calls exit for us if
+            it finds a problem. Tricky!
+
+  - Read environment variable "MTR_DEFAULTS" as a commandline before
+    parsing the commandline. 
 

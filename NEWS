@@ -1,5 +1,17 @@
 WHAT'S NEW?
 
+  v0.29 Lots of stuff. 
+        Neato overview display by David Sward. 
+        FreeBSD does wrong in the kernel the same that Solaris/x86 (see 
+            note for 0.27 does right. It forces mtr to send bad packets....
+        Adjusted "not too much at once" algorithm. Now probing
+           continues as long as not more than 5 hosts are unknown.
+           Returning packets usually allow us to do the first sweep 
+           in one go. 
+
+
+  v0.28 DNS lookups are now suppressed if you don't want them. 
+
   v0.27
 	Fixed bug that showed up on Solaris/x86.
 	Gimp mainloop now runs as it's supposed to.

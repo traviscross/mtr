@@ -15,7 +15,10 @@ WHAT IS MTR?
 
 INSTALLING
 
-  To begin mtr, first use the included configure script:
+  Slightly more hints are in the file INSTALL. If this doesn't work
+  you could try reading that too.... 
+
+  To begin compiling mtr, first use the included configure script:
 
 	./configure
 
@@ -30,6 +33,18 @@ INSTALLING
   Note that mtr must be suid-root because it requires access to raw IP 
   sockets.  See SECURITY for security information.
 
+  If you want to build a version that doesn't use GTK, but if you
+  DO have GTK installed, you can use 
+
+	./configure --with-gtk-prefix=/we_dont_want_gtk_so_we_use_a_name_that_certainly_doesnt_exist
+
+  It seems the --no_gtk (whatever) doesn't work. Feel free to submit 
+  a patch for this, I'm not that familiar with autoconf (it works for
+  me :-).
+
+  
+
+
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
   See the mtr web page at 
@@ -43,4 +58,3 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
   Bug reports and feature requests should be sent to the mtr 
   mailing list.
-
