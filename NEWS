@@ -1,5 +1,9 @@
 WHAT'S NEW?
 
+  v0.44 David Stone adds the "last" column to the gtk version. 
+
+  v0.43 Compile fixes. 
+
   v0.41 Added afr's patch to allow disabeling of gtk without Robn's hack. 
         Made report mode report the newly added extra resolution. 
 

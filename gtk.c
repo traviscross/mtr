@@ -193,8 +193,8 @@ void Toolbar_fill(GtkWidget *Toolbar) {
   gtk_widget_show(Entry);
 }
 
-char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Best", "Avg", "Worst", NULL };
-int Report_Positions[] = { 10, 240, 280, 320, 360, 400, 440, 0 };
+char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Last", "Best", "Avg", "Worst", NULL };
+int Report_Positions[] = { 10, 240, 280, 320, 360, 400, 440, 480, 0 };
 GtkWidget *Report;
 GtkWidget *ReportBody;
 
@@ -300,9 +300,10 @@ void gtk_update_row(GtkCList *List, int row) {
   gtk_set_field_num(List, row, 2, "%d", net_returned(row));  
   gtk_set_field_num(List, row, 3, "%d", net_xmit(row));
   
-  gtk_set_field_num(List, row, 4, "%d", net_best(row)/1000);
-  gtk_set_field_num(List, row, 5, "%d", net_avg(row)/1000);  
-  gtk_set_field_num(List, row, 6, "%d", net_worst(row)/1000);
+  gtk_set_field_num(List, row, 4, "%d", net_last(row)/1000);
+  gtk_set_field_num(List, row, 5, "%d", net_best(row)/1000);
+  gtk_set_field_num(List, row, 6, "%d", net_avg(row)/1000);  
+  gtk_set_field_num(List, row, 7, "%d", net_worst(row)/1000);
   
 }
 
@@ -334,7 +335,7 @@ void Window_fill(GtkWidget *Window) {
 
   gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
   gtk_window_set_wmclass(GTK_WINDOW(Window), "mtr", "Mtr");
-  gtk_widget_set_usize(Window, 540, 400); 
+  gtk_widget_set_usize(Window, 580, 400); 
   gtk_container_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);
 
