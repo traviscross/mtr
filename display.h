@@ -17,6 +17,8 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <netinet/in.h>
+
 enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay, 
        ActionClear, ActionPause, ActionResume, ActionDNS, 
        ActionScrollDown, ActionScrollUp,  };
@@ -25,16 +27,14 @@ enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit,
 
 /*  Prototypes for display.c  */
 void display_detect(int *argc, char ***argv);
-void display_open();
-void display_close();
-void display_redraw();
+void display_open(void);
+void display_close(void);
+void display_redraw(void);
 void display_rawping(int hostnum, int msec);
-void display_rawhost(int hostnum, int ip_addr);
-int display_keyaction();
-void display_loop();
-void display_clear();
+void display_rawhost(int hostnum, ip_t *ip_addr);
+int display_keyaction(void);
+void display_loop(void);
+void display_clear(void);
 
 extern int display_mode;
-extern int use_dns;
-extern int dns;
 extern int display_offset; /* only used in text mode */

@@ -1,4 +1,10 @@
 WHAT'S NEW?
+  v0.68 included some old patches.
+        included patch from Antonio Querubin for better IPV6 support
+        restructured some more whitespace. 
+        added mtr.h where "global" things should go. Not finished
+        moving things around, but now that the infrastructure is there, 
+        it should be easy. 
   v0.67 Bad keyboarding by REW caused this one out the door. Sorry. 
         No changes. 
   v0.66 Through the Debian bugtracking system a bug report and

@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.67)
+AM_INIT_AUTOMAKE(mtr, 0.68)
 
 
 AC_SUBST(GTK_OBJ)
@@ -49,6 +49,10 @@ AC_ARG_ENABLE(gtk2,
 [  --enable-gtk2           Compile against GTK2 instead of GTK+],
 WANTS_GTK2=$enableval, WANTS_GTK2=no)
    
+AC_ARG_ENABLE(ipv6,
+[  --disable-ipv6          Do not enable IPv6],
+WANTS_IPV6=$enableval, WANTS_IPV6=yes)
+   
 if test "x$WANTS_GTK" = "xyes"; then
 	if test "x$WANTS_GTK2" = "xyes"; then
                 AM_PATH_GTK_2_0(2.0.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
@@ -88,6 +92,10 @@ AC_CHECK_FUNC(res_mkquery, ,
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))
 
+AC_CHECK_FUNC(getaddrinfo,
+[if test "$WANTS_IPV6" = "yes"; then
+	AC_DEFINE([ENABLE_IPV6], [], [Define to enable IPv6])
+fi])
 
 dnl Add C flags to display more warnings
 AC_MSG_CHECKING(for C flags to get more warnings)

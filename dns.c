@@ -44,7 +44,9 @@
 #include <errno.h>
 #include <time.h>
 
+#include "mtr.h"
 #include "dns.h"
+#include "net.h"
 
 #ifdef NO_STRERROR
 extern int sys_nerr;
@@ -54,6 +56,8 @@ extern char *sys_errlist[];
 
 /*  Hmm, it seems Irix requires this  */
 extern int errno;
+
+extern int af;
 
 /* Defines */
 
@@ -268,10 +272,18 @@ dword resolvecount = 0;
 long idseed = 0xdeadbeef;
 long aseed;
 
-struct sockaddr_in from;
+#ifdef ENABLE_IPV6
+struct sockaddr_storage from_sastruct;
+struct sockaddr_in6 * from6 = (struct sockaddr_in6 *) &from_sastruct;
+#else
+struct sockaddr_in from_sastruct;
+#endif
+
+struct sockaddr_in * from4 = (struct sockaddr_in *) &from_sastruct;
+struct sockaddr * from = (struct sockaddr *) &from_sastruct;
 
 int resfd;
-int fromlen = sizeof(struct sockaddr_in);
+int fromlen = sizeof from_sastruct;
 
 char tempstring[16384+1+1];
 char sendstring[1024+1];
@@ -413,28 +425,36 @@ void clearset(fd_set *set)
 }
 
 
-char *strlongip(ip_t ip)
+char *strlongip(ip_t * ip)
 {
-  struct in_addr a;
-  a.s_addr = htonl(ip);
-  return inet_ntoa(a);
+#ifdef ENABLE_IPV6
+  static char buf[INET6_ADDRSTRLEN];
+
+  return (char *) inet_ntop( af, ip, buf, sizeof buf );
+#else
+  return inet_ntoa( *ip );
+#endif
 }
 
 
-ip_t longipstr(char *s)
+int longipstr(char *s, ip_t *dst)
 {
-  return inet_addr(s);
+#ifdef ENABLE_IPV6
+  return inet_pton( af, s, dst );
+#else
+  return inet_aton( s, dst );
+#endif
 }
 
 
-int dns_forward(char *name)
+struct hostent * dns_forward(char *name)
 {
   struct hostent *host;
 
   if ((host = gethostbyname(name)))
-    return *(int *)host->h_addr;
+    return host;
   else
-    return 0;
+    return NULL;
 }
 
 
@@ -468,7 +488,7 @@ void dns_open(void)
 	    strerror(errno));
     exit(-1);
   }
-  localhost = longipstr("127.0.0.1");
+  longipstr( "127.0.0.1", &localhost );
   aseed = time(NULL) ^ (time(NULL) << 3) ^ (dword)getpid();
   for (i = 0;i < BashSize;i++) {
     idbash[i] = NULL;
@@ -497,9 +517,27 @@ dword getidbash(word id)
 }
 
 
-dword getipbash(ip_t ip)
+dword getipbash(ip_t * ip)
 {
-  return (dword)BashModulo(ip);
+  char *p = (char *) ip;
+  int i, len = 0;
+  dword bashvalue = 0;
+
+  switch ( af ) {
+  case AF_INET:
+    len = sizeof (struct in_addr);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    len = sizeof (struct in6_addr);
+    break;
+#endif
+  }
+  for (i = 0; i < len; i++, p++) {
+    bashvalue^= *p;
+    bashvalue+= (*p >> 1) + (bashvalue >> 1);
+  }
+  return BashModulo(bashvalue);
 }
 
 
@@ -611,14 +649,18 @@ void linkresolveip(struct resolve *addrp)
   struct resolve *rp;
   dword bashnum;
 
-  bashnum = getipbash(addrp->ip);
+  bashnum = getipbash( &(addrp->ip) );
   rp = ipbash[bashnum];
   if (rp) {
-    while ((rp->nextip) && (addrp->ip > rp->nextip->ip))
+    while ((rp->nextip) &&
+	   ( addrcmp( (void *) &(addrp->ip),
+		      (void *) &(rp->nextip->ip), af ) > 0 ))
       rp = rp->nextip;
-    while ((rp->previousip) && (addrp->ip < rp->previousip->ip))
+    while ((rp->previousip) &&
+	   ( addrcmp( (void *) &(addrp->ip),
+		      (void *) &(rp->previousip->ip), af ) < 0 ))
       rp = rp->previousip;
-    if (rp->ip < addrp->ip) {
+    if ( addrcmp( (void *) &(rp->ip), (void *) &(addrp->ip), af ) < 0 ) {
       addrp->previousip = rp;
       addrp->nextip = rp->nextip;
       if (rp->nextip)
@@ -641,7 +683,7 @@ void unlinkresolveip(struct resolve *rp)
 {
   dword bashnum;
 
-  bashnum = getipbash(rp->ip);
+  bashnum = getipbash( &(rp->ip) );
   if (ipbash[bashnum] == rp)
     ipbash[bashnum] = (rp->previousip)? rp->previousip : rp->nextip;
   if (rp->nextip)
@@ -781,7 +823,7 @@ struct resolve *findhost(char *hostname)
 }
 
 
-struct resolve *findip(ip_t ip)
+struct resolve *findip(ip_t * ip)
 {
   struct resolve *rp;
   dword bashnum;
@@ -789,11 +831,13 @@ struct resolve *findip(ip_t ip)
   bashnum = getipbash(ip);
   rp = ipbash[bashnum];
   if (rp) {
-    while ((rp->nextip) && (ip >= rp->nextip->ip))
+    while ((rp->nextip) &&
+	   ( addrcmp( (void *) ip, (void *) &(rp->nextip->ip), af ) >= 0 ))
       rp = rp->nextip;
-    while ((rp->previousip) && (ip <= rp->previousip->ip))
+    while ((rp->previousip) &&
+           ( addrcmp( (void *) ip, (void *) &(rp->previousip->ip), af ) <= 0 ))
       rp = rp->previousip;
-    if (ip == rp->ip) {
+    if ( addrcmp( (void *) ip, (void *) &(rp->ip), af ) == 0 ) {
       ipbash[bashnum] = rp;
       return rp;
     } else
@@ -838,15 +882,24 @@ void resendrequest(struct resolve *rp,int type)
       restell(tempstring);
     }
   } else if (type == T_PTR) {
+    switch ( af ) {
+    case AF_INET:
     sprintf(tempstring,"%u.%u.%u.%u.in-addr.arpa",
 	    ((byte *)&rp->ip)[3],
 	    ((byte *)&rp->ip)[2],
 	    ((byte *)&rp->ip)[1],
 	    ((byte *)&rp->ip)[0]);
+      break;
+#ifdef ENABLE_IPV6
+    case AF_INET6:
+      addr2ip6arpa( &(rp->ip), tempstring );
+      break;
+#endif
+    }
     dorequest(tempstring,type,rp->id);
     if (debug) {
       sprintf(tempstring,"Resolver: Sent domain lookup request for \"%s\".",
-	      strlongip(rp->ip));
+	      strlongip( &(rp->ip) ));
       restell(tempstring);
     }
   }
@@ -887,7 +940,7 @@ void passrp(struct resolve *rp,long ttl)
 }
 
 
-void parserespacket(byte *s,int l)
+void parserespacket(byte *s, int l)
 {
   struct resolve *rp;
   packetheader *hp;
@@ -898,11 +951,11 @@ void parserespacket(byte *s,int l)
   word rr,datatype,class,qdatatype,qclass;
   byte rdatalength;
 
-  if (l < sizeof(packetheader)) {
+  if (l < (int) sizeof(packetheader)) {
     restell("Resolver error: Packet smaller than standard header size.");
     return;
   }
-  if (l == sizeof(packetheader)) {
+  if (l == (int) sizeof(packetheader)) {
     restell("Resolver error: Packet has empty body.");
     return;
   }
@@ -954,12 +1007,20 @@ void parserespacket(byte *s,int l)
       case STATE_PTRREQ1:
       case STATE_PTRREQ2:
       case STATE_PTRREQ3:
+        switch ( af ) {
+        case AF_INET:
 	sprintf(stackstring,"%u.%u.%u.%u.in-addr.arpa",
 		((byte *)&rp->ip)[3],
 		((byte *)&rp->ip)[2],
 		((byte *)&rp->ip)[1],
 		((byte *)&rp->ip)[0]);
 	break;
+#ifdef ENABLE_IPV6
+        case AF_INET6:
+          addr2ip6arpa( &(rp->ip), stackstring );
+          break;
+#endif
+        }
       }
       *namestring = '\0';
       r = dn_expand(s,s + l,c,namestring,MAXDNAME);
@@ -1068,17 +1129,17 @@ void parserespacket(byte *s,int l)
 		restell(tempstring);
 		return;
 	      }
-	      if (memcmp(&rp->ip,(ip_t *)c,sizeof(ip_t))) {
+	      if ( addrcmp( (void *) &(rp->ip), (void *) c, af ) == 0 ) {
 		sprintf(tempstring,"Resolver: Reverse authentication failed: %s != ",
-			strlongip(rp->ip));
-		memcpy(&alignedip,(ip_t *)c,sizeof(ip_t));
-		strcat(tempstring,strlongip(alignedip));
+			strlongip( &(rp->ip) ));
+		addrcpy( (void *) &alignedip, (void *) c, af );
+		strcat(tempstring,strlongip( &alignedip ));
 		restell(tempstring);
 		res_hostipmismatch++;
 		failrp(rp);
 	      } else {
 		sprintf(tempstring,"Resolver: Reverse authentication complete: %s == \"%s\".",
-			strlongip(rp->ip),nonull(rp->hostname));
+			strlongip( &(rp->ip) ),nonull(rp->hostname));
 		restell(tempstring);
 		res_reversesuccess++;
 		passrp(rp,ttl);
@@ -1157,21 +1218,26 @@ void dns_ack(void)
 {
   int r,i;
 
-  r = recvfrom(resfd,(byte *)resrecvbuf,MaxPacketsize,0,(struct sockaddr *)&from,&fromlen);
+  r = recvfrom(resfd,(byte *)resrecvbuf,MaxPacketsize,0,
+               from, &fromlen);
   if (r > 0) {
     /* Check to see if this server is actually one we sent to */
-    if (from.sin_addr.s_addr == localhost) {
+    if ( addrcmp( (void *) &(from4->sin_addr), (void *) &localhost,
+                  (int) AF_INET ) == 0 ) {
       for (i = 0;i < _res.nscount;i++)
-	if ((_res.nsaddr_list[i].sin_addr.s_addr == from.sin_addr.s_addr) ||
-	    (!_res.nsaddr_list[i].sin_addr.s_addr))	/* 0.0.0.0 replies as 127.0.0.1 */
+	if ( addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+		      (void *) &(from4->sin_addr), (int) AF_INET ) == 0 ||
+	     addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+		      (void *) &unspec_addr, (int) AF_INET ) != 0 )	/* 0.0.0.0 replies as 127.0.0.1 */
 	  break;
     } else
       for (i = 0;i < _res.nscount;i++)
-	if (_res.nsaddr_list[i].sin_addr.s_addr == from.sin_addr.s_addr)
+	if ( addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+		      (void *) &(from4->sin_addr), AF_INET ) == 0 )
 	  break;
     if (i == _res.nscount) {
       sprintf(tempstring,"Resolver error: Received reply from unknown source: %s",
-	      inet_ntoa(from.sin_addr));
+	      inet_ntoa(from4->sin_addr ));
       restell(tempstring);
     } else
       parserespacket((byte *)resrecvbuf,r);
@@ -1206,7 +1272,8 @@ void dns_events(double *sinterval)
     case STATE_FAILED:	/* Fake TTL has expired */
       if (debug) {
 	sprintf(tempstring,"Resolver: Cache record for \"%s\" (%s) has expired. (state: %u)  Marked for expire at: %g, time: %g.",
-                nonull(rp->hostname),strlongip(rp->ip),rp->state,rp->expiretime,sweeptime);
+                nonull(rp->hostname), strlongip( &(rp->ip) ), 
+		rp->state, rp->expiretime, sweeptime);
 	restell(tempstring);
       }
       unlinkresolve(rp);
@@ -1240,11 +1307,10 @@ void dns_events(double *sinterval)
 }
 
 
-char *dns_lookup2(ip_t ip)
+char *dns_lookup2(ip_t * ip)
 {
   struct resolve *rp;
 
-  ip = htonl(ip);
   if ((rp = findip(ip))) {
     if ((rp->state == STATE_FINISHED) || (rp->state == STATE_FAILED)) {
       if ((rp->state == STATE_FINISHED) && (rp->hostname)) {
@@ -1270,16 +1336,16 @@ char *dns_lookup2(ip_t ip)
   rp = allocresolve();
   rp->state = STATE_PTRREQ1;
   rp->expiretime = sweeptime + ResRetryDelay1;
-  rp->ip = ip;
+  addrcpy( (void *) &(rp->ip), (void *) ip, af );
   linkresolve(rp);
-  rp->ip = ip;
+  addrcpy( (void *) &(rp->ip), (void *) ip, af );
   linkresolveip(rp);
   sendrequest(rp,T_PTR);
   return NULL;
 }
 
 
-char *dns_lookup(ip_t ip)
+char *dns_lookup(ip_t * ip)
 {
   char *t;
 
@@ -1287,3 +1353,19 @@ char *dns_lookup(ip_t ip)
   t = dns_lookup2 (ip);
   return (t&&use_dns)?t:strlongip(ip);
 }
+
+#ifdef ENABLE_IPV6
+/* Returns an ip6.arpa character string. */
+void addr2ip6arpa( ip_t * ip, char * buf ) {
+  unsigned char * p = (char *) ip;
+  unsigned char * b = buf;
+  int i;
+
+  for ( i = sizeof (struct in6_addr) - 1; i >= 0; i-- ) {
+        sprintf( b, "%x.%x.", p[i] % 16, p[i] >> 4 );
+        b += 4;
+  }
+  sprintf( b, "ip6.arpa" );
+  return;
+}
+#endif

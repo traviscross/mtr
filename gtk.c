@@ -27,9 +27,13 @@
 #include <sys/types.h>
 
 #ifndef NO_GTK
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <gtk/gtk.h>
 
+#include "mtr.h"
 #include "net.h"
 #include "dns.h"
 #include "mtr-gtk.h"
@@ -37,12 +41,12 @@
 #include "img/mtr_icon.xpm"
 #endif
 
-
 gint gtk_ping(gpointer data);
 
 
 extern char *Hostname;
 extern float WaitTime;
+extern int af;
 static int tag;
 static GtkWidget *Pause_Button;
 
@@ -67,7 +71,8 @@ void gtk_do_init(int *argc, char ***argv)
   }
 }
 
-int gtk_detect(int *argc, char ***argv) 
+
+int gtk_detect(UNUSED int *argc, UNUSED char ***argv) 
 {
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
@@ -79,14 +84,16 @@ int gtk_detect(int *argc, char ***argv)
   }
 }
 
-gint Window_destroy(GtkWidget *Window, gpointer data) 
+
+gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data) 
 {
   gtk_main_quit();
 
   return FALSE;
 }
 
-gint Restart_clicked(GtkWidget *Button, gpointer data) 
+
+gint Restart_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   net_reset();
   gtk_redraw();
@@ -95,7 +102,7 @@ gint Restart_clicked(GtkWidget *Button, gpointer data)
 }
 
 
-gint Pause_clicked(GtkWidget *Button, gpointer data) 
+gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   static int paused = 0;
 
@@ -110,6 +117,7 @@ gint Pause_clicked(GtkWidget *Button, gpointer data)
   return FALSE;
 }
 
+
 /*
  * There is a small problem with the following code:
  * The timeout is canceled and removed in order to ensure that
@@ -119,7 +127,7 @@ gint Pause_clicked(GtkWidget *Button, gpointer data)
  * What's the problem with this? (-> "I don't think so)  -- REW
  */
 
-gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button) 
+gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
 {
   WaitTime = gtk_spin_button_get_value_as_float(GTK_SPIN_BUTTON(Button));
   gtk_timeout_remove (tag);
@@ -129,9 +137,10 @@ gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button)
   return FALSE;
 }
 
-gint Host_activate(GtkWidget *Entry, gpointer data) 
+
+gint Host_activate(GtkWidget *Entry, UNUSED gpointer data) 
 {
-  int addr;
+  struct hostent * addr;
 
   addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(Entry)));
   if(addr) {
@@ -147,12 +156,14 @@ gint Host_activate(GtkWidget *Entry, gpointer data)
   return FALSE;
 }
 
+
 GdkPixmap *gtk_load_pixmap(char **pixmap) 
 {
   return gdk_pixmap_colormap_create_from_xpm_d(NULL, 
 					       gdk_colormap_get_system(), 
 					       NULL, NULL, pixmap);
 }
+
 
 void Toolbar_fill(GtkWidget *Toolbar) 
 {
@@ -207,6 +218,7 @@ void Toolbar_fill(GtkWidget *Toolbar)
   gtk_widget_show(Entry);
 }
 
+
 char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Last", "Best", "Avg", "Worst", "StDev", NULL };
 int Report_Positions[] = { 10, 200, 240, 280, 320, 360, 400, 440, 480, 0 };
 GtkWidget *Report;
@@ -214,7 +226,7 @@ GtkWidget *ReportBody;
 
 GtkWidget *GetRow(int index) 
 {
-  int addr;
+  ip_t * addr;
   char *name;
   GtkWidget *Row, *Label;
 
@@ -222,7 +234,7 @@ GtkWidget *GetRow(int index)
   
   addr = net_addr(index);
   name = "???";
-  if(addr != 0) {
+  if ( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
     name = dns_lookup(addr);
     if(!name) {
       /* Actually this is not neccesary: 
@@ -238,7 +250,8 @@ GtkWidget *GetRow(int index)
   return Row;
 }
 
-GtkWidget *Scrollarea_create() 
+
+GtkWidget *Scrollarea_create(void)
 {
   GtkWidget *List;
   GtkWidget *scroll;
@@ -265,6 +278,7 @@ GtkWidget *Scrollarea_create()
   return scroll;
 }
 
+
 void gtk_add_row(GtkWidget *List) 
 {
   int at;
@@ -286,9 +300,11 @@ void gtk_add_row(GtkWidget *List)
   gtk_widget_show(Row);
 }
 
+
 void gtk_set_field(GtkCList *List, int row, int ix, char *str) {
   gtk_clist_set_text(List, row, ix, str);
 }
+
 
 //void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
 // changed int to dobule byMin
@@ -300,20 +316,20 @@ void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num
   gtk_set_field(List, row, ix, str);
 }
 
+
 void gtk_update_row(GtkCList *List, int row) 
 {
-  int addr;
+  ip_t *addr;
   char str[256], *name;
   GdkColor color;
   GdkColormap *cmap;
 
   addr = net_addr(row);
   name = "???";
-  if(addr != 0) {
+  if ( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
     name = dns_lookup(addr);
     if(!name) {
-      sprintf(str, "%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-	      (addr >> 8) & 0xff, addr & 0xff);
+      sprintf(str, "%s", strlongip( addr ));
       name = str;
     }
   }
@@ -333,7 +349,7 @@ void gtk_update_row(GtkCList *List, int row)
   /* the row - net_min() is kind of not clean, need some more work */
   gtk_set_field(List, row - net_min(), 0, name);
 
-  gtk_set_field_num(List, row - net_min(), 1, "%.0f%%", net_loss(row)/1000.0);
+  gtk_set_field_num(List, row - net_min(), 1, "%.1f%%", net_loss(row)/1000.0);
   gtk_set_field_num(List, row - net_min(), 2, "%.0f", net_returned(row));  
   gtk_set_field_num(List, row - net_min(), 3, "%.0f", net_xmit(row));
   
@@ -342,10 +358,10 @@ void gtk_update_row(GtkCList *List, int row)
   gtk_set_field_num(List, row - net_min(), 6, "%.0f", net_avg(row)/1000.0);  
   gtk_set_field_num(List, row - net_min(), 7, "%.0f", net_worst(row)/1000.0);
   gtk_set_field_num(List, row - net_min(), 8, "%.2f", net_stdev(row)/1000.0);
-  
 }
 
-void gtk_redraw() 
+
+void gtk_redraw(void)
 {
   int at  = net_min();	// changed from 0 to net_min for TTL stuff byMin
   int max = net_max();
@@ -367,6 +383,7 @@ void gtk_redraw()
 
   gtk_clist_thaw(GTK_CLIST(ReportBody));
 }
+
 
 void Window_fill(GtkWidget *Window) 
 {
@@ -393,7 +410,8 @@ void Window_fill(GtkWidget *Window)
   gtk_widget_show(VBox);
 }
 
-void gtk_open() 
+
+void gtk_open(void)
 {
   GtkWidget *Window;
   GdkPixmap *icon;
@@ -423,16 +441,19 @@ void gtk_open()
   gdk_window_set_icon_name(Window->window, "mtr");
 }
 
-void gtk_close() 
+
+void gtk_close(void)
 {
 }
 
-int gtk_keyaction() 
+
+int gtk_keyaction(void)
 {
   return 0;
 }
 
-gint gtk_ping(gpointer data) 
+
+gint gtk_ping(UNUSED gpointer data) 
 {
   gtk_redraw();
   net_send_batch();
@@ -441,20 +462,21 @@ gint gtk_ping(gpointer data)
   return TRUE;
 }
 
-void gtk_net_data(gpointer data, gint fd, GdkInputCondition cond) 
+
+void gtk_net_data(UNUSED gpointer data, UNUSED gint fd, UNUSED GdkInputCondition cond) 
 {
   net_process_return();
 }
 
-void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) 
+
+void gtk_dns_data(UNUSED gpointer data, UNUSED gint fd, UNUSED GdkInputCondition cond) 
 {
   dns_ack();
-
   gtk_redraw();
 }
 
 
-void gtk_loop() 
+void gtk_loop(void) 
 {
   gtk_add_ping_timeout ();
   gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
@@ -462,3 +484,5 @@ void gtk_loop()
 
   gtk_main();
 }
+
+

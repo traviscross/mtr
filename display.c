@@ -19,12 +19,17 @@
 
 #include <config.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include "mtr.h"
 #include "display.h"
 #include "mtr-curses.h"
 #include "mtr-gtk.h"
 #include "report.h"
 #include "select.h"
 #include "raw.h"
+#include "dns.h"
 
 extern int DisplayMode;
 
@@ -71,7 +76,9 @@ void display_detect(int *argc, char ***argv) {
 #endif
 }
 
-void display_open() {
+
+void display_open(void)
+{
   switch(DisplayMode) {
 
   case DisplayReport:
@@ -98,7 +105,9 @@ void display_open() {
   }
 }
 
-void display_close() {
+
+void display_close(void)
+{
   switch(DisplayMode) {
   case DisplayReport:
     report_close();
@@ -124,7 +133,9 @@ void display_close() {
   }
 }
 
-void display_redraw() {
+
+void display_redraw(void)
+{
   switch(DisplayMode) {
 
   case DisplayCurses:
@@ -141,7 +152,9 @@ void display_redraw() {
   }
 }
 
-int display_keyaction() {
+
+int display_keyaction(void)
+{
   switch(DisplayMode) {
   case DisplayCurses:
     return mtr_curses_keyaction();
@@ -156,7 +169,8 @@ int display_keyaction() {
 }
 
 
-void display_rawping(int host, int msec) {
+void display_rawping(int host, int msec) 
+{
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
@@ -173,7 +187,8 @@ void display_rawping(int host, int msec) {
 }
 
 
-void display_rawhost(int host, int ip_addr) {
+void display_rawhost(int host, ip_t *ip_addr) 
+{
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
@@ -190,7 +205,8 @@ void display_rawhost(int host, int ip_addr) {
 }
 
 
-void display_loop() {
+void display_loop(void)
+{
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
@@ -208,7 +224,8 @@ void display_loop() {
 }
 
 
-void display_clear() {
+void display_clear(void)
+{
   switch(DisplayMode) {
   case DisplayCurses:
     mtr_curses_clear();

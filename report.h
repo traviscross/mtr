@@ -19,11 +19,11 @@
 
 /*  Prototypes for report.h  */
 
-void report_open();
-void report_close();
-void txt_open();
-void txt_close();
-void xml_open();
-void xml_close();
-void csv_open();
-void csv_close();
+void report_open(void);
+void report_close(void);
+void txt_open(void);
+void txt_close(void);
+void xml_open(void);
+void xml_close(void);
+void csv_open(void);
+void csv_close(void);

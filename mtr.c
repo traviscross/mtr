@@ -26,7 +26,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h> 
 #include <unistd.h>
+#include <strings.h>
 
+#include "mtr.h"
 #include "mtr-curses.h"
 #include "getopt.h"
 #include "display.h"
@@ -141,6 +143,8 @@ void parse_arg (int argc, char **argv)
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
     { "max-ttl", 1, 0, 'm' },
+    { "inet", 0, 0, '4' },	/* IPv4 only */
+    { "inet6", 0, 0, '6' },	/* IPv6 only */
     { 0, 0, 0, 0 }
   };
 
@@ -148,7 +152,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrxtglpo:i:c:s:b:Q:na:f:m:", long_options, NULL);
+		      "vhrxtglpo:i:c:s:b:Q:na:f:m:46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -253,6 +257,17 @@ void parse_arg (int argc, char **argv)
 	tos = 0;
       }
       break;
+    case '4':
+      af = AF_INET;
+      break;
+    case '6':
+#ifdef ENABLE_IPV6
+      af = AF_INET6;
+      break;
+#else
+      fprintf( stderr, "IPv6 not enabled.\n" );
+      break;
+#endif
     }
   }
 
@@ -288,11 +303,11 @@ void parse_mtr_options (char *string)
   argv[0] = "mtr";
   argc = 1;
   p = strtok (string, " \t");
-  while (p && (argc < (sizeof(argv)/sizeof(argv[0])))) {
+  while (p != NULL && ((size_t) argc < (sizeof(argv)/sizeof(argv[0])))) {
     argv[argc++] = p;
     p = strtok (NULL, " \t");
   }
-  if (p) {
+  if (p != NULL) {
     fprintf (stderr, "Warning: extra arguments ignored: %s", p);
   }
 
@@ -303,13 +318,24 @@ void parse_mtr_options (char *string)
 
 int main(int argc, char **argv) 
 {
-  int               traddr;
+  ip_t *            traddr;
   struct hostent *  host                = NULL;
   int               net_preopen_result;
+#ifdef ENABLE_IPV6
+  struct addrinfo       hints, *res;
+  int                   error;
+  struct hostent        trhost;
+  char *                alptr[2];
+  struct sockaddr_in *  sa4;
+  struct sockaddr_in6 * sa6;
+#endif
 
   /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
 
-  net_preopen_result = net_preopen ();
+  if ( ( net_preopen_result = net_preopen () ) ) {
+    fprintf( stderr, "mtr: unable to get raw sockets.\n" );
+    exit( EXIT_FAILURE );
+  }
 
   /*  Now drop to user permissions  */
   if (setuid(getuid())) {
@@ -342,7 +368,7 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrctglsni] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrctglsni46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns] [--address interface]\n" /* BL */
            "\t\t[--psize=bytes/-p=bytes]\n"            /* ok */
@@ -368,40 +394,53 @@ int main(int argc, char **argv)
   }
 
 #ifdef ENABLE_IPV6
-  if (af == AF_UNSPEC) {
-    af = AF_INET6;
-    host = gethostbyname2(Hostname, af);
-    if (host == NULL) af = AF_INET;
+  /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
+  bzero( &hints, sizeof hints );
+  hints.ai_family = af;
+  hints.ai_socktype = SOCK_DGRAM;
+  error = getaddrinfo( Hostname, "0", &hints, &res );
+  if ( error ) {
+    perror( gai_strerror(error) );
+    exit( EXIT_FAILURE );
   }
-#endif
-   
-  if (host == NULL) {
+  /* Convert the first addrinfo into a hostent. */
+  host = &trhost;
+  bzero( host, sizeof trhost );
+  host->h_name = res->ai_canonname;
+  host->h_aliases = NULL;
+  host->h_addrtype = res->ai_family;
+  af = res->ai_family;
+  host->h_length = res->ai_addrlen;
+  host->h_addr_list = alptr;
+  switch ( af ) {
+  case AF_INET:
+    sa4 = (struct sockaddr_in *) res->ai_addr;
+    alptr[0] = (void *) &(sa4->sin_addr);
+    break;
+  case AF_INET6:
+    sa6 = (struct sockaddr_in6 *) res->ai_addr;
+    alptr[0] = (void *) &(sa6->sin6_addr);
+    break;
+  default:
+    fprintf( stderr, "mtr unknown address type\n" );
+    exit( EXIT_FAILURE );
+  }
+  alptr[1] = NULL;
+#else
     host = gethostbyname(Hostname);
-  }
-  
   if (host == NULL) {
-    herror("mtr");
+    herror("mtr gethostbyname");
     exit(1);
   }
+  af = host->h_addrtype;
+#endif
 
-  switch (af) {
-    case AF_INET:
-      traddr = *(int *)host->h_addr;
+  traddr = (ip_t *) host->h_addr;
   
-      if (net_open(traddr) != 0) {
+  if (net_open(host) != 0) {
 	fprintf(stderr, "mtr: Unable to start net module.\n");
         exit(1);
       }
-      break;
-#ifdef ENABLE_IPV6
-     case AF_INET6:
-       if(net6_open((struct in6_addr *)host->h_addr) != 0) {
-         printf("mtr: Unable to get raw socket.  (Executable not suid?)\n");
-         exit(1);
-       }
-       break;
-#endif
-  }
 
   display_open();
   dns_open();

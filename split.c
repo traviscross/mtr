@@ -21,19 +21,19 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <config.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
+#include "mtr.h"
 #include "display.h"
 #include "dns.h"
 
 #include "net.h"
 #include "split.h"
-
-
-#include <config.h>
 
 #ifdef NO_CURSES
 #include <sys/time.h>
@@ -57,6 +57,7 @@
 
 extern char *Hostname;
 extern int WaitTime;
+extern int af;
 
 /* There is 256 hops max in the IP header (coded with a byte) */
 #define MAX_LINE_COUNT 256
@@ -68,11 +69,12 @@ int  LineCount;
 
 #define DEBUG 0
 
-void 
-split_redraw() {
+
+void split_redraw(void) 
+{
   int   max;
   int   at;
-  int   addr;
+  ip_t *addr;
   char *name;
   char  newLine[MAX_LINE_SIZE];
   int   i;
@@ -97,7 +99,7 @@ split_redraw() {
   for(at = 0; at < max; at++) {
     addr = net_addr(at);
     
-    if(addr != 0) {
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
       name = dns_lookup(addr);
       if(name != NULL) {
 	/* May be we should test name's length */
@@ -107,9 +109,8 @@ split_redraw() {
 		net_best(at) /1000, net_avg(at)/1000, 
 		net_worst(at)/1000);
       } else {
-	sprintf(newLine, "%d.%d.%d.%d %d %d %d %d %d %d", 
-		(addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-		(addr >> 8) & 0xff, addr & 0xff,
+	sprintf(newLine, "%s %d %d %d %d %d %d", 
+		strlongip( addr ),
 		net_loss(at),
 		net_returned(at), net_xmit(at),
 		net_best(at) /1000, net_avg(at)/1000, 
@@ -135,8 +136,9 @@ split_redraw() {
   }
 }
 
-void 
-split_open() {
+
+void split_open(void)
+{
   int i;
 #if DEBUG
   printf("split_open()\n");
@@ -147,15 +149,17 @@ split_open() {
   }
 }
 
-void 
-split_close() {
+
+void split_close(void)
+{
 #if DEBUG
   printf("split_close()\n");
 #endif
 }
 
-int 
-split_keyaction() {
+
+int split_keyaction(void) 
+{
 #ifdef NO_CURSES
   fd_set readfds;
   struct timeval tv;

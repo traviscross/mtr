@@ -24,9 +24,12 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <strings.h>
 
+#include "mtr.h"
 #include "report.h"
 #include "net.h"
+#include "dns.h"
 
 extern int dns;
 extern char LocalHostname[];
@@ -37,12 +40,18 @@ extern int packetsize;
 extern int bitpattern;
 extern int tos;
 extern int MaxPing;
+extern int af;
 
 
-void report_open() {}
-void report_close() {
-  int i, j, at, max, addr;
-  int haddr;
+void report_open(void) 
+{
+}
+
+
+void report_close(void) 
+{
+  int i, j, at, max;
+  ip_t *addr;
   char name[81];
   char buf[1024];
   char fmt[16];
@@ -65,18 +74,16 @@ void report_close() {
   for(; at < max; at++) {
     addr = net_addr(at);
     
-    if(addr == 0) {
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      haddr = htonl(addr);
-      host = dns?gethostbyaddr((char *)&haddr, sizeof(int), AF_INET):NULL;
+      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
 
       if (host != NULL) {
 	 strncpy(name, host->h_name, 80);
 	 name[80] = 0;
       } else {
-	sprintf(name, "%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-		(addr >> 8) & 0xff, addr & 0xff);
+	sprintf(name, "%s", strlongip( addr ) );
       }
     }
 
@@ -99,15 +106,29 @@ void report_close() {
     printf("%s\n",buf);
   }
 }
-void txt_open() {}
-void txt_close() { report_close(); }
+
+
+void txt_open(void)
+{
+}
+
+
+void txt_close(void)
+{ 
+  report_close();
+}
 
 
 
-void xml_open() {}
-void xml_close() {
-  int i, j, at, max, addr;
-  int haddr;
+void xml_open(void)
+{
+}
+
+
+void xml_close(void)
+{
+  int i, j, at, max;
+  ip_t *addr;
   char name[81];
   struct hostent *host;
 
@@ -130,18 +151,16 @@ void xml_close() {
   for(; at < max; at++) {
     addr = net_addr(at);
     
-    if(addr == 0) {
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      haddr = htonl(addr);
-      host = dns?gethostbyaddr((char *)&haddr, sizeof(int), AF_INET):NULL;
+      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
 
       if (host != NULL) {
 	 strncpy(name, host->h_name, 80);
 	 name[80] = 0;
       } else {
-	sprintf(name, "%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-		(addr >> 8) & 0xff, addr & 0xff);
+	sprintf(name, "%s", strlongip( addr ) );
       }
     }
 
@@ -171,10 +190,16 @@ void xml_close() {
   printf("</MTR>\n");
 }
 
-void csv_open() {}
-void csv_close() {
-  int i, j, at, max, addr;
-  int haddr;
+
+void csv_open(void)
+{
+}
+
+
+void csv_close(void)
+{
+  int i, j, at, max;
+  ip_t *addr;
   char name[81];
   struct hostent *host;
 
@@ -208,18 +233,16 @@ void csv_close() {
   for(; at < max; at++) {
     addr = net_addr(at);
     
-    if(addr == 0) {
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      haddr = htonl(addr);
-      host = dns?gethostbyaddr((char *)&haddr, sizeof(int), AF_INET):NULL;
+      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
 
       if (host != NULL) {
 	 strncpy(name, host->h_name, 80);
 	 name[80] = 0;
       } else {
-	sprintf(name, "%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-		(addr >> 8) & 0xff, addr & 0xff);
+	sprintf(name, "%s", strlongip( addr ) );
       }
     }
 

@@ -17,4 +17,4 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-void select_loop();
+void select_loop(void);

@@ -18,8 +18,8 @@
 */
 
 /*  Prototypes for curses.c  */
-void mtr_curses_open();
-void mtr_curses_close();
-void mtr_curses_redraw();
-int mtr_curses_keyaction();
-void mtr_curses_clear();
+void mtr_curses_open(void);
+void mtr_curses_close(void);
+void mtr_curses_redraw(void);
+int mtr_curses_keyaction(void);
+void mtr_curses_clear(void);

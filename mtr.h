@@ -1,6 +1,7 @@
 /*
     mtr  --  a network diagnostic tool
     Copyright (C) 1997,1998  Matt Kimball
+    Copyright (C) 2005 R.E.Wolff@BitWizard.nl
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,10 +18,24 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*  Prototypes for gtk.c  */
-int gtk_detect(int *argc, char ***argv);
-void gtk_open(void);
-void gtk_close(void);
-void gtk_redraw(void);
-int gtk_keyaction(void);
-void gtk_loop(void);
+/* Typedefs */
+
+typedef unsigned char byte;
+typedef unsigned short word;
+typedef unsigned long dword;
+
+#ifdef ENABLE_IPV6
+typedef struct in6_addr ip_t;
+#else
+typedef struct in_addr ip_t;
+#endif
+
+extern int dns;
+extern int use_dns;
+
+#ifdef __GNUC__
+#define UNUSED __attribute__((__unused__))
+#else
+#define UNUSED
+#endif
+

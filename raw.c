@@ -19,30 +19,31 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <config.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 
+#include "mtr.h"
 #include "raw.h"
 #include "net.h"
 #include "dns.h"
 
 static int havename[MaxHost];
 
+extern int af;
+
 #if 0
-static char *addr_to_str(int addr)
+static char *addr_to_str(ip_t addr)
 {
   static char buf[20];
 
-  sprintf (buf, "%d.%d.%d.%d", 
-	   (addr >> 0)  & 0xff, 
-	   (addr >> 8)  & 0xff, 
-	   (addr >> 16) & 0xff, 
-	   (addr >> 24) & 0xff);
+  sprintf (buf, "%s", strlongip( &addr ));
   return buf;
 }
 #endif
@@ -63,17 +64,8 @@ void raw_rawping (int host, int msec)
 }
 
 
-void raw_rawhost (int host, int ip_addr)
+void raw_rawhost (int host, ip_t * ip_addr)
 {
-  struct in_addr in;
-
-  in.s_addr = ip_addr;
-
-  printf ("h %d %s\n", 
-	  host, inet_ntoa(in));
+  printf ("h %d %s\n", host, strlongip( ip_addr ));
   fflush (stdout); 
 }
-
-
-
-

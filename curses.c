@@ -18,6 +18,7 @@
 */
 
 #include <config.h>
+#include <strings.h>
 
 #ifndef NO_CURSES
 #include <ctype.h>
@@ -57,6 +58,7 @@
 #  define getmaxyx(win,y,x)	((y) = (win)->_maxy + 1, (x) = (win)->_maxx + 1)
 #endif
 
+#include "mtr.h"
 #include "mtr-curses.h"
 #include "display.h"
 #include "net.h"
@@ -72,7 +74,7 @@ extern int packetsize;
 extern int bitpattern;
 extern int tos;
 extern float WaitTime;
-
+extern int af;
 
 void pwcenter(char *str) 
 {
@@ -86,7 +88,8 @@ void pwcenter(char *str)
   printw(str);
 }
 
-int mtr_curses_keyaction() 
+
+int mtr_curses_keyaction(void)
 {
   int c = getch();
   int i=0;
@@ -119,7 +122,7 @@ int mtr_curses_keyaction()
     mvprintw(3, 0, "Size Range: %d-%d, <0 random.\n", MINPACKET, MAXPACKET);
     move(2,20);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh ();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -140,7 +143,7 @@ int mtr_curses_keyaction()
     mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
     move(2,18);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh ();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -154,7 +157,7 @@ int mtr_curses_keyaction()
     mvprintw(3, 0, "default 0x00, min cost 0x02, rel 0x04,, thr 0x08, low del 0x10...\n");
     move(2,22);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -169,7 +172,7 @@ int mtr_curses_keyaction()
     mvprintw(2, 0, "Interval : %0.0f\n\n", WaitTime );
     move(2,11);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -185,7 +188,7 @@ int mtr_curses_keyaction()
     mvprintw(2, 0, "First TTL: %d\n\n", fstTTL );
     move(2,11);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -201,7 +204,7 @@ int mtr_curses_keyaction()
     mvprintw(2, 0, "Max TTL: %d\n\n", maxTTL );
     move(2,9);
     refresh();
-    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
       attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
@@ -271,11 +274,12 @@ int mtr_curses_keyaction()
   return ActionNone;          /* ignore unknown input */
 }
 
+
 void mtr_curses_hosts(int startstat) 
 {
   int max;
   int at;
-  int addr, addrs;
+  ip_t *addr, *addrs;
   int y, x;
   char *name;
 
@@ -289,15 +293,14 @@ void mtr_curses_hosts(int startstat)
     printw("%2d. ", at + 1);
     addr = net_addr(at);
 
-    if(addr != 0) {
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
       name = dns_lookup(addr);
       if (! net_up(at))
 	attron(A_BOLD);
       if(name != NULL) {
 	printw("%s", name);
       } else {
-	printw("%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-	       (addr >> 8) & 0xff, addr & 0xff);
+	printw("%s", strlongip( addr ) );
       }
       attroff(A_BOLD);
 
@@ -330,17 +333,15 @@ void mtr_curses_hosts(int startstat)
       /* Multi path by Min */
       for (i=0; i < MAXPATH; i++ ) {
         addrs = net_addrs(at, i);
-	if (addrs == addr) continue;
-	if (addrs == 0) break;
+	if ( addrcmp( (void *) addrs, (void *) addr, af ) == 0 ) continue;
+	if ( addrcmp( (void *) addrs, (void *) &unspec_addr, af ) == 0 ) break;
 
         name = dns_lookup(addrs);
         if (! net_up(at)) attron(A_BOLD);
         if (name != NULL) {
 	  printw("\n    %s", name);
         } else {
-	  printw("\n    %d.%d.%d.%d",
-		(addrs >> 24) & 0xff, (addrs >> 16) & 0xff, 
-		(addrs >> 8) & 0xff, addrs & 0xff);
+	  printw("\n    %s", strlongip( addrs ) );
         }
         attroff(A_BOLD);
       }
@@ -353,6 +354,7 @@ void mtr_curses_hosts(int startstat)
   }
   move(2, 0);
 }
+
 
 static double factors[] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
 static int scale[8];
@@ -388,6 +390,7 @@ void mtr_gen_scale(void)
 	}
 }
 
+
 static const char* block_map = ".123abc>";
 
 void mtr_print_scaled(int ms) 
@@ -402,6 +405,7 @@ void mtr_print_scaled(int ms)
 	}
 	printw(">");
 }
+
 
 void mtr_fill_graph(int at, int cols) 
 {
@@ -430,9 +434,11 @@ void mtr_fill_graph(int at, int cols)
 	}
 }
 
+
 void mtr_curses_graph(int startstat, int cols) 
 {
-	int max, at, addr, y, x;
+	int max, at, y, x;
+	ip_t * addr;
 	char* name;
 
 	max = net_max();
@@ -452,7 +458,7 @@ void mtr_curses_graph(int startstat, int cols)
 		if (name) {
 			printw("%s", name);
 		} else {
-			printw("%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) && 0xff, (addr >> 8) & 0xff, addr & 0xff);
+			printw("%s", strlongip( addr ) );
 		}
 		attroff(A_BOLD);
 
@@ -465,7 +471,8 @@ void mtr_curses_graph(int startstat, int cols)
 	}
 }
 
-void mtr_curses_redraw() 
+
+void mtr_curses_redraw(void)
 {
   int maxx, maxy;
   int startstat;
@@ -488,7 +495,7 @@ void mtr_curses_redraw()
   pwcenter("My traceroute  [v" VERSION "]");
   attroff(A_BOLD);
 
-  mvprintw(1, 0, "%s (%s)", LocalHostname, inet_ntoa(*net_localaddr()));
+  mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());
   printw("(tos=0x%X ", tos);
   printw("psize=%d ", abs(packetsize) );
   printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
@@ -562,7 +569,7 @@ void mtr_curses_redraw()
 }
 
 
-void mtr_curses_open() 
+void mtr_curses_open(void)
 {
   initscr();
   raw();
@@ -572,14 +579,14 @@ void mtr_curses_open()
 }
 
 
-void mtr_curses_close() 
+void mtr_curses_close(void)
 {  
   printw("\n");
   endwin();
 }
 
 
-void mtr_curses_clear() 
+void mtr_curses_clear(void)
 {
   mtr_curses_close();
   mtr_curses_open();

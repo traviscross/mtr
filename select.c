@@ -29,6 +29,7 @@
 #include <math.h>
 #include <errno.h>
 
+#include "mtr.h"
 #include "display.h"
 #include "dns.h"
 #include "net.h"
@@ -43,7 +44,7 @@ static struct timeval intervaltime;
 int display_offset = 0;
 
 
-void select_loop() {
+void select_loop(void) {
   fd_set readfd;
   int anyset = 0;
   int maxfd = 0;
@@ -116,11 +117,13 @@ void select_loop() {
 	  selecttime.tv_usec += 1000000;
 	}
 
-	if ((selecttime.tv_sec > (time_t)dnsinterval) ||
-	    ((selecttime.tv_sec == (time_t)dnsinterval) &&
-	     (selecttime.tv_usec > ((time_t)(dnsinterval * 1000000) % 1000000)))) {
-	  selecttime.tv_sec = (time_t)dnsinterval;
-	  selecttime.tv_usec = (time_t)(dnsinterval * 1000000) % 1000000;
+	if (dns) {
+	  if ((selecttime.tv_sec > (time_t)dnsinterval) ||
+	      ((selecttime.tv_sec == (time_t)dnsinterval) &&
+	       (selecttime.tv_usec > ((time_t)(dnsinterval * 1000000) % 1000000)))) {
+	    selecttime.tv_sec = (time_t)dnsinterval;
+	    selecttime.tv_usec = (time_t)(dnsinterval * 1000000) % 1000000;
+	  }
 	}
 
 	rv = select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);

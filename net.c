@@ -36,10 +36,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <errno.h>
+#include <string.h>
 
+#include "mtr.h"
 #include "net.h"
 #include "display.h"
-
+#include "dns.h"
 
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
@@ -81,8 +83,8 @@ struct IPHeader {
 #endif
 
 struct nethost {
-  uint32 addr;
-  uint32 addrs[MAXPATH];	/* for multi paths byMin */
+  ip_t addr;
+  ip_t addrs[MAXPATH];	/* for multi paths byMin */
   int xmit;
   int returned;
   int sent;
@@ -127,13 +129,40 @@ static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
 
 int    timestamp;
+int    sendsock4;
+int    recvsock4;
+int    sendsock6;
+int    recvsock6;
 int    sendsock;
 int    recvsock;
-struct sockaddr_in sourceaddress;
-struct sockaddr_in remoteaddress;
+
+#ifdef ENABLE_IPV6
+struct sockaddr_storage sourcesockaddr_struct;
+struct sockaddr_storage remotesockaddr_struct;
+struct sockaddr_in6 * ssa6 = (struct sockaddr_in6 *) &sourcesockaddr_struct;
+struct sockaddr_in6 * rsa6 = (struct sockaddr_in6 *) &remotesockaddr_struct;
+#else
+struct sockaddr_in sourcesockaddr_struct;
+struct sockaddr_in remotesockaddr_struct;
+#endif
+
+struct sockaddr * sourcesockaddr = (struct sockaddr *) &sourcesockaddr_struct;
+struct sockaddr * remotesockaddr = (struct sockaddr *) &remotesockaddr_struct;
+struct sockaddr_in * ssa4 = (struct sockaddr_in *) &sourcesockaddr_struct;
+struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
+
+ip_t * sourceaddress;
+ip_t * remoteaddress;
 
 /* XXX How do I code this to be IPV6 compatible??? -- REW */
-struct in_addr localaddr;
+#ifdef ENABLE_IPV6
+char localaddr[INET6_ADDRSTRLEN];
+#else
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+char localaddr[INET_ADDRSTRLEN];
+#endif
 
 static int batch_at = 0;
 static int numhosts = 10;
@@ -143,7 +172,7 @@ extern int maxTTL;		/* last hub to ping byMin*/
 extern int packetsize;		/* packet size used by ping */
 extern int bitpattern;		/* packet bit pattern used by ping */
 extern int tos;			/* type of service set in ping packet*/
-
+extern int af;			/* address family of remote target */
 
 
 /* return the number of microseconds to wait before sending the next
@@ -204,50 +233,77 @@ void net_send_query(int index)
 {
   /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
   char packet[MAXPACKET];
-  struct IPHeader *ip;
+  struct IPHeader *ip = (struct IPHeader *) packet;
   struct ICMPHeader *icmp;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
+  int ttl, iphsize = 0, echotype = 0, salen = 0;
+
+  ttl = index + 1;
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
 
   memset(packet, (unsigned char) abs(bitpattern), abs(packetsize));
 
-  ip = (struct IPHeader *)packet;
-  icmp = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
+  switch ( af ) {
+  case AF_INET:
+    iphsize = sizeof (struct IPHeader);
 
   ip->version = 0x45;
   ip->tos = tos;
   ip->len = BSDfix ? abs(packetsize): htons (abs(packetsize));
   ip->id = 0;
   ip->frag = 0;    /* 1, if want to find mtu size? Min */
-  ip->ttl = index + 1;
+    ip->ttl = ttl;
   ip->protocol = IPPROTO_ICMP;
   ip->check = 0;
 
   /* BSD needs the source address here, Linux & others do not... */
-  ip->saddr = saddr_correction(sourceaddress.sin_addr.s_addr);
-  ip->daddr = remoteaddress.sin_addr.s_addr;
+    addrcpy( (void *) &(ip->saddr), (void *) &(ssa4->sin_addr), AF_INET );
+    addrcpy( (void *) &(ip->daddr), (void *) remoteaddress, AF_INET );
 
-  icmp->type     = ICMP_ECHO;
+    echotype = ICMP_ECHO;
+    salen = sizeof (struct sockaddr_in);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    iphsize = 0;
+    if ( setsockopt( sendsock, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+                     &ttl, sizeof ttl ) ) {
+      perror( "setsockopt IPV6_UNICAST_HOPS" );
+      exit( EXIT_FAILURE);
+    }
+    echotype = ICMP6_ECHO_REQUEST;
+    salen = sizeof (struct sockaddr_storage);
+    break;
+#endif
+  }
+
+  icmp = (struct ICMPHeader *)(packet + iphsize);
+  icmp->type     = echotype;
   icmp->code     = 0;
   icmp->checksum = 0;
   icmp->id       = getpid();
   icmp->sequence = new_sequence(index);
+  icmp->checksum = checksum(icmp, abs(packetsize) - iphsize);
 
-  icmp->checksum = checksum(icmp, abs(packetsize) - sizeof(struct IPHeader));
-  ip->check = checksum(ip, abs(packetsize));
+  switch ( af ) {
+  case AF_INET:
+    ip->check = checksum(packet, abs(packetsize));
+    break;
+  }
 
   gettimeofday(&sequence[icmp->sequence].time, NULL);
+
   rv = sendto(sendsock, packet, abs(packetsize), 0, 
-	      (struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
+	      remotesockaddr, salen);
   if (first && (rv < 0) && (errno == EINVAL)) {
     ip->len = abs (packetsize);
     rv = sendto(sendsock, packet, abs(packetsize), 0, 
-		(struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
+		remotesockaddr, salen);
     if (rv >= 0) {
       fprintf (stderr, "You've got a broken (FreeBSD?) system\n");
       BSDfix = 1;
@@ -259,7 +315,7 @@ void net_send_query(int index)
 
 /*   We got a return on something we sent out.  Record the address and
      time.  */
-void net_process_ping(int seq, uint32 addr, struct timeval now) 
+void net_process_ping(int seq, void * addr, struct timeval now) 
 {
   int index;
   int totusec;
@@ -280,19 +336,25 @@ void net_process_ping(int seq, uint32 addr, struct timeval now)
             (now.tv_usec - sequence[seq].time.tv_usec);
   /* impossible? if( totusec < 0 ) totusec = 0 */;
 
-  if (host[index].addr == 0) {
-    host[index].addr = addr;	// should be out of if as addr can change
-    display_rawhost(index, host[index].addr);
+  if ( addrcmp( (void *) &(host[index].addr),
+		(void *) &unspec_addr, af ) == 0 ) {
+    // should be out of if as addr can change
+    addrcpy( (void *) &(host[index].addr), addr, af );
+    display_rawhost(index, (void *) &(host[index].addr));
 
   /* multi paths by Min */
-    host[index].addrs[0] = addr;
+    addrcpy( (void *) &(host[index].addrs[0]), addr, af );
   } else {
     for( i=0; i<MAXPATH; ) {
-      if( host[index].addrs[i] == addr || host[index].addrs[i] == 0 ) break;
+      if( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addr,
+                   af ) == 0 ||
+          addrcmp( (void *) &(host[index].addrs[i]),
+		   (void *) &unspec_addr, af ) == 0 ) break;
       i++;
     }
-    if( host[index].addrs[i] != addr && i<MAXPATH ) {
-      host[index].addrs[i] = addr;
+    if( addrcmp( (void *) &(host[index].addrs[i]), addr, af ) != 0 && 
+        i<MAXPATH ) {
+      addrcpy( (void *) &(host[index].addrs[i]), addr, af );
     }
   /* end multi paths */
   }
@@ -353,54 +415,108 @@ void net_process_ping(int seq, uint32 addr, struct timeval now)
 /*  We know a packet has come in, because the main select loop has called us,
     now we just need to read it, see if it is for us, and if it is a reply 
     to something we sent, then call net_process_ping()  */
-void net_process_return() 
+void net_process_return(void) 
 {
   char packet[MAXPACKET];
-  struct sockaddr_in fromaddr;
-  int fromaddrsize;
+#ifdef ENABLE_IPV6
+  struct sockaddr_storage fromsockaddr_struct;
+  struct sockaddr_in6 * fsa6 = (struct sockaddr_in6 *) &fromsockaddr_struct;
+#else
+  struct sockaddr_in fromsockaddr_struct;
+#endif
+  struct sockaddr * fromsockaddr = (struct sockaddr *) &fromsockaddr_struct;
+  struct sockaddr_in * fsa4 = (struct sockaddr_in *) &fromsockaddr_struct;
+  int fromsockaddrsize;
   int num;
-  struct ICMPHeader *header;
+  struct ICMPHeader *header = NULL;
   struct timeval now;
+  ip_t * fromaddress = NULL;
+  int echoreplytype = 0, timeexceededtype = 0;
 
   gettimeofday(&now, NULL);
+  switch ( af ) {
+  case AF_INET:
+    fromsockaddrsize = sizeof (struct sockaddr_in);
+    fromaddress = (ip_t *) &(fsa4->sin_addr);
+    echoreplytype = ICMP_ECHOREPLY;
+    timeexceededtype = ICMP_TIME_EXCEEDED;
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    fromsockaddrsize = sizeof (struct sockaddr_storage);
+    fromaddress = (ip_t *) &(fsa6->sin6_addr);
+    echoreplytype = ICMP6_ECHO_REPLY;
+    timeexceededtype = ICMP6_TIME_EXCEEDED;
+    break;
+#endif
+  }
 
-  fromaddrsize = sizeof(fromaddr);
   num = recvfrom(recvsock, packet, MAXPACKET, 0, 
-		 (struct sockaddr *)&fromaddr, &fromaddrsize);
+		 fromsockaddr, &fromsockaddrsize);
 
-  if(num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
-    return;
+  switch ( af ) {
+  case AF_INET:
+    if((size_t) num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
+      return;
+    header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    if(num < sizeof(struct ICMPHeader))
+      return;
 
-  header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
-  if(header->type == ICMP_ECHOREPLY) {
+    header = (struct ICMPHeader *) packet;
+    break;
+#endif
+  }
+  if (header->type == echoreplytype) {
     if(header->id != (uint16)getpid())
       return;
 
-    net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
-  } else if(header->type == ICMP_TIME_EXCEEDED) {
-    if(num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + 
-             sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
-      return;
-    
-    header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader) + 
-				sizeof(struct ICMPHeader) + sizeof(struct IPHeader));
-    if(header->id != (uint16)getpid())
+    net_process_ping (header->sequence, (void *) fromaddress, now);
+  } else if (header->type == timeexceededtype) {
+    switch ( af ) {
+    case AF_INET:
+
+      if ((size_t) num < sizeof(struct IPHeader) + 
+                         sizeof(struct ICMPHeader) + 
+                         sizeof (struct IPHeader) + 
+                         sizeof (struct ICMPHeader))
+        return;
+      header = (struct ICMPHeader *)(packet + sizeof (struct IPHeader) + 
+                                              sizeof (struct ICMPHeader) + 
+                                              sizeof (struct IPHeader));
+    break;
+#ifdef ENABLE_IPV6
+    case AF_INET6:
+      if ( num < sizeof (struct ICMPHeader) + 
+                 sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
+        return;
+      header = (struct ICMPHeader *) ( packet + 
+                                       sizeof (struct ICMPHeader) +
+                                       sizeof (struct ip6_hdr) );
+      break;
+#endif
+    }
+
+    if (header->id != (uint16)getpid())
       return;
 
-    net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
+    net_process_ping(header->sequence, (void *)fromaddress, now);
   }
 }
 
 
-int net_addr(int at) {
-  return ntohl(host[at].addr);
+ip_t *net_addr(int at) 
+{
+  return (ip_t *)&(host[at].addr);
 }
 
 
-int net_addrs(int at, int i) {
-  return ntohl(host[at].addrs[i]);
+ip_t *net_addrs(int at, int i) 
+{
+  return (ip_t *)&(host[at].addrs[i]);
 }
-
 
 
 int net_loss(int at) 
@@ -484,7 +600,7 @@ int net_jinta(int at)
 /* end jitter */
 
 
-int net_max() 
+int net_max(void) 
 {
   int at;
   int max;
@@ -493,9 +609,11 @@ int net_max()
   // replacedByMin
   // for(at = 0; at < MaxHost-2; at++) {
   for(at = 0; at < maxTTL-1; at++) {
-    if(host[at].addr == remoteaddress.sin_addr.s_addr) {
+    if ( addrcmp( (void *) &(host[at].addr),
+                  (void *) remoteaddress, af ) == 0 ) {
       return at + 1;
-    } else if(host[at].addr != 0) {
+    } else if ( addrcmp( (void *) &(host[at].addr),
+			 (void *) &unspec_addr, af ) != 0 ) {
       max = at + 2;
     }
   }
@@ -505,7 +623,7 @@ int net_max()
 
 
 /* add by Min (wonder its named net_min;-)) because of ttl stuff */
-int net_min () 
+int net_min (void) 
 {
   return ( fstTTL - 1 );
 }
@@ -536,13 +654,13 @@ int net_up(int at)
 }
 
 
-struct in_addr *net_localaddr (void)
+char * net_localaddr (void)
 {
-  return &localaddr;
+  return localaddr;
 }
 
 
-void net_end_transit() 
+void net_end_transit(void) 
 {
   int at;
   
@@ -551,7 +669,7 @@ void net_end_transit()
   }
 }
 
-int net_send_batch() 
+int net_send_batch(void) 
 {
   int n_unknown=0, i;
 
@@ -571,7 +689,7 @@ int net_send_batch()
   net_send_query(batch_at);
 
   for (i=fstTTL-1;i<batch_at;i++) {
-    if (host[i].addr == 0)
+    if ( addrcmp( (void *) &(host[i].addr), (void *) &unspec_addr, af ) == 0 )
       n_unknown++;
 
     /* The second condition in the next "if" statement was added in mtr-0.56, 
@@ -579,13 +697,15 @@ int net_send_batch()
 	hosts. Removed in 0.65. 
 	If the line proves neccesary, it should at least NOT trigger that line 
 	when host[i].addr == 0 -- REW */
-    if ((host[i].addr == remoteaddress.sin_addr.s_addr) 
+    if ( ( addrcmp( (void *) &(host[i].addr),
+                    (void *) remoteaddress, af ) == 0 )
 	/* || (host[i].addr == host[batch_at].addr)  */)
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
 
   if (	// success in reaching target
-      (host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
+     ( addrcmp( (void *) &(host[batch_at].addr),
+                (void *) remoteaddress, af ) == 0 ) ||
       // fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?)
       (n_unknown > MAX_UNKNOWN_HOSTS) ||
       // or reach limit 
@@ -600,53 +720,89 @@ int net_send_batch()
 }
 
 
-int net_preopen() 
+int net_preopen(void) 
 {
   int trueopt = 1;
 
-  sendsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-  if (sendsock < 0)
+  sendsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+  if (sendsock4 < 0) 
     return -1;
+#ifdef ENABLE_IPV6
+  sendsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  if (sendsock6 < 0)
+    return -1;
+#endif
 
 #ifdef IP_HDRINCL
   /*  FreeBSD wants this to avoid sending out packets with protocol type RAW
       to the network.  */
-  if (setsockopt(sendsock, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt))) {
+  if (setsockopt(sendsock4, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt))) {
     perror("setsockopt(IP_HDRINCL,1)");
     return -1;
   }
-#endif
+#endif /* IP_HDRINCL */
 
-  recvsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-  if (recvsock < 0)
+  recvsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+  if (recvsock4 < 0)
     return -1;
+#ifdef ENABLE_IPV6
+  recvsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  if (recvsock6 < 0)
+    return -1;
+#endif
 
   return 0;
 }
 
  
-int net_open(int addr) 
+int net_open(struct hostent * host) 
 {
-  struct sockaddr_in name; 
+#ifdef ENABLE_IPV6
+  struct sockaddr_storage name_struct;
+#else
+  struct sockaddr_in name_struct; 
+#endif
+  struct sockaddr * name = (struct sockaddr *) &name_struct;
   int len; 
 
   net_reset();
 
-  remoteaddress.sin_family = AF_INET;
-  remoteaddress.sin_addr.s_addr = addr;
+  remotesockaddr->sa_family = host->h_addrtype;
 
-  len = sizeof (name); 
-  getsockname (recvsock, (struct sockaddr *)&name, &len);
-  localaddr = name.sin_addr;
+  switch ( host->h_addrtype ) {
+  case AF_INET:
+    sendsock = sendsock4;
+    recvsock = recvsock4;
+    addrcpy( (void *) &(rsa4->sin_addr), host->h_addr, AF_INET );
+    sourceaddress = (ip_t *) &(ssa4->sin_addr);
+    remoteaddress = (ip_t *) &(rsa4->sin_addr);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    sendsock = sendsock6;
+    recvsock = recvsock6;
+    addrcpy( (void *) &(rsa6->sin6_addr), host->h_addr, AF_INET6 );
+    sourceaddress = (ip_t *) &(ssa6->sin6_addr);
+    remoteaddress = (ip_t *) &(rsa6->sin6_addr);
+    break;
+#endif
+  default:
+    fprintf( stderr, "net_open bad address type\n" );
+    exit( EXIT_FAILURE );
+  }
+
+  len = sizeof name_struct; 
+  getsockname (recvsock, name, &len);
+  sockaddrtop( name, localaddr, sizeof localaddr );
 #if 0
-  printf ("got localaddr: %x\n", *(int *)&localaddr); 
+  printf ("got localaddr: %s\n", localaddr); 
 #endif
 
   return 0;
 }
 
 
-void net_reopen(int addr) 
+void net_reopen(struct hostent * addr) 
 {
   int at;
 
@@ -654,15 +810,28 @@ void net_reopen(int addr)
     memset(&host[at], 0, sizeof(host[at]));
   }
 
-  remoteaddress.sin_family = AF_INET;
-  remoteaddress.sin_addr.s_addr = addr;
+  remotesockaddr->sa_family = addr->h_addrtype;
+
+  switch ( addr->h_addrtype ) {
+  case AF_INET:
+    addrcpy( (void *) remoteaddress, addr->h_addr, AF_INET );
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    addrcpy( (void *) &(rsa6->sin6_addr), addr->h_addr, AF_INET6 );
+    break;
+#endif
+  default:
+    fprintf( stderr, "net_reopen bad address type\n" );
+    exit( EXIT_FAILURE );
+  }
 
   net_reset ();
   net_send_batch();
 }
 
 
-void net_reset() 
+void net_reset(void) 
 {
   int at;
   int i;
@@ -707,21 +876,31 @@ int net_set_interfaceaddress (char *InterfaceAddress)
 
   if (!InterfaceAddress) return 0; 
 
-  sourceaddress.sin_family = AF_INET;
-  sourceaddress.sin_port = 0;
-  sourceaddress.sin_addr.s_addr = 0;
+  sourcesockaddr->sa_family = af;
+  switch ( af ) {
+  case AF_INET:
+    ssa4->sin_port = 0;
+    ssa4->sin_addr.s_addr = 0;
 
   if(sscanf(InterfaceAddress, "%u.%u.%u.%u%c", &i1, &i2, &i3, &i4, &dummy) != 4) {
     printf("mtr: bad interface address: %s\n", InterfaceAddress);
     exit(1);
   }
 
-  ((unsigned char*)&sourceaddress.sin_addr)[0] = i1;
-  ((unsigned char*)&sourceaddress.sin_addr)[1] = i2;
-  ((unsigned char*)&sourceaddress.sin_addr)[2] = i3;
-  ((unsigned char*)&sourceaddress.sin_addr)[3] = i4;
+    ((unsigned char*)&ssa4->sin_addr)[0] = i1;
+    ((unsigned char*)&ssa4->sin_addr)[1] = i2;
+    ((unsigned char*)&ssa4->sin_addr)[2] = i3;
+    ((unsigned char*)&ssa4->sin_addr)[3] = i4;
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    ssa6->sin6_port = 0;
+    inet_pton( af, InterfaceAddress, &(ssa6->sin6_addr) );
+    break;
+#endif
+  }
 
-  if(bind(sendsock, (struct sockaddr*)&sourceaddress, sizeof(sourceaddress)) == -1) {
+  if (bind(sendsock, sourcesockaddr, sizeof sourcesockaddr_struct) == -1) {
     perror("mtr: failed to bind to interface");
     exit(1);
   }
@@ -730,26 +909,26 @@ int net_set_interfaceaddress (char *InterfaceAddress)
 
 
 
-void net_close() 
+void net_close(void)
 {
   close(sendsock);
   close(recvsock);
 }
 
 
-int net_waitfd() 
+int net_waitfd(void)
 {
   return recvsock;
 }
 
 
-int* net_saved_pings(int at) 
+int* net_saved_pings(int at)
 {
   return host[at].saved;
 }
 
 
-void net_save_increment() 
+void net_save_increment(void)
 {
   int at;
   for (at = 0; at < MaxHost; at++) {
@@ -760,7 +939,7 @@ void net_save_increment()
 }
 
 
-void net_save_xmit(int at) 
+void net_save_xmit(int at)
 {
   if (host[at].saved[SAVED_PINGS-1] != -2) 
     net_save_increment();
@@ -768,7 +947,7 @@ void net_save_xmit(int at)
 }
 
 
-void net_save_return(int at, int seq, int ms) 
+void net_save_return(int at, int seq, int ms)
 {
   int idx;
   idx = seq - host[at].saved_seq_offset;
@@ -776,4 +955,62 @@ void net_save_return(int at, int seq, int ms)
     return;
   }
   host[at].saved[idx] = ms;
+}
+
+/* Similar to inet_ntop but uses a sockaddr as it's argument. */
+void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
+  struct sockaddr_in *  sa4;
+#ifdef ENABLE_IPV6
+  struct sockaddr_in6 * sa6;
+#endif
+
+  switch ( saddr->sa_family ) {
+  case AF_INET:
+    sa4 = (struct sockaddr_in *) saddr;
+    strncpy( strptr, inet_ntoa( (struct in_addr) sa4->sin_addr ), len );
+    return;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    sa6 = (struct sockaddr_in6 *) saddr;
+    inet_ntop( sa6->sin6_family, &(sa6->sin6_addr), strptr, len );
+    return;
+#endif
+  default:
+    fprintf( stderr, "sockaddrtop unknown address type\n" );
+    strptr[0] = '\0';
+    return;
+  }
+}
+
+/* Address comparison. */
+int addrcmp( char * a, char * b, int af ) {
+  int rc = -1;
+
+  switch ( af ) {
+  case AF_INET:
+    rc = memcmp( a, b, sizeof (struct in_addr) );
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    rc = memcmp( a, b, sizeof (struct in6_addr) );
+    break;
+#endif
+  }
+
+  return rc;
+}
+
+/* Address copy. */
+void addrcpy( char * a, char * b, int af ) {
+
+  switch ( af ) {
+  case AF_INET:
+    memcpy( a, b, sizeof (struct in_addr) );
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    memcpy( a, b, sizeof (struct in6_addr) );
+    break;
+#endif
+  }
 }
