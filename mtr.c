@@ -96,6 +96,8 @@ void parse_arg(int argc, char **argv) {
 	fprintf (stderr, "mtr: wait time must be positive\n");
 	exit (1);
       }
+      if (getuid() != 0 && WaitTime < 1.0)
+       WaitTime = 1.0;
       break;
     }
   }
@@ -129,10 +131,6 @@ void parse_mtr_options (char *string)
   parse_arg (argc, argv);
   optind = 0;
 }
-
-
-
-
 
 
 int main(int argc, char **argv) {

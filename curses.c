@@ -238,11 +238,10 @@ void mtr_curses_redraw() {
   move(0, 0);
   pwcenter("Matt's traceroute  [v" VERSION "]");
   printw("\n");
-  printw(LocalHostname);
-  move(1, maxx - 24);
-  time(&t);
-  printw(ctime(&t));
   attroff(A_BOLD);
+  printw(LocalHostname);
+  time(&t);
+  mvprintw(1, maxx-25, ctime(&t));
 
   printw("Keys:  ");
   attron(A_BOLD);  printw("D");  attroff(A_BOLD);

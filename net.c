@@ -326,7 +326,7 @@ int net_max() {
   int max;
 
   max = 0;
-  for(at = 0; at < MaxHost; at++) {
+  for(at = 0; at < MaxHost-2; at++) {
     if(host[at].addr == remoteaddress.sin_addr.s_addr) {
       return at + 1;
     } else if(host[at].addr != 0) {
@@ -374,7 +374,8 @@ int net_send_batch() {
   }
 
   if ((host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
-      (n_unknown > MAX_UNKNOWN_HOSTS)) {
+      (n_unknown > MAX_UNKNOWN_HOSTS) ||
+      (batch_at >= MaxHost-2)) {
     numhosts = batch_at+1;
     batch_at = 0;
     return 1;

@@ -208,10 +208,25 @@ typedef struct {
 #define getheader_pr(x) ((x->databyte_b >> 6) & 1)
 #define getheader_ra(x) (x->databyte_b >> 7)
 
+#if 0
+
+/* The execution order inside an expression is undefined! That means that
+   this might work, but then again, it might not... Sun Lint pointed this 
+   one out...*/
+
 #define sucknetword(x) (((word)*(x) << 8) | (((x)+= 2)[-1]))
 #define sucknetshort(x) (((short)*(x) << 8) | (((x)+= 2)[-1]))
 #define sucknetdword(x) (((dword)*(x) << 24) | ((x)[1] << 16) | ((x)[2] << 8) | (((x)+= 4)[-1]))
 #define sucknetlong(x) (((long)*(x) << 24) | ((x)[1] << 16) | ((x)[2] << 8) | (((x)+= 4)[-1]))
+#else
+
+#define sucknetword(x)  ((word)  (((x)[0] <<  8) | ((x)[1] <<  0))),(x)+=2
+#define sucknetshort(x) ((short) (((x)[0] <<  8) | ((x)[1] <<  0))),(x)+=2
+#define sucknetdword(x) ((dword) (((x)[0] << 24) | ((x)[1] << 16) | \
+                                  ((x)[2] <<  8) | ((x)[3] <<  0))),(x)+=4
+#define sucknetlong(x)  ((long)  (((x)[0] << 24) | ((x)[1] << 16) | \
+                                  ((x)[2] <<  8) | ((x)[3] <<  0))),(x)+=4
+#endif
 
 enum {
    STATE_FINISHED,
@@ -736,7 +751,7 @@ void restell(char *s){
 void dorequest(char *s,int type,word id){
    packetheader *hp;
    int r,i;
-   byte buf[MaxPacketsize+1];
+   int buf[(MaxPacketsize/4)+1];
    r = res_mkquery(QUERY,s,C_IN,type,NULL,0,NULL,buf,MaxPacketsize);
    if (r == -1){
       restell("Resolver error: Query too large.");

@@ -3,7 +3,8 @@
 
   - Allow mtr to log the return packets, for later analysis.
     Done: 0.25 . Todo: allow the userinterface(s) to work while
-    still logging to a file. 
+    still logging to a file. Write a "logfile displaying" mode to
+    mtr.
 
   - Request timestamping at the remote site.
        Andreas Fasbender has an algorithm that will allow us to 
@@ -31,11 +32,14 @@
 - Bugs to fix?
 
   - Do something useful if host couldn't be resolved. 
+       -- Done. 
 
   - Revert to curses mode even if DISPLAY is set, but a problem
     prevents us from running in X11 mode.
        -->  The problem is that gtk_init simply calls exit for us if
             it finds a problem. Tricky! Suggestions welcome. 
+       --> Call "gtk_check_init" when available. (i.e. new enough
+           (1.2?) GTK version).
 
 - Nice to have:
 
@@ -43,9 +47,6 @@
 
   - Show state ("looking up host") while doing the DNS lookup for a new
     host.
-
-  - Check why it still tries to go for X11 display if DISPLAY is unset.
-    (I saw code to handle this)
 
   - Read environment variable "MTR_DEFAULTS" as a commandline before
     parsing the commandline.  -- DONE. (ok it's MTR_OPTIONS.)
@@ -58,5 +59,9 @@
 
     At the moment (march 1999) autoconf 2.13 is still too new to require 
     everyone to upgrade. About a year from now we can put this in....
+
+  - Allow a toggle between hostname/IP number display. (for example a 
+    click on the hostname could revert to ip number display in gtk version.
+    curses: "n" key toggles hostnames/ipnumbers?
 
 

@@ -165,8 +165,10 @@ void Toolbar_fill(GtkWidget *Toolbar) {
                     GTK_SIGNAL_FUNC(Pause_clicked), NULL);
   gtk_widget_show(Pause_Button);
 
+  /* allow root only to set zero delay */
   Adjustment = (GtkAdjustment *)gtk_adjustment_new(WaitTime,
-                                                  0.00, 999.99,
+                                                  getuid()==0 ? 0.00:1.00,
+                                                 999.99,
                                                   1.0, 10.0,
                                                   0.0);
   Button = gtk_spin_button_new(Adjustment, 0.5, 2);
