@@ -1,5 +1,9 @@
 WHAT'S NEW?
 
+  v0.27
+	Fixed bug that showed up on Solaris/x86.
+	Gimp mainloop now runs as it's supposed to.
+
   v0.26
         Added "-n" flag for numeric output. 
         fixed IP numbers displaying backwards.

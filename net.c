@@ -136,7 +136,7 @@ void net_send_ping(int index) {
 
   ip->version = 0x45;
   ip->tos = 0;
-  ip->len = packetsize;
+  ip->len = htons (packetsize);
   ip->id = 0;
   ip->frag = 0;
   ip->ttl = 127;
@@ -178,7 +178,7 @@ void net_send_query(int hops) {
 
   ip->version = 0x45;
   ip->tos = 0;
-  ip->len = packetsize;
+  ip->len = htons (packetsize);
   ip->id = 0;
   ip->frag = 0;
   ip->ttl = hops;

@@ -36,6 +36,8 @@ extern char *Hostname;
 extern float WaitTime;
 extern float DeltaTime;
 
+static int tag;
+
 void gtk_do_init(int *argc, char ***argv) {
   static int done = 0;
 
@@ -305,6 +307,8 @@ int gtk_keyaction() {
 gint gtk_ping(gpointer data) {
   gtk_redraw();
   net_send_batch();
+  gtk_timeout_remove (tag);
+  tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
   return TRUE;
 }
 
@@ -321,7 +325,7 @@ void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) {
 
 void gtk_loop() {
   DeltaTime = WaitTime/10;
-  gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
+  tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
   gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
   gdk_input_add(dns_waitfd(), GDK_INPUT_READ, gtk_dns_data, NULL);
 
