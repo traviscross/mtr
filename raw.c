@@ -51,7 +51,7 @@ void raw_rawping (int host, int msec)
 {
   char *name;
 
-  if (!havename[host]) {
+  if (dns && !havename[host]) {
     name = dns_lookup2(net_addr(host));
     if (name) {
       havename[host]++;

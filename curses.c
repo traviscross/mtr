@@ -102,7 +102,8 @@ int fld_index[] = {
 };
 
 
-void pwcenter(char *str) {
+void pwcenter(char *str) 
+{
   int maxx, maxy;
   int cx;
 
@@ -113,7 +114,8 @@ void pwcenter(char *str) {
   printw(str);
 }
 
-int mtr_curses_keyaction() {
+int mtr_curses_keyaction() 
+{
   int c = getch();
   int i=0;
   char buf[MAXFLD];
@@ -295,7 +297,8 @@ int mtr_curses_keyaction() {
   return ActionNone;          /* ignore unknown input */
 }
 
-void mtr_curses_hosts(int startstat) {
+void mtr_curses_hosts(int startstat) 
+{
   int max;
   int at;
   int addr, addrs;
@@ -389,7 +392,8 @@ static double factors[] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
 static int scale[8];
 static int low_ms, high_ms;
 
-void mtr_gen_scale(void) {
+void mtr_gen_scale(void) 
+{
 	int *saved, i, max, at;
 	int range;
 
@@ -420,7 +424,8 @@ void mtr_gen_scale(void) {
 
 static const char* block_map = ".123abc>";
 
-void mtr_print_scaled(int ms) {
+void mtr_print_scaled(int ms) 
+{
 	int i;
 
 	for (i = 0; i < 8; i++) {
@@ -432,7 +437,8 @@ void mtr_print_scaled(int ms) {
 	printw(">");
 }
 
-void mtr_fill_graph(int at, int cols) {
+void mtr_fill_graph(int at, int cols) 
+{
 	int* saved;
 	int i;
 
@@ -458,7 +464,8 @@ void mtr_fill_graph(int at, int cols) {
 	}
 }
 
-void mtr_curses_graph(int startstat, int cols) {
+void mtr_curses_graph(int startstat, int cols) 
+{
 	int max, at, addr, y, x;
 	char* name;
 
@@ -492,7 +499,8 @@ void mtr_curses_graph(int startstat, int cols) {
 	}
 }
 
-void mtr_curses_redraw() {
+void mtr_curses_redraw() 
+{
   int maxx, maxy;
   int startstat;
   int rowstat;
@@ -513,7 +521,7 @@ void mtr_curses_redraw() {
   pwcenter("My traceroute  [v" VERSION "]");
   attroff(A_BOLD);
 
-  mvprintw(1,0, "%s", LocalHostname);
+  mvprintw(1, 0, "%s", LocalHostname);
   printw("(tos=0x%X ", tos);
   printw("psize=%d ", abs(packetsize) );
   printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
@@ -597,7 +605,8 @@ void mtr_curses_redraw() {
   refresh();
 }
 
-void mtr_curses_open() {
+void mtr_curses_open() 
+{
   initscr();
   raw();
   noecho(); 
@@ -605,12 +614,14 @@ void mtr_curses_open() {
   mtr_curses_redraw();
 }
 
-void mtr_curses_close() {  
+void mtr_curses_close() 
+{  
   printw("\n");
   endwin();
 }
 
-void mtr_curses_clear() {
+void mtr_curses_clear() 
+{
   mtr_curses_close();
   mtr_curses_open();
 }

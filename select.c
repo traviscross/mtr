@@ -70,9 +70,12 @@ void select_loop() {
       maxfd = 1;
     }
 
-    dnsfd = dns_waitfd();
-    FD_SET(dnsfd, &readfd);
-    if(dnsfd >= maxfd) maxfd = dnsfd + 1;
+    if (dns) {
+      dnsfd = dns_waitfd();
+      FD_SET(dnsfd, &readfd);
+      if(dnsfd >= maxfd) maxfd = dnsfd + 1;
+    } else
+      dnsfd = 0;
 
     netfd = net_waitfd();
     FD_SET(netfd, &readfd);
@@ -136,12 +139,14 @@ void select_loop() {
       anyset = 1;
     }
 
-    /* Handle any pending resolver events */
-    dnsinterval = WaitTime;
-    dns_events(&dnsinterval);
+    if (dns) {
+      /* Handle any pending resolver events */
+      dnsinterval = WaitTime;
+      dns_events(&dnsinterval);
+    }
 
     /*  Have we finished a nameservice lookup?  */
-    if(FD_ISSET(dnsfd, &readfd)) {
+    if(dns && FD_ISSET(dnsfd, &readfd)) {
       dns_ack();
       anyset = 1;
     }

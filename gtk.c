@@ -56,7 +56,8 @@ void gtk_add_ping_timeout (void)
 }
 
 
-void gtk_do_init(int *argc, char ***argv) {
+void gtk_do_init(int *argc, char ***argv) 
+{
   static int done = 0;
 
   if(!done) {
@@ -66,7 +67,8 @@ void gtk_do_init(int *argc, char ***argv) {
   }
 }
 
-int gtk_detect(int *argc, char ***argv) {
+int gtk_detect(int *argc, char ***argv) 
+{
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
        BEFORE the user has had a chance to tell us not to use the 
@@ -77,13 +79,15 @@ int gtk_detect(int *argc, char ***argv) {
   }
 }
 
-gint Window_destroy(GtkWidget *Window, gpointer data) {
+gint Window_destroy(GtkWidget *Window, gpointer data) 
+{
   gtk_main_quit();
 
   return FALSE;
 }
 
-gint Restart_clicked(GtkWidget *Button, gpointer data) {
+gint Restart_clicked(GtkWidget *Button, gpointer data) 
+{
   net_reset();
   gtk_redraw();
 
@@ -91,7 +95,8 @@ gint Restart_clicked(GtkWidget *Button, gpointer data) {
 }
 
 
-gint Pause_clicked(GtkWidget *Button, gpointer data) {
+gint Pause_clicked(GtkWidget *Button, gpointer data) 
+{
   static int paused = 0;
 
   if (paused) {
@@ -114,7 +119,8 @@ gint Pause_clicked(GtkWidget *Button, gpointer data) {
  * What's the problem with this? (-> "I don't think so)  -- REW
  */
 
-gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button) {
+gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button) 
+{
   WaitTime = gtk_spin_button_get_value_as_float(GTK_SPIN_BUTTON(Button));
   gtk_timeout_remove (tag);
   gtk_add_ping_timeout ();
@@ -123,7 +129,8 @@ gint WaitTime_changed(GtkAdjustment *Adj, GtkWidget *Button) {
   return FALSE;
 }
 
-gint Host_activate(GtkWidget *Entry, gpointer data) {
+gint Host_activate(GtkWidget *Entry, gpointer data) 
+{
   int addr;
 
   addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(Entry)));
@@ -140,13 +147,15 @@ gint Host_activate(GtkWidget *Entry, gpointer data) {
   return FALSE;
 }
 
-GdkPixmap *gtk_load_pixmap(char **pixmap) {
+GdkPixmap *gtk_load_pixmap(char **pixmap) 
+{
   return gdk_pixmap_colormap_create_from_xpm_d(NULL, 
 					       gdk_colormap_get_system(), 
 					       NULL, NULL, pixmap);
 }
 
-void Toolbar_fill(GtkWidget *Toolbar) {
+void Toolbar_fill(GtkWidget *Toolbar) 
+{
   GtkWidget *Button;
   GtkWidget *Label;
   GtkWidget *Entry;
@@ -203,7 +212,8 @@ int Report_Positions[] = { 10, 200, 240, 280, 320, 360, 400, 440, 480, 0 };
 GtkWidget *Report;
 GtkWidget *ReportBody;
 
-GtkWidget *GetRow(int index) {
+GtkWidget *GetRow(int index) 
+{
   int addr;
   char *name;
   GtkWidget *Row, *Label;
@@ -228,7 +238,8 @@ GtkWidget *GetRow(int index) {
   return Row;
 }
 
-GtkWidget *Scrollarea_create() {
+GtkWidget *Scrollarea_create() 
+{
   GtkWidget *List;
   GtkWidget *scroll;
   int count;
@@ -254,7 +265,8 @@ GtkWidget *Scrollarea_create() {
   return scroll;
 }
 
-void gtk_add_row(GtkWidget *List) {
+void gtk_add_row(GtkWidget *List) 
+{
   int at;
   GtkWidget *Row, *Label;
 
@@ -280,14 +292,16 @@ void gtk_set_field(GtkCList *List, int row, int ix, char *str) {
 
 //void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
 // changed int to dobule byMin
-void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num) {
+void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num) 
+{
   char str[32];
 
   sprintf(str, format, num);
   gtk_set_field(List, row, ix, str);
 }
 
-void gtk_update_row(GtkCList *List, int row) {
+void gtk_update_row(GtkCList *List, int row) 
+{
   int addr;
   char str[256], *name;
   GdkColor color;
@@ -331,7 +345,8 @@ void gtk_update_row(GtkCList *List, int row) {
   
 }
 
-void gtk_redraw() {
+void gtk_redraw() 
+{
   int at  = net_min();	// changed from 0 to net_min for TTL stuff byMin
   int max = net_max();
 
@@ -353,7 +368,8 @@ void gtk_redraw() {
   gtk_clist_thaw(GTK_CLIST(ReportBody));
 }
 
-void Window_fill(GtkWidget *Window) {
+void Window_fill(GtkWidget *Window) 
+{
   GtkWidget *VBox;
   GtkWidget *Toolbar;
   GtkWidget *List;
@@ -377,7 +393,8 @@ void Window_fill(GtkWidget *Window) {
   gtk_widget_show(VBox);
 }
 
-void gtk_open() {
+void gtk_open() 
+{
   GtkWidget *Window;
   GdkPixmap *icon;
 
@@ -406,14 +423,17 @@ void gtk_open() {
   gdk_window_set_icon_name(Window->window, "mtr");
 }
 
-void gtk_close() {
+void gtk_close() 
+{
 }
 
-int gtk_keyaction() {
+int gtk_keyaction() 
+{
   return 0;
 }
 
-gint gtk_ping(gpointer data) {
+gint gtk_ping(gpointer data) 
+{
   gtk_redraw();
   net_send_batch();
   gtk_timeout_remove (tag);
@@ -421,18 +441,21 @@ gint gtk_ping(gpointer data) {
   return TRUE;
 }
 
-void gtk_net_data(gpointer data, gint fd, GdkInputCondition cond) {
+void gtk_net_data(gpointer data, gint fd, GdkInputCondition cond) 
+{
   net_process_return();
 }
 
-void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) {
+void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) 
+{
   dns_ack();
 
   gtk_redraw();
 }
 
 
-void gtk_loop() {
+void gtk_loop() 
+{
   gtk_add_ping_timeout ();
   gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
   gdk_input_add(dns_waitfd(), GDK_INPUT_READ, gtk_dns_data, NULL);
