@@ -1,5 +1,16 @@
 WHAT'S NEW?
 
+  v0.26
+        Added "-n" flag for numeric output. 
+        fixed IP numbers displaying backwards.
+        GTK mainloop now runs at 10 packets per second. 
+          - That's too much if there are only 3 hosts
+          - that's too little if there are 20 hosts.
+        -> Someone tell me how to change the "ping-timeout" 
+           callback time in gtk. Can't find it in the docs.
+        The default for "hostname" is now "localhost" so that
+        you can start mtr without any arguments and later 
+        fill in the host you want to trace to. 
 
   v0.25
         Included two "raw" formats. One for separating GUI from

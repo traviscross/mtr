@@ -2,6 +2,8 @@
 - Stuff to implement:
 
   - Allow mtr to log the return packets, for later analysis.
+    Done: 0.25 . Todo: allow the userinterface(s) to work while
+    still logging to a file. 
 
   - Request timestamping at the remote site.
        Andreas Fasbender has an algorithm that will allow us to 

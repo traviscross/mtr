@@ -32,6 +32,9 @@ mtr \- a network diagnostic tool
 .B \-\-raw\c
 ]
 [\c
+.B \-\-no-dns\c
+]
+[\c
 .B \-\-gtk\c
 ]
 [\c
@@ -122,6 +125,16 @@ Use this option to force
 .B mtr 
 to use the curses based terminal
 interface (if available).
+
+.TP
+.B \-n
+.TP
+.B \-\-no-dns
+.br
+Use this option to force 
+.B mtr 
+to display numeric IP numbers and not try to resolve the
+host names. 
 
 .TP
 .B \-g

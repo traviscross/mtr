@@ -1,6 +1,7 @@
 /*
     mtr  --  a network diagnostic tool
     Copyright (C) 1997,1998  Matt Kimball
+    Changes/additions Copyright (C) 1998 R.E.Wolff@BitWizard.nl
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
 */
 
 #include <config.h>
+#include <sys/time.h>
 
 #ifndef NO_GTK
 #include <stdlib.h>
@@ -32,6 +34,7 @@
 
 extern char *Hostname;
 extern float WaitTime;
+extern float DeltaTime;
 
 void gtk_do_init(int *argc, char ***argv) {
   static int done = 0;
@@ -127,9 +130,9 @@ GtkWidget *GetRow(int index) {
   if(addr != 0) {
     name = dns_lookup(addr);
     if(!name) {
-      sprintf(str, "%d.%d.%d.%d", (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-	      (addr >> 8) & 0xff, addr & 0xff);
-      name = str;
+      /* Actually this is not neccesary: 
+	 dns_lookup always returns a printable string */
+      name = strlongip (addr);
     }
   }
 
@@ -245,7 +248,7 @@ void Window_fill(GtkWidget *Window) {
   GtkWidget *Toolbar;
   GtkWidget *List;
 
-  gtk_window_set_title(GTK_WINDOW(Window), "Matt's traceroute  [v" VERSION "]");
+  gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
   gtk_widget_set_usize(Window, 540, 400); 
   gtk_container_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);
@@ -302,7 +305,6 @@ int gtk_keyaction() {
 gint gtk_ping(gpointer data) {
   gtk_redraw();
   net_send_batch();
-  
   return TRUE;
 }
 
@@ -316,8 +318,10 @@ void gtk_dns_data(gpointer data, gint fd, GdkInputCondition cond) {
   gtk_redraw();
 }
 
+
 void gtk_loop() {
-  gtk_timeout_add((int)(1000.0 * WaitTime), gtk_ping, NULL);
+  DeltaTime = WaitTime/10;
+  gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
   gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
   gdk_input_add(dns_waitfd(), GDK_INPUT_READ, gtk_dns_data, NULL);
 

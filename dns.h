@@ -26,3 +26,4 @@ void dns_events(double *sinterval);
 char *dns_lookup(int address);
 char *dns_lookup2(int address);
 int dns_forward(char *name);
+char *strlongip (int address);

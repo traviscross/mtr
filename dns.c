@@ -51,6 +51,9 @@ extern char *sys_errlist[];
 /*  Hmm, it seems Irix requires this  */
 extern int errno;
 
+/* Defined in mtr.c */
+extern int dns;
+
 /* Defines */
 
 #undef Debug
@@ -387,7 +390,7 @@ void clearset(fd_set *set){
 
 char *strlongip(ip_t ip){
    struct in_addr a;
-   a.s_addr = ip;
+   a.s_addr = htonl(ip);
    return inet_ntoa(a);
 }
 
@@ -1174,6 +1177,7 @@ char *dns_lookup2(ip_t ip){
 char *dns_lookup(ip_t ip){
   char *t;
 
+  if (!dns) return strlongip (ip);
   t = dns_lookup2 (ip);
   return t?t:strlongip(ip);
 }

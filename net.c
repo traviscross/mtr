@@ -29,8 +29,13 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "net.h"
+
+
+extern float WaitTime, DeltaTime;
 
 #define MaxTransit 4
 
@@ -341,10 +346,6 @@ void net_end_transit() {
 }
 
 
-extern float WaitTime;
-extern struct timeval intervaltime;
-#include <stdio.h>
-#include <math.h>
 
 int net_send_batch() {
   static int n_unknown = 10;
@@ -359,10 +360,7 @@ int net_send_batch() {
   
   if ((host[at].addr == remoteaddress.sin_addr.s_addr) ||
       (n_unknown == 0)) {
-    float wt = WaitTime / (float) at;
-
-    intervaltime.tv_sec = (int)(wt);
-    intervaltime.tv_usec = 1000000.0 * (wt - floor(wt));
+    DeltaTime = WaitTime / (float) (at+1);
     at = 0;
     n_unknown = 10;
     return 1;
@@ -377,7 +375,7 @@ int net_preopen() {
   int trueopt = 1;
 
   sendsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-  if(sendsock == -1)
+  if(sendsock < 0)
     return -1;
 
 #ifdef IP_HDRINCL
@@ -391,8 +389,8 @@ int net_preopen() {
 #endif
 
   recvsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-  if(recvsock == -1)
-    return -1;  
+  if(recvsock < 0)
+    return -1;
 
   return 0;
 }
@@ -416,6 +414,7 @@ void net_reopen(int addr) {
   remoteaddress.sin_family = AF_INET;
   remoteaddress.sin_addr.s_addr = addr;
 
+  net_reset ();
   net_send_batch();
 }
 

@@ -32,9 +32,10 @@
 extern int Interactive;
 extern int MaxPing;
 extern float WaitTime;
+float DeltaTime;
 double dnsinterval;
 
-struct timeval intervaltime;
+static struct timeval intervaltime;
 
 void select_loop() {
   fd_set readfd;
@@ -48,11 +49,12 @@ void select_loop() {
   NumPing = 0;
   anyset = 0;
   gettimeofday(&lasttime, NULL);
-  wt = WaitTime/10;
-  intervaltime.tv_sec = (int)wt;
-  intervaltime.tv_usec = 1000000.0 * (wt - floor(wt));
+  DeltaTime = WaitTime/10;
 
   while(1) {
+    intervaltime.tv_sec = DeltaTime;
+    intervaltime.tv_usec = 1000000 *( DeltaTime - floor (DeltaTime));
+
     FD_ZERO(&readfd);
 
     maxfd = 0;
