@@ -123,7 +123,7 @@ void parse_arg(int argc, char **argv) {
     }
   }
 
-  if(DisplayMode == DisplayReport)
+  if ((DisplayMode == DisplayReport) || (DisplayMode == DisplayRaw))
     Interactive = 0;
 
   if(optind > argc - 1)
