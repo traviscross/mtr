@@ -100,7 +100,7 @@ extern struct fields data_fields[MAXFLD];
 
 
 /* keys: the value in the array is the index number in data_fields[] */
-extern char fld_index[];
+extern int fld_index[];
 extern unsigned char fld_active[];
 extern char available_options[];
 

@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.66 Through the Debian bugtracking system a bug report and
+        fix was sent my way, that deals with stupid optmization 
+        trying to save some 768 bytes of memory, sacrificing "it 
+        works" on a different architecture... (default char signedness)
   v0.65 Dancer Vesperman noted that mtr no longer traces past
         a section of non-responding hosts. Apparently I added
         a line in net.c that didn't make sense in mtr-0.56. I 

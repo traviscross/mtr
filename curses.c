@@ -90,7 +90,7 @@ int mtr_curses_keyaction()
 {
   int c = getch();
   int i=0;
-  char buf[MAXFLD];
+  char buf[MAXFLD+1];
 
   if(c == 'q')
     return ActionQuit;

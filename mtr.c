@@ -73,7 +73,7 @@ int   maxTTL = 30;              /* inline with traceroute */
 
 /* default display field(defined by key in net.h) and order */
 unsigned char fld_active[2*MAXFLD] = "LS NABWV";
-char          fld_index[256];
+int           fld_index[256];
 char          available_options[MAXFLD];
 
 
