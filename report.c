@@ -28,6 +28,8 @@
 #include "report.h"
 #include "net.h"
 
+extern int dns;
+
 void report_open() {
   printf("%-40s LOSS  RCVD  SENT BEST   AVG  WORST\n", "HOST");
   fflush(stdout);
@@ -49,9 +51,9 @@ void report_close() {
       sprintf(name, "???");
     } else {
       haddr = htonl(addr);
-      host = gethostbyaddr((char *)&haddr, sizeof(int), AF_INET);
+      host = dns?gethostbyaddr((char *)&haddr, sizeof(int), AF_INET):NULL;
 
-      if(host != NULL) {
+      if (host != NULL) {
 	 strncpy(name, host->h_name, 80);
 	 name[80] = 0;
       } else {
