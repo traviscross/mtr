@@ -3,7 +3,7 @@ SUBDIRS = img
 sbin_PROGRAMS = mtr
 man_MANS = mtr.8
 install-exec-am: 
-	chmod u+s $(sbindir)/mtr
+	chmod u+s $(DESTDIR)$(sbindir)/mtr
 
 mtr_SOURCES = mtr.c \
               net.c net.h \

@@ -301,7 +301,7 @@ void gtk_update_row(GtkCList *List, int row) {
   if (net_up(row)) {
     gdk_color_black(cmap, &color);
   } else {
-    color.red = 0xffffff;
+    color.red = 0xffff;
     color.green = 0;
     color.blue = 0;
   }

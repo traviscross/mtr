@@ -22,6 +22,7 @@
 #ifndef NO_CURSES
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
@@ -188,7 +189,6 @@ void mtr_print_scaled(int ms) {
 void mtr_fill_graph(int at, int cols) {
 	int* saved;
 	int i;
-	int val;
 
 	saved = net_saved_pings(at);
 	for (i = SAVED_PINGS-cols; i < SAVED_PINGS; i++) {

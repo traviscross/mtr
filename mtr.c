@@ -17,6 +17,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <sys/types.h>
 #include <config.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -24,6 +25,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <sys/socket.h> 
+#include <unistd.h>
 
 #include "mtr-curses.h"
 #include "getopt.h"
@@ -139,7 +141,6 @@ void parse_mtr_options (char *string)
 {
   int argc;
   char *argv[128], *p;
-  int i;
 
   if (!string) return;
 
@@ -212,29 +213,28 @@ int main(int argc, char **argv) {
 
 
   if(InterfaceAddress) { /* Mostly borrowed from ping(1) code */
-    struct sockaddr_in source;
     int i1, i2, i3, i4;
     char dummy;
-    extern int sendsock; /* from net.c:115 */
+    extern int sendsock; /* from net.c:118 */
+    extern struct sockaddr_in sourceaddress; /* from net.c:120 */
 
-    bzero(&source, sizeof(source)); /* -- Evgeniy Tretyak */
-
-    source.sin_family = AF_INET;
-    source.sin_port = 0;
+    sourceaddress.sin_family = AF_INET;
+    sourceaddress.sin_port = 0;
+    sourceaddress.sin_addr.s_addr = 0;
 
     if(sscanf(InterfaceAddress, "%u.%u.%u.%u%c", &i1, &i2, &i3, &i4, &dummy) != 4) {
       printf("mtr: bad interface address: %s\n", InterfaceAddress);
       exit(1);
     } else {
       unsigned char*ptr;
-      ptr = (unsigned char*)&source.sin_addr;
+      ptr = (unsigned char*)&sourceaddress.sin_addr;
       ptr[0] = i1;
       ptr[1] = i2;
       ptr[2] = i3;
       ptr[3] = i4;
     }
 
-    if(bind(sendsock, (struct sockaddr*)&source, sizeof(source)) == -1) {
+    if(bind(sendsock, (struct sockaddr*)&sourceaddress, sizeof(sourceaddress)) == -1) {
       perror("mtr: failed to bind to interface");
       exit(1);
     }

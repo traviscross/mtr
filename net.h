@@ -31,6 +31,7 @@ int net_addr(int at);
 int net_percent(int at);
 int net_best(int at);
 int net_worst(int at);
+int net_last(int at);
 int net_avg(int at);
 int net_send_batch();
 void net_end_transit();

@@ -65,11 +65,15 @@ starts, it investigates the network connection between the host
 .B mtr
 runs on and 
 .BR HOSTNAME . 
-After it determines the address of each network hop between the
-machines, it sends a sequence ICMP ECHO requests to each one to
-determine the quality of the link to each machine.  As it does this,
-it prints running statistics about each machine.
-
+by sending packets with purposly low TTLs. It continues to send
+packets with low TTL, noting the response time of the intervening
+routers.  This allows 
+.B mtr 
+to print the response percentage and response times of the internet
+route to 
+.BR HOSTNAME . 
+A sudden increase in packetloss or response time is often an indication
+of a bad (or simply overloaded) link. 
 
 .SH OPTIONS
 

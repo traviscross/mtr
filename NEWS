@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.52 Mostly cleanups from Brett Johnson on MacOS X. It may 
+        clean up some compilation problems on MacOS X as well. 
+
   v0.51 Fixed the bug introduced by the previous select loop fix... 
         Thanks Evgeniy
 

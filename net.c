@@ -37,7 +37,7 @@
 #include <errno.h>
 
 #include "net.h"
-
+#include "display.h"
 
 
 #define MaxTransit 4
@@ -79,7 +79,7 @@ struct IPHeader {
 #define SOL_IP 0
 #endif
 
-
+#define saddr_correction(addr) BSDfix ? addr : 0
 
 struct nethost {
   uint32 addr;
@@ -117,6 +117,7 @@ static struct timeval reset = { 0, 0 };
 int timestamp;
 int sendsock;
 int recvsock;
+struct sockaddr_in sourceaddress;
 struct sockaddr_in remoteaddress;
 static int batch_at = 0;
 
@@ -201,7 +202,8 @@ void net_send_query(int index) {
   ip->frag = 0;
   ip->ttl = index + 1;
   ip->protocol = IPPROTO_ICMP;
-  ip->saddr = 0;
+  /* BSD needs the source address here, Linux & others do not... */
+  ip->saddr = saddr_correction(sourceaddress.sin_addr.s_addr);
   ip->daddr = remoteaddress.sin_addr.s_addr;
 
   icmp->type = ICMP_ECHO;
@@ -275,7 +277,6 @@ void net_process_return() {
   struct sockaddr_in fromaddr;
   int fromaddrsize;
   int num;
-  int at;
   struct ICMPHeader *header;
   struct timeval now;
 

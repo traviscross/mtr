@@ -18,11 +18,13 @@
 */
 
 #include <config.h>
+#include <stdio.h>
 #include "display.h"
 #include "mtr-curses.h"
 #include "mtr-gtk.h"
 #include "report.h"
 #include "select.h"
+#include "raw.h"
 
 extern int DisplayMode;
 
@@ -32,14 +34,18 @@ extern int DisplayMode;
 #define mtr_curses_redraw()
 #define mtr_curses_keyaction()
 #define mtr_curses_clear()
+#else
+#include "mtr-curses.h"
 #endif
 
 #ifdef NO_GTK
 #define gtk_open()
 #define gtk_close()
 #define gtk_redraw()
-#define gtk_keyaction()
-#define gtk_loop()
+#define gtk_keyaction() 0
+#define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit (1); } 
+#else
+#include "mtr-gtk.h"
 #endif
 
 #ifdef NO_SPLIT
@@ -47,6 +53,8 @@ extern int DisplayMode;
 #define split_close()
 #define split_redraw()
 #define split_keyaction() 0
+#else
+#include "split.h"
 #endif
 
 void display_detect(int *argc, char ***argv) {

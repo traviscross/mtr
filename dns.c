@@ -314,8 +314,8 @@ void *statmalloc(size_t size){
    mallocsize = size + TOT_SLACK * sizeof(dword);
 
    p = malloc(mallocsize);
-   if (!p){
-      fprintf(stderr,"malloc() of %u bytes failed: %s\n",size,strerror(errno));
+   if (!p) {
+      fprintf(stderr,"malloc() of %u bytes failed: %s\n", (unsigned int)size, strerror(errno));
       exit(-1);
    }
    *((dword *)p) = (dword)size;
@@ -515,11 +515,8 @@ void linkresolveid(struct resolve *addrp){
 void unlinkresolveid(struct resolve *rp){
    dword bashnum;
    bashnum = getidbash(rp->id);
-   if (idbash[bashnum] == rp)
-      if (rp->previousid)
-         idbash[bashnum] = rp->previousid;
-      else
-         idbash[bashnum] = rp->nextid;
+   if (idbash[bashnum] == rp) 
+     idbash[bashnum] = (rp->previousid)? rp->previousid : rp->nextid;
    if (rp->nextid)
       rp->nextid->previousid = rp->previousid;
    if (rp->previousid)
@@ -558,10 +555,7 @@ void unlinkresolvehost(struct resolve *rp){
    dword bashnum;
    bashnum = gethostbash(rp->hostname);
    if (hostbash[bashnum] == rp)
-      if (rp->previoushost)
-         hostbash[bashnum] = rp->previoushost;
-      else
-         hostbash[bashnum] = rp->nexthost;
+      hostbash[bashnum] = (rp->previoushost)? rp->previoushost : rp->nexthost;
    if (rp->nexthost)
       rp->nexthost->previoushost = rp->previoushost;
    if (rp->previoushost)
@@ -601,10 +595,7 @@ void unlinkresolveip(struct resolve *rp){
    dword bashnum;
    bashnum = getipbash(rp->ip);
    if (ipbash[bashnum] == rp)
-      if (rp->previousip)
-         ipbash[bashnum] = rp->previousip;
-      else
-         ipbash[bashnum] = rp->nextip;
+      ipbash[bashnum] = (rp->previousip)? rp->previousip : rp->nextip;
    if (rp->nextip)
       rp->nextip->previousip = rp->previousip;
    if (rp->previousip)
@@ -753,7 +744,7 @@ void dorequest(char *s,int type,word id){
    packetheader *hp;
    int r,i;
    int buf[(MaxPacketsize/sizeof (int))+1];
-   r = res_mkquery(QUERY,s,C_IN,type,NULL,0,NULL,buf,MaxPacketsize);
+   r = res_mkquery(QUERY,s,C_IN,type,NULL,0,NULL,(unsigned char*)buf,MaxPacketsize);
    if (r == -1){
       restell("Resolver error: Query too large.");
       return;
@@ -1107,13 +1098,14 @@ void dns_ack(){
 }
 
 int istime(double x,double *sinterval){
-   if (x)
-      if (x > sweeptime){
+  if (x) {
+      if (x > sweeptime) {
          if (*sinterval > x - sweeptime)
             *sinterval = x - sweeptime;
       } else
          return 1;
-   return 0;
+  }
+  return 0;
 }
 
 void dns_events(double *sinterval){

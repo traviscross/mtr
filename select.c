@@ -20,6 +20,8 @@
 #include <config.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include <sys/select.h>
@@ -47,7 +49,6 @@ void select_loop() {
   int NumPing;
   int paused;
   struct timeval lasttime, thistime, selecttime;
-  float wt;
   int dt;
   int rv; 
 
