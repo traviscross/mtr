@@ -102,7 +102,7 @@ split_redraw() {
       if(name != NULL) {
 	/* May be we should test name's length */
 	sprintf(newLine, "%s %d %d %d %d %d %d", name,
-		net_percent(at),
+		net_loss(at),
 		net_returned(at), net_xmit(at),
 		net_best(at) /1000, net_avg(at)/1000, 
 		net_worst(at)/1000);
@@ -110,7 +110,7 @@ split_redraw() {
 	sprintf(newLine, "%d.%d.%d.%d %d %d %d %d %d %d", 
 		(addr >> 24) & 0xff, (addr >> 16) & 0xff, 
 		(addr >> 8) & 0xff, addr & 0xff,
-		net_percent(at),
+		net_loss(at),
 		net_returned(at), net_xmit(at),
 		net_best(at) /1000, net_avg(at)/1000, 
 		net_worst(at)/1000);

@@ -35,6 +35,7 @@
 
 extern int Interactive;
 extern int MaxPing;
+extern int ForceMaxPing;
 extern float WaitTime;
 double dnsinterval;
 
@@ -44,19 +45,17 @@ int display_offset = 0;
 
 void select_loop() {
   fd_set readfd;
-  int anyset;
-  int action, maxfd;
+  int action;
+  int anyset = 0;
+  int maxfd = 0;
   int dnsfd, netfd;
-  int NumPing;
-  int paused;
+  int NumPing = 0;
+  int paused = 0;
   struct timeval lasttime, thistime, selecttime;
   int dt;
   int rv; 
 
-  NumPing = 0; 
-  anyset = 0;
   gettimeofday(&lasttime, NULL);
-  paused=0;
 
   while(1) {
     dt = calc_deltatime (WaitTime);
@@ -74,13 +73,11 @@ void select_loop() {
 
     dnsfd = dns_waitfd();
     FD_SET(dnsfd, &readfd);
-    if(dnsfd >= maxfd)
-      maxfd = dnsfd + 1;
+    if(dnsfd >= maxfd) maxfd = dnsfd + 1;
 
     netfd = net_waitfd();
     FD_SET(netfd, &readfd);
-    if(netfd >= maxfd)
-      maxfd = netfd + 1;
+    if(netfd >= maxfd) maxfd = netfd + 1;
 
     do {
       if(anyset || paused) {
@@ -88,9 +85,9 @@ void select_loop() {
 	selecttime.tv_usec = 0;
       
 	rv = select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
+
       } else {
-	if(Interactive) 
-	  display_redraw();
+	if(Interactive) display_redraw();
 
 	gettimeofday(&thistime, NULL);
 
@@ -98,7 +95,7 @@ void select_loop() {
 	   (thistime.tv_sec == lasttime.tv_sec + intervaltime.tv_sec &&
 	    thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
 	  lasttime = thistime;
-	  if(NumPing >= MaxPing && !Interactive)
+	  if(NumPing >= MaxPing && (!Interactive || ForceMaxPing))
 	    return;
 	  if (net_send_batch())
 	    NumPing++;
@@ -134,48 +131,15 @@ void select_loop() {
     }
     anyset = 0;
 
+    /*  Have we got new packets back?  */
+    if(FD_ISSET(netfd, &readfd)) {
+      net_process_return();
+      anyset = 1;
+    }
+
     /* Handle any pending resolver events */
     dnsinterval = WaitTime;
     dns_events(&dnsinterval);
-
-    /*  Has a key been pressed?  */
-    if(FD_ISSET(0, &readfd)) {
-      action = display_keyaction();
-
-      if(action == ActionQuit)
-	break;
-
-      if(action == ActionReset) 
-	net_reset();
-
-      if (action == ActionDisplay) 
-        display_mode = (display_mode+1) % 3;
-
-      if (action == ActionClear) 
-	display_clear();
-
-      if (action == ActionPause) 
-	paused=1;
-
-      if (action == ActionResume) 
-	paused=0;
-
-      if (action == ActionDNS && dns) {
-	use_dns = !use_dns;
-	display_clear();
-      }
-
-      if (action == ActionScrollDown) {
-        display_offset += 5;
-      } else if (action == ActionScrollUp) {
-        display_offset -= 5;
-	if (display_offset < 0) {
-	  display_offset = 0;
-	}
-      }
-
-      anyset = 1;
-    }
 
     /*  Have we finished a nameservice lookup?  */
     if(FD_ISSET(dnsfd, &readfd)) {
@@ -183,11 +147,47 @@ void select_loop() {
       anyset = 1;
     }
 
-    /*  Have we got new packets back?  */
-    if(FD_ISSET(netfd, &readfd)) {
-      net_process_return();
+    /*  Has a key been pressed?  */
+    if(FD_ISSET(0, &readfd)) {
+      switch (display_keyaction()) {
+      case ActionQuit: 
+	return;
+	break;
+      case ActionReset:
+	net_reset();
+	break;
+      case ActionDisplay:
+        display_mode = (display_mode+1) % 3;
+	break;
+      case ActionClear:
+	display_clear();
+	break;
+      case ActionPause:
+	paused=1;
+	break;
+      case  ActionResume:
+	paused=0;
+	break;
+      case ActionDNS:
+	if (dns) {
+	  use_dns = !use_dns;
+	  display_clear();
+	}
+	break;
+
+      case ActionScrollDown:
+        display_offset += 5;
+	break;
+      case ActionScrollUp:
+        display_offset -= 5;
+	if (display_offset < 0) {
+	  display_offset = 0;
+	}
+	break;
+      }
       anyset = 1;
     }
   }
+  return;
 }
 

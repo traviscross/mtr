@@ -59,7 +59,17 @@
 #endif
 
 #include <time.h>
+
 extern char LocalHostname[];
+extern char fld_active[];
+extern int fstTTL;
+extern int maxTTL;
+extern int packetsize;
+extern int bitpattern;
+extern int tos;
+extern float WaitTime;
+
+
 
 
 void pwcenter(char *str) {
@@ -75,8 +85,10 @@ void pwcenter(char *str) {
 
 int mtr_curses_keyaction() {
   int c = getch();
+  int i=0;
+  char buf[MAXFLD];
 
-  if(tolower(c) == 'q')
+  if(c == 'q')
     return ActionQuit;
   if(c==3)
      return ActionQuit;
@@ -97,19 +109,176 @@ int mtr_curses_keyaction() {
   if (c == '-')
     return ActionScrollUp;
 
-  return 0;
+  /* more stuffs added by Min */
+  if (tolower(c) == 's') {
+    mvprintw(2, 0, "Change Packet Size: %d\n", packetsize );
+    mvprintw(3, 0, "Size Range: %d-%d, <0 random.\n", MINPACKET, MAXPACKET);
+    move(2,20);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    packetsize = atoi ( buf );
+    if( packetsize >=0 ) {
+      if ( packetsize < MINPACKET ) packetsize = MINPACKET;
+      if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
+    } else {
+      packetsize =
+      - (int)(MINPACKET + (MAXPACKET-MINPACKET)*(rand()/(RAND_MAX+0.1)));
+    }
+
+    return ActionNone;
+  }
+  if (tolower(c) == 'b') {
+    mvprintw(2, 0, "Ping Bit Pattern: %d\n", bitpattern );
+    mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
+    move(2,18);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    bitpattern = atoi ( buf );
+    if( bitpattern > 255 ) { bitpattern = -1; }
+    return ActionNone;
+  }
+  if ( c == 'Q') {    /* can not be tolower(c) */
+    mvprintw(2, 0, "Type of Service(tos): %d\n", tos );
+    mvprintw(3, 0, "default 0x00, min cost 0x02, rel 0x04,, thr 0x08, low del 0x10...\n");
+    move(2,22);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    tos = atoi ( buf );
+    if( tos > 255 || tos <0 ) {
+      tos = 0;
+    }
+    return ActionNone;
+  }
+  if (tolower(c) == 'i') {
+    mvprintw(2, 0, "Interval : %0.0f\n\n", WaitTime );
+    move(2,11);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    i = atoi( buf );
+
+    if ( i < 1 ) return ActionNone;
+    WaitTime = (float) i;
+
+    return ActionNone;
+  }
+  if (tolower(c) == 'f') {
+    mvprintw(2, 0, "First TTL: %d\n\n", fstTTL );
+    move(2,11);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    i = atoi( buf );
+
+    if ( i < 1 || i> maxTTL ) return ActionNone;
+    fstTTL = i;
+
+    return ActionNone;
+  }
+  if (tolower(c) == 'm') {
+    mvprintw(2, 0, "Max TTL: %d\n\n", maxTTL );
+    move(2,9);
+    refresh();
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    i = atoi( buf );
+
+    if ( i < fstTTL || i>(MaxHost-1) ) return ActionNone;
+    maxTTL = i;
+
+    return ActionNone;
+  }
+  /* fields to display & their ordering -Min */
+  if (tolower(c) == 'o') {
+    mvprintw(2, 0, "Fields: %s\n\n", fld_active );
+
+    for( i=0; i<MAXFLD; i++ ){
+      if( data_fields[i].descr != NULL )
+          printw( "  %s\n", data_fields[i].descr);
+    }
+    printw("\n");
+    move(2,8);                /* length of "Fields: " */
+    refresh();
+
+    i = 0;
+    while ( (c=getch ()) != '\n' && i<MAXFLD ) {
+      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh;
+      if( c>= 'A' && c<= 'Z' || c==' ') {
+        buf[i++] = c; /* only accept [ A-Z], can be extend to [a-z0-9] */
+      }
+    }
+    buf[i] = '\0';
+    if ( strlen( buf ) > 0 ) strcpy( fld_active, buf );
+
+    return ActionNone;
+  }
+  if (tolower(c) == 'j') {
+    if( index(fld_active, 'N') ) {
+      strcpy(fld_active, "DR AGJMXI");        /* GeoMean and jitter */
+    } else {
+      strcpy(fld_active, "LS NABWV");         /* default */
+    }
+    return ActionNone;
+  }
+  /* reserve to display help message -Min */
+  if (tolower(c) == '?'|| tolower(c) == 'h') {
+    mvprintw(2, 0, "Command:\n" );
+    printw("  ?|h     help\n" );
+    printw("  d       switching display mode\n" );
+    printw("  n       toggle DNS on/off\n" );
+    printw("  o str   set the columns to display, default str='LRS N BAWV'\n" );
+    printw("  j       toggle latency(LS NABWV)/jitter(DR AGJMXI) stats\n" );
+    printw("  c <n>   report cycle n, default n=infinite\n" );
+    printw("  i <n>   set the ping interval to n seconds, default n=1\n" );
+    printw("  f <n>   set the initial time-to-live(ttl), default n=1\n" );
+    printw("  m <n>   set the max time-to-live, default n= # of hops\n" );
+    printw("  s <n>   set the packet size to n or random(n<0)\n" );
+    printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n" );
+    printw("  Q <t>   set ping packet's TOS to t\n\n\n" );
+    mvprintw(16, 0, " press any key to go back..." );
+
+    getch();                  /* get any key */
+    return ActionNone;
+  }
+
+  return ActionNone;          /* ignore unknown input */
 }
 
 void mtr_curses_hosts(int startstat) {
   int max;
   int at;
-  int addr;
+  int addr, addrs;
   int y, x;
   char *name;
 
+  int i, j;
+  int hd_len;
+  char buf[1024];
+
   max = net_max();
 
-  for(at = display_offset; at < max; at++) {
+  for(at = net_min () + display_offset; at < max; at++) {
     printw("%2d. ", at + 1);
     addr = net_addr(at);
 
@@ -129,12 +298,53 @@ void mtr_curses_hosts(int startstat) {
       move(y, startstat);
 
       /* net_xxx returns times in usecs. Just display millisecs */
-      printw("  %3d%% %4d %4d  %4d %4d %4d %6d", 
-             net_percent(at),
-             net_returned(at),  net_xmit(at),
-             net_last(at)/1000, net_best(at)/1000, 
-	     net_avg(at)/1000,  net_worst(at)/1000);
+      /* changedByMin */
+      hd_len = 0;
+      for( i=0; i<MAXFLD; i++ ) {
+	// assume only a-zA-Z are valid options, and error checking
+	// is done in the input side?
+	if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
+	  j = fld_active[i] - 'a' + 11 + 26; 
+	} else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
+	  j = fld_active[i] - 'A' + 11; 
+	} else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
+	  j = fld_active[i] - '0' +1; 
+	} else if( fld_active[i] == ' ' ) {
+	  j = 0;
+	} else {
+	  continue;	/* ignore stuff don't understand */
+	}
 
+	/* temporay hack for stats usec to ms... */
+	if( index( data_fields[ fld_index[j] ].format, 'f' ) ) {
+	  sprintf(buf + hd_len, data_fields[ fld_index[j] ].format,
+		data_fields[ fld_index[j] ].net_xxx(at) /1000.0 );
+	} else {
+	  sprintf(buf + hd_len, data_fields[ fld_index[j] ].format,
+		data_fields[ fld_index[j] ].net_xxx(at) );
+	}
+	hd_len +=  data_fields[ fld_index[j] ].length;
+      }
+      buf[hd_len] = 0;
+      printw("%s", buf);
+
+      /* Multi path by Min */
+      for( i=0; i<MAXPATH; i++ ) {
+        addrs = net_addrs(at, i);
+	if( addrs == addr ) continue;
+	if( addrs == 0 ) break;
+
+        name = dns_lookup(addrs);
+        if (! net_up(at)) attron(A_BOLD);
+        if(name != NULL) {
+	  printw("\n    %s", name);
+        } else {
+	  printw("\n    %d.%d.%d.%d",
+		(addrs >> 24) & 0xff, (addrs >> 16) & 0xff, 
+		(addrs >> 8) & 0xff, addrs & 0xff);
+        }
+        attroff(A_BOLD);
+      }
 
     } else {
       printw("???");
@@ -142,6 +352,7 @@ void mtr_curses_hosts(int startstat) {
 
     printw("\n");
   }
+  move(2, 0);
 }
 
 static double factors[] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
@@ -255,8 +466,12 @@ void mtr_curses_redraw() {
   int maxx, maxy;
   int startstat;
   int rowstat;
-  int i;
   time_t t;
+
+  int i, j;
+  int  hd_len = 0;
+  char buf[1024];
+  char fmt[16];
 
   erase();
   getmaxyx(stdscr, maxy, maxx);
@@ -265,35 +480,65 @@ void mtr_curses_redraw() {
 
   move(0, 0);
   attron(A_BOLD);
-  pwcenter("Matt's traceroute  [v" VERSION "]");
+  pwcenter("My traceroute  [v" VERSION "]");
   attroff(A_BOLD);
 
-  mvprintw(1,0, LocalHostname);
+  mvprintw(1,0, "%s", LocalHostname);
+  printw("(tos=0x%X ", tos);
+  printw("psize=%d ", abs(packetsize) );
+  printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
+  /*
+  if( packetsize>0 ){
+    printw("psize=%d ", packetsize);
+  } else {
+    printw("psize=rand(%d,%d) ",MINPACKET, MAXPACKET);
+  }
+  if( bitpattern>=0 ){
+    printw("bitpattern=0x%02X)", (unsigned char)(bitpattern));
+  } else {
+    printw("bitpattern=rand(0x00-FF))");
+  }
+  */
   time(&t);
   mvprintw(1, maxx-25, ctime(&t));
 
   printw("Keys:  ");
-  attron(A_BOLD);  printw("D");  attroff(A_BOLD);
-  printw(" - Display mode    ");
-  attron(A_BOLD);  printw("R");  attroff(A_BOLD);
-  printw(" - Restart statistics    ");
-  attron(A_BOLD);  printw("Q");  attroff(A_BOLD);
-  printw(" - Quit\n");
+  attron(A_BOLD); printw("H"); attroff(A_BOLD); printw("elp   ");
+  attron(A_BOLD); printw("D"); attroff(A_BOLD); printw("isplay mode   ");
+  attron(A_BOLD); printw("R"); attroff(A_BOLD); printw("estart statistics   ");
+  attron(A_BOLD); printw("O"); attroff(A_BOLD); printw("rder of fields   ");
+  attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
-  attron(A_BOLD);
-  mvprintw(rowstat - 1, 0, "Hostname");
-
   if (display_mode == 0) {
-    startstat = maxx - 41;
+    /* changedByMin */
+    for( i=0; i<MAXFLD; i++ ) {
+	// assume only 0-9A-Za-z are valid options, and error checking
+	// is down on the input side
+	if( fld_active[i]>= 'a' && fld_active[i]<= 'z') {
+	  j = fld_active[i] - 'a' + 11 + 26; 
+	} else if( fld_active[i]>= 'A' && fld_active[i]<= 'Z') {
+	  j = fld_active[i] - 'A' + 11; 
+	} else if( fld_active[i]>= '0' && fld_active[i]<= '9') {
+	  j = fld_active[i] - '0' +1; 
+	} else if( fld_active[i] == ' ' ) {
+	  j = 0;
+	} else {
+	  continue;	/* ignore unknown */
+	}
 
-    /* Modified by Brian Casey December 1997 bcasey@imagiware.com */
-    mvprintw(rowstat - 2, startstat, "    Packets               Pings");
-    mvprintw(rowstat - 1, startstat, " %%Loss  Rcv  Snt  Last Best  Avg  Worst");
-
+	sprintf( fmt, "%%%ds", data_fields[fld_index[j]].length );
+        sprintf( buf + hd_len, fmt, data_fields[fld_index[j]].title );
+	hd_len +=  data_fields[fld_index[j]].length;
+    }
+    attron(A_BOLD);
+    mvprintw(rowstat - 1, 0, " Host");
+    mvprintw(rowstat - 1, maxx-hd_len-1, "%s", buf);
+    mvprintw(rowstat - 2, maxx-hd_len-1, "   Packets               Pings");
     attroff(A_BOLD);
-    move(rowstat, 0);
 
-    mtr_curses_hosts(startstat);
+    move(rowstat, 0);
+    mtr_curses_hosts(maxx-hd_len-1);
+
   } else {
     /* David Sward, Jan 1999 */
     char msg[80];

@@ -1,4 +1,9 @@
 WHAT'S NEW?
+  v0.55 Cleanup patch. I'm going to do some maintenance on MTR, 
+        but I want to be able to say: Can you see which version
+	fixed/broke things for you, so you're going to see a 
+	bunch of new releases soon. 
+
   v0.54 Added "scrolling" patch from Roland Illig, to allow 
         scrolling in text mode. I've always wanted this......
  

@@ -21,3 +21,9 @@
 
 void report_open();
 void report_close();
+void txt_open();
+void txt_close();
+void xml_open();
+void xml_close();
+void csv_open();
+void csv_close();

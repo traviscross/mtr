@@ -73,18 +73,25 @@ void display_detect(int *argc, char ***argv) {
 
 void display_open() {
   switch(DisplayMode) {
+
   case DisplayReport:
     report_open();
     break;
-
+  case DisplayTXT:
+    txt_open();
+    break;
+  case DisplayXML:
+    xml_open();
+    break;
+  case DisplayCSV:
+    csv_open();
+    break;
   case DisplayCurses:
     mtr_curses_open();  
     break;
-
   case DisplaySplit:            /* BL */
     split_open();
     break;
-
   case DisplayGTK:
     gtk_open();
     break;
@@ -96,15 +103,21 @@ void display_close() {
   case DisplayReport:
     report_close();
     break;
-
+  case DisplayTXT:
+    txt_close();
+    break;
+  case DisplayXML:
+    xml_close();
+    break;
+  case DisplayCSV:
+    csv_close();
+    break;
   case DisplayCurses:
     mtr_curses_close();
     break;
-
   case DisplaySplit:            /* BL */
     split_close();
     break;
-    
   case DisplayGTK:
     gtk_close();
     break;
@@ -146,6 +159,9 @@ int display_keyaction() {
 void display_rawping(int host, int msec) {
   switch(DisplayMode) {
   case DisplayReport:
+  case DisplayTXT:
+  case DisplayXML:
+  case DisplayCSV:
   case DisplaySplit:            /* BL */
   case DisplayCurses:
   case DisplayGTK:
@@ -160,6 +176,9 @@ void display_rawping(int host, int msec) {
 void display_rawhost(int host, int ip_addr) {
   switch(DisplayMode) {
   case DisplayReport:
+  case DisplayTXT:
+  case DisplayXML:
+  case DisplayCSV:
   case DisplaySplit:            /* BL */
   case DisplayCurses:
   case DisplayGTK:
@@ -173,13 +192,15 @@ void display_rawhost(int host, int ip_addr) {
 
 void display_loop() {
   switch(DisplayMode) {
-  case DisplayCurses:
   case DisplayReport:
+  case DisplayTXT:
+  case DisplayXML:
+  case DisplayCSV:
   case DisplaySplit:            /* BL */
+  case DisplayCurses:
   case DisplayRaw:
     select_loop();
     break;
-
   case DisplayGTK:
     gtk_loop();
     break;
@@ -193,6 +214,9 @@ void display_clear() {
     mtr_curses_clear();
     break;
   case DisplayReport:
+  case DisplayTXT:
+  case DisplayXML:
+  case DisplayCSV:
   case DisplaySplit:            /* BL */
   case DisplayRaw:
     break;

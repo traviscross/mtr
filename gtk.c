@@ -193,8 +193,8 @@ void Toolbar_fill(GtkWidget *Toolbar) {
   gtk_widget_show(Entry);
 }
 
-char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Last", "Best", "Avg", "Worst", NULL };
-int Report_Positions[] = { 10, 240, 280, 320, 360, 400, 440, 480, 0 };
+char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Last", "Best", "Avg", "Worst", "StDev", NULL };
+int Report_Positions[] = { 10, 200, 240, 280, 320, 360, 400, 440, 480, 0 };
 GtkWidget *Report;
 GtkWidget *ReportBody;
 
@@ -273,7 +273,9 @@ void gtk_set_field(GtkCList *List, int row, int ix, char *str) {
   gtk_clist_set_text(List, row, ix, str);
 }
 
-void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
+//void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
+// changed int to dobule byMin
+void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num) {
   char str[32];
 
   sprintf(str, format, num);
@@ -308,26 +310,29 @@ void gtk_update_row(GtkCList *List, int row) {
   gdk_color_alloc (cmap, &color);
   gtk_clist_set_foreground(List, row, &color);
 
-  gtk_set_field(List, row, 0, name);
+  /* changed the format type and added stdev and first/max TTL byMin */
+  /* the row - net_min() is kind of not clean, need some more work */
+  gtk_set_field(List, row - net_min(), 0, name);
 
-  gtk_set_field_num(List, row, 1, "%d%%", net_percent(row));
-  gtk_set_field_num(List, row, 2, "%d", net_returned(row));  
-  gtk_set_field_num(List, row, 3, "%d", net_xmit(row));
+  gtk_set_field_num(List, row - net_min(), 1, "%.0f%%", net_loss(row)/1000.0);
+  gtk_set_field_num(List, row - net_min(), 2, "%.0f", net_returned(row));  
+  gtk_set_field_num(List, row - net_min(), 3, "%.0f", net_xmit(row));
   
-  gtk_set_field_num(List, row, 4, "%d", net_last(row)/1000);
-  gtk_set_field_num(List, row, 5, "%d", net_best(row)/1000);
-  gtk_set_field_num(List, row, 6, "%d", net_avg(row)/1000);  
-  gtk_set_field_num(List, row, 7, "%d", net_worst(row)/1000);
+  gtk_set_field_num(List, row - net_min(), 4, "%.0f", net_last(row)/1000.0);
+  gtk_set_field_num(List, row - net_min(), 5, "%.0f", net_best(row)/1000.0);
+  gtk_set_field_num(List, row - net_min(), 6, "%.0f", net_avg(row)/1000.0);  
+  gtk_set_field_num(List, row - net_min(), 7, "%.0f", net_worst(row)/1000.0);
+  gtk_set_field_num(List, row - net_min(), 8, "%.2f", net_stdev(row)/1000.0);
   
 }
 
 void gtk_redraw() {
-  int at;
+  int at  = net_min();	// changed from 0 to net_min for TTL stuff byMin
   int max = net_max();
 
   gtk_clist_freeze(GTK_CLIST(ReportBody));
 
-  while(GTK_CLIST(ReportBody)->rows < max) {
+  while(GTK_CLIST(ReportBody)->rows < max -at) {	// byMin
     gtk_clist_append(GTK_CLIST(ReportBody), Report_Text);
   }
 
@@ -335,7 +340,8 @@ void gtk_redraw() {
     gtk_clist_remove(GTK_CLIST(ReportBody), GTK_CLIST(ReportBody)->rows - 1);
   }
 
-  for(at = 0; at < max; at++) {
+  // for(at=0; at < max; at++) {	// replaced byMin
+  for(; at < max; at++) {
     gtk_update_row(GTK_CLIST(ReportBody), at);
   }
 
@@ -349,7 +355,7 @@ void Window_fill(GtkWidget *Window) {
 
   gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
   gtk_window_set_wmclass(GTK_WINDOW(Window), "mtr", "Mtr");
-  gtk_widget_set_usize(Window, 580, 400); 
+  gtk_widget_set_usize(Window, 600, 400); 
   gtk_container_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);
 
