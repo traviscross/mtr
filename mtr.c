@@ -144,14 +144,17 @@ void parse_mtr_options (char *string)
   argv[0] = "mtr";
   argc = 1;
   p = strtok (string, " \t");
-  while (p) {
+  while (p && (argc < (sizeof(argv)/sizeof(argv[0])))) {
     argv[argc++] = p;
     p = strtok (NULL, " \t");
   }
+  if (p) {
+    fprintf (stderr, "Warning: extra arguments ignored: %s", p);
+  }
+
   parse_arg (argc, argv);
   optind = 0;
 }
-
 
 
 int main(int argc, char **argv) {

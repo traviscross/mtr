@@ -1,6 +1,9 @@
 WHAT'S NEW?
 
-  v0.45 Included patch to be able to specify outgoing interface 
+  v0.47 Fixed a (believed-) non-exploitable bufferoverflow. 
+        Thanks Damian. 
+
+  v0.46 Included patch to be able to specify outgoing interface 
         address.
 
   v0.45 People are pressuring me to release new versions with their
