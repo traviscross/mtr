@@ -32,7 +32,6 @@
 
 #include "net.h"
 
-#define MaxHost 256
 #define MaxTransit 4
 
 /*  We can't rely on header files to provide this information, because
@@ -200,7 +199,6 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
   int at;
   struct timeval now;
   int totmsec;
-  int msec;
 
   if(data->index >= 0) {
     gettimeofday(&now, NULL);
@@ -210,12 +208,8 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
       /* discard this data point, stats were reset after it was generated */
       return;
     
-    totmsec = (now.tv_sec - data->sec) * 1000;
-    msec = now.tv_usec / 1000 - data->msec;
-    if(msec >= 0) 
-      totmsec += msec;
-    else
-      totmsec = totmsec - 1000 + 1000 - data->msec + now.tv_usec / 1000;
+    totmsec = (now.tv_sec - data->sec) * 1000 +
+              ((now.tv_usec/1000) - data->msec);
 
     if(host[data->index].returned <= 0) {
       host[data->index].best = host[data->index].worst = totmsec;
@@ -227,6 +221,8 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
     if(totmsec > host[data->index].worst)
       host[data->index].worst = totmsec;
 
+    display_rawping (data->index, totmsec);
+
     host[data->index].total += totmsec;
     host[data->index].returned++;
     host[data->index].transit = 0;
@@ -236,6 +232,7 @@ void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
       return;
 
     host[at].addr = addr->sin_addr.s_addr;
+    display_rawhost (at, host[at].addr);
   }
 }
 
@@ -277,6 +274,7 @@ void net_process_return() {
       return;
 
     host[at].addr = fromaddr.sin_addr.s_addr;
+    display_rawhost (at, net_addr(at));
   }
 }
 

@@ -48,12 +48,14 @@ void parse_arg(int argc, char **argv) {
     { "curses", 0, 0, 't' },
     { "gtk", 0, 0, 'g' },
     { "interval", 1, 0, 'i' },
+    { "split", 0, 0, 's' },     /* BL */
+    { "raw", 0, 0, 'l' },
     { 0, 0, 0, 0 }
   };
 
   opt = 0;
   while(1) {
-    opt = getopt_long(argc, argv, "hvrc:tli:", long_options, NULL);
+    opt = getopt_long(argc, argv, "hvrc:tklsi:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -75,6 +77,12 @@ void parse_arg(int argc, char **argv) {
       break;
     case 'g':
       DisplayMode = DisplayGTK;
+      break;
+    case 's':                 /* BL */
+      DisplayMode = DisplaySplit;
+      break;
+    case 'l':
+      DisplayMode = DisplayRaw;
       break;
     case 'i':
       WaitTime = atof(optarg);
@@ -127,8 +135,9 @@ int main(int argc, char **argv) {
   }
 
   if(Hostname == NULL || PrintHelp) {
-    printf("usage: %s [-hvrctli] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrctlis] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
+           "\t\t[--raw] [--split]\n"      /* BL */
 	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
     exit(0);
   }

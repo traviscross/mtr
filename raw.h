@@ -1,6 +1,8 @@
 /*
     mtr  --  a network diagnostic tool
-    Copyright (C) 1997,1998  Matt Kimball
+    Copyright (C) 1998  R.E.Wolff@BitWizard.nl
+
+    raw.h -- raw output (for logging for later analysis)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,12 +19,6 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*  Prototypes for dns.c  */
-
-void dns_open();
-int dns_waitfd();
-void dns_ack();
-void dns_events(double *sinterval);
-char *dns_lookup(int address);
-char *dns_lookup2(int address);
-int dns_forward(char *name);
+/*  Prototypes for raw.c  */
+void raw_rawping(int host, int msec);
+void raw_rawhost(int host, int addr);

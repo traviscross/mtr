@@ -17,6 +17,15 @@
 
   - Allow MTR to keep on getting the icmp host unreachables, and
     work through that. Some hosts don't answer PINGs.
+      - Auto-switch to that strategy if "host is known, but 10/10 
+        pings got lost"
+
+  - The "don't probe all hosts at once" strategy can be improved a bit.
+    It should not probe more than 10 unknown hosts, but the counter need
+    not be reset at the start of the "round". This way if you probe
+    slowly (relative to the RTT time to the end host), it can probe
+    all hosts in the first "round". 
+
 
 - Bugs to fix?
   - ?

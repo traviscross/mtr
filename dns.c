@@ -1134,7 +1134,7 @@ void dns_events(double *sinterval){
       (void)istime(expireresolves->expiretime,sinterval);
 }
 
-char *dns_lookup(ip_t ip){
+char *dns_lookup2(ip_t ip){
    struct resolve *rp;
    ip = htonl(ip);
    if ((rp = findip(ip))){
@@ -1152,10 +1152,10 @@ char *dns_lookup(ip_t ip){
                 strlongip(ip));
                restell(tempstring);
             }
-            return strlongip(ip);
+            return NULL;
          }
       }
-      return strlongip(ip);
+      return NULL;
    }
    if (debug)
       fprintf(stderr,"Resolver: Added to new record.\n");
@@ -1167,5 +1167,13 @@ char *dns_lookup(ip_t ip){
    rp->ip = ip;
    linkresolveip(rp);
    sendrequest(rp,T_PTR);
-   return strlongip(ip);
+   return NULL;
+}
+
+
+char *dns_lookup(ip_t ip){
+  char *t;
+
+  t = dns_lookup2 (ip);
+  return t?t:strlongip(ip);
 }

@@ -1,5 +1,20 @@
 WHAT'S NEW?
 
+
+  v0.25
+        Included two "raw" formats. One for separating GUI from
+        the setuid program, and one suitable for later parsing and
+        displaying. Volunteers wanted to separate the GTK 
+        backend. Thanks to Bertrand Leconte for contributing 
+        the format that's now called "split". 
+
+  v0.24 
+        Fixed number of probes. Accidentally was counted per 
+        packet sent instead of per round of packets. 
+
+  v0.23
+        Fixed Sparc alignment problem with statmalloc
+
   v0.22 
         Roger has take over maintenance. 
         mtr now uses an "int" to pass options to the kernel. 

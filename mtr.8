@@ -26,6 +26,12 @@ mtr \- a network diagnostic tool
 .B \-\-curses\c
 ]
 [\c
+.B \-\-split\c
+]
+[\c
+.B \-\-raw\c
+]
+[\c
 .B \-\-gtk\c
 ]
 [\c
@@ -130,6 +136,26 @@ GTK+ must have been available on the system when
 was built for this to work.  See the GTK+ web page at 
 .B http://www.gimp.org/gtk/
 for more information about GTK+.
+
+.TP
+.B \-s
+.TP
+.B \-\-split
+.br
+Use this option to set
+.B mtr 
+to spit out a format that is suitable for a split-user interface.
+
+.TP
+.B \-l
+.TP
+.B \-\-raw
+.br
+Use this option to tell 
+.B mtr 
+to use the raw output format. This format is better suited for
+archival of the measurement results. It could be parsed to 
+be presented into any of the other display methods. 
 
 .TP
 .B \-i\ SECONDS

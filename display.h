@@ -18,12 +18,14 @@
 */
 
 enum { ActionNone, ActionQuit, ActionReset };
-enum { DisplayReport, DisplayCurses, DisplayGTK };
+enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, DisplayRaw };
 
 /*  Prototypes for display.c  */
 void display_detect(int *argc, char ***argv);
 void display_open();
 void display_close();
 void display_redraw();
+void display_rawping(int hostnum, int msec);
+void display_rawhost(int hostnum, int ip_addr);
 int display_keyaction();
 void display_loop();

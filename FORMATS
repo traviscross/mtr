@@ -1,0 +1,31 @@
+
+The "split" format is for a separating the gui from the main program.
+The main program can be installed setuid, and you don't want to link a
+gui-library with a setuid program.
+
+
+The split format is:
+
+<pos> <host> <loss%> <rcvd pckts> <sent pckts> <best> <avg> <worst> 
+
+
+The "raw" format is:
+
+hostline|pingline|dnsline|timestampline
+
+hostline:
+h <pos> <host IP>
+
+pingline:
+p <pos> <pingtime (ms)>
+
+dnsline: 
+d <pos> <hostname>
+
+timestampline:
+t <pos> <pingtime> <timestamp>
+
+
+Timestampline is not  yet implemented. Need to find out how to do
+ICMP timestamping first. :-)
+

@@ -41,3 +41,4 @@ int net_xmit(int at);
 int net_transit(int at);
 
 
+#define MaxHost 256

@@ -1,5 +1,11 @@
 SECURITY ISSUES RELATED TO MTR
 
+You can limit mtr usage to the root user by not putting a setuid bit
+on the mtr binary. In that case, the security implications are
+minimal. 
+
+Or you can make mtr setuid-root, and the following applies to you....
+
 Since mtr is installed as suid-root, some concern over security is
 justified.  Since version 0.21 of mtr, does the following two things
 after it is launched:

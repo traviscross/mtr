@@ -8,6 +8,8 @@ install-exec-am:
 mtr_SOURCES = mtr.c \
               net.c net.h \
               dns.c dns.h \
+              raw.c raw.h \
+              split.c split.h \
               display.c display.h \
               report.c report.h \
               getopt.c getopt1.c getopt.h \

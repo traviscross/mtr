@@ -26,6 +26,21 @@
 
 extern int DisplayMode;
 
+#ifdef NO_CURSES
+#define mtr_curses_open()
+#define mtr_curses_close()
+#define mtr_curses_redraw()
+#define mtr_curses_keyaction()
+#endif
+
+#ifdef NO_GTK
+#define gtk_open()
+#define gtk_close()
+#define gtk_redraw()
+#define gtk_keyaction()
+#define gtk_loop()
+#endif
+
 void display_detect(int *argc, char ***argv) {
   DisplayMode = DisplayReport;
 
@@ -46,17 +61,17 @@ void display_open() {
     report_open();
     break;
 
-#ifndef NO_CURSES
   case DisplayCurses:
     mtr_curses_open();  
     break;
-#endif
 
-#ifndef NO_GTK
+  case DisplaySplit:            /* BL */
+    split_open();
+    break;
+
   case DisplayGTK:
     gtk_open();
     break;
-#endif
   }
 }
 
@@ -66,63 +81,92 @@ void display_close() {
     report_close();
     break;
 
-#ifndef NO_CURSES
   case DisplayCurses:
     mtr_curses_close();
     break;
-#endif
 
-#ifndef NO_GTK
+  case DisplaySplit:            /* BL */
+    split_close();
+    break;
+    
   case DisplayGTK:
     gtk_close();
     break;
-#endif
   }
 }
 
 void display_redraw() {
   switch(DisplayMode) {
-#ifndef NO_CURSES
+
   case DisplayCurses:
     mtr_curses_redraw();
     break;
-#endif
 
-#ifndef NO_GTK
+  case DisplaySplit:            /* BL */
+    split_redraw();
+    break;
+
   case DisplayGTK:
     gtk_redraw();
     break;
-#endif
   }
 }
 
 int display_keyaction() {
   switch(DisplayMode) {
-#ifndef NO_CURSES
   case DisplayCurses:
     return mtr_curses_keyaction();
-#endif
 
-#ifndef NO_GTK
+  case DisplaySplit:		/* BL */
+    return split_keyaction();
+
   case DisplayGTK:
     return gtk_keyaction();
-#endif
   }
   return 0;
 }
+
+
+void display_rawping(int host, int msec) {
+  switch(DisplayMode) {
+  case DisplayReport:
+  case DisplaySplit:            /* BL */
+  case DisplayCurses:
+  case DisplayGTK:
+    break;
+  case DisplayRaw:
+    raw_rawping (host, msec);
+    break;
+  }
+}
+
+
+void display_rawhost(int host, int ip_addr) {
+  switch(DisplayMode) {
+  case DisplayReport:
+  case DisplaySplit:            /* BL */
+  case DisplayCurses:
+  case DisplayGTK:
+    break;
+  case DisplayRaw:
+    raw_rawhost (host, ip_addr);
+    break;
+  }
+}
+
 
 void display_loop() {
   switch(DisplayMode) {
   case DisplayCurses:
   case DisplayReport:
+  case DisplaySplit:            /* BL */
+  case DisplayRaw:
     select_loop();
     break;
 
-#ifndef NO_GTK
   case DisplayGTK:
     gtk_loop();
     break;
-#endif
   }
 }
 
