@@ -23,6 +23,15 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Philippe tells me MacOSX needs this before scoket.h... -- REW */
+#if defined(HAVE_SYS_TYPES_H)
+#include <sys/types.h>
+#else
+/* If a system doesn't have sys/types.h, lets hope that time_t is an int */
+#define time_t int
+#endif
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -37,13 +46,6 @@
 #  include <cursesX.h>
 #else
 #  error No curses header file available
-#endif
-
-#if defined(HAVE_SYS_TYPES_H)
-#include <sys/types.h>
-#else
-/* If a system doesn't have sys/types.h, lets hope that time_t is an int */
-#define time_t int
 #endif
 
 #ifndef HAVE_ATTRON

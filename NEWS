@@ -1,4 +1,7 @@
 WHAT'S NEW?
+  v0.64 Philippe suggests to do the time_t thingy before socket.h. 
+        Apparently, MAC OS X doesn't compile socket.h otherwise.
+
   v0.63 Suggestion by RCW: Add -lm at line 70 of Configure.in.
         On my system no ill effects ensued, so this version released 
         so that he can test if it still works on his sytem. 
