@@ -43,6 +43,9 @@
 #include "dns.h"
 #endif
 
+#include <time.h>
+extern LocalHostname[];
+
 void pwcenter(char *str) {
   int maxx, maxy;
   int cx;
@@ -100,10 +103,10 @@ void mtr_curses_hosts(int startstat) {
       getyx(stdscr, y, x);
       move(y, startstat);
 
-      printw("  %3d%% %4d %4d  %4d %4d %6d", 
+      printw("  %3d%% %4d %4d  %4d %4d %4d %6d", 
              net_percent(at),
              net_returned(at), net_xmit(at),
-             net_best(at), net_avg(at), net_worst(at));
+             net_last(at),net_best(at), net_avg(at), net_worst(at));
 
 
     } else {
@@ -224,6 +227,7 @@ void mtr_curses_redraw() {
   int startstat;
   int rowstat;
   int i;
+  time_t t;
 
   erase();
   getmaxyx(stdscr, maxy, maxx);
@@ -233,7 +237,11 @@ void mtr_curses_redraw() {
   attron(A_BOLD);
   move(0, 0);
   pwcenter("Matt's traceroute  [v" VERSION "]");
-  printw("\n\n");
+  printw("\n");
+  printw(LocalHostname);
+  move(1, maxx - 24);
+  time(&t);
+  printw(ctime(&t));
   attroff(A_BOLD);
 
   printw("Keys:  ");
@@ -251,8 +259,8 @@ void mtr_curses_redraw() {
     startstat = maxx - 40;
 
     /* Modified by Brian Casey December 1997 bcasey@imagiware.com */
-    mvprintw(rowstat - 2, startstat, "    Packets            Pings");
-    mvprintw(rowstat - 1, startstat, " %%Loss  Rcv  Snt  Best  Avg  Worst");
+    mvprintw(rowstat - 2, startstat, "    Packets               Pings");
+    mvprintw(rowstat - 1, startstat, " %%Loss  Rcv  Snt  Last Best  Avg  Worst");
 
     attroff(A_BOLD);
     move(rowstat, 0);

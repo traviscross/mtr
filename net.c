@@ -81,6 +81,7 @@ struct nethost {
   int xmit;
   int returned;
   int total;
+  int last;
   int best;
   int worst;
   int transit;
@@ -235,6 +236,7 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
   if(host[index].returned <= 0) {
     host[index].best = host[index].worst = totmsec;
   }
+  host[index].last = totmsec;
   if(totmsec < host[index].best)
     host[index].best = totmsec;
   if(totmsec > host[index].worst)
@@ -298,6 +300,10 @@ int net_percent(int at) {
     return 0;
 
   return 100 - (100 * host[at].returned / (host[at].xmit - host[at].transit));
+}
+
+int net_last(int at) {
+  return host[at].last;
 }
 
 int net_best(int at) {

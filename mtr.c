@@ -37,6 +37,7 @@ int PrintHelp = 0;
 int MaxPing = 16;
 float WaitTime = 1.0;
 char *Hostname = NULL;
+char LocalHostname[128];
 int dns = 1;
 
 void parse_arg(int argc, char **argv) {
@@ -174,6 +175,10 @@ int main(int argc, char **argv) {
     exit(0);
   }
   if (Hostname == NULL) Hostname = "localhost";
+
+  if(gethostname(LocalHostname, sizeof(LocalHostname))) {
+	strcpy(LocalHostname, "UNKNOWNHOST");
+  }
 
   if(net_preopen_result != 0) {
     printf("mtr: Unable to get raw socket.  (Executable not suid?)\n");

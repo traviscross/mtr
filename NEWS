@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.37 Added Bill Bogstad's "show the local host & time" patch. 
+	Added R. Sparks' show-last-ping patch, submitted by Philip Kizer.
+
   v0.36 Added Craigs change-the-interval-on-the-fly patch.
         Added Moritz Barsnick's "do something sensible if host not found" 
 	    patch.
