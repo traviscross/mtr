@@ -46,8 +46,18 @@
   - Revert to curses mode even if DISPLAY is set, but a problem
     prevents us from running in X11 mode.
        -->  The problem is that gtk_init simply calls exit for us if
-            it finds a problem. Tricky!
+            it finds a problem. Tricky! Suggestions welcome. 
 
   - Read environment variable "MTR_DEFAULTS" as a commandline before
-    parsing the commandline. 
+    parsing the commandline.  -- DONE. (ok it's MTR_OPTIONS.)
+
+  - Autoconf 2.13 has a neat function that can be used to find the 
+    res_init function: 
+
+	   AC_SEARCH_LIBS(res_init, bind resolv, ,
+	      AC_MSG_ERROR(No resolver library found))
+
+    At the moment (march 1999) autoconf 2.13 is still too new to require 
+    everyone to upgrade. About a year from now we can put this in....
+
 

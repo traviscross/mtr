@@ -167,9 +167,9 @@ int main(int argc, char **argv) {
   }
 
   if(PrintHelp) {
-    printf("usage: %s [-hvrctlis] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrctglsni] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
-           "\t\t[--raw] [--split]\n"      /* BL */
+           "\t\t[--raw] [--split] [--no-dns]\n"      /* BL */
 	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
     exit(0);
   }

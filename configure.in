@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.30)
+AM_INIT_AUTOMAKE(mtr, 0.31)
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
@@ -38,10 +38,8 @@ AC_CHECK_FUNC(gethostbyname, ,
   AC_CHECK_LIB(nsl, gethostbyname, , AC_MSG_ERROR(No nameservice library found)))
 
 AC_CHECK_FUNC(res_init, , 
-  AC_CHECK_LIB(bind, res_init, , AC_MSG_ERROR(No resolver library found)))
-
-AC_CHECK_FUNC(res_mkquery, , 
-  AC_CHECK_LIB(resolv, res_mkquery, , AC_MSG_ERROR(No resolver library found)))
+  AC_CHECK_LIB(bind, res_init, , 
+   AC_CHECK_LIB(resolv, res_init, , AC_MSG_ERROR(No resolver library found))))
 
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))

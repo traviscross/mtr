@@ -45,11 +45,11 @@ int timestamp;
     the fields have different names between, for instance, Linux and 
     Solaris  */
 struct ICMPHeader {
-  unsigned char type;
-  unsigned char code;
-  unsigned short checksum;
-  unsigned short id;
-  unsigned short sequence;
+  uint8 type;
+  uint8 code;
+  uint16 checksum;
+  uint16 id;
+  uint16 sequence;
 };
 
 /*  Structure of an IP header.  */

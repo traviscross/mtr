@@ -1,6 +1,6 @@
 WHAT IS MTR?
 
-  mtr combines the functionaly of the 'traceroute' and 'ping' programs 
+  mtr combines the functionality of the 'traceroute' and 'ping' programs 
   in a single network diagnostic tool.
 
   As mtr starts, it investigates the network connection between the host
