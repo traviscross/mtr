@@ -1,5 +1,9 @@
 WHAT'S NEW?
 
+  v0.30 Fixed a typo in the changelog (NEWS) entry for 0.27. :-)
+	added use of "MTR_OPTIONS" environment variable for defaults.
+
+
   v0.29 Lots of stuff. 
         Neato overview display by David Sward. 
         FreeBSD does wrong in the kernel the same that Solaris/x86 (see 
@@ -14,7 +18,7 @@ WHAT'S NEW?
 
   v0.27
 	Fixed bug that showed up on Solaris/x86.
-	Gimp mainloop now runs as it's supposed to.
+	GTK mainloop now runs as it's supposed to.
 
   v0.26
         Added "-n" flag for numeric output. 

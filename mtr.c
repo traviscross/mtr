@@ -109,6 +109,31 @@ void parse_arg(int argc, char **argv) {
 
 }
 
+
+void parse_mtr_options (char *string)
+{
+  int argc;
+  char *argv[128], *p;
+  int i;
+
+  if (!string) return;
+
+  argv[0] = "mtr";
+  argc = 1;
+  p = strtok (string, " \t");
+  while (p) {
+    argv[argc++] = p;
+    p = strtok (NULL, " \t");
+  }
+  parse_arg (argc, argv);
+  optind = 0;
+}
+
+
+
+
+
+
 int main(int argc, char **argv) {
   int traddr;
   struct hostent *host;
@@ -131,6 +156,9 @@ int main(int argc, char **argv) {
   }
   
   display_detect(&argc, &argv);
+
+  parse_mtr_options (getenv ("MTR_OPTIONS"));
+
   parse_arg(argc, argv);
 
   if(PrintVersion) {
