@@ -96,6 +96,13 @@ struct sequence {
     struct timeval time;
 };
 
+
+/* Configuration parameter: How many queries to unknown hosts do we
+   send? (This limits the amount of traffic generated if a host is not
+   reachable) */
+#define MAX_UNKNOWN_HOSTS 5
+
+
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
@@ -103,7 +110,11 @@ static struct timeval reset = { 0, 0 };
 int sendsock;
 int recvsock;
 struct sockaddr_in remoteaddress;
+static int batch_at = 0;
 
+
+/* This doesn't work for odd sz. I don't know enough about this to say
+   that this is wrong. It doesn't seem to cripple mtr though. -- REW */
 int checksum(void *data, int sz) {
   unsigned short *ch;
   unsigned int sum;
@@ -332,28 +343,27 @@ void net_end_transit() {
 
 
 int net_send_batch() {
-  static int at;
   int n_unknown, i;
 
-  net_send_query(at);
+  net_send_query(batch_at);
 
   n_unknown = 0;
 
-  for (i=0;i<at;i++) {
+  for (i=0;i<batch_at;i++) {
     if (host[i].addr == 0)
       n_unknown++;
     if (host[i].addr == remoteaddress.sin_addr.s_addr)
       n_unknown = 100; /* Make sure we drop into "we should restart" */
   }
 
-  if ((host[at].addr == remoteaddress.sin_addr.s_addr) ||
-      (n_unknown > 5)) {
-    DeltaTime = WaitTime / (float) (at+1);
-    at = 0;
+  if ((host[batch_at].addr == remoteaddress.sin_addr.s_addr) ||
+      (n_unknown > MAX_UNKNOWN_HOSTS)) {
+    DeltaTime = WaitTime / (float) (batch_at+1);
+    batch_at = 0;
     return 1;
   }
 
-  at++;
+  batch_at++;
   return 0;
 }
 
@@ -388,8 +398,6 @@ int net_open(int addr) {
   remoteaddress.sin_family = AF_INET;
   remoteaddress.sin_addr.s_addr = addr;
 
-  net_send_batch();
-
   return 0;
 }
 
@@ -410,6 +418,8 @@ void net_reopen(int addr) {
 void net_reset() {
   int at;
   int i;
+
+  batch_at = 0;
 
   for(at = 0; at < MaxHost; at++) {
     host[at].xmit = 0;

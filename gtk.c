@@ -73,6 +73,22 @@ gint Restart_clicked(GtkWidget *Button, gpointer data) {
   return FALSE;
 }
 
+gint gtk_ping(gpointer data);
+
+gint Pause_clicked(GtkWidget *Button, gpointer data) {
+  static int paused = 0;
+
+  if (paused) {
+    tag = gtk_timeout_add(DeltaTime*1000, gtk_ping, NULL);
+  } else {
+    gtk_timeout_remove (tag);
+  }
+  paused = ! paused;
+  gtk_redraw();
+
+  return FALSE;
+}
+
 gint Host_activate(GtkWidget *Entry, gpointer data) {
   int addr;
 
@@ -106,6 +122,12 @@ void Toolbar_fill(GtkWidget *Toolbar) {
 		     GTK_SIGNAL_FUNC(Restart_clicked), NULL);
   gtk_widget_show(Button);
 
+  Button = gtk_check_button_new_with_label("Pause");
+  gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
+  gtk_signal_connect(GTK_OBJECT(Button), "clicked",
+                    GTK_SIGNAL_FUNC(Pause_clicked), NULL);
+  gtk_widget_show(Button);
+ 
   Label = gtk_label_new("Hostname");
   gtk_box_pack_start(GTK_BOX(Toolbar), Label, FALSE, FALSE, 0);
   gtk_widget_show(Label);

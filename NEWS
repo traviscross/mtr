@@ -1,5 +1,11 @@
 WHAT'S NEW?
 
+  v0.35 Added Craig Milo Rogers pause/resume for GTK patch.
+        Added Craig Milo Rogers cleanup of "reset". (restart at the beginning)
+        Net_open used to send a first packet. After that the display-driver 
+            got a chance to distort the timing by taking its time to 
+            initialize.
+
   v0.34 Added Matt's nifty "use the icmp unreachables to do the timing" patch.
         Added Steve Kann's pause/resume patch. 
 
