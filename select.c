@@ -25,6 +25,7 @@
 #include <sys/select.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 
 #include "display.h"
 #include "dns.h"
@@ -48,6 +49,7 @@ void select_loop() {
   struct timeval lasttime, thistime, selecttime;
   float wt;
   int dt;
+  int rv; 
 
   NumPing = 0; 
   anyset = 0;
@@ -78,50 +80,56 @@ void select_loop() {
     if(netfd >= maxfd)
       maxfd = netfd + 1;
 
-    if(anyset || paused) {
-      selecttime.tv_sec = 0;
-      selecttime.tv_usec = 0;
+    do {
+      if(anyset || paused) {
+	selecttime.tv_sec = 0;
+	selecttime.tv_usec = 0;
       
-      select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
-    } else {
-      if(Interactive) 
-	display_redraw();
+	rv = select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
+      } else {
+	if(Interactive) 
+	  display_redraw();
 
-      gettimeofday(&thistime, NULL);
+	gettimeofday(&thistime, NULL);
 
-      if(thistime.tv_sec > lasttime.tv_sec + intervaltime.tv_sec ||
-         (thistime.tv_sec == lasttime.tv_sec + intervaltime.tv_sec &&
-          thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
-        lasttime = thistime;
-        if(NumPing >= MaxPing && !Interactive)
-          break;
-        if (net_send_batch())
-	  NumPing++;
+	if(thistime.tv_sec > lasttime.tv_sec + intervaltime.tv_sec ||
+	   (thistime.tv_sec == lasttime.tv_sec + intervaltime.tv_sec &&
+	    thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
+	  lasttime = thistime;
+	  if(NumPing >= MaxPing && !Interactive)
+	    break;
+	  if (net_send_batch())
+	    NumPing++;
+	}
+
+	selecttime.tv_usec = (thistime.tv_usec - lasttime.tv_usec);
+	selecttime.tv_sec = (thistime.tv_sec - lasttime.tv_sec);
+	if (selecttime.tv_usec < 0) {
+	  --selecttime.tv_sec;
+	  selecttime.tv_usec += 1000000;
+	}
+	selecttime.tv_usec = intervaltime.tv_usec - selecttime.tv_usec;
+	selecttime.tv_sec = intervaltime.tv_sec - selecttime.tv_sec;
+	if (selecttime.tv_usec < 0) {
+	  --selecttime.tv_sec;
+	  selecttime.tv_usec += 1000000;
+	}
+
+	if ((selecttime.tv_sec > (time_t)dnsinterval) ||
+	    ((selecttime.tv_sec == (time_t)dnsinterval) &&
+	     (selecttime.tv_usec > ((time_t)(dnsinterval * 1000000) % 1000000)))) {
+	  selecttime.tv_sec = (time_t)dnsinterval;
+	  selecttime.tv_usec = (time_t)(dnsinterval * 1000000) % 1000000;
+	}
+
+	rv = select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
       }
+    } while ((rv < 0) && (errno == EINTR));
 
-      selecttime.tv_usec = (thistime.tv_usec - lasttime.tv_usec);
-      selecttime.tv_sec = (thistime.tv_sec - lasttime.tv_sec);
-      if (selecttime.tv_usec < 0) {
-	--selecttime.tv_sec;
-	selecttime.tv_usec += 1000000;
-      }
-      selecttime.tv_usec = intervaltime.tv_usec - selecttime.tv_usec;
-      selecttime.tv_sec = intervaltime.tv_sec - selecttime.tv_sec;
-      if (selecttime.tv_usec < 0) {
-	--selecttime.tv_sec;
-	selecttime.tv_usec += 1000000;
-      }
-
-      if ((selecttime.tv_sec > (time_t)dnsinterval) ||
-          ((selecttime.tv_sec == (time_t)dnsinterval) &&
-           (selecttime.tv_usec > ((time_t)(dnsinterval * 1000000) % 1000000)))) {
-        selecttime.tv_sec = (time_t)dnsinterval;
-        selecttime.tv_usec = (time_t)(dnsinterval * 1000000) % 1000000;
-      }
-
-      select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
+    if (rv < 0) {
+      perror ("Select failed");
+      exit (1);
     }
-
     anyset = 0;
 
     /* Handle any pending resolver events */

@@ -73,18 +73,27 @@ Oh, Feel free to provide suggestions for this list.
     At the moment (march 1999) autoconf 2.13 is still too new to require 
     everyone to upgrade. About a year from now we can put this in....
 
-  - Allow a toggle between hostname/IP number display. (for example a 
-    click on the hostname could revert to ip number display in gtk version.
-    curses: "n" key toggles hostnames/ipnumbers?)
-
   - Implement rfc2317 mechanism to do reverse lookups for networks that
     have DNS delegations on non-octet boundaries. -- Daniel Bergstrom
     (noa@melody.se)
+
+  - The longer MTR runs, the less meaningful the packet loss
+    statistic. Or more meaningful, depending on your point of view.
+    Perhaps MTR should use a circular buffer of some configurable
+    number of results, and calculate the loss against that. -- Jacob Elder
+
+  - It would be nice if the window size wasn't fixed. If I'm only 5
+    hops from the host I'm monitoring, MTR wastes a lot of screen real
+    estate. -- Jacob Elder
 
 
 ------------------------------------------------------------------------
 
 Things that shouldn't be on the TODO list because they're done. ;-)
+
+  - Allow a toggle between hostname/IP number display. (for example a 
+    click on the hostname could revert to ip number display in gtk version.
+    curses: "n" key toggles hostnames/ipnumbers?)
 
   - Allow mtr to also send larger packets. 
        This will enable us to get a feel for the speed of the links

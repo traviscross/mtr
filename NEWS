@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.50 Make "interface address" option work.
+        Changes to "select" loop to allow window resizes (select 
+        interruption) to work. Thanks Mike!
+
   v0.49 Fix compilation problems on several platforms.
 
   v0.48 Draw names in red (GTK) or bold (Curses) if host doesn't 
@@ -13,7 +17,7 @@ WHAT'S NEW?
   v0.45 People are pressuring me to release new versions with their
         changes. That's fine. Now this version just adds dynamic
         switching between numeric / dns names, and some minor
-        stuff I forgot. This release serves as a code-sycn-release.
+        stuff I forgot. This release serves as a code-sync-release.
         new version with even more new stuff in about two weeks!
         I'm afraid I don't know how to fix the MaxOS-X compilation
         problems in the source. Help wanted... 
@@ -22,7 +26,7 @@ WHAT'S NEW?
 
   v0.43 Compile fixes.
 
-  v0.41 Added afr's patch to allow disabeling of gtk without Robn's hack. 
+  v0.41 Added afr's patch to allow disabling of gtk without Robn's hack. 
         Made report mode report the newly added extra resolution. 
 
   v0.40 Fixed some problems with HPUX and SunOS.

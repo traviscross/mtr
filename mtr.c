@@ -217,6 +217,8 @@ int main(int argc, char **argv) {
     char dummy;
     extern int sendsock; /* from net.c:115 */
 
+    bzero(&source, sizeof(source)); /* -- Evgeniy Tretyak */
+
     source.sin_family = AF_INET;
     source.sin_port = 0;
 
