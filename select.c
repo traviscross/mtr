@@ -97,7 +97,7 @@ void select_loop() {
 	    thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
 	  lasttime = thistime;
 	  if(NumPing >= MaxPing && !Interactive)
-	    break;
+	    return;
 	  if (net_send_batch())
 	    NumPing++;
 	}

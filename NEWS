@@ -1,4 +1,8 @@
 WHAT'S NEW?
+
+  v0.51 Fixed the bug introduced by the previous select loop fix... 
+        Thanks Evgeniy
+
   v0.50 Make "interface address" option work.
         Changes to "select" loop to allow window resizes (select 
         interruption) to work. Thanks Mike!
