@@ -43,15 +43,15 @@ void select_loop() {
   int action, maxfd;
   int dnsfd, netfd;
   int NumPing;
+  int paused;
   struct timeval lasttime, thistime, selecttime;
   float wt;
 
-  /* This starts at -1, because the first packet sent is not counted
-     as a ping. That confuses people.  */
-  NumPing = -1; 
+  NumPing = 0; 
   anyset = 0;
   gettimeofday(&lasttime, NULL);
   DeltaTime = WaitTime/10;
+  paused=0;
 
   while(1) {
     intervaltime.tv_sec = DeltaTime;
@@ -76,7 +76,7 @@ void select_loop() {
     if(netfd >= maxfd)
       maxfd = netfd + 1;
 
-    if(anyset) {
+    if(anyset || paused) {
       selecttime.tv_sec = 0;
       selecttime.tv_usec = 0;
       
@@ -141,6 +141,12 @@ void select_loop() {
 
       if (action == ActionClear) 
 	display_clear();
+
+      if (action == ActionPause) 
+	paused=1;
+
+      if (action == ActionResume) 
+	paused=0;
 
       anyset = 1;
     }

@@ -47,3 +47,4 @@ void net_save_return(int at, int seq, int ms);
 int net_duplicate(int at, int seq);
 
 #define MaxHost 256
+#define MaxSequence 65536

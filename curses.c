@@ -63,6 +63,10 @@ int mtr_curses_keyaction() {
      return ActionQuit;
   if (c==12)
      return ActionClear;
+  if (c==19)
+     return ActionPause;
+  if (c==17)
+     return ActionResume;
   if(tolower(c) == 'r')
     return ActionReset;
   if (tolower(c) == 'd')

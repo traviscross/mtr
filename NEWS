@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+  v0.34 Added Matt's nifty "use the icmp unreachables to do the timing" patch.
+        Added Steve Kann's pause/resume patch. 
+
   v0.33 Fixed the Linux glibc resolver problems.
         Fixed the off-by-one problem with -c option. 
 

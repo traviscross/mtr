@@ -78,16 +78,8 @@ struct IPHeader {
 #define SOL_IP 0
 #endif
   
-struct packetdata {
-    int index;
-    int ttl;
-    int sec;
-    int msec;
-    int seq;
-};
-
 struct nethost {
-  int addr;
+  uint32 addr;
   int xmit;
   int returned;
   int total;
@@ -97,7 +89,15 @@ struct nethost {
   int saved[SAVED_PINGS];
 };
 
+struct sequence {
+    int index;
+    int transit;
+    int saved_seq;
+    struct timeval time;
+};
+
 static struct nethost host[MaxHost];
+static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
 
 int sendsock;
@@ -123,65 +123,31 @@ int checksum(void *data, int sz) {
 
 static int BSDfix = 0;
 
-void net_send_ping(int index) {
-  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader) 
-	     + sizeof(struct packetdata)];
-  struct IPHeader *ip;
-  struct ICMPHeader *icmp;
-  struct packetdata *data;
-  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + sizeof(struct packetdata);
-  struct sockaddr_in addr;
-  struct timeval now;
+int new_sequence(int index) {
+  static int next_sequence = 0;
+  int seq;
 
-  memset(&addr, 0, sizeof(struct sockaddr_in));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = host[index].addr;
-  host[index].xmit++;
+  seq = next_sequence++;
+  if(next_sequence >= MaxSequence)
+    next_sequence = 0;
+
+  sequence[seq].index = index;
+  sequence[seq].transit = 1;
+  sequence[seq].saved_seq = ++host[index].xmit;
+  memset(&sequence[seq].time, 0, sizeof(sequence[seq].time));
+  
   host[index].transit = 1;
   net_save_xmit(index);
-
-  memset(packet, 0, packetsize);
-
-  ip = (struct IPHeader *)packet;
-  icmp = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
-  data = (struct packetdata *)(packet + sizeof(struct IPHeader) + sizeof(struct ICMPHeader));
-
-  ip->version = 0x45;
-  ip->tos = 0;
-  ip->len = BSDfix? packetsize: htons (packetsize);
-  ip->id = 0;
-  ip->frag = 0;
-  ip->ttl = 127;
-  ip->protocol = IPPROTO_ICMP;
-  ip->saddr = 0;
-  ip->daddr = host[index].addr;
   
-  icmp->type = timestamp?ICMP_TSTAMP:ICMP_ECHO;
-  icmp->id = getpid();
-  icmp->sequence = 0;
-
-  data->ttl = 0;
-  data->index = index;
-  data->seq = host[index].xmit;
-
-  gettimeofday(&now, NULL);
-  data->sec = now.tv_sec;
-  data->msec = now.tv_usec / 1000;
-
-  icmp->checksum = checksum(icmp, packetsize - sizeof(struct IPHeader));
-  ip->check = checksum(ip, packetsize);
-
-  sendto(sendsock, packet, packetsize, 0, 
-	 (struct sockaddr *)&addr, sizeof(addr));
+  return seq;
 }
 
 /*  Attempt to find the host at a particular number of hops away  */
-void net_send_query(int hops) {
-  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + sizeof(struct packetdata)];
+void net_send_query(int index) {
+  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];
   struct IPHeader *ip;
   struct ICMPHeader *icmp;
-  struct packetdata *data;
-  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + sizeof(struct packetdata);
+  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
   int rv;
   static int first=1;
 
@@ -189,33 +155,28 @@ void net_send_query(int hops) {
 
   ip = (struct IPHeader *)packet;
   icmp = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
-  data = (struct packetdata *)(packet + sizeof(struct IPHeader) + sizeof(struct ICMPHeader));
 
   ip->version = 0x45;
   ip->tos = 0;
   ip->len = BSDfix ? packetsize: htons (packetsize);
   ip->id = 0;
   ip->frag = 0;
-  ip->ttl = hops;
+  ip->ttl = index + 1;
   ip->protocol = IPPROTO_ICMP;
   ip->saddr = 0;
   ip->daddr = remoteaddress.sin_addr.s_addr;
 
   icmp->type = ICMP_ECHO;
   icmp->id = getpid();
-  icmp->sequence = hops;
-
-  data->ttl = hops;
-  data->index = -1;
+  icmp->sequence = new_sequence(index);
 
   icmp->checksum = checksum(icmp, packetsize - sizeof(struct IPHeader));
   ip->check = checksum(ip, packetsize);
 
-  
+  gettimeofday(&sequence[icmp->sequence].time, NULL);
   rv = sendto(sendsock, packet, packetsize, 0, 
 	 (struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
   if (first && (rv < 0) && (errno == EINVAL)) {
-    first = 0;
     ip->len = packetsize;
     rv = sendto(sendsock, packet, packetsize, 0, 
 		(struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
@@ -224,54 +185,50 @@ void net_send_query(int hops) {
       BSDfix = 1;
     }
   }
+  first = 0;
 }
 
-void net_process_ping(struct packetdata *data, struct sockaddr_in *addr) {
-  int at;
-  struct timeval now;
+/*   We got a return on something we sent out.  Record the address and
+     time.  */
+void net_process_ping(int seq, uint32 addr, struct timeval now) {
+  int index;
   int totmsec;
 
-  if(data->index >= 0) {
-    gettimeofday(&now, NULL);
+  if(seq < 0 || seq >= MaxSequence)
+    return;
 
-    if(data->sec < reset.tv_sec
-       || (data->sec == reset.tv_sec && (1000*data->msec) < reset.tv_usec))
-      /* discard this data point, stats were reset after it was generated */
-      return;
+  if(!sequence[seq].transit)
+    return;
+  sequence[seq].transit = 0;
 
-    if (net_duplicate(data->index, data->seq)) {
-	return;
-    }
-    
-    totmsec = (now.tv_sec - data->sec) * 1000 +
-              ((now.tv_usec/1000) - data->msec);
+  index = sequence[seq].index;
 
-    if(host[data->index].returned <= 0) {
-      host[data->index].best = host[data->index].worst = totmsec;
-    }
+  totmsec = (now.tv_sec - sequence[seq].time.tv_sec) * 1000 +
+            ((now.tv_usec/1000) - (sequence[seq].time.tv_usec/1000));
 
-    if(totmsec < host[data->index].best)
-      host[data->index].best = totmsec;
-
-    if(totmsec > host[data->index].worst)
-      host[data->index].worst = totmsec;
-
-    display_rawping (data->index, totmsec);
-
-    host[data->index].total += totmsec;
-    host[data->index].returned++;
-    host[data->index].transit = 0;
-    net_save_return(data->index, data->seq, totmsec);
-  } else {
-    at = data->ttl - 1;
-    if(at < 0 || at > MaxHost)
-      return;
-
-    host[at].addr = addr->sin_addr.s_addr;
-    display_rawhost (at, host[at].addr);
+  if(host[index].addr == 0) {
+    host[index].addr = addr;
+    display_rawhost(index, host[index].addr);
   }
+  if(host[index].returned <= 0) {
+    host[index].best = host[index].worst = totmsec;
+  }
+  if(totmsec < host[index].best)
+    host[index].best = totmsec;
+  if(totmsec > host[index].worst)
+    host[index].worst = totmsec;
+
+  host[index].total += totmsec;
+  host[index].returned++;
+  host[index].transit = 0;
+
+  net_save_return(index, sequence[seq].saved_seq, totmsec);
+  display_rawping(index, totmsec);
 }
 
+/*  We know a packet has come in, because the main select loop has called us,
+    now we just need to read it, see if it is for us, and if it is a reply 
+    to something we sent, then call net_process_ping()  */
 void net_process_return() {
   char packet[2048];
   struct sockaddr_in fromaddr;
@@ -279,12 +236,15 @@ void net_process_return() {
   int num;
   int at;
   struct ICMPHeader *header;
+  struct timeval now;
+
+  gettimeofday(&now, NULL);
 
   fromaddrsize = sizeof(fromaddr);
   num = recvfrom(recvsock, packet, 2048, 0, 
 		 (struct sockaddr *)&fromaddr, &fromaddrsize);
 
-  if(num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + sizeof(struct packetdata))
+  if(num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
     return;
 
   header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
@@ -292,9 +252,7 @@ void net_process_return() {
     if(header->id != getpid())
       return;
 
-    net_process_ping((struct packetdata *)(packet + sizeof(struct IPHeader) + 
-					   sizeof(struct ICMPHeader)),
-		     &fromaddr);
+    net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
   } else if(header->type == ICMP_TIME_EXCEEDED) {
     if(num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + 
              sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
@@ -304,13 +262,8 @@ void net_process_return() {
 				sizeof(struct ICMPHeader) + sizeof(struct IPHeader));
     if(header->id != getpid())
       return;
-    
-    at = header->sequence - 1;
-    if(at < 0 || at > MaxHost)
-      return;
 
-    host[at].addr = fromaddr.sin_addr.s_addr;
-    display_rawhost (at, net_addr(at));
+    net_process_ping(header->sequence, fromaddr.sin_addr.s_addr, now);
   }
 }
 
@@ -382,11 +335,7 @@ int net_send_batch() {
   static int at;
   int n_unknown, i;
 
-  if(host[at].addr == 0) {
-    net_send_query(at + 1);
-  } else {
-    net_send_ping(at);
-  }
+  net_send_query(at);
 
   n_unknown = 0;
 
@@ -463,7 +412,8 @@ void net_reset() {
   int i;
 
   for(at = 0; at < MaxHost; at++) {
-    host[at].xmit = host[at].transit;
+    host[at].xmit = 0;
+    host[at].transit = 0;
     host[at].returned = 0;
     host[at].total = 0;
     host[at].best = 0;
@@ -472,6 +422,11 @@ void net_reset() {
       host[at].saved[i] = -2;	/* unsent */
     }
   }
+  
+  for(at = 0; at < MaxSequence; at++) {
+    sequence[at].transit = 0;
+  }
+
   gettimeofday(&reset, NULL);
 }
 
@@ -484,6 +439,7 @@ int net_waitfd() {
   return recvsock;
 }
 
+
 int* net_saved_pings(int at) {
 	return host[at].saved;
 }
@@ -493,28 +449,6 @@ void net_save_xmit(int at) {
 	memcpy(tmp, &host[at].saved[1], (SAVED_PINGS-1)*sizeof(int));
 	memcpy(host[at].saved, tmp, (SAVED_PINGS-1)*sizeof(int));
 	host[at].saved[SAVED_PINGS-1] = -1;
-}
-
-int net_duplicate(int at, int seq) {
-	int idx;
-	idx = SAVED_PINGS - (host[at].xmit - seq) - 1;
-	if (idx < 0) {
-		/* long in the past - assume received */
-		return 2;
-	}
-	if (idx >= SAVED_PINGS) {
-		/* ehhhh - back to the future? */
-		return 3;
-	}
-	if (host[at].saved[idx] == -2) {
-		/* say what?  must be an old ping */
-		return 4;
-	}
-	if (host[at].saved[idx] != -1) {
-		/* it's a dup */
-		return 5;
-	}
-	return 0;
 }
 
 void net_save_return(int at, int seq, int ms) {

@@ -258,6 +258,7 @@ void Window_fill(GtkWidget *Window) {
   GtkWidget *List;
 
   gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
+  gtk_window_set_wmclass(GTK_WINDOW(Window), "mtr", "Mtr");
   gtk_widget_set_usize(Window, 540, 400); 
   gtk_container_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);

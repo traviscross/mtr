@@ -31,6 +31,7 @@ extern int DisplayMode;
 #define mtr_curses_close()
 #define mtr_curses_redraw()
 #define mtr_curses_keyaction()
+#define mtr_curses_clear()
 #endif
 
 #ifdef NO_GTK
@@ -39,6 +40,13 @@ extern int DisplayMode;
 #define gtk_redraw()
 #define gtk_keyaction()
 #define gtk_loop()
+#endif
+
+#ifdef NO_SPLIT
+#define split_open()
+#define split_close()
+#define split_redraw()
+#define split_keyaction() 0
 #endif
 
 void display_detect(int *argc, char ***argv) {

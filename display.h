@@ -17,7 +17,8 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-enum { ActionNone, ActionQuit, ActionReset, ActionDisplay, ActionClear };
+enum { ActionNone, ActionQuit, ActionReset, ActionDisplay, ActionClear,
+	ActionPause, ActionResume };
 enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, DisplayRaw };
 
 /*  Prototypes for display.c  */

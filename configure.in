@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.33)
+AM_INIT_AUTOMAKE(mtr, 0.34)
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
@@ -14,12 +14,17 @@ AC_CHECK_SIZEOF(unsigned short, 2)
 AC_CHECK_SIZEOF(unsigned int, 4)
 AC_CHECK_SIZEOF(unsigned long, 4)
 
+# Some doc I found somewhere. :-) -- REW
+# - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+# - Macro: AC_CHECK_LIB (LIBRARY, FUNCTION [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, OTHER-LIBRARIES]]])
+
 AC_CHECK_FUNC(initscr, , 
   AC_CHECK_LIB(ncurses, initscr, , 
     AC_CHECK_LIB(curses, initscr, , 
 	AC_MSG_WARN(Building without curses display support)
 	AC_DEFINE(NO_CURSES)
 	CURSES_OBJ=)))
+
 AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h)
 AC_CHECK_HEADERS(sys/xti.h)
 
