@@ -1,5 +1,7 @@
 WHAT'S NEW?
 
+  v0.32 Fixed the FreeBSD bug detection stuff. 
+
   v0.31 Fixed a few documentation issues. -- Matt
         Changed the autoconf stuff to find the resolver library on 
             Solaris. -- REW

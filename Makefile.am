@@ -21,7 +21,9 @@ EXTRA_mtr_SOURCES = curses.c \
 mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
 mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
 
-EXTRA_DIST = SECURITY mtr.8
+EXTRA_DIST = SECURITY mtr.8 Makefile Makefile.dist
+distclean-local:
+	cp Makefile.dist Makefile
 
 DISTCLEANFILES = *~
 

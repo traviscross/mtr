@@ -27,11 +27,20 @@
     not be reset at the start of the "round". This way if you probe
     slowly (relative to the RTT time to the end host), it can probe
     all hosts in the first "round". 
+       -- DONE.
+
+  - allow "keyboard navigation" in the GTK version. 
+
 
 
 - Bugs to fix?
 
   - Do something useful if host couldn't be resolved. 
+
+  - Revert to curses mode even if DISPLAY is set, but a problem
+    prevents us from running in X11 mode.
+       -->  The problem is that gtk_init simply calls exit for us if
+            it finds a problem. Tricky! Suggestions welcome. 
 
 - Nice to have:
 
@@ -42,11 +51,6 @@
 
   - Check why it still tries to go for X11 display if DISPLAY is unset.
     (I saw code to handle this)
-
-  - Revert to curses mode even if DISPLAY is set, but a problem
-    prevents us from running in X11 mode.
-       -->  The problem is that gtk_init simply calls exit for us if
-            it finds a problem. Tricky! Suggestions welcome. 
 
   - Read environment variable "MTR_DEFAULTS" as a commandline before
     parsing the commandline.  -- DONE. (ok it's MTR_OPTIONS.)

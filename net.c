@@ -214,7 +214,7 @@ void net_send_query(int hops) {
   
   rv = sendto(sendsock, packet, packetsize, 0, 
 	 (struct sockaddr *)&remoteaddress, sizeof(remoteaddress));
-  if (first && (rv == EINVAL)) {
+  if (first && (rv < 0) && (errno == EINVAL)) {
     first = 0;
     ip->len = packetsize;
     rv = sendto(sendsock, packet, packetsize, 0, 

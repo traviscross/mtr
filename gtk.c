@@ -50,7 +50,10 @@ void gtk_do_init(int *argc, char ***argv) {
 
 int gtk_detect(int *argc, char ***argv) {
   if(getenv("DISPLAY") != NULL) {
-    gtk_do_init(argc, argv);
+    /* If we do this here, gtk_init exits on an error. This happens
+       BEFORE the user has had a chance to tell us not to use the 
+       display... */
+    /*    gtk_do_init(argc, argv); */
     return TRUE;
   } else {
     return FALSE;
