@@ -1,5 +1,13 @@
 WHAT'S NEW?
 
+  v0.40 Fixed some problems with HPUX and SunOS.
+	Included Olav Kvittem's patch to do packetsize option.
+	Made the timekeeping in micro seconds.
+
+  v0.39 Forgot the parentheses around the previous fix... :-(
+
+  v0.38 fixed some dubious code in dns.c (noted by someone's lint)
+
   v0.37 Added Bill Bogstad's "show the local host & time" patch. 
 	Added R. Sparks' show-last-ping patch, submitted by Philip Kizer.
 

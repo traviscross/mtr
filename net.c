@@ -15,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+    
+   1999-08-13 ok Olav@okvittem.priv.no  added -psize
+
 */
 
 #include <config.h>
@@ -75,12 +78,14 @@ struct IPHeader {
 #ifndef SOL_IP
 #define SOL_IP 0
 #endif
-  
+
+
+
 struct nethost {
   uint32 addr;
   int xmit;
   int returned;
-  int total;
+  long long total;
   int last;
   int best;
   int worst;
@@ -113,7 +118,7 @@ struct sockaddr_in remoteaddress;
 static int batch_at = 0;
 
 
-
+extern int packetsize;
 static int numhosts = 10;
 
 /* return the number of microseconds to wait before sending the next
@@ -167,13 +172,17 @@ int new_sequence(int index) {
 
 /*  Attempt to find the host at a particular number of hops away  */
 void net_send_query(int index) {
-  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];
+  /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
+  char packet[MAXPACKET];
   struct IPHeader *ip;
   struct ICMPHeader *icmp;
-  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
+
+  /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
 
+  if ( packetsize < MINPACKET ) packetsize = MINPACKET;
+  if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
   memset(packet, 0, packetsize);
 
   ip = (struct IPHeader *)packet;
@@ -215,7 +224,7 @@ void net_send_query(int index) {
      time.  */
 void net_process_ping(int seq, uint32 addr, struct timeval now) {
   int index;
-  int totmsec;
+  int totusec;
 
   if(seq < 0 || seq >= MaxSequence)
     return;
@@ -226,28 +235,28 @@ void net_process_ping(int seq, uint32 addr, struct timeval now) {
 
   index = sequence[seq].index;
 
-  totmsec = (now.tv_sec - sequence[seq].time.tv_sec) * 1000 +
-            ((now.tv_usec/1000) - (sequence[seq].time.tv_usec/1000));
+  totusec = (now.tv_sec  - sequence[seq].time.tv_sec ) * 1000000 +
+            (now.tv_usec - sequence[seq].time.tv_usec);
 
   if(host[index].addr == 0) {
     host[index].addr = addr;
     display_rawhost(index, host[index].addr);
   }
   if(host[index].returned <= 0) {
-    host[index].best = host[index].worst = totmsec;
+    host[index].best = host[index].worst = totusec;
   }
-  host[index].last = totmsec;
-  if(totmsec < host[index].best)
-    host[index].best = totmsec;
-  if(totmsec > host[index].worst)
-    host[index].worst = totmsec;
+  host[index].last = totusec;
+  if(totusec < host[index].best)
+    host[index].best = totusec;
+  if(totusec > host[index].worst)
+    host[index].worst = totusec;
 
-  host[index].total += totmsec;
+  host[index].total += totusec;
   host[index].returned++;
   host[index].transit = 0;
 
-  net_save_return(index, sequence[seq].saved_seq, totmsec);
-  display_rawping(index, totmsec);
+  net_save_return(index, sequence[seq].saved_seq, totusec);
+  display_rawping(index, totusec);
 }
 
 /*  We know a packet has come in, because the main select loop has called us,

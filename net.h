@@ -51,3 +51,6 @@ int net_duplicate(int at, int seq);
 
 #define MaxHost 256
 #define MaxSequence 65536
+
+#define MAXPACKET 4096
+#define MINPACKET 64

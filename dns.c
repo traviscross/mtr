@@ -92,8 +92,8 @@ struct resolve {
    struct resolve *previousip;
    struct resolve *nexthost;
    struct resolve *previoushost;
+   float expiretime; /* Fucking HPUX has a problem with "double" here. */
    char *hostname;
-   double expiretime;
    ip_t ip;
    word id;
    byte state;

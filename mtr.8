@@ -40,7 +40,10 @@ mtr \- a network diagnostic tool
 [\c
 .B \-\-interval\ SECONDS\c
 ]
-.B HOSTNAME
+[\c
+.B \-\-psize\ BYTES | -p BYTES\c
+]
+.B HOSTNAME [PACKETSIZE]
 
 
 .SH DESCRIPTION
@@ -116,6 +119,15 @@ is only useful with the
 .B -r
 option. 
 
+.TP
+.B \-p\ BYTES
+.TP
+.B \-\-psize\ BYTES
+.TP
+.B PACKETSIZE
+These options or a trailing PACKETSIZE on the commandline sets 
+the packet size used for probing.
+It is in bytes inclusive IP and ICMP headers
 .TP
 .B \-t
 .TP

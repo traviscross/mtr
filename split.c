@@ -34,6 +34,13 @@
 
 #include <config.h>
 
+#ifdef NO_CURSES
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#else
+/* Use the curses variant */
+
 #if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -44,6 +51,7 @@
 #  error No curses header file available
 #endif
 
+#endif
 
 
 extern char *Hostname;
@@ -93,16 +101,18 @@ split_redraw() {
       if(name != NULL) {
 	/* May be we should test name's length */
 	sprintf(newLine, "%s %d %d %d %d %d %d", name,
-	       net_percent(at),
-	       net_returned(at), net_xmit(at),
-	       net_best(at), net_avg(at), net_worst(at));
+		net_percent(at),
+		net_returned(at), net_xmit(at),
+		net_best(at) /1000, net_avg(at)/1000, 
+		net_worst(at)/1000);
       } else {
 	sprintf(newLine, "%d.%d.%d.%d %d %d %d %d %d %d", 
-	       (addr >> 24) & 0xff, (addr >> 16) & 0xff, 
-	       (addr >> 8) & 0xff, addr & 0xff,
-	       net_percent(at),
-	       net_returned(at), net_xmit(at),
-	       net_best(at), net_avg(at), net_worst(at));
+		(addr >> 24) & 0xff, (addr >> 16) & 0xff, 
+		(addr >> 8) & 0xff, addr & 0xff,
+		net_percent(at),
+		net_returned(at), net_xmit(at),
+		net_best(at) /1000, net_avg(at)/1000, 
+		net_worst(at)/1000);
       }
     } else {
       sprintf(newLine, "???");
@@ -145,7 +155,23 @@ split_close() {
 
 int 
 split_keyaction() {
+#ifdef NO_CURSES
+  fd_set readfds;
+  struct timeval tv;
+  char c;
+
+  FD_ZERO (&readfds);
+  FD_SET (0, &readfds);
+  tv.tv_sec = 0;
+  tv.tv_usec = 0;
+
+  if (select (1, &readfds, NULL, NULL, &tv) > 0) {
+    read (0, &c, 1);
+  } else 
+    return 0;
+#else
   char c = getch();
+#endif
 
 #if DEBUG
   printf("split_keyaction()\n");

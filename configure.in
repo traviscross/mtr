@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.39)
+AM_INIT_AUTOMAKE(mtr, 0.40)
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
@@ -18,14 +18,23 @@ AC_CHECK_SIZEOF(unsigned long, 4)
 # - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
 # - Macro: AC_CHECK_LIB (LIBRARY, FUNCTION [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, OTHER-LIBRARIES]]])
 
+# We don't refer to any symbols in termcap, but -lcurses on SunOS does.
+# We have to trust the linker not to mess things up... (It should not
+# pull in anything if we don't refer to anything in the lib). 
+AC_CHECK_LIB(termcap, tgetent)
+
 AC_CHECK_FUNC(initscr, , 
   AC_CHECK_LIB(ncurses, initscr, , 
     AC_CHECK_LIB(curses, initscr, , 
+      AC_CHECK_LIB(cursesX, initscr, , 
 	AC_MSG_WARN(Building without curses display support)
 	AC_DEFINE(NO_CURSES)
-	CURSES_OBJ=)))
+	CURSES_OBJ=))))
 
-AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h)
+AC_CHECK_FUNCS(attron)
+
+
+AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h)
 AC_CHECK_HEADERS(sys/xti.h)
 
 AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
@@ -45,6 +54,9 @@ AC_CHECK_FUNC(gethostbyname, ,
 AC_CHECK_FUNC(res_init, , 
   AC_CHECK_LIB(bind, res_init, , 
    AC_CHECK_LIB(resolv, res_init, , AC_MSG_ERROR(No resolver library found))))
+
+AC_CHECK_FUNCS(seteuid)
+#  AC_CHECK_FUNC(setuid, , AC_MSG_ERROR (I Need either seteuid or setuid))
 
 AC_CHECK_FUNC(res_mkquery, , 
   AC_CHECK_LIB(bind, res_init, , 

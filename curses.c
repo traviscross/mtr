@@ -29,8 +29,22 @@
 #  include <ncurses/curses.h>
 #elif defined(HAVE_CURSES_H)
 #  include <curses.h>
+#elif defined(HAVE_CURSESX_H)
+#  include <cursesX.h>
 #else
 #  error No curses header file available
+#endif
+
+#if defined(HAVE_SYS_TYPES_H)
+#include <sys/types.h>
+#else
+/* If a system doesn't have sys/types.h, lets hope that time_t is an int */
+#define time_t int
+#endif
+
+#ifndef HAVE_ATTRON
+#define attron(x) 
+#define attroff(x) 
 #endif
 
 #ifndef getmaxyx
@@ -44,7 +58,7 @@
 #endif
 
 #include <time.h>
-extern LocalHostname[];
+extern char LocalHostname[];
 
 void pwcenter(char *str) {
   int maxx, maxy;
@@ -66,9 +80,9 @@ int mtr_curses_keyaction() {
      return ActionQuit;
   if (c==12)
      return ActionClear;
-  if (c==19)
+  if ((c==19) || (tolower (c) == 'p'))
      return ActionPause;
-  if (c==17)
+  if ((c==17) || (c == ' '))
      return ActionResume;
   if(tolower(c) == 'r')
     return ActionReset;
@@ -103,10 +117,12 @@ void mtr_curses_hosts(int startstat) {
       getyx(stdscr, y, x);
       move(y, startstat);
 
+      /* net_xxx returns times in usecs. Just display millisecs */
       printw("  %3d%% %4d %4d  %4d %4d %4d %6d", 
              net_percent(at),
-             net_returned(at), net_xmit(at),
-             net_last(at),net_best(at), net_avg(at), net_worst(at));
+             net_returned(at),  net_xmit(at),
+             net_last(at)/1000, net_best(at)/1000, 
+	     net_avg(at)/1000,  net_worst(at)/1000);
 
 
     } else {
@@ -234,12 +250,12 @@ void mtr_curses_redraw() {
 
   rowstat = 5;
 
-  attron(A_BOLD);
   move(0, 0);
+  attron(A_BOLD);
   pwcenter("Matt's traceroute  [v" VERSION "]");
-  printw("\n");
   attroff(A_BOLD);
-  printw(LocalHostname);
+
+  mvprintw(1,0, LocalHostname);
   time(&t);
   mvprintw(1, maxx-25, ctime(&t));
 
@@ -255,7 +271,7 @@ void mtr_curses_redraw() {
   mvprintw(rowstat - 1, 0, "Hostname");
 
   if (display_mode == 0) {
-    startstat = maxx - 40;
+    startstat = maxx - 41;
 
     /* Modified by Brian Casey December 1997 bcasey@imagiware.com */
     mvprintw(rowstat - 2, startstat, "    Packets               Pings");
@@ -283,7 +299,7 @@ void mtr_curses_redraw() {
     attroff(A_BOLD);
     
     for (i = 0; i < 7; i++) {
-      printw("  %c:%d ms", block_map[i], scale[i]);
+      printw("  %c:%d ms", block_map[i], scale[i]/1000);
     }
   }
 

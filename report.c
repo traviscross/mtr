@@ -65,7 +65,7 @@ void report_close() {
     printf("%-40s%5d%%%6d%5d%6d%6d%6d\n", name,     
 	     net_percent(at),
              net_returned(at), net_xmit(at),
-             net_best(at), net_avg(at), net_worst(at));
+             net_best(at)/1000, net_avg(at)/1000, net_worst(at)/1000);
   }
 }
 

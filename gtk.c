@@ -300,9 +300,9 @@ void gtk_update_row(GtkCList *List, int row) {
   gtk_set_field_num(List, row, 2, "%d", net_returned(row));  
   gtk_set_field_num(List, row, 3, "%d", net_xmit(row));
   
-  gtk_set_field_num(List, row, 4, "%d", net_best(row));
-  gtk_set_field_num(List, row, 5, "%d", net_avg(row));  
-  gtk_set_field_num(List, row, 6, "%d", net_worst(row));
+  gtk_set_field_num(List, row, 4, "%d", net_best(row)/1000);
+  gtk_set_field_num(List, row, 5, "%d", net_avg(row)/1000);  
+  gtk_set_field_num(List, row, 6, "%d", net_worst(row)/1000);
   
 }
 

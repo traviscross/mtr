@@ -30,6 +30,12 @@
 #include "report.h"
 #include "net.h"
 
+
+#ifndef HAVE_SETEUID
+/* HPUX doesn't have seteuid, but setuid works fine in that case for us */
+#define seteuid setuid
+#endif
+
 int DisplayMode;
 int Interactive = 1;
 int PrintVersion = 0;
@@ -39,6 +45,7 @@ float WaitTime = 1.0;
 char *Hostname = NULL;
 char LocalHostname[128];
 int dns = 1;
+int packetsize = 64;
 
 void parse_arg(int argc, char **argv) {
   int opt;
@@ -50,6 +57,7 @@ void parse_arg(int argc, char **argv) {
     { "curses", 0, 0, 't' },
     { "gtk", 0, 0, 'g' },
     { "interval", 1, 0, 'i' },
+    { "psize", 1, 0, 'p' },
     { "no-dns", 0, 0, 'n' },
     { "split", 0, 0, 's' },     /* BL */
     { "raw", 0, 0, 'l' },
@@ -58,7 +66,7 @@ void parse_arg(int argc, char **argv) {
 
   opt = 0;
   while(1) {
-    opt = getopt_long(argc, argv, "hvrc:tklnsi:", long_options, NULL);
+    opt = getopt_long(argc, argv, "hvrc:tklnsi:p:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -73,7 +81,10 @@ void parse_arg(int argc, char **argv) {
       DisplayMode = DisplayReport;
       break;
     case 'c':
-      MaxPing = atoi(optarg);
+      MaxPing = atoi (optarg);
+      break;
+    case 'p':
+      packetsize = atoi (optarg);
       break;
     case 't':
       DisplayMode = DisplayCurses;
@@ -91,7 +102,7 @@ void parse_arg(int argc, char **argv) {
       dns = 0;
       break;
     case 'i':
-      WaitTime = atof(optarg);
+      WaitTime = atof (optarg);
       if (WaitTime <= 0.0) {
 	fprintf (stderr, "mtr: wait time must be positive\n");
 	exit (1);
@@ -131,6 +142,7 @@ void parse_mtr_options (char *string)
   parse_arg (argc, argv);
   optind = 0;
 }
+
 
 
 int main(int argc, char **argv) {
