@@ -17,13 +17,25 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/* Typedefs */
+
+typedef unsigned char byte;
+typedef unsigned short word;
+typedef unsigned long dword;
+
+typedef unsigned int ip_t;
+
+
+
 /*  Prototypes for dns.c  */
 
 void dns_open();
 int dns_waitfd();
 void dns_ack();
 void dns_events(double *sinterval);
-char *dns_lookup(int address);
-char *dns_lookup2(int address);
+char *dns_lookup(ip_t address);
+char *dns_lookup2(ip_t address);
 int dns_forward(char *name);
-char *strlongip (int address);
+char *strlongip(ip_t ip);
+
+extern int dns;

@@ -44,6 +44,8 @@
 #include <errno.h>
 #include <time.h>
 
+#include "dns.h"
+
 #ifdef NO_STRERROR
 extern int sys_nerr;
 extern char *sys_errlist[];
@@ -52,9 +54,6 @@ extern char *sys_errlist[];
 
 /*  Hmm, it seems Irix requires this  */
 extern int errno;
-
-/* Defined in mtr.c */
-extern int dns;
 
 /* Defines */
 
@@ -74,14 +73,6 @@ extern int dns;
 /* Macros */
 
 #define nonull(s) (s) ? s : nullstring
-
-/* Typedefs */
-
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned long dword;
-
-typedef unsigned int ip_t;
 
 /* Structures */
 
