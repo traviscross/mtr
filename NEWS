@@ -1,4 +1,6 @@
 WHAT'S NEW?
+  v0.67 Bad keyboarding by REW caused this one out the door. Sorry. 
+        No changes. 
   v0.66 Through the Debian bugtracking system a bug report and
         fix was sent my way, that deals with stupid optmization 
         trying to save some 768 bytes of memory, sacrificing "it 
