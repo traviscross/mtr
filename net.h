@@ -39,11 +39,7 @@ void net_process_return(void);
 int net_max(void);
 int net_min(void);
 int net_last(int at);
-#ifdef ENABLE_IPV6
-struct in6_addr * net_addr(int at);
-#else
-struct in_addr * net_addr(int at);
-#endif
+ip_t * net_addr(int at);
 int net_loss(int at);
 int net_drop(int at);
 int net_last(int at);
@@ -56,11 +52,7 @@ int net_jitter(int at);
 int net_jworst(int at);
 int net_javg(int at);
 int net_jinta(int at);
-#ifdef ENABLE_IPV6
-struct in6_addr * net_addrs(int at, int i);
-#else
-struct in_addr * net_addrs(int at, int i);
-#endif
+ip_t * net_addrs(int at, int i);
 char *net_localaddr(void); 
 
 int net_send_batch(void);
@@ -124,8 +116,4 @@ extern int fld_index[];
 extern unsigned char fld_active[];
 extern char available_options[];
 
-#ifdef ENABLE_IPV6
-struct in6_addr unspec_addr;
-#else
-struct in_addr unspec_addr;
-#endif
+ip_t unspec_addr;

@@ -21,8 +21,4 @@
 
 /*  Prototypes for raw.c  */
 void raw_rawping(int host, int msec);
-#ifdef ENABLE_IPV6
-void raw_rawhost(int host, struct in6_addr * addr);
-#else
-void raw_rawhost(int host, struct in_addr * addr);
-#endif
+void raw_rawhost(int host, ip_t * addr);

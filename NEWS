@@ -1,4 +1,10 @@
 WHAT'S NEW?
+  v0.69 make distclean should now also remove "rej" files. 
+        Antonio Querubin: update getopt.h . More cleanups using
+        new infrastructure. 
+        rcw: Fixed IPV6 support: When compiled in an IPV6-supporting
+        environment, but when the kernel doesn't support IPV6, mtr would
+        fail to start. 
   v0.68 included some old patches.
         included patch from Antonio Querubin for better IPV6 support
         restructured some more whitespace. 

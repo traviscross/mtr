@@ -729,8 +729,6 @@ int net_preopen(void)
     return -1;
 #ifdef ENABLE_IPV6
   sendsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-  if (sendsock6 < 0)
-    return -1;
 #endif
 
 #ifdef IP_HDRINCL
@@ -747,8 +745,6 @@ int net_preopen(void)
     return -1;
 #ifdef ENABLE_IPV6
   recvsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-  if (recvsock6 < 0)
-    return -1;
 #endif
 
   return 0;
@@ -779,6 +775,10 @@ int net_open(struct hostent * host)
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
+    if (sendsock6 < 0 || recvsock6 < 0) {
+      fprintf( stderr, "Could not open IPv6 socket\n" );
+      exit( EXIT_FAILURE );
+    }
     sendsock = sendsock6;
     recvsock = recvsock6;
     addrcpy( (void *) &(rsa6->sin6_addr), host->h_addr, AF_INET6 );
