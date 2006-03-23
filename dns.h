@@ -32,4 +32,4 @@ struct hostent * dns_forward(char *name);
 char *strlongip(ip_t * ip);
 
 void addr2ip6arpa( ip_t * ip, char * buf );
-
+struct hostent *addr2host( const char *addr, int type );

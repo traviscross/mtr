@@ -496,10 +496,10 @@ void mtr_curses_redraw(void)
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());
+  /*
   printw("(tos=0x%X ", tos);
   printw("psize=%d ", abs(packetsize) );
   printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
-  /*
   if( packetsize>0 ){
     printw("psize=%d ", packetsize);
   } else {

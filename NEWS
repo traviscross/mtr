@@ -1,4 +1,9 @@
 WHAT'S NEW?
+  v0.70 Antinio submitted a cumulative patch containing some
+        nice improvements. He also submitted an automake patch
+        that causes mtr to no longer compile on my system. I 
+        refuse to have mtr "in the dark" that I can't test-compile
+        the dist. 
   v0.69 make distclean should now also remove "rej" files. 
         Antonio Querubin: update getopt.h . More cleanups using
         new infrastructure. 

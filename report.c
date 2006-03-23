@@ -77,11 +77,11 @@ void report_close(void)
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
+      host = dns ? addr2host( (void *) addr, af ) : NULL;
 
       if (host != NULL) {
-	 strncpy(name, host->h_name, 80);
-	 name[80] = 0;
+	 strncpy( name, host->h_name, (sizeof name) - 1 );
+	 name[ (sizeof name) - 1 ] = '\0'; 
       } else {
 	sprintf(name, "%s", strlongip( addr ) );
       }
@@ -154,11 +154,11 @@ void xml_close(void)
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
+      host = dns ? addr2host( (void *) addr, af ) : NULL;
 
       if (host != NULL) {
-	 strncpy(name, host->h_name, 80);
-	 name[80] = 0;
+	 strncpy( name, host->h_name, (sizeof name) - 1 );
+	 name[ (sizeof name) - 1 ] = '\0'; 
       } else {
 	sprintf(name, "%s", strlongip( addr ) );
       }
@@ -236,11 +236,11 @@ void csv_close(void)
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
-      host = dns?gethostbyaddr( (void *) addr, sizeof(int), AF_INET):NULL;
+      host = dns ? addr2host( (void *) addr, af ) : NULL;
 
       if (host != NULL) {
-	 strncpy(name, host->h_name, 80);
-	 name[80] = 0;
+	 strncpy( name, host->h_name, (sizeof name) - 1 );
+	 name[ (sizeof name) - 1 ] = '\0'; 
       } else {
 	sprintf(name, "%s", strlongip( addr ) );
       }

@@ -283,7 +283,7 @@ struct sockaddr_in * from4 = (struct sockaddr_in *) &from_sastruct;
 struct sockaddr * from = (struct sockaddr *) &from_sastruct;
 
 int resfd;
-int fromlen = sizeof from_sastruct;
+socklen_t fromlen = sizeof from_sastruct;
 
 char tempstring[16384+1+1];
 char sendstring[1024+1];
@@ -437,7 +437,7 @@ char *strlongip(ip_t * ip)
 }
 
 
-int longipstr(char *s, ip_t *dst)
+int longipstr( char *s, ip_t *dst, int af )
 {
 #ifdef ENABLE_IPV6
   return inet_pton( af, s, dst );
@@ -488,7 +488,7 @@ void dns_open(void)
 	    strerror(errno));
     exit(-1);
   }
-  longipstr( "127.0.0.1", &localhost );
+  longipstr( "127.0.0.1", &localhost, AF_INET );
   aseed = time(NULL) ^ (time(NULL) << 3) ^ (dword)getpid();
   for (i = 0;i < BashSize;i++) {
     idbash[i] = NULL;
@@ -1228,7 +1228,7 @@ void dns_ack(void)
 	if ( addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
 		      (void *) &(from4->sin_addr), (int) AF_INET ) == 0 ||
 	     addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
-		      (void *) &unspec_addr, (int) AF_INET ) != 0 )	/* 0.0.0.0 replies as 127.0.0.1 */
+		      (void *) &unspec_addr, (int) AF_INET ) == 0 )	/* 0.0.0.0 replies as 127.0.0.1 */
 	  break;
     } else
       for (i = 0;i < _res.nscount;i++)
@@ -1357,8 +1357,8 @@ char *dns_lookup(ip_t * ip)
 #ifdef ENABLE_IPV6
 /* Returns an ip6.arpa character string. */
 void addr2ip6arpa( ip_t * ip, char * buf ) {
-  unsigned char * p = (char *) ip;
-  unsigned char * b = buf;
+  char * p = (char *) ip;
+  char * b = buf;
   int i;
 
   for ( i = sizeof (struct in6_addr) - 1; i >= 0; i-- ) {
@@ -1369,3 +1369,19 @@ void addr2ip6arpa( ip_t * ip, char * buf ) {
   return;
 }
 #endif
+
+/* Resolve an IP address to a hostname. */ 
+struct hostent *addr2host( const char *addr, int af ) {
+  int len = 0;
+  switch ( af ) {
+  case AF_INET:
+    len = sizeof( struct in_addr );
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    len = sizeof( struct in6_addr );
+    break;
+#endif
+  }
+  return gethostbyaddr( addr, len, af );
+}

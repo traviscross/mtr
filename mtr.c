@@ -387,12 +387,6 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  
-  if (net_set_interfaceaddress (InterfaceAddress) != 0) {
-    fprintf (stderr, "mtr: Couldn't set interface addres.\n"); 
-    exit (1); 
-  }
-
 #ifdef ENABLE_IPV6
   /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
   bzero( &hints, sizeof hints );
@@ -441,6 +435,11 @@ int main(int argc, char **argv)
 	fprintf(stderr, "mtr: Unable to start net module.\n");
         exit(1);
       }
+
+  if (net_set_interfaceaddress (InterfaceAddress) != 0) {
+    fprintf( stderr, "mtr: Couldn't set interface address.\n" ); 
+    exit( EXIT_FAILURE ); 
+  }
 
   display_open();
   dns_open();
