@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.70)
+AM_INIT_AUTOMAKE(mtr, 0.71)
 
 
 AC_SUBST(GTK_OBJ)
@@ -87,7 +87,9 @@ AC_CHECK_FUNCS(seteuid)
 
 AC_CHECK_FUNC(res_mkquery, , 
   AC_CHECK_LIB(bind, res_mkquery, , 
-   AC_CHECK_LIB(resolv, res_mkquery, , AC_MSG_ERROR(No resolver library found))))
+   AC_CHECK_LIB(resolv, res_mkquery, ,
+     AC_CHECK_LIB(resolv, __res_mkquery, , AC_MSG_ERROR(No resolver library found)))))
+LIBS="$LIBS -lresolv"
 
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))

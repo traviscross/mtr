@@ -334,6 +334,14 @@ void net_process_ping(int seq, void * addr, struct timeval now)
   int oldavg;	/* usedByMin */
   int oldjavg;	/* usedByMin */
   int i;	/* usedByMin */
+#ifdef ENABLE_IPV6
+  char addrcopy[sizeof(struct in6_addr)];
+#else
+  char addrcopy[sizeof(struct in_addr)];
+#endif
+
+  /* Copy the from address ASAP because it can be overwritten */
+  addrcpy( (void *) &addrcopy, addr, af );
 
   if (seq < 0 || seq >= MaxSequence)
     return;
@@ -351,22 +359,22 @@ void net_process_ping(int seq, void * addr, struct timeval now)
   if ( addrcmp( (void *) &(host[index].addr),
 		(void *) &unspec_addr, af ) == 0 ) {
     // should be out of if as addr can change
-    addrcpy( (void *) &(host[index].addr), addr, af );
+    addrcpy( (void *) &(host[index].addr), addrcopy, af );
     display_rawhost(index, (void *) &(host[index].addr));
 
   /* multi paths by Min */
-    addrcpy( (void *) &(host[index].addrs[0]), addr, af );
+    addrcpy( (void *) &(host[index].addrs[0]), addrcopy, af );
   } else {
     for( i=0; i<MAXPATH; ) {
-      if( addrcmp( (void *) &(host[index].addrs[i]), addr,
+      if( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addrcopy,
                    af ) == 0 ||
           addrcmp( (void *) &(host[index].addrs[i]),
 		   (void *) &unspec_addr, af ) == 0 ) break;
       i++;
     }
-    if( addrcmp( (void *) &(host[index].addrs[i]), addr, af ) != 0 && 
+    if( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, af ) != 0 && 
         i<MAXPATH ) {
-      addrcpy( (void *) &(host[index].addrs[i]), addr, af );
+      addrcpy( (void *) &(host[index].addrs[i]), addrcopy, af );
     }
   /* end multi paths */
   }
@@ -925,8 +933,10 @@ int net_set_interfaceaddress (char *InterfaceAddress)
 
 void net_close(void)
 {
-  close(sendsock);
-  close(recvsock);
+  if (sendsock4 >= 0) close(sendsock4);
+  if (recvsock4 >= 0) close(recvsock4);
+  if (sendsock6 >= 0) close(sendsock6);
+  if (recvsock6 >= 0) close(recvsock6);
 }
 
 

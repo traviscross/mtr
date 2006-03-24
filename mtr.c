@@ -368,10 +368,10 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrctglsni46] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrctglspni46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns] [--address interface]\n" /* BL */
-           "\t\t[--psize=bytes/-p=bytes]\n"            /* ok */
+           "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
     exit(0);
   }

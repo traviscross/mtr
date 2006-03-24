@@ -8,7 +8,7 @@ mtr \- a network diagnostic tool
 .SH SYNOPSIS
 .B mtr 
 [\c
-.B \-hvrctglsni46\c
+.B \-hvrctglspni46\c
 ]
 [\c
 .B \-\-help\c
@@ -44,7 +44,7 @@ mtr \- a network diagnostic tool
 .B \-\-interval\ SECONDS\c
 ]
 [\c
-.B \-\-psize\ BYTES | -p BYTES\c
+.B \-\-psize\ BYTES | -s BYTES\c
 ]
 .B HOSTNAME [PACKETSIZE]
 
@@ -124,7 +124,7 @@ both the machines on the network and the reliability of
 those machines.  Each cycle lasts one second.
 
 .TP
-.B \-p\ BYTES
+.B \-s\ BYTES
 .TP
 .B \-\-psize\ BYTES
 .TP
@@ -167,7 +167,7 @@ was built for this to work.  See the GTK+ web page at
 for more information about GTK+.
 
 .TP
-.B \-s
+.B \-p
 .TP
 .B \-\-split
 .br
