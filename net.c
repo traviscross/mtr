@@ -170,7 +170,8 @@ static int numhosts = 10;
 
 extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
-extern int packetsize;		/* packet size used by ping */
+extern int cpacketsize;		/* packet size used by ping */
+static int packetsize;		/* packet size used by ping */
 extern int bitpattern;		/* packet bit pattern used by ping */
 extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
@@ -697,14 +698,26 @@ int net_send_batch(void)
      bitpattern<0.  abs(packetsize) and/or abs(bitpattern) will be used 
   */
   if( batch_at < fstTTL ) {
-    if( packetsize < 0 ) {
-      packetsize = 
-	- (int)(MINPACKET + (MAXPACKET-MINPACKET)*(rand()/(RAND_MAX+0.1)));
+    if( cpacketsize < 0 ) {
+	/* Someone used a formula here that tried to correct for the 
+           "end-error" in "rand()". By "end-error" I mean that if you 
+           have a range for "rand()" that runs to 32768, and the 
+           destination range is 10000, you end up with 4 out of 32768 
+           0-2768's and only 3 out of 32768 for results 2769 .. 9999. 
+           As our detination range (in the example 10000) is much 
+           smaller (reasonable packet sizes), and our rand() range much 
+           larger, this effect is insignificant. Oh! That other formula
+           didn't work. -- REW */
+      packetsize = MINPACKET + rand () % (-cpacketsize - MINPACKET);
+    } else {
+      packetsize = cpacketsize;
     }
     if( bitpattern < 0 ) {
       bitpattern = - (int)(256 + 255*(rand()/(RAND_MAX+0.1)));
     }
   }
+
+  /* printf ("cpacketsize = %d, packetsize = %d\n", cpacketsize, packetsize);  */
 
   net_send_query(batch_at);
 

@@ -36,7 +36,7 @@ extern char LocalHostname[];
 extern char *Hostname;
 extern int fstTTL;
 extern int maxTTL;
-extern int packetsize;
+extern int cpacketsize;
 extern int bitpattern;
 extern int tos;
 extern int MaxPing;
@@ -134,10 +134,10 @@ void xml_close(void)
 
   printf("<MTR SRC=%s DST=%s", LocalHostname, Hostname);
   printf(" TOS=0x%X", tos);
-  if( packetsize>=0 ){
-    printf(" PSIZE=%d", packetsize);
+  if(cpacketsize >= 0) {
+    printf(" PSIZE=%d", cpacketsize);
   } else {
-    printf(" PSIZE=rand(%d-%d)",MINPACKET, MAXPACKET);
+    printf(" PSIZE=rand(%d-%d)",MINPACKET, -cpacketsize);
   }
   if( bitpattern>=0 ) {
     printf(" BITPATTERN=0x%02X", (unsigned char)(bitpattern));
@@ -206,10 +206,10 @@ void csv_close(void)
   /* Caption */
   printf("<SRC=%s DST=%s", LocalHostname, Hostname);
   printf(" TOS=0x%X", tos);
-  if( packetsize>=0 ){
-    printf(" PSIZE=%d", packetsize);
+  if(cpacketsize >= 0) {
+    printf(" PSIZE=%d", cpacketsize);
   } else {
-    printf(" PSIZE=rand(%d-%d)",MINPACKET, MAXPACKET);
+    printf(" PSIZE=rand(%d-%d)",MINPACKET, -cpacketsize);
   }
   if( bitpattern>=0 ) {
     printf(" BITPATTERN=0x%02X", (unsigned char)(bitpattern));

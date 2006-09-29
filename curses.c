@@ -70,7 +70,7 @@
 extern char LocalHostname[];
 extern int fstTTL;
 extern int maxTTL;
-extern int packetsize;
+extern int cpacketsize;
 extern int bitpattern;
 extern int tos;
 extern float WaitTime;
@@ -118,8 +118,8 @@ int mtr_curses_keyaction(void)
 
   /* more stuffs added by Min */
   if (tolower(c) == 's') {
-    mvprintw(2, 0, "Change Packet Size: %d\n", packetsize );
-    mvprintw(3, 0, "Size Range: %d-%d, <0 random.\n", MINPACKET, MAXPACKET);
+    mvprintw(2, 0, "Change Packet Size: %d\n", cpacketsize );
+    mvprintw(3, 0, "Size Range: %d-%d, < 0:random.\n", MINPACKET, MAXPACKET);
     move(2,20);
     refresh();
     while ( (c=getch ()) != '\n' && i < MAXFLD ) {
@@ -127,15 +127,7 @@ int mtr_curses_keyaction(void)
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    packetsize = atoi ( buf );
-    if( packetsize >=0 ) {
-      if ( packetsize < MINPACKET ) packetsize = MINPACKET;
-      if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
-    } else {
-      packetsize =
-      - (int)(MINPACKET + (MAXPACKET-MINPACKET)*(rand()/(RAND_MAX+0.1)));
-    }
-
+    cpacketsize = atoi ( buf );
     return ActionNone;
   }
   if (tolower(c) == 'b') {
@@ -498,12 +490,12 @@ void mtr_curses_redraw(void)
   mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());
   /*
   printw("(tos=0x%X ", tos);
-  printw("psize=%d ", abs(packetsize) );
+  printw("psize=%d ", packetsize );
   printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
-  if( packetsize>0 ){
-    printw("psize=%d ", packetsize);
+  if( cpacketsize > 0 ){
+    printw("psize=%d ", cpacketsize);
   } else {
-    printw("psize=rand(%d,%d) ",MINPACKET, MAXPACKET);
+    printw("psize=rand(%d,%d) ",MINPACKET, -cpacketsize);
   }
   if( bitpattern>=0 ){
     printw("bitpattern=0x%02X)", (unsigned char)(bitpattern));

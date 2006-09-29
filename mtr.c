@@ -61,7 +61,7 @@ char *Hostname = NULL;
 char *InterfaceAddress = NULL;
 char  LocalHostname[128];
 int   dns = 1;
-int   packetsize = 64;          /* default packet size */
+int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
 int   tos = 0;
 int af = DEFAULT_AF;
@@ -188,11 +188,7 @@ void parse_arg (int argc, char **argv)
       ForceMaxPing = 1;
       break;
     case 's':
-      packetsize = atoi (optarg);
-      if (packetsize >=0) {
-        if (packetsize < MINPACKET) packetsize = MINPACKET;
-        if (packetsize > MAXPACKET) packetsize = MAXPACKET;
-      }
+      cpacketsize = atoi (optarg);
       break;
     case 'a':
       InterfaceAddress = optarg;
@@ -284,11 +280,7 @@ void parse_arg (int argc, char **argv)
   Hostname = argv[optind++];
 
   if (argc > optind) {
-    packetsize = atoi (argv[optind]);
-    if (packetsize >=0 ) {
-      if (packetsize < MINPACKET) packetsize = MINPACKET;
-      if (packetsize > MAXPACKET) packetsize = MAXPACKET;
-    }
+    cpacketsize = atoi (argv[optind]);
   }
 }
 

@@ -1357,7 +1357,7 @@ char *dns_lookup(ip_t * ip)
 #ifdef ENABLE_IPV6
 /* Returns an ip6.arpa character string. */
 void addr2ip6arpa( ip_t * ip, char * buf ) {
-  char * p = (char *) ip;
+  unsigned char * p = (unsigned char *) ip;
   char * b = buf;
   int i;
 
