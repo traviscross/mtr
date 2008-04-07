@@ -39,3 +39,6 @@ extern int use_dns;
 #define UNUSED
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t; 
+#endif

@@ -68,7 +68,7 @@ int af = DEFAULT_AF;
 
                                 /* begin ttl windows addByMin */
 int  fstTTL = 1;                /* default start at first hop */
-//int maxTTL = MaxHost-1;       /* max you can go is 255 hops */
+/*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
 
@@ -330,13 +330,13 @@ int main(int argc, char **argv)
   }
 
   /*  Now drop to user permissions  */
-  if (setuid(getuid())) {
+  if (setgid(getgid()) || setuid(getuid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
     exit(1);
   }
 
   /*  Double check, just in case  */
-  if (geteuid() != getuid()) {
+  if ((geteuid() != getuid()) || (getegid() != getgid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
     exit(1);
   }

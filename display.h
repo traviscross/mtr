@@ -19,9 +19,11 @@
 
 #include <netinet/in.h>
 
+/* Don't put a trailing comma in enumeration lists. Some compilers 
+   (notably the one on Irix 5.2) do not like that. -- REW */ 
 enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay, 
        ActionClear, ActionPause, ActionResume, ActionDNS, 
-       ActionScrollDown, ActionScrollUp,  };
+       ActionScrollDown, ActionScrollUp  };
 enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, 
        DisplayRaw,    DisplayXML,    DisplayCSV, DisplayTXT};
 

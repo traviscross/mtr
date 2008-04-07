@@ -103,13 +103,13 @@ void split_redraw(void)
       name = dns_lookup(addr);
       if(name != NULL) {
 	/* May be we should test name's length */
-	sprintf(newLine, "%s %d %d %d %d %d %d", name,
+	snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", name,
 		net_loss(at),
 		net_returned(at), net_xmit(at),
 		net_best(at) /1000, net_avg(at)/1000, 
 		net_worst(at)/1000);
       } else {
-	sprintf(newLine, "%s %d %d %d %d %d %d", 
+	snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", 
 		strlongip( addr ),
 		net_loss(at),
 		net_returned(at), net_xmit(at),

@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#define BIND_8_COMPAT
 #include <arpa/nameser.h>
 #include <netdb.h>
 #include <resolv.h>
@@ -54,8 +55,10 @@ extern char *sys_errlist[];
 #define strerror(errno) (((errno) >= 0 && (errno) < sys_nerr) ? sys_errlist[errno] : "unlisted error")
 #endif
 
+#if !HAVE_DECL_ERRNO
 /*  Hmm, it seems Irix requires this  */
 extern int errno;
+#endif
 
 extern int af;
 
@@ -160,12 +163,15 @@ char *rrtypes[] = {
    "Resource reference",
 };
 
+
+/* Please don't use a trailing comma in enumerations: It doesn't
+   work on all compilers -- REW */
 enum {
    RR_UNKNOWN,
    RR_QUERY,
    RR_ANSWER,
    RR_AUTHORITY,
-   RR_RESOURCE,
+   RR_RESOURCE
 };
 
 typedef struct {
@@ -230,7 +236,7 @@ enum {
    STATE_FAILED,
    STATE_PTRREQ1,
    STATE_PTRREQ2,
-   STATE_PTRREQ3,
+   STATE_PTRREQ3
 };
 
 #define Is_PTR(x) ((x->state == STATE_PTRREQ1) || (x->state == STATE_PTRREQ2) || (x->state == STATE_PTRREQ3))

@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.72)
+AM_INIT_AUTOMAKE(mtr, 0.73)
 
 
 AC_SUBST(GTK_OBJ)
@@ -89,7 +89,11 @@ AC_CHECK_FUNC(res_mkquery, ,
   AC_CHECK_LIB(bind, res_mkquery, , 
    AC_CHECK_LIB(resolv, res_mkquery, ,
      AC_CHECK_LIB(resolv, __res_mkquery, , AC_MSG_ERROR(No resolver library found)))))
-LIBS="$LIBS -lresolv"
+# This next line would override the just detected-or-not -lresolv. 
+# This apparently hurts BSD. And it's bad practise. So it should go. 
+# However, it probably didn't get added for nothing..... Holler if
+# removing it hurts your OS.... -- REW
+#LIBS="$LIBS -lresolv"
 
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR))
@@ -98,6 +102,19 @@ AC_CHECK_FUNC(getaddrinfo,
 [if test "$WANTS_IPV6" = "yes"; then
 	AC_DEFINE([ENABLE_IPV6], [], [Define to enable IPv6])
 fi])
+
+AC_CHECK_DECLS(errno, , , [[
+#include <errno.h>
+#include <sys/errno.h>
+]] )
+
+AC_CHECK_TYPE(socklen_t, AC_DEFINE([HAVE_SOCKLEN_T], [], [Define if your system has socklen_t]) , , [[
+#include <netinet/in.h>
+]])
+
+AC_CHECK_TYPE(struct in_addr, AC_DEFINE([HAVE_STRUCT_INADDR], [], [Define if you have struct in_addr]), , [[
+#include <netinet/in.h>
+]])
 
 dnl Add C flags to display more warnings
 AC_MSG_CHECKING(for C flags to get more warnings)

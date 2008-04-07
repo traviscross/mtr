@@ -306,8 +306,8 @@ void gtk_set_field(GtkCList *List, int row, int ix, char *str) {
 }
 
 
-//void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
-// changed int to dobule byMin
+/*   void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
+             changed int to dobule byMin */
 void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num) 
 {
   char str[32];
@@ -363,12 +363,12 @@ void gtk_update_row(GtkCList *List, int row)
 
 void gtk_redraw(void)
 {
-  int at  = net_min();	// changed from 0 to net_min for TTL stuff byMin
+  int at  = net_min();	/* changed from 0 to net_min for TTL stuff byMin */
   int max = net_max();
 
   gtk_clist_freeze(GTK_CLIST(ReportBody));
 
-  while(GTK_CLIST(ReportBody)->rows < max -at) {	// byMin
+  while(GTK_CLIST(ReportBody)->rows < max -at) {	/* byMin */
     gtk_clist_append(GTK_CLIST(ReportBody), Report_Text);
   }
 
@@ -376,7 +376,7 @@ void gtk_redraw(void)
     gtk_clist_remove(GTK_CLIST(ReportBody), GTK_CLIST(ReportBody)->rows - 1);
   }
 
-  // for(at=0; at < max; at++) {	// replaced byMin
+  /* for(at=0; at < max; at++) {	 replaced byMin */
   for(; at < max; at++) {
     gtk_update_row(GTK_CLIST(ReportBody), at);
   }

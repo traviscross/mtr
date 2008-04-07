@@ -96,7 +96,7 @@ struct nethost {
   int avg;	/* average:  addByMin */
   int gmean;	/* geometirc mean: addByMin */
   int jitter;	/* current jitter, defined as t1-t0 addByMin */
-//int jbest;	/* min jitter, of cause it is 0, not needed */
+/*int jbest;*/	/* min jitter, of cause it is 0, not needed */
   int javg;	/* avg jitter */
   int jworst;	/* max jitter */
   int jinta;	/* estimated variance,? rfc1889's "Interarrival Jitter" */
@@ -359,7 +359,7 @@ void net_process_ping(int seq, void * addr, struct timeval now)
 
   if ( addrcmp( (void *) &(host[index].addr),
 		(void *) &unspec_addr, af ) == 0 ) {
-    // should be out of if as addr can change
+    /* should be out of if as addr can change */
     addrcpy( (void *) &(host[index].addr), addrcopy, af );
     display_rawhost(index, (void *) &(host[index].addr));
 
@@ -627,8 +627,8 @@ int net_max(void)
   int max;
 
   max = 0;
-  // replacedByMin
-  // for(at = 0; at < MaxHost-2; at++) {
+  /* replacedByMin
+     for(at = 0; at < MaxHost-2; at++) { */
   for(at = 0; at < maxTTL-1; at++) {
     if ( addrcmp( (void *) &(host[at].addr),
                   (void *) remoteaddress, af ) == 0 ) {
@@ -736,12 +736,12 @@ int net_send_batch(void)
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
 
-  if (	// success in reaching target
+  if (	/* success in reaching target */
      ( addrcmp( (void *) &(host[batch_at].addr),
                 (void *) remoteaddress, af ) == 0 ) ||
-      // fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?)
+      /* fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?) */
       (n_unknown > MAX_UNKNOWN_HOSTS) ||
-      // or reach limit 
+      /* or reach limit  */
       (batch_at >= maxTTL-1)) {
     numhosts = batch_at+1;
     batch_at = fstTTL - 1;

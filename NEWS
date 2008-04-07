@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.72 Fix signed/unsigned bug in IPV6 part
+        improved random packet size behaviour. --REW
+  v0.71 Some IPV6 fixes, introduce packet size cmdline option. 
+        (was already present as a cmdline argument) 
   v0.70 Antinio submitted a cumulative patch containing some
         nice improvements. He also submitted an automake patch
         that causes mtr to no longer compile on my system. I 

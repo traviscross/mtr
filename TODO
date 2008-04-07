@@ -61,8 +61,7 @@ Oh, Feel free to provide suggestions for this list.
   - Show state ("looking up host") while doing the DNS lookup for a new
     host.
 
-  - Read environment variable "MTR_DEFAULTS" as a commandline before
-    parsing the commandline.  -- DONE. (ok it's MTR_OPTIONS.)
+  - to have a choice of icmp, tcp, and udp pings. -- Matt Martini
 
   - Autoconf 2.13 has a neat function that can be used to find the 
     res_init function: 
@@ -85,6 +84,12 @@ Oh, Feel free to provide suggestions for this list.
   - It would be nice if the window size wasn't fixed. If I'm only 5
     hops from the host I'm monitoring, MTR wastes a lot of screen real
     estate. -- Jacob Elder
+
+  - Colors in the curses version. -- Amix
+
+  - If we run a mtr to monitor a connection it would be nice if the time at
+    which mtr was started is print somewhere. -- Sebastian Ganschow
+
 
 
 ------------------------------------------------------------------------
@@ -109,3 +114,7 @@ Things that shouldn't be on the TODO list because they're done. ;-)
     slowly (relative to the RTT time to the end host), it can probe
     all hosts in the first "round". 
        -- DONE.
+
+  - Read environment variable "MTR_DEFAULTS" as a commandline before
+    parsing the commandline.  -- DONE. (ok it's MTR_OPTIONS.)
+

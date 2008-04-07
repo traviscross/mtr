@@ -19,6 +19,7 @@
 
 #include <config.h>
 #include <strings.h>
+#include <unistd.h>
 
 #ifndef NO_CURSES
 #include <ctype.h>
@@ -93,6 +94,7 @@ int mtr_curses_keyaction(void)
 {
   int c = getch();
   int i=0;
+  float f = 0.0;
   char buf[MAXFLD+1];
 
   if(c == 'q')
@@ -169,10 +171,13 @@ int mtr_curses_keyaction(void)
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    i = atoi( buf );
 
-    if ( i < 1 ) return ActionNone;
-    WaitTime = (float) i;
+    f = atof( buf );
+
+    if (f <= 0.0) return ActionNone;
+    if (getuid() != 0 && f < 1.0)
+      return ActionNone;
+    WaitTime = f;
 
     return ActionNone;
   }
