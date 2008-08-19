@@ -8,7 +8,7 @@ mtr \- a network diagnostic tool
 .SH SYNOPSIS
 .B mtr 
 [\c
-.B \-hvrctglspni46\c
+.B \-hvrctglspniu46\c
 ]
 [\c
 .B \-\-help\c
@@ -216,6 +216,11 @@ what you want).
 .br
 Use this option to specify the positive number of seconds between ICMP
 ECHO requests.  The default value for this parameter is one second.
+
+.TP
+.B \-u
+.br
+Use UDP datagrams instead of ICMP ECHO.
 
 .TP
 .B \-4

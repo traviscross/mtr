@@ -1,4 +1,16 @@
 WHAT'S NEW?
+  v0.74 Martin Pels' patch to allow UDP probes. 
+        KES reported a build problem. Turns out I need to install gtk-1.2
+        on my development sytem, otherwise my release script causes the 
+        build to break. 
+        changed some docs to advertise the new mailing list. 
+        added documentation for the Mac OS X compilation problem.
+        added -Wno-pointer-sign to the compiler options. 
+        Nico Lichtmaier's cleanup-gtk patch. (now mtr uses a more modern
+        dialect of gtk). 
+  v0.73 Some securty patches. Although MTR drops privileges as soon
+        as possible after opening the sockets, it still had some
+        sprintf calls, which have now been converted into snprintf. 
   v0.72 Fix signed/unsigned bug in IPV6 part
         improved random packet size behaviour. --REW
   v0.71 Some IPV6 fixes, introduce packet size cmdline option. 

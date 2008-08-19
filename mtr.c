@@ -65,6 +65,7 @@ int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
 int   tos = 0;
 int af = DEFAULT_AF;
+int mtrtype = IPPROTO_ICMP;     /* Use ICMP as default packet type */
 
                                 /* begin ttl windows addByMin */
 int  fstTTL = 1;                /* default start at first hop */
@@ -143,6 +144,7 @@ void parse_arg (int argc, char **argv)
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
     { "max-ttl", 1, 0, 'm' },
+    { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "inet", 0, 0, '4' },	/* IPv4 only */
     { "inet6", 0, 0, '6' },	/* IPv6 only */
     { 0, 0, 0, 0 }
@@ -152,7 +154,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrxtglpo:i:c:s:b:Q:na:f:m:46", long_options, NULL);
+		      "vhrxtglpo:i:c:s:b:Q:na:f:m:u46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -238,7 +240,7 @@ void parse_arg (int argc, char **argv)
           exit (1);
         }
       }
-      strcpy (fld_active, optarg);
+      strcpy ((char*)fld_active, optarg);
       break;
     case 'b':
       bitpattern = atoi (optarg);
@@ -252,6 +254,9 @@ void parse_arg (int argc, char **argv)
 	 * details in rfc2474 */
 	tos = 0;
       }
+      break;
+    case 'u':
+      mtrtype = IPPROTO_UDP;
       break;
     case '4':
       af = AF_INET;
@@ -354,13 +359,19 @@ int main(int argc, char **argv)
 
   parse_arg (argc, argv);
 
+  /* Now that we know mtrtype we can select which socket to use */
+  if (net_selectsocket() != 0) {
+    fprintf( stderr, "mtr: Couldn't determine raw socket type.\n" );
+    exit( EXIT_FAILURE );
+  }
+
   if (PrintVersion) {
     printf ("mtr " VERSION "\n");
     exit(0);
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrctglspni46] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrctglspniu46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns] [--address interface]\n" /* BL */
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */

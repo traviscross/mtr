@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #define BIND_8_COMPAT
 #include <arpa/nameser.h>
 #include <netdb.h>
@@ -48,6 +49,15 @@
 #include "mtr.h"
 #include "dns.h"
 #include "net.h"
+
+/* OSX  Needs this. I don't know how to enable this for them automatically. 
+ * Should be easy with autoconf. Please submit a patch if you know 
+ * autoconf.... -- REW
+ */
+#if 0 
+#include "nameser8_compat.h"
+#endif
+
 
 #ifdef NO_STRERROR
 extern int sys_nerr;
@@ -453,7 +463,7 @@ int longipstr( char *s, ip_t *dst, int af )
 }
 
 
-struct hostent * dns_forward(char *name)
+struct hostent * dns_forward(const char *name)
 {
   struct hostent *host;
 

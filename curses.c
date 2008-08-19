@@ -76,6 +76,7 @@ extern int bitpattern;
 extern int tos;
 extern float WaitTime;
 extern int af;
+extern int mtrtype;
 
 void pwcenter(char *str) 
 {
@@ -247,6 +248,17 @@ int mtr_curses_keyaction(void)
     }
     return ActionNone;
   }
+  if (tolower(c) == 'u') {
+    switch ( mtrtype ) {
+    case IPPROTO_ICMP:
+      mtrtype = IPPROTO_UDP;
+      break;
+    case IPPROTO_UDP:
+      mtrtype = IPPROTO_ICMP;
+      break;
+    }
+    return ActionNone;
+  }
   /* reserve to display help message -Min */
   if (tolower(c) == '?'|| tolower(c) == 'h') {
     mvprintw(2, 0, "Command:\n" );
@@ -261,7 +273,8 @@ int mtr_curses_keyaction(void)
     printw("  m <n>   set the max time-to-live, default n= # of hops\n" );
     printw("  s <n>   set the packet size to n or random(n<0)\n" );
     printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n" );
-    printw("  Q <t>   set ping packet's TOS to t\n\n\n" );
+    printw("  Q <t>   set ping packet's TOS to t\n" );
+    printw("  u       switch between ICMP ECHO and UDP datagrams\n\n" );
     mvprintw(16, 0, " press any key to go back..." );
 
     getch();                  /* get any key */

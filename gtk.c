@@ -56,7 +56,7 @@ void gtk_add_ping_timeout (void)
   int dt;
 
   dt = calc_deltatime (WaitTime);
-  tag = gtk_timeout_add(dt / 1000, gtk_ping, NULL);
+  tag = g_timeout_add(dt / 1000, gtk_ping, NULL);
 }
 
 
@@ -109,7 +109,7 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
   if (paused) {
     gtk_add_ping_timeout ();
   } else {
-    gtk_timeout_remove (tag);
+    g_source_remove (tag);
   }
   paused = ! paused;
   gtk_redraw();
@@ -129,8 +129,8 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 
 gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
 {
-  WaitTime = gtk_spin_button_get_value_as_float(GTK_SPIN_BUTTON(Button));
-  gtk_timeout_remove (tag);
+  WaitTime = gtk_spin_button_get_value(GTK_SPIN_BUTTON(Button));
+  g_source_remove (tag);
   gtk_add_ping_timeout ();
   gtk_redraw();
 
@@ -147,10 +147,11 @@ gint Host_activate(GtkWidget *Entry, UNUSED gpointer data)
     net_reopen(addr);
     /* If we are "Paused" at this point it is usually because someone
        entered a non-existing host. Therefore do the go-ahead... --REW */
-    gtk_toggle_button_set_state( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
+    gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
   } else {
-    gtk_toggle_button_set_state( GTK_TOGGLE_BUTTON( Pause_Button ) , 1);
-    gtk_entry_append_text( GTK_ENTRY(Entry), ": not found" );
+    int pos = strlen(gtk_entry_get_text( GTK_ENTRY(Entry)));
+    gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 1);
+    gtk_editable_insert_text( GTK_EDITABLE(Entry), ": not found", -1, &pos);
   }
 
   return FALSE;
@@ -172,27 +173,24 @@ void Toolbar_fill(GtkWidget *Toolbar)
   GtkWidget *Entry;
   GtkAdjustment *Adjustment;
 
-  Button = gtk_button_new_with_label("Quit");
+  Button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-  gtk_signal_connect(GTK_OBJECT(Button), "clicked",
+  g_signal_connect(GTK_OBJECT(Button), "clicked",
 		     GTK_SIGNAL_FUNC(Window_destroy), NULL);
-  gtk_widget_show(Button);
 
-  Button = gtk_button_new_with_label("Restart");
+  Button = gtk_button_new_with_mnemonic("_Restart");
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-  gtk_signal_connect(GTK_OBJECT(Button), "clicked",
+  g_signal_connect(GTK_OBJECT(Button), "clicked",
 		     GTK_SIGNAL_FUNC(Restart_clicked), NULL);
-  gtk_widget_show(Button);
 
-  Pause_Button = gtk_toggle_button_new_with_label("Pause");
+  Pause_Button = gtk_toggle_button_new_with_mnemonic("_Pause");
   gtk_box_pack_end(GTK_BOX(Toolbar), Pause_Button, FALSE, FALSE, 0);
-  gtk_signal_connect(GTK_OBJECT(Pause_Button), "clicked",
+  g_signal_connect(GTK_OBJECT(Pause_Button), "clicked",
                     GTK_SIGNAL_FUNC(Pause_clicked), NULL);
-  gtk_widget_show(Pause_Button);
 
   /* allow root only to set zero delay */
   Adjustment = (GtkAdjustment *)gtk_adjustment_new(WaitTime,
-                                                  getuid()==0 ? 0.00:1.00,
+                                                  getuid()==0 ? 0.01:1.00,
                                                  999.99,
                                                   1.0, 10.0,
                                                   0.0);
@@ -202,127 +200,182 @@ void Toolbar_fill(GtkWidget *Toolbar)
   /* gtk_spin_button_set_set_update_policy(GTK_SPIN_BUTTON(Button),
      GTK_UPDATE_IF_VALID); */
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-  gtk_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
+  g_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
                     GTK_SIGNAL_FUNC(WaitTime_changed), Button);
-  gtk_widget_show(Button);
  
-  Label = gtk_label_new("Hostname");
+  Label = gtk_label_new_with_mnemonic("_Hostname:");
   gtk_box_pack_start(GTK_BOX(Toolbar), Label, FALSE, FALSE, 0);
-  gtk_widget_show(Label);
 
   Entry = gtk_entry_new();
   gtk_entry_set_text(GTK_ENTRY(Entry), Hostname);
-  gtk_signal_connect(GTK_OBJECT(Entry), "activate",
+  g_signal_connect(GTK_OBJECT(Entry), "activate",
 		     GTK_SIGNAL_FUNC(Host_activate), NULL);
   gtk_box_pack_start(GTK_BOX(Toolbar), Entry, TRUE, TRUE, 0);
-  gtk_widget_show(Entry);
-}
-
-
-char *Report_Text[] = { "Hostname", "Loss", "Rcv", "Snt", "Last", "Best", "Avg", "Worst", "StDev", NULL };
-int Report_Positions[] = { 10, 200, 240, 280, 320, 360, 400, 440, 480, 0 };
-GtkWidget *Report;
-GtkWidget *ReportBody;
-
-GtkWidget *GetRow(int index) 
-{
-  ip_t * addr;
-  char *name;
-  GtkWidget *Row, *Label;
-
-  Row = gtk_fixed_new();
   
-  addr = net_addr(index);
-  name = "???";
-  if ( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-    name = dns_lookup(addr);
-    if(!name) {
-      /* Actually this is not neccesary: 
-	 dns_lookup always returns a printable string */
-      name = strlongip (addr);
-    }
-  }
-
-  Label = gtk_label_new(name);
-  gtk_fixed_put(GTK_FIXED(Row), Label, Report_Positions[0], 0);
-  gtk_widget_show(Label);
-
-  return Row;
+  gtk_label_set_mnemonic_widget(GTK_LABEL(Label), Entry);
 }
 
+static GtkWidget *ReportTreeView;
+static GtkListStore *ReportStore;
 
-GtkWidget *Scrollarea_create(void)
+enum {
+  COL_HOSTNAME,
+  COL_LOSS,
+  COL_RCV,
+  COL_SNT,
+  COL_LAST,
+  COL_BEST,
+  COL_AVG,
+  COL_WORST,
+  COL_STDEV,
+  COL_COLOR,
+  N_COLS
+};
+
+void  float_formatter(GtkTreeViewColumn *tree_column,
+  GtkCellRenderer   *cell, 
+  GtkTreeModel      *tree_model,
+  GtkTreeIter       *iter, 
+  gpointer           data)
 {
-  GtkWidget *List;
-  GtkWidget *scroll;
-  int count;
-
-  for(count = 0; Report_Positions[count]; count++);
-
-  List = GTK_WIDGET(gtk_clist_new_with_titles(count, Report_Text));
-  scroll = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-  for(count = 0; Report_Positions[count + 1]; count++) {
-    gtk_clist_set_column_width(GTK_CLIST(List), count, 
-			       Report_Positions[count + 1] - 
-			       Report_Positions[count]);
-  }
-  gtk_clist_set_column_width(GTK_CLIST(List), count, 0);
-  for(count = 1; Report_Positions[count]; count++) {
-    gtk_clist_set_column_justification(GTK_CLIST(List), count, GTK_JUSTIFY_RIGHT);
-  }
-  gtk_container_add(GTK_CONTAINER(scroll), List);
-  gtk_widget_show(List);
-
-  ReportBody = List;
-  return scroll;
+  gfloat f;
+  gchar text[64];
+  gtk_tree_model_get(tree_model, iter, (gint)data, &f, -1);
+  sprintf(text, "%.2f", f);
+  g_object_set(cell, "text", text, NULL);
 }
 
-
-void gtk_add_row(GtkWidget *List) 
+void  percent_formatter(GtkTreeViewColumn *tree_column,
+  GtkCellRenderer   *cell, 
+  GtkTreeModel      *tree_model,
+  GtkTreeIter       *iter, 
+  gpointer           data)
 {
-  int at;
-  GtkWidget *Row, *Label;
+  gfloat f;
+  gchar text[64];
+  gtk_tree_model_get(tree_model, iter, (gint)data, &f, -1);
+  sprintf(text, "%.1f%%", f);
+  g_object_set(cell, "text", text, NULL);
+}
 
-  Row = gtk_fixed_new();
+void TreeViewCreate(void)
+{
+  GtkCellRenderer *renderer;
+  GtkTreeViewColumn *column;
+
+  ReportStore = gtk_list_store_new(N_COLS,
+    G_TYPE_STRING,
+    G_TYPE_FLOAT,
+    G_TYPE_INT,
+    G_TYPE_INT,
+    G_TYPE_INT,
+    G_TYPE_INT,
+    G_TYPE_INT,
+    G_TYPE_INT,
+    G_TYPE_FLOAT,
+    G_TYPE_STRING
+    );
+    
+  ReportTreeView = gtk_tree_view_new_with_model(GTK_TREE_MODEL(ReportStore));
   
-  for(at = 0; Report_Positions[at] != 0; at++) {
-    Label = gtk_label_new("-");
-    if(at) {
-      gtk_widget_set_usize(Label, 40, 0);
-      gtk_label_set_justify(GTK_LABEL(Label), GTK_JUSTIFY_RIGHT);
-    }
-    gtk_fixed_put(GTK_FIXED(Row), Label, Report_Positions[at], 0);
-    gtk_widget_show(Label);
-  }
+  renderer = gtk_cell_renderer_text_new ();
+  column = gtk_tree_view_column_new_with_attributes ("Hostname",
+    renderer,
+    "text", COL_HOSTNAME,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_expand(column, TRUE);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
 
-  gtk_box_pack_start(GTK_BOX(List), Row, FALSE, FALSE, 0);
-  gtk_widget_show(Row);
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Loss",
+    renderer,
+    "text", COL_LOSS,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_column_set_cell_data_func(column, renderer, percent_formatter, (void*)COL_LOSS, NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Rcv",
+    renderer,
+    "text", 2,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Snt",
+    renderer,
+    "text", 3,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Last",
+    renderer,
+    "text", 4,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Best",
+    renderer,
+    "text", 5,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Avg",
+    renderer,
+    "text", 6,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Worst",
+    renderer,
+    "text", 7,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("StDev",
+    renderer,
+    "text", 8,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_column_set_cell_data_func(column, renderer, float_formatter, (void*)COL_STDEV, NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+
 }
 
-
-void gtk_set_field(GtkCList *List, int row, int ix, char *str) {
-  gtk_clist_set_text(List, row, ix, str);
-}
-
-
-/*   void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, int num) {
-             changed int to dobule byMin */
-void gtk_set_field_num(GtkCList *List, int row, int ix, char *format, double num) 
-{
-  char str[32];
-
-  sprintf(str, format, num);
-  gtk_set_field(List, row, ix, str);
-}
-
-
-void gtk_update_row(GtkCList *List, int row) 
+void update_tree_row(int row, GtkTreeIter *iter)
 {
   ip_t *addr;
   char str[256], *name;
-  GdkColor color;
-  GdkColormap *cmap;
 
   addr = net_addr(row);
   name = "???";
@@ -334,54 +387,46 @@ void gtk_update_row(GtkCList *List, int row)
     }
   }
 
-  cmap = gtk_widget_get_colormap(ReportBody);
-  if (net_up(row)) {
-    gdk_color_black(cmap, &color);
-  } else {
-    color.red = 0xffff;
-    color.green = 0;
-    color.blue = 0;
-  }
-  gdk_color_alloc (cmap, &color);
-  gtk_clist_set_foreground(List, row, &color);
+  gtk_list_store_set(ReportStore, iter,
+    COL_HOSTNAME, name,
+    COL_LOSS, (float)(net_loss(row)/1000.0),
 
-  /* changed the format type and added stdev and first/max TTL byMin */
-  /* the row - net_min() is kind of not clean, need some more work */
-  gtk_set_field(List, row - net_min(), 0, name);
+    COL_RCV, net_returned(row),
+    COL_SNT, net_xmit(row),
 
-  gtk_set_field_num(List, row - net_min(), 1, "%.1f%%", net_loss(row)/1000.0);
-  gtk_set_field_num(List, row - net_min(), 2, "%.0f", net_returned(row));  
-  gtk_set_field_num(List, row - net_min(), 3, "%.0f", net_xmit(row));
-  
-  gtk_set_field_num(List, row - net_min(), 4, "%.0f", net_last(row)/1000.0);
-  gtk_set_field_num(List, row - net_min(), 5, "%.0f", net_best(row)/1000.0);
-  gtk_set_field_num(List, row - net_min(), 6, "%.0f", net_avg(row)/1000.0);  
-  gtk_set_field_num(List, row - net_min(), 7, "%.0f", net_worst(row)/1000.0);
-  gtk_set_field_num(List, row - net_min(), 8, "%.2f", net_stdev(row)/1000.0);
+    COL_LAST, net_last(row)/1000,
+    COL_BEST, net_best(row)/1000,
+    COL_AVG, net_avg(row)/1000,
+    COL_WORST, net_worst(row)/1000,
+    COL_STDEV, (float)(net_stdev(row)/1000.0),
+    
+    COL_COLOR, net_up(row) ? "black" : "red",
+
+    -1);
 }
-
 
 void gtk_redraw(void)
 {
-  int at  = net_min();	/* changed from 0 to net_min for TTL stuff byMin */
   int max = net_max();
+  
+  GtkTreeIter iter;
+  int row = net_min();
+  gboolean valid;
 
-  gtk_clist_freeze(GTK_CLIST(ReportBody));
+  valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ReportStore), &iter);
 
-  while(GTK_CLIST(ReportBody)->rows < max -at) {	/* byMin */
-    gtk_clist_append(GTK_CLIST(ReportBody), Report_Text);
+  while(valid) {
+    if(row < max) {
+      update_tree_row(row++, &iter);
+      valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(ReportStore), &iter);
+    } else {
+      valid = gtk_list_store_remove(ReportStore, &iter);
+    }
   }
-
-  while(GTK_CLIST(ReportBody)->rows > max) {
-    gtk_clist_remove(GTK_CLIST(ReportBody), GTK_CLIST(ReportBody)->rows - 1);
+  while(row < max) {
+    gtk_list_store_append(ReportStore, &iter);
+    update_tree_row(row++, &iter);
   }
-
-  /* for(at=0; at < max; at++) {	 replaced byMin */
-  for(; at < max; at++) {
-    gtk_update_row(GTK_CLIST(ReportBody), at);
-  }
-
-  gtk_clist_thaw(GTK_CLIST(ReportBody));
 }
 
 
@@ -389,25 +434,25 @@ void Window_fill(GtkWidget *Window)
 {
   GtkWidget *VBox;
   GtkWidget *Toolbar;
-  GtkWidget *List;
+  GtkWidget *scroll;
 
   gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
-  gtk_window_set_wmclass(GTK_WINDOW(Window), "mtr", "Mtr");
-  gtk_widget_set_usize(Window, 600, 400); 
-  gtk_container_border_width(GTK_CONTAINER(Window), 10);
+  gtk_window_set_default_size(GTK_WINDOW(Window), 650, 400); 
+  gtk_container_set_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);
 
   Toolbar = gtk_hbox_new(FALSE, 10);
   Toolbar_fill(Toolbar);
   gtk_box_pack_start(GTK_BOX(VBox), Toolbar, FALSE, FALSE, 0);
-  gtk_widget_show(Toolbar);
-
-  List = Scrollarea_create();
-  gtk_box_pack_start(GTK_BOX(VBox), List, TRUE, TRUE, 0);
-  gtk_widget_show(List);
   
+  TreeViewCreate();
+  scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll), GTK_SHADOW_IN);
+  gtk_container_add(GTK_CONTAINER(scroll), ReportTreeView);
+  gtk_box_pack_start(GTK_BOX(VBox), scroll, TRUE, TRUE, 0);
+
   gtk_container_add(GTK_CONTAINER(Window), VBox);
-  gtk_widget_show(VBox);
 }
 
 
@@ -429,14 +474,13 @@ void gtk_open(void)
 
   Window_fill(Window);
 
-  gtk_signal_connect_object(GTK_OBJECT(Window), "delete_event",
-			    GTK_SIGNAL_FUNC(gtk_widget_destroy), 
-			    GTK_OBJECT(Window));
-  gtk_signal_connect(GTK_OBJECT(Window), "destroy",
+  g_signal_connect(GTK_OBJECT(Window), "delete_event",
+                     GTK_SIGNAL_FUNC(Window_destroy), NULL);
+  g_signal_connect(GTK_OBJECT(Window), "destroy",
 		     GTK_SIGNAL_FUNC(Window_destroy), NULL);
 
   icon = gtk_load_pixmap(mtr_icon);
-  gtk_widget_show(Window);
+  gtk_widget_show_all(Window);
   gdk_window_set_icon(Window->window, NULL, icon, NULL);
   gdk_window_set_icon_name(Window->window, "mtr");
 }
@@ -457,30 +501,37 @@ gint gtk_ping(UNUSED gpointer data)
 {
   gtk_redraw();
   net_send_batch();
-  gtk_timeout_remove (tag);
+  g_source_remove (tag);
   gtk_add_ping_timeout ();
   return TRUE;
 }
 
 
-void gtk_net_data(UNUSED gpointer data, UNUSED gint fd, UNUSED GdkInputCondition cond) 
+gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data) 
 {
   net_process_return();
+  return TRUE;
 }
 
 
-void gtk_dns_data(UNUSED gpointer data, UNUSED gint fd, UNUSED GdkInputCondition cond) 
+gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
 {
   dns_ack();
   gtk_redraw();
+  return TRUE;
 }
 
 
 void gtk_loop(void) 
 {
+  GIOChannel *net_iochannel, *dns_iochannel;
+
   gtk_add_ping_timeout ();
-  gdk_input_add(net_waitfd(), GDK_INPUT_READ, gtk_net_data, NULL);
-  gdk_input_add(dns_waitfd(), GDK_INPUT_READ, gtk_dns_data, NULL);
+  
+  net_iochannel = g_io_channel_unix_new(net_waitfd());
+  g_io_add_watch(net_iochannel, G_IO_IN, gtk_net_data, NULL);
+  dns_iochannel = g_io_channel_unix_new(dns_waitfd());
+  g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, NULL);
 
   gtk_main();
 }

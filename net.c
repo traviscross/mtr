@@ -54,6 +54,22 @@ struct ICMPHeader {
   uint16 sequence;
 };
 
+/* Structure of an UDP header.  */
+struct UDPHeader {
+  uint16 srcport;
+  uint16 dstport;
+  uint16 length;
+  uint16 checksum;
+};
+
+/* Structure of an IPv4 UDP pseudoheader.  */
+struct UDPv4PHeader {
+  uint32 saddr;
+  uint32 daddr;
+  uint8 zero;
+  uint8 protocol;
+  uint16 len;
+};
 
 /*  Structure of an IP header.  */
 struct IPHeader {
@@ -77,6 +93,7 @@ struct IPHeader {
 #define ICMP_TSTAMPREPLY	14
 
 #define ICMP_TIME_EXCEEDED	11
+#define ICMP_UNREACHABLE        3
 
 #ifndef SOL_IP
 #define SOL_IP 0
@@ -131,8 +148,12 @@ static struct timeval reset = { 0, 0 };
 
 int    timestamp;
 int    sendsock4;
+int    sendsock4_icmp;
+int    sendsock4_udp;
 int    recvsock4;
 int    sendsock6;
+int    sendsock6_icmp;
+int    sendsock6_udp;
 int    recvsock6;
 int    sendsock;
 int    recvsock;
@@ -175,7 +196,7 @@ static int packetsize;		/* packet size used by ping */
 extern int bitpattern;		/* packet bit pattern used by ping */
 extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
-
+extern int mtrtype;		/* type of query packet used */
 
 /* return the number of microseconds to wait before sending the next
    ping */
@@ -206,14 +227,40 @@ int checksum(void *data, int sz)
 }
 
 
+/* Prepend pseudoheader to the udp datagram and calculate checksum */
+int udp_checksum(void *pheader, void *udata, int psize, int dsize)
+{
+  unsigned int tsize = psize + dsize;
+  char csumpacket[tsize];
+  memset(csumpacket, (unsigned char) abs(bitpattern), abs(tsize));
+
+  struct UDPv4PHeader *prepend = (struct UDPv4PHeader *) csumpacket;
+  struct UDPv4PHeader *udppheader = (struct UDPv4PHeader *) pheader;
+  prepend->saddr = udppheader->saddr;
+  prepend->daddr = udppheader->daddr;
+  prepend->zero = 0;
+  prepend->protocol = udppheader->protocol;
+  prepend->len = udppheader->len;
+
+  struct UDPHeader *content = (struct UDPHeader *)(csumpacket + psize);
+  struct UDPHeader *udpdata = (struct UDPHeader *) udata;
+  content->srcport = udpdata->srcport;
+  content->dstport = udpdata->dstport;
+  content->length = udpdata->length;
+  content->checksum = udpdata->checksum;
+
+  return checksum(csumpacket,tsize);
+}
+
+
 int new_sequence(int index) 
 {
-  static int next_sequence = 0;
+  static int next_sequence = MinSequence;
   int seq;
 
   seq = next_sequence++;
   if (next_sequence >= MaxSequence)
-    next_sequence = 0;
+    next_sequence = MinSequence;
 
   sequence[seq].index = index;
   sequence[seq].transit = 1;
@@ -236,14 +283,20 @@ void net_send_query(int index)
   /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
   char packet[MAXPACKET];
   struct IPHeader *ip = (struct IPHeader *) packet;
-  struct ICMPHeader *icmp;
+  struct ICMPHeader *icmp = NULL;
+  struct UDPHeader *udp = NULL;
+  struct UDPv4PHeader *udpp = NULL;
+  uint16 mypid;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
-  int ttl, iphsize = 0, echotype = 0, salen = 0;
+  int ttl, iphsize = 0, echotype = 0, salen = 0, udphsize = 0;
 
   ttl = index + 1;
+
+  /* offset for ipv6 checksum calculation */
+  int offset = 6;
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
@@ -271,7 +324,7 @@ void net_send_query(int index)
   ip->id = 0;
   ip->frag = 0;    /* 1, if want to find mtu size? Min */
     ip->ttl = ttl;
-  ip->protocol = IPPROTO_ICMP;
+  ip->protocol = mtrtype;
   ip->check = 0;
 
   /* BSD needs the source address here, Linux & others do not... */
@@ -295,21 +348,70 @@ void net_send_query(int index)
 #endif
   }
 
-  icmp = (struct ICMPHeader *)(packet + iphsize);
-  icmp->type     = echotype;
-  icmp->code     = 0;
-  icmp->checksum = 0;
-  icmp->id       = getpid();
-  icmp->sequence = new_sequence(index);
-  icmp->checksum = checksum(icmp, abs(packetsize) - iphsize);
+  switch ( mtrtype ) {
+  case IPPROTO_ICMP:
+    icmp = (struct ICMPHeader *)(packet + iphsize);
+    icmp->type     = echotype;
+    icmp->code     = 0;
+    icmp->checksum = 0;
+    icmp->id       = getpid();
+    icmp->sequence = new_sequence(index);
+    icmp->checksum = checksum(icmp, abs(packetsize) - iphsize);
+    
+    gettimeofday(&sequence[icmp->sequence].time, NULL);
+    break;
 
-  switch ( af ) {
-  case AF_INET:
-    ip->check = checksum(packet, abs(packetsize));
+  case IPPROTO_UDP:
+    udp = (struct UDPHeader *)(packet + iphsize);
+    udphsize = sizeof (struct UDPHeader);
+    udp->checksum  = 0;
+    mypid = (uint16)getpid();
+    if (mypid < MinPort)
+      mypid += MinPort;
+
+    udp->srcport = htons(mypid);
+    udp->length = abs(packetsize) - iphsize;
+    if(!BSDfix)
+      udp->length = htons(udp->length);
+ 
+    udp->dstport = new_sequence(index);
+    gettimeofday(&sequence[udp->dstport].time, NULL);
+    udp->dstport = htons(udp->dstport);
     break;
   }
 
-  gettimeofday(&sequence[icmp->sequence].time, NULL);
+  switch ( af ) {
+  case AF_INET:
+    switch ( mtrtype ) {
+    case IPPROTO_UDP:
+      /* checksum is not mandatory. only calculate if we know ip->saddr */
+      if (ip->saddr) {
+        udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
+        udpp->saddr = ip->saddr;
+        udpp->daddr = ip->daddr;
+        udpp->protocol = ip->protocol;
+        udpp->len = udp->length;
+        udp->checksum = udp_checksum(udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize);
+      }
+      break;
+    }
+
+    ip->check = checksum(packet, abs(packetsize));
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    switch ( mtrtype ) {
+    case IPPROTO_UDP:
+      /* kernel checksum calculation */
+      if ( setsockopt(sendsock, IPPROTO_IPV6, IPV6_CHECKSUM, &offset, sizeof(offset)) ) {
+        perror( "setsockopt IPV6_CHECKSUM" );
+        exit( EXIT_FAILURE);
+      }
+      break;
+    }
+    break;
+#endif
+  }
 
   rv = sendto(sendsock, packet, abs(packetsize), 0, 
 	      remotesockaddr, salen);
@@ -450,9 +552,11 @@ void net_process_return(void)
   socklen_t fromsockaddrsize;
   int num;
   struct ICMPHeader *header = NULL;
+  struct UDPHeader *udpheader = NULL;
   struct timeval now;
   ip_t * fromaddress = NULL;
-  int echoreplytype = 0, timeexceededtype = 0;
+  int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
+  int sequence = 0;
 
   gettimeofday(&now, NULL);
   switch ( af ) {
@@ -461,6 +565,7 @@ void net_process_return(void)
     fromaddress = (ip_t *) &(fsa4->sin_addr);
     echoreplytype = ICMP_ECHOREPLY;
     timeexceededtype = ICMP_TIME_EXCEEDED;
+    unreachabletype = ICMP_UNREACHABLE;
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
@@ -468,6 +573,7 @@ void net_process_return(void)
     fromaddress = (ip_t *) &(fsa6->sin6_addr);
     echoreplytype = ICMP6_ECHO_REPLY;
     timeexceededtype = ICMP6_TIME_EXCEEDED;
+    unreachabletype = ICMP6_DST_UNREACH;
     break;
 #endif
   }
@@ -490,41 +596,78 @@ void net_process_return(void)
     break;
 #endif
   }
-  if (header->type == echoreplytype) {
-    if(header->id != (uint16)getpid())
-      return;
 
-    net_process_ping (header->sequence, (void *) fromaddress, now);
-  } else if (header->type == timeexceededtype) {
-    switch ( af ) {
-    case AF_INET:
+  switch ( mtrtype ) {
+  case IPPROTO_ICMP:
+    if (header->type == echoreplytype) {
+      if(header->id != (uint16)getpid())
+        return;
 
-      if ((size_t) num < sizeof(struct IPHeader) + 
-                         sizeof(struct ICMPHeader) + 
-                         sizeof (struct IPHeader) + 
-                         sizeof (struct ICMPHeader))
-        return;
-      header = (struct ICMPHeader *)(packet + sizeof (struct IPHeader) + 
-                                              sizeof (struct ICMPHeader) + 
-                                              sizeof (struct IPHeader));
-    break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-      if ( num < sizeof (struct ICMPHeader) + 
-                 sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
-        return;
-      header = (struct ICMPHeader *) ( packet + 
-                                       sizeof (struct ICMPHeader) +
-                                       sizeof (struct ip6_hdr) );
+      sequence = header->sequence;
+    } else if (header->type == timeexceededtype) {
+      switch ( af ) {
+      case AF_INET:
+
+        if ((size_t) num < sizeof(struct IPHeader) + 
+                           sizeof(struct ICMPHeader) + 
+                           sizeof (struct IPHeader) + 
+                           sizeof (struct ICMPHeader))
+          return;
+        header = (struct ICMPHeader *)(packet + sizeof (struct IPHeader) + 
+                                                sizeof (struct ICMPHeader) + 
+                                                sizeof (struct IPHeader));
       break;
+#ifdef ENABLE_IPV6
+      case AF_INET6:
+        if ( num < sizeof (struct ICMPHeader) + 
+                   sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
+          return;
+        header = (struct ICMPHeader *) ( packet + 
+                                         sizeof (struct ICMPHeader) +
+                                         sizeof (struct ip6_hdr) );
+        break;
 #endif
+      }
+  
+      if (header->id != (uint16)getpid())
+        return;
+  
+      sequence = header->sequence;
     }
+    break;
+  
+  case IPPROTO_UDP:
+    if (header->type == timeexceededtype || header->type == unreachabletype) {
+      switch ( af ) {
+      case AF_INET:
 
-    if (header->id != (uint16)getpid())
-      return;
-
-    net_process_ping(header->sequence, (void *)fromaddress, now);
+        if ((size_t) num < sizeof(struct IPHeader) +
+                           sizeof(struct ICMPHeader) +
+                           sizeof (struct IPHeader) +
+                           sizeof (struct UDPHeader))
+          return;
+        udpheader = (struct UDPHeader *)(packet + sizeof (struct IPHeader) +
+                                                  sizeof (struct ICMPHeader) +
+                                                  sizeof (struct IPHeader));
+      break;
+#ifdef ENABLE_IPV6
+      case AF_INET6:
+        if ( num < sizeof (struct ICMPHeader) +
+                   sizeof (struct ip6_hdr) + sizeof (struct UDPHeader) )
+          return;
+        udpheader = (struct UDPHeader *) ( packet +
+                                           sizeof (struct ICMPHeader) +
+                                           sizeof (struct ip6_hdr) );
+        break;
+#endif
+      }
+      sequence = ntohs(udpheader->dstport);
+    }
+    break;
   }
+
+  if (sequence)
+    net_process_ping(sequence, (void *)fromaddress, now);
 }
 
 
@@ -758,14 +901,16 @@ int net_preopen(void)
   int trueopt = 1;
 
 #if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
-  sendsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+  sendsock4_icmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+  sendsock4_udp = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
 #else
   sendsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 #endif
   if (sendsock4 < 0) 
     return -1;
 #ifdef ENABLE_IPV6
-  sendsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  sendsock6_icmp = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  sendsock6_udp = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
 #endif
 
 #ifdef IP_HDRINCL
@@ -787,7 +932,38 @@ int net_preopen(void)
   return 0;
 }
 
- 
+
+int net_selectsocket(void)
+{
+#if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
+  switch ( mtrtype ) {
+  case IPPROTO_ICMP:
+    sendsock4 = sendsock4_icmp;
+    break;
+  case IPPROTO_UDP:
+    sendsock4 = sendsock4_udp;
+    break;
+  }
+#endif
+  if (sendsock4 < 0)
+    return -1;
+#ifdef ENABLE_IPV6
+  switch ( mtrtype ) {
+  case IPPROTO_ICMP:
+    sendsock6 = sendsock6_icmp;
+    break;
+  case IPPROTO_UDP:
+    sendsock6 = sendsock6_udp;
+    break;
+  }
+  if (sendsock6 < 0)
+    return -1;
+#endif
+
+ return 0;
+}
+
+
 int net_open(struct hostent * host) 
 {
 #ifdef ENABLE_IPV6
@@ -946,9 +1122,15 @@ int net_set_interfaceaddress (char *InterfaceAddress)
 
 void net_close(void)
 {
-  if (sendsock4 >= 0) close(sendsock4);
+  if (sendsock4 >= 0) {
+    close(sendsock4_icmp);
+    close(sendsock4_udp);
+  }
   if (recvsock4 >= 0) close(recvsock4);
-  if (sendsock6 >= 0) close(sendsock6);
+  if (sendsock6 >= 0) {
+    close(sendsock6_icmp);
+    close(sendsock6_udp);
+  }
   if (recvsock6 >= 0) close(recvsock6);
 }
 

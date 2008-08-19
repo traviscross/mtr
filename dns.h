@@ -28,7 +28,7 @@ void dns_ack(void);
 void dns_events(double *sinterval);
 char *dns_lookup(ip_t * address);
 char *dns_lookup2(ip_t * address);
-struct hostent * dns_forward(char *name);
+struct hostent * dns_forward(const char *name);
 char *strlongip(ip_t * ip);
 
 void addr2ip6arpa( ip_t * ip, char * buf );

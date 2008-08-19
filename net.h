@@ -28,6 +28,7 @@
 #endif
 
 int net_preopen(void);
+int net_selectsocket(void);
 int net_open(struct hostent *host);
 void net_reopen(struct hostent *address);
 int net_set_interfaceaddress (char *InterfaceAddress); 
@@ -80,10 +81,12 @@ void addrcpy( char * a, char * b, int af );
 
 #define MAXPATH 8
 #define MaxHost 256
+#define MinSequence 33000
 #define MaxSequence 65536
+#define MinPort 1024
 
-#define MAXPACKET 4470		/* largest test ICMP packet size */
-#define MINPACKET 28		/* 20 bytes IP header and 8 bytes ICMP */
+#define MAXPACKET 4470		/* largest test packet size */
+#define MINPACKET 28		/* 20 bytes IP header and 8 bytes ICMP or UDP */
 
 /* stuff used by display such as report, curses... --Min */
 #define MAXFLD 20		/* max stats fields to display */

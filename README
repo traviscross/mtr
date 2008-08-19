@@ -32,14 +32,10 @@ INSTALLING
   Note that mtr must be suid-root because it requires access to raw IP 
   sockets.  See SECURITY for security information.
 
-  If you want to build a version that doesn't use GTK, but if you
-  DO have GTK installed, you can use 
-
-	./configure --with-gtk-prefix=/we_dont_want_gtk_so_we_use_a_name_that_certainly_doesnt_exist
-
-  It seems the --no_gtk (whatever) doesn't work. Feel free to submit 
-  a patch for this, I'm not that familiar with autoconf (it works for
-  me :-). 
+  Older versions used to require a non-existant path to GTK for a
+  correct build of a non-gtk version while GTK was installed. This is
+  no longer neccesary. ./configure --WITHOUT_GTK should now work. 
+  If it doesn't, try "make WITHOUT_X11=YES" as the make step. 
 
   On Solaris (and possibly other systems) the "gtk" library may be
   installed in a directory where the dynamic linker refuses to look when
@@ -59,6 +55,11 @@ INSTALLING
   doing the linking into a terminal window, and add "-lcurses" by hand. 
   Then it will link. Help on how to catch this in autoconf appreciated.
 
+  On Mac OS X the nameserver8_compat.h needs to be included. I put the 
+  include inside an "#if 0" section in the file "dns.c". If someone 
+  knows how to make this automatic using autoconf / the configure script, 
+  please tell me.... 
+
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
@@ -67,16 +68,20 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
   Subscribe to the mtr mailing list.  All mtr related announcements
   are posted to the mtr mailing list.  To subscribe, send email to
-  'majordomo@lists.xmission.com' with 'subscribe mtr' in the body of
-  the message.  To send a message to the mailing list, mail to 
-  'mtr@lists.xmission.com'.
+  the 'mtr-subscribe' with the hostname part set to 'BitWizard.nl'.
+  The body or subject of the message doesn't matter. To send an
+  Email to the list, mail to the username part set to 'mtr'. To
+  prevent SPAM to this list, please don't put the full name on 
+  the internet. 
 
-  Bug reports and feature requests should be submitted into the 
-  jitterbug bug-tracking system at http://www.BitWizard.nl/cgi-bin/mtr .
-  If you don't have web-access, mail the mailinglist. 
+  Bug reports and feature requests should be submitted the mailing
+  list.
 
   Patches can be submitted by Email to me, or submitted to the 
-  bug tracking system. Please use unified diffs. 
+  mailing list. Please use unified diffs. Usually the diff is sort of
+  messy, so please check that the diff is clean and doesn't contain too
+  much of your local stuff (for example, I don't want/need the "configure"
+  script that /your/ automake made for you). 
 
 -- REW
 
