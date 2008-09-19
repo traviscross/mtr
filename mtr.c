@@ -64,6 +64,7 @@ int   dns = 1;
 int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
 int   tos = 0;
+int   reportwide = 0;
 int af = DEFAULT_AF;
 int mtrtype = IPPROTO_ICMP;     /* Use ICMP as default packet type */
 
@@ -125,6 +126,7 @@ void parse_arg (int argc, char **argv)
     { "help", 0, 0, 'h' },
 
     { "report", 0, 0, 'r' },
+    { "report-wide", 0, 0, 'w' },
     { "xml", 0, 0, 'x' },
     { "curses", 0, 0, 't' },
     { "gtk", 0, 0, 'g' },
@@ -154,7 +156,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrxtglpo:i:c:s:b:Q:na:f:m:u46", long_options, NULL);
+		      "vhrwxtglpo:i:c:s:b:Q:na:f:m:u46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -168,6 +170,9 @@ void parse_arg (int argc, char **argv)
 
     case 'r':
       DisplayMode = DisplayReport;
+      break;
+    case 'w':
+      reportwide = 1;
       break;
     case 't':
       DisplayMode = DisplayCurses;
@@ -371,8 +376,8 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrctglspniu46] [--help] [--version] [--report]\n"
-	   "\t\t[--report-cycles=COUNT] [--curses] [--gtk]\n"
+    printf("usage: %s [-hvrwctglspniu46] [--help] [--version] [--report]\n"
+	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns] [--address interface]\n" /* BL */
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
@@ -395,7 +400,7 @@ int main(int argc, char **argv)
   bzero( &hints, sizeof hints );
   hints.ai_family = af;
   hints.ai_socktype = SOCK_DGRAM;
-  error = getaddrinfo( Hostname, "0", &hints, &res );
+  error = getaddrinfo( Hostname, NULL, &hints, &res );
   if ( error ) {
     perror( gai_strerror(error) );
     exit( EXIT_FAILURE );

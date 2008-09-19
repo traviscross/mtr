@@ -20,11 +20,6 @@
 
 /* Typedefs */
 
-#if 0
-
-// Neat trick! However, on my system, "config.h" already defines these types
-// so I get a compiler error if I leave this in.  -- REW
-
 /*  Find the proper type for 8 bits  */
 #if SIZEOF_UNSIGNED_CHAR == 1
 typedef unsigned char uint8;
@@ -52,8 +47,6 @@ typedef unsigned int uint32;
 typedef unsigned long uint32;
 #else
 #error No 32 bit type
-#endif
-
 #endif
 
 typedef unsigned char byte;

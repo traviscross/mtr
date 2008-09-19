@@ -32,6 +32,9 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <unistd.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -895,6 +898,20 @@ int net_send_batch(void)
   return 0;
 }
 
+static void set_fd_flags(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(FD_CLOEXEC)
+  int oldflags;
+
+  oldflags = fcntl(fd, F_GETFD);
+  if (oldflags == -1) {
+    perror("Couldn't get fd's flags");
+    return;
+  }
+  if (fcntl(fd, F_SETFD, oldflags | FD_CLOEXEC))
+    perror("Couldn't set fd's flags");
+#endif
+}
 
 int net_preopen(void) 
 {
@@ -925,9 +942,11 @@ int net_preopen(void)
   recvsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
   if (recvsock4 < 0)
     return -1;
+  set_fd_flags(recvsock4);
 #ifdef ENABLE_IPV6
   recvsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
 #endif
+  set_fd_flags(recvsock6);
 
   return 0;
 }
@@ -956,7 +975,7 @@ int net_selectsocket(void)
     sendsock6 = sendsock6_udp;
     break;
   }
-  if (sendsock6 < 0)
+  if ((sendsock6 < 0) && (sendsock4 < 0))
     return -1;
 #endif
 

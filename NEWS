@@ -1,4 +1,8 @@
 WHAT'S NEW?
+  v0.75 Feelgood patch to move sprintf to snprintf. People might think
+        that sprintf might cause a buffer overflow. Now it's clean. 
+        cut-paste patches: you can now copy an intermediate host to the
+        clipboard. 
   v0.74 Martin Pels' patch to allow UDP probes. 
         KES reported a build problem. Turns out I need to install gtk-1.2
         on my development sytem, otherwise my release script causes the 

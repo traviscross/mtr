@@ -23,7 +23,7 @@ mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
 
 EXTRA_DIST = SECURITY mtr.8 Makefile Makefile.dist
 distclean-local:
-	cp Makefile.dist Makefile
+	(sleep 3; cp Makefile.dist Makefile) &
 	rm -f *.orig
 
 DISTCLEANFILES = *~

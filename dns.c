@@ -893,7 +893,7 @@ void resendrequest(struct resolve *rp,int type)
   if (type == T_A) {
     dorequest(rp->hostname,type,rp->id);
     if (debug) {
-      sprintf(tempstring,"Resolver: Sent reverse authentication request for \"%s\".",
+      snprintf(tempstring, sizeof(tempstring), "Resolver: Sent reverse authentication request for \"%s\".",
 	      rp->hostname);
       restell(tempstring);
     }
@@ -914,7 +914,7 @@ void resendrequest(struct resolve *rp,int type)
     }
     dorequest(tempstring,type,rp->id);
     if (debug) {
-      sprintf(tempstring,"Resolver: Sent domain lookup request for \"%s\".",
+      snprintf(tempstring, sizeof(tempstring), "Resolver: Sent domain lookup request for \"%s\".",
 	      strlongip( &(rp->ip) ));
       restell(tempstring);
     }
@@ -950,7 +950,7 @@ void passrp(struct resolve *rp,long ttl)
   rp->expiretime = sweeptime + (double)ttl;
   untieresolve(rp);
   if (debug) {
-    sprintf(tempstring,"Resolver: Lookup successful: %s\n",rp->hostname);
+    snprintf(tempstring, sizeof(tempstring), "Resolver: Lookup successful: %s\n",rp->hostname);
     restell(tempstring);
   }
 }
@@ -1007,7 +1007,7 @@ void parserespacket(byte *s, int l)
   case NOERROR:
     if (hp->ancount) {
       if (debug) {
-	sprintf(tempstring,"Resolver: Received nameserver reply. (qd:%u an:%u ns:%u ar:%u)",
+	snprintf(tempstring, sizeof(tempstring), "Resolver: Received nameserver reply. (qd:%u an:%u ns:%u ar:%u)",
                 hp->qdcount,hp->ancount,hp->nscount,hp->arcount);
 	restell(tempstring);
       }
@@ -1047,14 +1047,14 @@ void parserespacket(byte *s, int l)
       namestring[strlen(stackstring)] = '\0';
       if (strcasecmp(stackstring,namestring)) {
 	if (debug) {
-	  sprintf(tempstring,"Resolver: Unknown query packet dropped. (\"%s\" does not match \"%s\")",
+	  snprintf(tempstring, sizeof(tempstring), "Resolver: Unknown query packet dropped. (\"%s\" does not match \"%s\")",
 		  stackstring,namestring);
 	  restell(tempstring);
 	}
 	return;
       }
       if (debug) {
-	sprintf(tempstring,"Resolver: Queried domain name: \"%s\"",namestring);
+	snprintf(tempstring, sizeof(tempstring), "Resolver: Queried domain name: \"%s\"",namestring);
 	restell(tempstring);
       }
       c+= r;
@@ -1065,7 +1065,7 @@ void parserespacket(byte *s, int l)
       qdatatype = sucknetword(c);
       qclass = sucknetword(c);
       if (qclass != C_IN) {
-	sprintf(tempstring,"Resolver error: Received unsupported query class: %u (%s)",
+	snprintf(tempstring, sizeof(tempstring), "Resolver error: Received unsupported query class: %u (%s)",
                 qclass,qclass < ClasstypeCount ? classtypes[qclass] :
 		classtypes[ClasstypeCount]);
 	restell(tempstring);
@@ -1079,7 +1079,7 @@ void parserespacket(byte *s, int l)
 	  }
 	break;
       default:
-	sprintf(tempstring,"Resolver error: Received unimplemented query type: %u (%s)",
+	snprintf(tempstring, sizeof(tempstring), "Resolver error: Received unimplemented query type: %u (%s)",
 		qdatatype,qdatatype < ResourcetypeCount ?
 		resourcetypes[qdatatype] : resourcetypes[ResourcetypeCount]);
 	restell(tempstring);
@@ -1101,7 +1101,7 @@ void parserespacket(byte *s, int l)
 	else
 	  usefulanswer = 1;
 	if (debug) {
-	  sprintf(tempstring,"Resolver: answered domain query: \"%s\"",namestring);
+	  snprintf(tempstring, sizeof(tempstring), "Resolver: answered domain query: \"%s\"",namestring);
 	  restell(tempstring);
 	}
 	c+= r;
@@ -1114,10 +1114,10 @@ void parserespacket(byte *s, int l)
 	ttl = sucknetlong(c);
 	rdatalength = sucknetword(c);
 	if (class != qclass) {
-	  sprintf(tempstring,"query class: %u (%s)",qclass,qclass < ClasstypeCount ?
+	  snprintf(tempstring, sizeof(tempstring), "query class: %u (%s)",qclass,qclass < ClasstypeCount ?
 		  classtypes[qclass] : classtypes[ClasstypeCount]);
 	  restell(tempstring);
-	  sprintf(tempstring,"rr class: %u (%s)",class,class < ClasstypeCount ?
+	  snprintf(tempstring, sizeof(tempstring), "rr class: %u (%s)",class,class < ClasstypeCount ?
 		  classtypes[class] : classtypes[ClasstypeCount]);
 	  restell(tempstring);
 	  restell("Resolver error: Answered class does not match queried class.");
@@ -1133,20 +1133,20 @@ void parserespacket(byte *s, int l)
 	}
 	if (datatype == qdatatype || datatype == T_CNAME) {
 	  if (debug) {
-	    sprintf(tempstring,"Resolver: TTL: %s",strtdiff(sendstring,ttl));
+	    snprintf(tempstring, sizeof(tempstring), "Resolver: TTL: %s",strtdiff(sendstring,ttl));
 	    restell(tempstring);
 	  }
 	  if (usefulanswer)
 	    switch (datatype) {
 	    case T_A:
 	      if (rdatalength != 4) {
-		sprintf(tempstring,"Resolver error: Unsupported rdata format for \"A\" type. (%u bytes)",
+		snprintf(tempstring, sizeof(tempstring), "Resolver error: Unsupported rdata format for \"A\" type. (%u bytes)",
 			rdatalength);
 		restell(tempstring);
 		return;
 	      }
 	      if ( addrcmp( (void *) &(rp->ip), (void *) c, af ) == 0 ) {
-		sprintf(tempstring,"Resolver: Reverse authentication failed: %s != ",
+		snprintf(tempstring, sizeof(tempstring), "Resolver: Reverse authentication failed: %s != ",
 			strlongip( &(rp->ip) ));
 		addrcpy( (void *) &alignedip, (void *) c, af );
 		strcat(tempstring,strlongip( &alignedip ));
@@ -1154,7 +1154,7 @@ void parserespacket(byte *s, int l)
 		res_hostipmismatch++;
 		failrp(rp);
 	      } else {
-		sprintf(tempstring,"Resolver: Reverse authentication complete: %s == \"%s\".",
+		snprintf(tempstring, sizeof(tempstring), "Resolver: Reverse authentication complete: %s == \"%s\".",
 			strlongip( &(rp->ip) ),nonull(rp->hostname));
 		restell(tempstring);
 		res_reversesuccess++;
@@ -1171,7 +1171,7 @@ void parserespacket(byte *s, int l)
 		return;
 	      }
 	      if (debug) {
-		sprintf(tempstring,"Resolver: Answered domain: \"%s\"",namestring);
+		snprintf(tempstring, sizeof(tempstring), "Resolver: Answered domain: \"%s\"",namestring);
 		restell(tempstring);
 	      }
 	      if (r > HostnameLength) {
@@ -1196,14 +1196,14 @@ void parserespacket(byte *s, int l)
 	      }
 	      break;
 	    default:
-	      sprintf(tempstring,"Resolver error: Received unimplemented data type: %u (%s)",
+	      snprintf(tempstring, sizeof(tempstring), "Resolver error: Received unimplemented data type: %u (%s)",
 		      datatype,datatype < ResourcetypeCount ?
 		      resourcetypes[datatype] : resourcetypes[ResourcetypeCount]);
 	      restell(tempstring);
 	    }
 	} else {
 	  if (debug) {
-	    sprintf(tempstring,"Resolver: Ignoring resource type %u. (%s)",
+	    snprintf(tempstring, sizeof(tempstring), "Resolver: Ignoring resource type %u. (%s)",
 		    datatype,datatype < ResourcetypeCount ?
 		    resourcetypes[datatype] : resourcetypes[ResourcetypeCount]);
 	    restell(tempstring);
@@ -1221,7 +1221,7 @@ void parserespacket(byte *s, int l)
     failrp(rp);
     break;
   default:
-    sprintf(tempstring,"Resolver: Received error response %u. (%s)",
+    snprintf(tempstring, sizeof(tempstring), "Resolver: Received error response %u. (%s)",
 	    getheader_rcode(hp),getheader_rcode(hp) < ResponsecodeCount ?
 	    responsecodes[getheader_rcode(hp)] : responsecodes[ResponsecodeCount]);
     restell(tempstring);
@@ -1252,13 +1252,13 @@ void dns_ack(void)
 		      (void *) &(from4->sin_addr), AF_INET ) == 0 )
 	  break;
     if (i == _res.nscount) {
-      sprintf(tempstring,"Resolver error: Received reply from unknown source: %s",
+      snprintf(tempstring, sizeof(tempstring), "Resolver error: Received reply from unknown source: %s",
 	      inet_ntoa(from4->sin_addr ));
       restell(tempstring);
     } else
       parserespacket((byte *)resrecvbuf,r);
   } else {
-    sprintf(tempstring,"Resolver: Socket error: %s",strerror(errno));
+    snprintf(tempstring, sizeof(tempstring), "Resolver: Socket error: %s",strerror(errno));
     restell(tempstring);
   }
 }
@@ -1287,7 +1287,7 @@ void dns_events(double *sinterval)
     case STATE_FINISHED:	/* TTL has expired */
     case STATE_FAILED:	/* Fake TTL has expired */
       if (debug) {
-	sprintf(tempstring,"Resolver: Cache record for \"%s\" (%s) has expired. (state: %u)  Marked for expire at: %g, time: %g.",
+	snprintf(tempstring, sizeof(tempstring), "Resolver: Cache record for \"%s\" (%s) has expired. (state: %u)  Marked for expire at: %g, time: %g.",
                 nonull(rp->hostname), strlongip( &(rp->ip) ), 
 		rp->state, rp->expiretime, sweeptime);
 	restell(tempstring);
@@ -1331,14 +1331,14 @@ char *dns_lookup2(ip_t * ip)
     if ((rp->state == STATE_FINISHED) || (rp->state == STATE_FAILED)) {
       if ((rp->state == STATE_FINISHED) && (rp->hostname)) {
 	if (debug) {
-	  sprintf(tempstring,"Resolver: Used cached record: %s == \"%s\".\n",
+	  snprintf(tempstring, sizeof(tempstring), "Resolver: Used cached record: %s == \"%s\".\n",
 		  strlongip(ip),rp->hostname);
 	  restell(tempstring);
 	}
 	return rp->hostname;
       } else {
 	if (debug) {
-	  sprintf(tempstring,"Resolver: Used failed record: %s == ???\n",
+	  snprintf(tempstring, sizeof(tempstring), "Resolver: Used failed record: %s == ???\n",
 		  strlongip(ip));
 	  restell(tempstring);
 	}

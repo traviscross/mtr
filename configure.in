@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.74)
+AM_INIT_AUTOMAKE(mtr, 0.75)
 
 
 AC_SUBST(GTK_OBJ)
@@ -14,6 +14,9 @@ AC_CHECK_SIZEOF(unsigned char, 1)
 AC_CHECK_SIZEOF(unsigned short, 2)
 AC_CHECK_SIZEOF(unsigned int, 4)
 AC_CHECK_SIZEOF(unsigned long, 4)
+
+AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h fcntl.h)
+AC_CHECK_HEADERS(sys/xti.h)
 
 # Some doc I found somewhere. :-) -- REW
 # - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
@@ -32,11 +35,7 @@ AC_CHECK_FUNC(initscr, ,
 	AC_DEFINE(NO_CURSES, 1, Define if you don't have the curses libraries available.)
 	CURSES_OBJ=))))
 
-AC_CHECK_FUNCS(attron)
-
-
-AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h)
-AC_CHECK_HEADERS(sys/xti.h)
+AC_CHECK_FUNCS(attron fcntl)
 
 AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
 

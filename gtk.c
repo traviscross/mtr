@@ -42,6 +42,11 @@
 #endif
 
 gint gtk_ping(gpointer data);
+gint Copy_activate(GtkWidget *widget, gpointer data);
+gint NewDestination_activate(GtkWidget *widget, gpointer data);
+gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event);
+gchar* getSelectedHost(GtkTreePath *path);
+
 
 
 extern char *Hostname;
@@ -49,7 +54,7 @@ extern float WaitTime;
 extern int af;
 static int tag;
 static GtkWidget *Pause_Button;
-
+static GtkWidget *Entry;
 
 void gtk_add_ping_timeout (void)
 {
@@ -170,7 +175,6 @@ void Toolbar_fill(GtkWidget *Toolbar)
 {
   GtkWidget *Button;
   GtkWidget *Label;
-  GtkWidget *Entry;
   GtkAdjustment *Adjustment;
 
   Button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
@@ -277,6 +281,9 @@ void TreeViewCreate(void)
     );
     
   ReportTreeView = gtk_tree_view_new_with_model(GTK_TREE_MODEL(ReportStore));
+  
+  g_signal_connect(GTK_OBJECT(ReportTreeView), "button_press_event", 
+  		    G_CALLBACK(ReportTreeView_clicked),NULL);
   
   renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes ("Hostname",
@@ -536,4 +543,91 @@ void gtk_loop(void)
   gtk_main();
 }
 
+gboolean NewDestination_activate(GtkWidget *widget, gpointer data)
+{
+  gchar *hostname;
+  GtkTreePath *path = (GtkTreePath*)data;
+	
+  hostname = getSelectedHost(path);
+  if (hostname) {
+    gtk_entry_set_text (GTK_ENTRY(Entry), hostname);
+    Host_activate(Entry, NULL);
+    g_free(hostname);
+  }
+  return TRUE;
+}
+
+
+gboolean Copy_activate(GtkWidget *widget, gpointer data)
+{
+  gchar *hostname;
+  GtkTreePath *path = (GtkTreePath*)data;
+	
+  hostname = getSelectedHost(path);
+  if (hostname != NULL) {
+    GtkClipboard *clipboard;
+
+    clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+    gtk_clipboard_set_text(clipboard, hostname, -1);
+
+    clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+    gtk_clipboard_set_text(clipboard, hostname, -1);
+
+    g_free(hostname);
+  }
+
+  return TRUE;
+}
+
+gchar *getSelectedHost(GtkTreePath *path)
+{
+  GtkTreeIter iter;
+  gchar *name = NULL;
+
+  if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ReportStore), &iter, path)) {
+    gtk_tree_model_get (GTK_TREE_MODEL(ReportStore), &iter, COL_HOSTNAME, &name, -1);
+  }
+  gtk_tree_path_free(path);
+  return name;
+}
+
+
+gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event)
+{
+  GtkWidget* popup_menu; 
+  GtkWidget* copy_item; 
+  GtkWidget* newdestination_item;
+  GtkTreePath *path;
+
+  if (event->type != GDK_BUTTON_PRESS  || event->button != 3)
+    return FALSE;
+
+  if(!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(ReportTreeView),
+      event->x, event->y, &path, NULL, NULL, NULL))
+    return FALSE;
+  
+  gtk_tree_view_set_cursor(GTK_TREE_VIEW(ReportTreeView), path, NULL, FALSE);
+
+  // Single right click: prepare and show the popup menu
+  popup_menu = gtk_menu_new ();
+
+  copy_item = gtk_menu_item_new_with_label ("Copy to clipboard");
+  newdestination_item = gtk_menu_item_new_with_label ("Set as new destination"); 
+
+  gtk_menu_append (GTK_MENU (popup_menu), copy_item); 
+  gtk_menu_append (GTK_MENU (popup_menu), newdestination_item); 
+
+  g_signal_connect(GTK_OBJECT(copy_item),"activate",
+                   GTK_SIGNAL_FUNC(Copy_activate), path);
+
+  g_signal_connect(GTK_OBJECT(newdestination_item),"activate",
+                   GTK_SIGNAL_FUNC(NewDestination_activate), path);
+              
+  gtk_widget_show (copy_item); 
+  gtk_widget_show (newdestination_item); 
+
+  gtk_menu_popup (GTK_MENU(popup_menu), NULL, NULL, NULL, NULL,
+                   0, event->time);
+  return TRUE;
+}
 

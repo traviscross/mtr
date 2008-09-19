@@ -41,6 +41,7 @@ extern int bitpattern;
 extern int tos;
 extern int MaxPing;
 extern int af;
+extern int reportwide;
 
 
 void report_open(void) 
@@ -56,15 +57,41 @@ void report_close(void)
   char buf[1024];
   char fmt[16];
   int len=0;
+  int len_hosts = 33;
   struct hostent *host;
 
-  sprintf(buf, "HOST: %-33s", LocalHostname);
+  if (reportwide)
+  {
+    // get the longest hostname
+    len_hosts = strlen(LocalHostname);
+    max = net_max();
+    at  = net_min();
+    for (; at < max; at++) {
+      addr = net_addr(at);
+      if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
+        host = dns ? addr2host( (void *) addr, af ) : NULL;
+        if (host != NULL) {
+          strncpy( name, host->h_name, (sizeof name) - 1 );
+          name[ (sizeof name) - 1 ] = '\0'; 
+        } else {
+          snprintf(name, sizeof(name), "%s", strlongip( addr ) );
+        }
+        if (len_hosts < strlen(name)) {
+          len_hosts = strlen(name);
+        }
+      }    
+    }
+  }
+  
+  snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_hosts);
+  snprintf(buf, sizeof(buf), fmt, LocalHostname);
+  len = reportwide ? strlen(buf) : len_hosts;
   for( i=0; i<MAXFLD; i++ ) {
     j = fld_index[fld_active[i]];
     if (j < 0) continue;
 
-    sprintf( fmt, "%%%ds", data_fields[j].length );
-    sprintf( buf +33+ len, fmt, data_fields[j].title );
+    snprintf( fmt, sizeof(fmt), "%%%ds", data_fields[j].length );
+    snprintf( buf + len, sizeof(buf), fmt, data_fields[j].title );
     len +=  data_fields[j].length;
   }
   printf("%s\n",buf);
@@ -80,25 +107,26 @@ void report_close(void)
       host = dns ? addr2host( (void *) addr, af ) : NULL;
 
       if (host != NULL) {
-	 strncpy( name, host->h_name, (sizeof name) - 1 );
-	 name[ (sizeof name) - 1 ] = '\0'; 
+        strncpy( name, host->h_name, (sizeof name) - 1 );
+        name[ (sizeof name) - 1 ] = '\0'; 
       } else {
-	sprintf(name, "%s", strlongip( addr ) );
+        snprintf(name, sizeof(name), "%s", strlongip( addr ) );
       }
     }
 
-    len=0;
-    sprintf( buf, " %2d. %-33s", at+1, name);
+    snprintf( fmt, sizeof(fmt), " %%2d. %%-%ds", len_hosts);
+    snprintf(buf, sizeof(buf), fmt, at+1, name);
+    len = reportwide ? strlen(buf) : len_hosts;  
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active [i]];
       if (j < 0) continue;
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
       if( index( data_fields[j].format, 'f' ) ) {
-	sprintf( buf +33+ len, data_fields[j].format,
+        snprintf( buf + len, sizeof(buf), data_fields[j].format,
 		data_fields[j].net_xxx(at) /1000.0 );
       } else {
-	sprintf( buf +33+ len, data_fields[j].format,
+        snprintf( buf + len, sizeof(buf), data_fields[j].format,
 		data_fields[j].net_xxx(at) );
       }
       len +=  data_fields[j].length;

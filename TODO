@@ -41,6 +41,14 @@ Oh, Feel free to provide suggestions for this list.
   - Keep all packets and make the "best" and "worst" columns show the
     xx-th percentile....
 
+  - Can the reports generated also include any secondary servers?  In 
+    the interactive mode, any new servers that are found in the 
+    traceroute are added to the list, but it seems to only include 
+    one set of servers when using the -r option.  
+
+  - Being able to expand the "column width" of the hosts listed would 
+    be nice, too.
+
 
 - Bugs to fix?
 
