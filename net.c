@@ -3,9 +3,8 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License version 2 as 
+    published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -481,6 +480,9 @@ void net_process_ping(int seq, void * addr, struct timeval now)
     if( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, af ) != 0 && 
         i<MAXPATH ) {
       addrcpy( (void *) &(host[index].addrs[i]), addrcopy, af );
+      
+      /* rafaelmartins: multi path support to '--raw' */
+      display_rawhost(index, (void *) &(host[index].addrs[i]));
     }
   /* end multi paths */
   }
@@ -898,10 +900,13 @@ int net_send_batch(void)
   return 0;
 }
 
+
 static void set_fd_flags(int fd)
 {
 #if defined(HAVE_FCNTL) && defined(FD_CLOEXEC)
   int oldflags;
+
+  if (fd < 0) return; 
 
   oldflags = fcntl(fd, F_GETFD);
   if (oldflags == -1) {
@@ -945,8 +950,9 @@ int net_preopen(void)
   set_fd_flags(recvsock4);
 #ifdef ENABLE_IPV6
   recvsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  if (recvsock6 >= 0)
+     set_fd_flags(recvsock6);
 #endif
-  set_fd_flags(recvsock6);
 
   return 0;
 }

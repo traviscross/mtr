@@ -4,9 +4,8 @@
     Changes/additions Copyright (C) 1998 R.E.Wolff@BitWizard.nl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License version 2 as 
+    published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -55,6 +54,7 @@ extern int af;
 static int tag;
 static GtkWidget *Pause_Button;
 static GtkWidget *Entry;
+static GtkWidget *main_window;
 
 void gtk_add_ping_timeout (void)
 {
@@ -122,6 +122,68 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
   return FALSE;
 }
 
+gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+{
+  gchar *authors[] = {
+        "Roger Wolff <R.E.Wolff@BitWizard.nl>",
+        "Bohdan Vlasyuk <bohdan@cec.vstu.vinnica.ua>",
+        "Evgeniy Tretyak <evtr@ukr.net>",
+        "John Thacker <thacker@math.cornell.edu>",
+        "Juha Takala",
+        "David Sward <sward@clark.net>",
+        "David Stone <stone@AsIf.com>",
+        "Andrew Stesin",
+        "Greg Stark <gsstark@mit.edu>",
+        "Robert Sparks <rjsparks@nostrum.com>",
+        "Mike Simons <msimons@moria.simons-clan.com>",
+        "Aaron Scarisbrick,",
+        "Craig Milo Rogers <Rogers@ISI.EDU>",
+        "Antonio Querubin <tony@aloha.net>",
+        "Russell Nelson <rn-mtr@crynwr.com>",
+        "Davin Milun <milun@acm.org>",
+        "Josh Martin <jmartin@columbiaservices.net>",
+        "Alexander V. Lukyanov <lav@yars.free.net>",
+        "Charles Levert <charles@comm.polymtl.ca> ",
+        "Bertrand Leconte <B.Leconte@mail.dotcom.fr>",
+        "Anand Kumria",
+        "Olav Kvittem <Olav.Kvittem@uninett.no>",
+        "Adam Kramer <l3zqc@qcunix1.acc.qc.edu> ",
+        "Philip Kizer <pckizer@nostrum.com>",
+        "Simon Kirby",
+        "Christophe Kalt",
+        "Steve Kann <stevek@spheara.horizonlive.com>",
+        "Brett Johnson <brett@jdacareers.com>",
+        "Roland Illig <roland.illig@gmx.de>",
+        "Damian Gryski <dgryski@uwaterloo.ca>",
+        "Rob Foehl <rwf@loonybin.net>",
+        "Mircea Damian",
+        "Cougar <cougar@random.ee>",
+        "Brian Casey",
+        "Andrew Brown <atatat@atatdot.net>",
+        "Bill Bogstad <bogstad@pobox.com> ",
+        "Marc Bejarano <marc.bejarano@openwave.com>",
+        "Moritz Barsnick <barsnick@gmx.net>",
+        NULL
+    };
+  
+  gtk_show_about_dialog(GTK_WINDOW(main_window)
+    , "version", VERSION
+    , "copyright", "Copyright \xc2\xa9 1997,1998  Matt Kimball"
+    , "website", "http://www.bitwizard.nl/mtr/"
+    , "authors", authors
+    , "comments", "The 'traceroute' and 'ping' programs in a single network diagnostic tool."
+    , "license",
+"This program is free software; you can redistribute it and/or modify\n"
+"it under the terms of the GNU General Public License version 2 as\n"
+"published by the Free Software Foundation.\n"
+"\n"
+"This program is distributed in the hope that it will be useful,\n"
+"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"GNU General Public License for more details."
+  , NULL);
+  return TRUE;
+}
 
 /*
  * There is a small problem with the following code:
@@ -181,6 +243,11 @@ void Toolbar_fill(GtkWidget *Toolbar)
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
   g_signal_connect(GTK_OBJECT(Button), "clicked",
 		     GTK_SIGNAL_FUNC(Window_destroy), NULL);
+
+  Button = gtk_button_new_from_stock(GTK_STOCK_ABOUT);
+  gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
+  g_signal_connect(GTK_OBJECT(Button), "clicked",
+		     GTK_SIGNAL_FUNC(About_clicked), NULL);
 
   Button = gtk_button_new_with_mnemonic("_Restart");
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
@@ -443,7 +510,7 @@ void Window_fill(GtkWidget *Window)
   GtkWidget *Toolbar;
   GtkWidget *scroll;
 
-  gtk_window_set_title(GTK_WINDOW(Window), "My traceroute  [v" VERSION "]");
+  gtk_window_set_title(GTK_WINDOW(Window), "My traceroute");
   gtk_window_set_default_size(GTK_WINDOW(Window), 650, 400); 
   gtk_container_set_border_width(GTK_CONTAINER(Window), 10);
   VBox = gtk_vbox_new(FALSE, 10);
@@ -465,8 +532,7 @@ void Window_fill(GtkWidget *Window)
 
 void gtk_open(void)
 {
-  GtkWidget *Window;
-  GdkPixmap *icon;
+  GdkPixbuf *icon;
 
   int argc;
   char *args[2];
@@ -477,19 +543,21 @@ void gtk_open(void)
   argv[1] = NULL;
   gtk_do_init(&argc, &argv);
 
-  Window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  icon = gdk_pixbuf_new_from_xpm_data((const char**)mtr_icon);
+  gtk_window_set_default_icon(icon);
 
-  Window_fill(Window);
+  main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  
+  g_set_application_name("My traceroute");
 
-  g_signal_connect(GTK_OBJECT(Window), "delete_event",
+  Window_fill(main_window);
+
+  g_signal_connect(GTK_OBJECT(main_window), "delete_event",
                      GTK_SIGNAL_FUNC(Window_destroy), NULL);
-  g_signal_connect(GTK_OBJECT(Window), "destroy",
+  g_signal_connect(GTK_OBJECT(main_window), "destroy",
 		     GTK_SIGNAL_FUNC(Window_destroy), NULL);
 
-  icon = gtk_load_pixmap(mtr_icon);
-  gtk_widget_show_all(Window);
-  gdk_window_set_icon(Window->window, NULL, icon, NULL);
-  gdk_window_set_icon_name(Window->window, "mtr");
+  gtk_widget_show_all(main_window);
 }
 
 

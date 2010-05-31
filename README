@@ -60,6 +60,11 @@ INSTALLING
   knows how to make this automatic using autoconf / the configure script, 
   please tell me.... 
 
+  This should now also work: 
+  ./configure CFLAGS="-arch i386 -arch x86_64" LIBS="-lresolv" \
+       --without-gtk --disable-endian-check --disable-dependency-tracking
+
+
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 

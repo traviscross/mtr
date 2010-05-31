@@ -3,9 +3,8 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License version 2 as 
+    published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -380,6 +379,7 @@ int main(int argc, char **argv)
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--no-dns] [--address interface]\n" /* BL */
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
+           "\t\t[--report-wide|-w] [-u]\n"            /* rew */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
     exit(0);
   }
@@ -402,7 +402,10 @@ int main(int argc, char **argv)
   hints.ai_socktype = SOCK_DGRAM;
   error = getaddrinfo( Hostname, NULL, &hints, &res );
   if ( error ) {
-    perror( gai_strerror(error) );
+    if (error == EAI_SYSTEM)
+       perror ("Failed to resolve host");
+    else
+       fprintf (stderr, "Failed to resolve host: %s\n", gai_strerror(error));
     exit( EXIT_FAILURE );
   }
   /* Convert the first addrinfo into a hostent. */
