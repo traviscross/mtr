@@ -30,6 +30,8 @@
 #include "net.h"
 #include "dns.h"
 
+#define MAXLOADBAL 5
+
 extern int dns;
 extern char LocalHostname[];
 extern char *Hostname;
@@ -50,8 +52,9 @@ void report_open(void)
 
 void report_close(void) 
 {
-  int i, j, at, max;
+  int i, j, at, max, z, w;
   ip_t *addr;
+  ip_t *addr2 = NULL;  
   char name[81];
   char buf[1024];
   char fmt[16];
@@ -99,7 +102,6 @@ void report_close(void)
   at  = net_min();
   for(; at < max; at++) {
     addr = net_addr(at);
-    
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
       sprintf(name, "???");
     } else {
@@ -113,7 +115,7 @@ void report_close(void)
       }
     }
 
-    snprintf( fmt, sizeof(fmt), " %%2d. %%-%ds", len_hosts);
+    snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
     len = reportwide ? strlen(buf) : len_hosts;  
     for( i=0; i<MAXFLD; i++ ) {
@@ -131,6 +133,30 @@ void report_close(void)
       len +=  data_fields[j].length;
     }
     printf("%s\n",buf);
+
+    /* Thales (thales@paponline.net) -- 
+     * This feature show 'loadbalances' on routes 
+     */
+    
+   /* z is starting at 1 because addrs[0] is the same that addr */
+    for (z = 1; z < MAXPATH ; z++) {
+       addr2 = net_addrs(at, z);
+       int found = 0;
+       if ((addrcmp ((void *) &unspec_addr, (void *) addr2, af)) == 0)
+          break;
+      for (w = 0; w < z; w++)
+        /* Thales -- Ok... checking if there are ips repeated on same hop */
+           if ((addrcmp ((void *) addr2, (void *) net_addrs (at,w), af)) == 0) {
+              found = 1;
+              break;
+           }   
+       if (!found) {
+        if (z == 1)  
+          printf ("    |  `|-- %s\n", strlongip(addr2));
+        else 
+          printf ("    |   |-- %s\n", strlongip(addr2));
+       }
+    }
   }
 }
 
