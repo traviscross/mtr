@@ -1211,7 +1211,7 @@ void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
   switch ( saddr->sa_family ) {
   case AF_INET:
     sa4 = (struct sockaddr_in *) saddr;
-    strncpy( strptr, inet_ntoa( (struct in_addr) sa4->sin_addr ), len - 1 );
+    strncpy( strptr, inet_ntoa( sa4->sin_addr ), len - 1 );
     strptr[ len - 1 ] = '\0';
     return;
 #ifdef ENABLE_IPV6

@@ -309,6 +309,17 @@ char nullstring[] = "";
 
 int use_dns = 1;
 
+#ifdef res_ninit
+#define RES_INIT() res_ninit(&myres);
+#define RES_MKQUERY(a, b, c, d, e, f, g, h, i) \
+    res_nmkquery(&myres, a, b, c, d, e, f, g, h, i)
+struct __res_state myres;
+#else
+#define RES_INIT() res_init();
+#define RES_MKQUERY(a, b, c, d, e, f, g, h, i) \
+    res_mkquery(a, b, c, d, e, f, g, h, i)
+#define myres _res
+#endif
 
 /* Code */
 #ifdef CorruptCheck
@@ -484,14 +495,14 @@ void dns_open(void)
   int option,i;
 
   if (!dns) return;
-  res_init();
-  if (!_res.nscount) {
+  RES_INIT();
+  if (!myres.nscount) {
     fprintf(stderr,"No nameservers defined.\n");
     exit(-1);
   }
-  _res.options|= RES_RECURSE | RES_DEFNAMES | RES_DNSRCH;
-  for (i = 0;i < _res.nscount;i++)
-    _res.nsaddr_list[i].sin_family = AF_INET;
+  myres.options|= RES_RECURSE | RES_DEFNAMES | RES_DNSRCH;
+  for (i = 0;i < myres.nscount;i++)
+    myres.nsaddr_list[i].sin_family = AF_INET;
   resfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (resfd == -1) {
     fprintf(stderr,"Unable to allocate socket for nameserver communication: %s\n",
@@ -874,17 +885,17 @@ void dorequest(char *s,int type,word id)
 {
   packetheader *hp;
   int r,i;
-  int buf[(MaxPacketsize/sizeof (int))+1];
+  unsigned char buf[MaxPacketsize];
 
-  r = res_mkquery(QUERY,s,C_IN,type,NULL,0,NULL,(unsigned char*)buf,MaxPacketsize);
+  r = RES_MKQUERY(QUERY,s,C_IN,type,NULL,0,NULL,(unsigned char*)buf,MaxPacketsize);
   if (r == -1) {
     restell("Resolver error: Query too large.");
     return;
   }
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
-  for (i = 0;i < _res.nscount;i++)
-    (void)sendto(resfd,buf,r,0,(struct sockaddr *)&_res.nsaddr_list[i],
+  for (i = 0;i < myres.nscount;i++)
+    (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
 		 sizeof(struct sockaddr));
 }
 
@@ -1240,18 +1251,18 @@ void dns_ack(void)
     /* Check to see if this server is actually one we sent to */
     if ( addrcmp( (void *) &(from4->sin_addr), (void *) &localhost,
                   (int) AF_INET ) == 0 ) {
-      for (i = 0;i < _res.nscount;i++)
-	if ( addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+      for (i = 0;i < myres.nscount;i++)
+	if ( addrcmp( (void *) &(myres.nsaddr_list[i].sin_addr),
 		      (void *) &(from4->sin_addr), (int) AF_INET ) == 0 ||
-	     addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+	     addrcmp( (void *) &(myres.nsaddr_list[i].sin_addr),
 		      (void *) &unspec_addr, (int) AF_INET ) == 0 )	/* 0.0.0.0 replies as 127.0.0.1 */
 	  break;
     } else
-      for (i = 0;i < _res.nscount;i++)
-	if ( addrcmp( (void *) &(_res.nsaddr_list[i].sin_addr),
+      for (i = 0;i < myres.nscount;i++)
+	if ( addrcmp( (void *) &(myres.nsaddr_list[i].sin_addr),
 		      (void *) &(from4->sin_addr), AF_INET ) == 0 )
 	  break;
-    if (i == _res.nscount) {
+    if (i == myres.nscount) {
       snprintf(tempstring, sizeof(tempstring), "Resolver error: Received reply from unknown source: %s",
 	      inet_ntoa(from4->sin_addr ));
       restell(tempstring);
