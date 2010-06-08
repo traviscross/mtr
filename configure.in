@@ -1,5 +1,5 @@
 AC_INIT(mtr.c)
-AM_INIT_AUTOMAKE(mtr, 0.78)
+AM_INIT_AUTOMAKE(mtr, 0.79)
 
 
 AC_SUBST(GTK_OBJ)
@@ -16,7 +16,7 @@ AC_CHECK_SIZEOF(unsigned int, 4)
 AC_CHECK_SIZEOF(unsigned long, 4)
 
 AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h fcntl.h)
-AC_CHECK_HEADERS(sys/xti.h)
+AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h)
 
 # Some doc I found somewhere. :-) -- REW
 # - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
@@ -97,6 +97,12 @@ AC_CHECK_DECLS(errno, , , [[
 
 AC_CHECK_TYPE(socklen_t, AC_DEFINE([HAVE_SOCKLEN_T], [], [Define if your system has socklen_t]) , , [[
 #include <netinet/in.h>
+#ifdef HAVE_SOCKET_H
+#include <socket.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 ]])
 
 AC_CHECK_TYPE(struct in_addr, AC_DEFINE([HAVE_STRUCT_INADDR], [], [Define if you have struct in_addr]), , [[

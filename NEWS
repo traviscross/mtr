@@ -1,4 +1,6 @@
 WHAT'S NEW?
+  V0.78/0.79 some compilation fixes for BSD&others by 
+        Thomas Klausner <wiz@NetBSD.org>
   V0.76 display load sharing hosts in --raw output. 
         added about button in gui. 
   v0.75 Feelgood patch to move sprintf to snprintf. People might think
