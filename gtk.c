@@ -303,6 +303,14 @@ enum {
   N_COLS
 };
 
+// Trick to cast a pointer to integer.....
+// We are mis-using a pointer as a single integer. On 64-bit
+// architectures, the pointer is 64 bits and the integer only 32. 
+// The compiler warns us of loss of precision. However we know we
+// casted a normal 32-bit integer into this pointer a few microseconds
+// earlier, so it is ok. Nothing to worry about.... -- REW.
+#define POINTER_TO_INT(p) ((int)(long)(p))
+
 void  float_formatter(GtkTreeViewColumn *tree_column,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
@@ -311,7 +319,7 @@ void  float_formatter(GtkTreeViewColumn *tree_column,
 {
   gfloat f;
   gchar text[64];
-  gtk_tree_model_get(tree_model, iter, (gint)data, &f, -1);
+  gtk_tree_model_get(tree_model, iter, POINTER_TO_INT(data), &f, -1);
   sprintf(text, "%.2f", f);
   g_object_set(cell, "text", text, NULL);
 }
@@ -324,7 +332,7 @@ void  percent_formatter(GtkTreeViewColumn *tree_column,
 {
   gfloat f;
   gchar text[64];
-  gtk_tree_model_get(tree_model, iter, (gint)data, &f, -1);
+  gtk_tree_model_get(tree_model, iter, POINTER_TO_INT(data), &f, -1);
   sprintf(text, "%.1f%%", f);
   g_object_set(cell, "text", text, NULL);
 }

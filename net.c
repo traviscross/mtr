@@ -297,8 +297,10 @@ void net_send_query(int index)
 
   ttl = index + 1;
 
+#ifdef ENABLE_IPV6
   /* offset for ipv6 checksum calculation */
   int offset = 6;
+#endif
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;

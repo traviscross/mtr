@@ -310,12 +310,12 @@ char nullstring[] = "";
 int use_dns = 1;
 
 #ifdef res_ninit
-#define RES_INIT() res_ninit(&myres);
+#define MY_RES_INIT() res_ninit(&myres);
 #define RES_MKQUERY(a, b, c, d, e, f, g, h, i) \
     res_nmkquery(&myres, a, b, c, d, e, f, g, h, i)
 struct __res_state myres;
 #else
-#define RES_INIT() res_init();
+#define MY_RES_INIT() res_init();
 #define RES_MKQUERY(a, b, c, d, e, f, g, h, i) \
     res_mkquery(a, b, c, d, e, f, g, h, i)
 #define myres _res
@@ -495,7 +495,7 @@ void dns_open(void)
   int option,i;
 
   if (!dns) return;
-  RES_INIT();
+  MY_RES_INIT();
   if (!myres.nscount) {
     fprintf(stderr,"No nameservers defined.\n");
     exit(-1);
