@@ -43,6 +43,8 @@ static struct timeval intervaltime;
 int display_offset = 0;
 
 
+#define GRACETIME (5 * 1000*1000)
+
 void select_loop(void) {
   fd_set readfd;
   int anyset = 0;
@@ -51,8 +53,11 @@ void select_loop(void) {
   int NumPing = 0;
   int paused = 0;
   struct timeval lasttime, thistime, selecttime;
+  struct timeval startgrace, stopgrace;
   int dt;
   int rv; 
+  int graceperiod = 0;
+
 
   gettimeofday(&lasttime, NULL);
 
@@ -87,7 +92,6 @@ void select_loop(void) {
 	selecttime.tv_usec = 0;
       
 	rv = select(maxfd, (void *)&readfd, NULL, NULL, &selecttime);
-
       } else {
 	if(Interactive) display_redraw();
 
@@ -97,10 +101,21 @@ void select_loop(void) {
 	   (thistime.tv_sec == lasttime.tv_sec + intervaltime.tv_sec &&
 	    thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
 	  lasttime = thistime;
-	  if(NumPing >= MaxPing && (!Interactive || ForceMaxPing))
-	    return;
-	  if (net_send_batch())
-	    NumPing++;
+	  if (!graceperiod) {
+	    if(NumPing >= MaxPing && (!Interactive || ForceMaxPing)) {
+	      graceperiod=1;
+              startgrace=thistime;
+ 	      //gettimeofday (&startgrace, NULL);
+    	    }
+	    if (net_send_batch())
+	      NumPing++;
+          }
+	}
+	if (graceperiod) {
+	 // gettimeofday(&thistime, NULL);
+	  dt =        (thistime.tv_usec - startgrace.tv_usec) + 
+	    1000000 * (thistime.tv_sec - startgrace.tv_sec);
+	  if (dt > GRACETIME) return;
 	}
 
 	selecttime.tv_usec = (thistime.tv_usec - lasttime.tv_usec);

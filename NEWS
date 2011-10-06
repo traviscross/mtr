@@ -1,4 +1,7 @@
 WHAT'S NEW?
+  V0.81 Fix for https://bugs.launchpad.net/mtr/+bug/776211
+        don't have time right now to integrate some submitted patches. 
+        Sorry.
   V0.80 Some compilation fixes for BSD by Jeremy Chadwick 
         <freebsd@jdc.parodius.com>
   V0.78/0.79 some compilation fixes for BSD&others by 
