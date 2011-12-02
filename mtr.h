@@ -58,6 +58,7 @@ typedef struct in6_addr ip_t;
 typedef struct in_addr ip_t;
 #endif
 
+extern int enablempls;
 extern int dns;
 extern int use_dns;
 

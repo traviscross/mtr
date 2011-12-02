@@ -8,7 +8,7 @@ mtr \- a network diagnostic tool
 .SH SYNOPSIS
 .B mtr 
 [\c
-.B \-hvrctglspniu46\c
+.B \-hvrctglspeniu46\c
 ]
 [\c
 .B \-\-help\c
@@ -33,6 +33,9 @@ mtr \- a network diagnostic tool
 ]
 [\c
 .B \-\-raw\c
+]
+[\c
+.B \-\-mpls\c
 ]
 [\c
 .B \-\-no-dns\c
@@ -160,6 +163,16 @@ Use this option to force
 .B mtr 
 to use the curses based terminal
 interface (if available).
+
+.TP
+.B \-e
+.TP
+.B \-\-mpls
+.br
+Use this option to tell 
+.B mtr 
+to display information from ICMP extensions for MPLS (RFC 4950)
+that are encoded in the response packets.
 
 .TP
 .B \-n
