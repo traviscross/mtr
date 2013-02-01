@@ -1,2 +1,23 @@
-autom4te.cache
-.deps
+# .gitignore
+*.o
+
+Makefile
+Makefile.in
+aclocal.m4
+confdefs.h
+config.*
+configure
+confinc
+confmf
+conftest.*
+depcomp
+install-sh
+missing
+stamp-h1*
+
+/autom4te.cache/
+/.deps/
+/ChangeLog
+/INSTALL
+/mtr
+
