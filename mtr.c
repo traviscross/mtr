@@ -60,6 +60,7 @@ char *Hostname = NULL;
 char *InterfaceAddress = NULL;
 char  LocalHostname[128];
 int   dns = 1;
+int   show_ips = 0;
 int   enablempls = 0;
 int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
@@ -144,6 +145,7 @@ void parse_arg (int argc, char **argv)
     { "tos", 1, 0, 'Q' },	/* typeof service (0,255) */
     { "mpls", 0, 0, 'e' },
     { "no-dns", 0, 0, 'n' },
+    { "show-ips", 0, 0, 'z' },
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
     { "max-ttl", 1, 0, 'm' },
@@ -157,7 +159,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglpo:i:c:s:b:Q:ena:f:m:u46", long_options, NULL);
+		      "vhrwxtglpo:i:c:s:b:Q:ena:f:m:uz46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -266,6 +268,10 @@ void parse_arg (int argc, char **argv)
       break;
     case 'u':
       mtrtype = IPPROTO_UDP;
+      break;
+    case 'z':
+      show_ips = 1;
+      reportwide = 1;
       break;
     case '4':
       af = AF_INET;
@@ -381,7 +387,8 @@ int main(int argc, char **argv)
   if (PrintHelp) {
     printf("usage: %s [-hvrwctglspniu46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
-           "\t\t[--raw] [--split] [--mpls] [--no-dns] [--address interface]\n" /* BL */
+           "\t\t[--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
+           "\t\t[--address interface]\n" /* BL */
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
            "\t\t[--report-wide|-w] [-u]\n"            /* rew */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);

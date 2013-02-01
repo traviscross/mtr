@@ -457,16 +457,16 @@ void TreeViewCreate(void)
 void update_tree_row(int row, GtkTreeIter *iter)
 {
   ip_t *addr;
-  char str[256], *name;
+  char str[256]="???", *name=str;
 
   addr = net_addr(row);
-  name = "???";
-  if ( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-    name = dns_lookup(addr);
-    if(!name) {
-      sprintf(str, "%s", strlongip( addr ));
-      name = str;
-    }
+  if (addrcmp( (void *) addr, (void *) &unspec_addr, af)) {
+    if ((name = dns_lookup(addr))) {
+      if (show_ips) {
+        snprintf(str, sizeof(str), "%s (%s)", name, strlongip(addr));
+        name = str;
+      }
+    } else name = strlongip(addr);
   }
 
   gtk_list_store_set(ReportStore, iter,

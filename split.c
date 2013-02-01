@@ -74,7 +74,6 @@ void split_redraw(void)
   int   max;
   int   at;
   ip_t *addr;
-  char *name;
   char  newLine[MAX_LINE_SIZE];
   int   i;
 
@@ -97,24 +96,20 @@ void split_redraw(void)
    */
   for(at = 0; at < max; at++) {
     addr = net_addr(at);
-    
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-      name = dns_lookup(addr);
-      if(name != NULL) {
-	/* May be we should test name's length */
-	snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", name,
-		net_loss(at),
-		net_returned(at), net_xmit(at),
-		net_best(at) /1000, net_avg(at)/1000, 
-		net_worst(at)/1000);
-      } else {
-	snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", 
-		strlongip( addr ),
-		net_loss(at),
-		net_returned(at), net_xmit(at),
-		net_best(at) /1000, net_avg(at)/1000, 
-		net_worst(at)/1000);
+    if(addrcmp((void*)addr, (void*)&unspec_addr, af)) {
+      char str[256], *name;
+      if (!(name = dns_lookup(addr)))
+        name = strlongip(addr);
+      if (show_ips) {
+        snprintf(str, sizeof(str), "%s %s", name, strlongip(addr));
+        name = str;
       }
+      /* May be we should test name's length */
+      snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", name,
+               net_loss(at),
+               net_returned(at), net_xmit(at),
+               net_best(at) /1000, net_avg(at)/1000,
+               net_worst(at)/1000);
     } else {
       sprintf(newLine, "???");
     }

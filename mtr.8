@@ -41,6 +41,9 @@ mtr \- a network diagnostic tool
 .B \-\-no-dns\c
 ]
 [\c
+.B \-\-show-ips\c
+]
+[\c
 .B \-\-gtk\c
 ]
 [\c
@@ -183,6 +186,16 @@ Use this option to force
 .B mtr 
 to display numeric IP numbers and not try to resolve the
 host names. 
+
+.TP
+.B \-z
+.TP
+.B \-\-show-ips
+.br
+Use this option to tell
+.B mtr
+to display both the host names and numeric IP numbers.  In split mode
+this adds an extra field to the output.
 
 .TP
 .B \-o\ fields\ order

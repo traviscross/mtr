@@ -314,7 +314,8 @@ void mtr_curses_hosts(int startstat)
       if (! net_up(at))
 	attron(A_BOLD);
       if(name != NULL) {
-	printw("%s", name);
+        if (show_ips) printw("%s (%s)", name, strlongip(addr));
+        else printw("%s", name);
       } else {
 	printw("%s", strlongip( addr ) );
       }

@@ -1376,9 +1376,9 @@ char *dns_lookup(ip_t * ip)
 {
   char *t;
 
-  if (!dns) return strlongip (ip);
-  t = dns_lookup2 (ip);
-  return (t&&use_dns)?t:strlongip(ip);
+  if (!dns) return NULL;
+  t = dns_lookup2(ip);
+  return (t && use_dns) ? t : NULL;
 }
 
 #ifdef ENABLE_IPV6

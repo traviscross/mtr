@@ -49,6 +49,17 @@ void report_open(void)
 {
 }
 
+static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
+{
+  if(addrcmp((void *) addr, (void *) &unspec_addr, af)) {
+    struct hostent *host = dns ? addr2host((void *) addr, af) : NULL;
+    if (!host) return snprintf(dst, dst_len, "%s", strlongip(addr));
+    else if (dns && show_ips)
+      return snprintf(dst, dst_len, "%s (%s)", host->h_name, strlongip(addr));
+    else return snprintf(dst, dst_len, "%s", host->h_name);
+  } else return snprintf(dst, dst_len, "%s", "???");
+}
+
 
 void report_close(void) 
 {
@@ -61,7 +72,6 @@ void report_close(void)
   char fmt[16];
   int len=0;
   int len_hosts = 33;
-  struct hostent *host;
 
   if (reportwide)
   {
@@ -70,19 +80,11 @@ void report_close(void)
     max = net_max();
     at  = net_min();
     for (; at < max; at++) {
+      int nlen;
       addr = net_addr(at);
-      if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-        host = dns ? addr2host( (void *) addr, af ) : NULL;
-        if (host != NULL) {
-          strncpy( name, host->h_name, (sizeof name) - 1 );
-          name[ (sizeof name) - 1 ] = '\0'; 
-        } else {
-          snprintf(name, sizeof(name), "%s", strlongip( addr ) );
-        }
-        if (len_hosts < strlen(name)) {
-          len_hosts = strlen(name);
-        }
-      }    
+      if ((nlen = snprint_addr(name, sizeof(name), addr)))
+        if (len_hosts < nlen)
+          len_hosts = nlen;
     }
   }
   
@@ -104,18 +106,7 @@ void report_close(void)
   for(; at < max; at++) {
     addr = net_addr(at);
     mpls = net_mpls(at);
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
-      sprintf(name, "???");
-    } else {
-      host = dns ? addr2host( (void *) addr, af ) : NULL;
-
-      if (host != NULL) {
-        strncpy( name, host->h_name, (sizeof name) - 1 );
-        name[ (sizeof name) - 1 ] = '\0'; 
-      } else {
-        snprintf(name, sizeof(name), "%s", strlongip( addr ) );
-      }
-    }
+    snprint_addr(name, sizeof(name), addr);
 
     snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
@@ -208,7 +199,6 @@ void xml_close(void)
   int i, j, at, max;
   ip_t *addr;
   char name[81];
-  struct hostent *host;
 
   printf("<MTR SRC=%s DST=%s", LocalHostname, Hostname);
   printf(" TOS=0x%X", tos);
@@ -228,19 +218,7 @@ void xml_close(void)
   at  = net_min();
   for(; at < max; at++) {
     addr = net_addr(at);
-    
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
-      sprintf(name, "???");
-    } else {
-      host = dns ? addr2host( (void *) addr, af ) : NULL;
-
-      if (host != NULL) {
-	 strncpy( name, host->h_name, (sizeof name) - 1 );
-	 name[ (sizeof name) - 1 ] = '\0'; 
-      } else {
-	sprintf(name, "%s", strlongip( addr ) );
-      }
-    }
+    snprint_addr(name, sizeof(name), addr);
 
     printf("    <HUB COUNT=%d HOST=%s>\n", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
@@ -279,7 +257,6 @@ void csv_close(void)
   int i, j, at, max;
   ip_t *addr;
   char name[81];
-  struct hostent *host;
 
   /* Caption */
   printf("<SRC=%s DST=%s", LocalHostname, Hostname);
@@ -310,19 +287,7 @@ void csv_close(void)
   at  = net_min();
   for(; at < max; at++) {
     addr = net_addr(at);
-    
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) == 0 ) {
-      sprintf(name, "???");
-    } else {
-      host = dns ? addr2host( (void *) addr, af ) : NULL;
-
-      if (host != NULL) {
-	 strncpy( name, host->h_name, (sizeof name) - 1 );
-	 name[ (sizeof name) - 1 ] = '\0'; 
-      } else {
-	sprintf(name, "%s", strlongip( addr ) );
-      }
-    }
+    snprint_addr(name, sizeof(name), addr);
 
     printf("%d, %s", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {

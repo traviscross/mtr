@@ -60,6 +60,7 @@ typedef struct in_addr ip_t;
 
 extern int enablempls;
 extern int dns;
+extern int show_ips;
 extern int use_dns;
 
 #ifdef __GNUC__
