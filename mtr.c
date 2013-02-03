@@ -324,7 +324,6 @@ void parse_mtr_options (char *string)
 
 int main(int argc, char **argv) 
 {
-  ip_t *            traddr;
   struct hostent *  host                = NULL;
   int               net_preopen_result;
 #ifdef ENABLE_IPV6
@@ -445,8 +444,6 @@ int main(int argc, char **argv)
   af = host->h_addrtype;
 #endif
 
-  traddr = (ip_t *) host->h_addr;
-  
   if (net_open(host) != 0) {
 	fprintf(stderr, "mtr: Unable to start net module.\n");
         exit(1);

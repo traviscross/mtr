@@ -77,12 +77,14 @@ extern float WaitTime;
 extern int af;
 extern int mtrtype;
 
+static int __unused_int;
+
 void pwcenter(char *str) 
 {
-  int maxx, maxy;
+  int maxx;
   int cx;
 
-  getmaxyx(stdscr, maxy, maxx);
+  getmaxyx(stdscr, __unused_int, maxx);
   cx = (signed)(maxx - strlen(str)) / 2;
   while(cx-- > 0)
     printw(" ");
@@ -293,7 +295,7 @@ void mtr_curses_hosts(int startstat)
   int at;
   struct mplslen *mpls, *mplss;
   ip_t *addr, *addrs;
-  int y, x;
+  int y;
   char *name;
 
   int i, j, k;
@@ -318,7 +320,7 @@ void mtr_curses_hosts(int startstat)
       }
       attroff(A_BOLD);
 
-      getyx(stdscr, y, x);
+      getyx(stdscr, y, __unused_int);
       move(y, startstat);
 
       /* net_xxx returns times in usecs. Just display millisecs */
@@ -465,7 +467,7 @@ void mtr_fill_graph(int at, int cols)
 
 void mtr_curses_graph(int startstat, int cols) 
 {
-	int max, at, y, x;
+	int max, at, y;
 	ip_t * addr;
 	char* name;
 
@@ -490,7 +492,7 @@ void mtr_curses_graph(int startstat, int cols)
 		}
 		attroff(A_BOLD);
 
-		getyx(stdscr, y, x);
+		getyx(stdscr, y, __unused_int);
 		move(y, startstat);
 
 		printw(" ");
@@ -502,7 +504,7 @@ void mtr_curses_graph(int startstat, int cols)
 
 void mtr_curses_redraw(void)
 {
-  int maxx, maxy;
+  int maxx;
   int startstat;
   int rowstat;
   time_t t;
@@ -514,7 +516,7 @@ void mtr_curses_redraw(void)
   
 
   erase();
-  getmaxyx(stdscr, maxy, maxx);
+  getmaxyx(stdscr, __unused_int, maxx);
 
   rowstat = 5;
 

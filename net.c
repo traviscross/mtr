@@ -295,7 +295,7 @@ void net_send_query(int index)
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
-  int ttl, iphsize = 0, echotype = 0, salen = 0, udphsize = 0;
+  int ttl, iphsize = 0, echotype = 0, salen = 0;
 
   ttl = index + 1;
 
@@ -369,7 +369,6 @@ void net_send_query(int index)
 
   case IPPROTO_UDP:
     udp = (struct UDPHeader *)(packet + iphsize);
-    udphsize = sizeof (struct UDPHeader);
     udp->checksum  = 0;
     mypid = (uint16)getpid();
     if (mypid < MinPort)
