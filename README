@@ -15,15 +15,17 @@ WHAT IS MTR?
 
 INSTALLING
 
-  Slightly more hints are in the file INSTALL. If this doesn't work
-  you could try reading that too.... 
-
-  Compiling mtr should be as simple as:
+  If you're building this from a tarball, compiling mtr should be as
+  simple as:
 
 	make
 
   It should first call the "configure" script and then run "make" again
   with the makefile that "configure" just generated. 
+
+  If you're building from the git repository, you'll need to run:
+
+	./bootstrap.sh && ./configure && make
 
   After compiling, install:
 
