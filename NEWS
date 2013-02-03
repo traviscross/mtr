@@ -1,71 +1,87 @@
 WHAT'S NEW?
+
   V0.82 Removed old Changelog file appended at the end as oldest
-        changes. 
+        changes.
         2011-03-28  Mark Kamichoff <prox@prolixium.com>
-        Enable decoding of ICMP extensions for MPLS for curses and 
-	report interfaces.  Use the -e flag or press 'e' to enable it.
+        Enable decoding of ICMP extensions for MPLS for curses and
+        report interfaces.  Use the -e flag or press 'e' to enable it.
+
   V0.81 Moved to git. Testing git...
-  V0.80 Some compilation fixes for BSD by Jeremy Chadwick 
+
+  V0.80 Some compilation fixes for BSD by Jeremy Chadwick
         <freebsd@jdc.parodius.com>
-  V0.78/0.79 some compilation fixes for BSD&others by 
+
+  V0.78/0.79 some compilation fixes for BSD&others by
         Thomas Klausner <wiz@NetBSD.org>
-  V0.76 display load sharing hosts in --raw output. 
-        added about button in gui. 
+
+  V0.76 display load sharing hosts in --raw output.
+        added about button in gui.
+
   v0.75 Feelgood patch to move sprintf to snprintf. People might think
-        that sprintf might cause a buffer overflow. Now it's clean. 
+        that sprintf might cause a buffer overflow. Now it's clean.
         cut-paste patches: you can now copy an intermediate host to the
-        clipboard. 
-  v0.74 Martin Pels' patch to allow UDP probes. 
+        clipboard.
+
+  v0.74 Martin Pels' patch to allow UDP probes.
         KES reported a build problem. Turns out I need to install gtk-1.2
-        on my development sytem, otherwise my release script causes the 
-        build to break. 
-        changed some docs to advertise the new mailing list. 
+        on my development sytem, otherwise my release script causes the
+        build to break.
+        changed some docs to advertise the new mailing list.
         added documentation for the Mac OS X compilation problem.
-        added -Wno-pointer-sign to the compiler options. 
+        added -Wno-pointer-sign to the compiler options.
         Nico Lichtmaier's cleanup-gtk patch. (now mtr uses a more modern
-        dialect of gtk). 
+        dialect of gtk).
+
   v0.73 Some securty patches. Although MTR drops privileges as soon
         as possible after opening the sockets, it still had some
-        sprintf calls, which have now been converted into snprintf. 
+        sprintf calls, which have now been converted into snprintf.
+
   v0.72 Fix signed/unsigned bug in IPV6 part
         improved random packet size behaviour. --REW
-  v0.71 Some IPV6 fixes, introduce packet size cmdline option. 
-        (was already present as a cmdline argument) 
+
+  v0.71 Some IPV6 fixes, introduce packet size cmdline option.
+        (was already present as a cmdline argument)
+
   v0.70 Antinio submitted a cumulative patch containing some
         nice improvements. He also submitted an automake patch
-        that causes mtr to no longer compile on my system. I 
+        that causes mtr to no longer compile on my system. I
         refuse to have mtr "in the dark" that I can't test-compile
-        the dist. 
-  v0.69 make distclean should now also remove "rej" files. 
+        the dist.
+
+  v0.69 make distclean should now also remove "rej" files.
         Antonio Querubin: update getopt.h . More cleanups using
-        new infrastructure. 
+        new infrastructure.
         rcw: Fixed IPV6 support: When compiled in an IPV6-supporting
         environment, but when the kernel doesn't support IPV6, mtr would
-        fail to start. 
+        fail to start.
+
   v0.68 included some old patches.
         included patch from Antonio Querubin for better IPV6 support
-        restructured some more whitespace. 
+        restructured some more whitespace.
         added mtr.h where "global" things should go. Not finished
-        moving things around, but now that the infrastructure is there, 
-        it should be easy. 
-  v0.67 Bad keyboarding by REW caused this one out the door. Sorry. 
-        No changes. 
+        moving things around, but now that the infrastructure is there,
+        it should be easy.
+
+  v0.67 Bad keyboarding by REW caused this one out the door. Sorry.
+        No changes.
+
   v0.66 Through the Debian bugtracking system a bug report and
-        fix was sent my way, that deals with stupid optmization 
-        trying to save some 768 bytes of memory, sacrificing "it 
+        fix was sent my way, that deals with stupid optmization
+        trying to save some 768 bytes of memory, sacrificing "it
         works" on a different architecture... (default char signedness)
+
   v0.65 Dancer Vesperman noted that mtr no longer traces past
         a section of non-responding hosts. Apparently I added
-        a line in net.c that didn't make sense in mtr-0.56. I 
-        can't find the reason for adding that line, so someone 
-        who thinks (s)he needs it, should holler. 
+        a line in net.c that didn't make sense in mtr-0.56. I
+        can't find the reason for adding that line, so someone
+        who thinks (s)he needs it, should holler.
 
-  v0.64 Philippe suggests to do the time_t thingy before socket.h. 
+  v0.64 Philippe suggests to do the time_t thingy before socket.h.
         Apparently, MAC OS X doesn't compile socket.h otherwise.
 
   v0.63 Suggestion by RCW: Add -lm at line 70 of Configure.in.
-        On my system no ill effects ensued, so this version released 
-        so that he can test if it still works on his sytem. 
+        On my system no ill effects ensued, so this version released
+        so that he can test if it still works on his sytem.
 
         Let me add that it's stupid that I have to specify that this
         this program now requires Automake version 1.5 to build, where
@@ -73,67 +89,67 @@ WHAT'S NEW?
         versions of build software!
 
         For those concerned about the above statement: If you're just
-        trying to compile and use MTR, there is no need for automake. 
+        trying to compile and use MTR, there is no need for automake.
         Just when you're messing with the configure and build system of
-        mtr is automake a tool you need. 
-	
+        mtr is automake a tool you need.
+
   v0.62 Apparently someone changed gethostbyname into gethostbyname2
         in mtr.c in an attempt to add IPV6 support. For systems without
-        ipv6 support, the old gethostbyname should be used! Linux 
+        ipv6 support, the old gethostbyname should be used! Linux
         has the call even if you don't enable IPV6. Thanks Gary (rsub)
 
   v0.61 Attempt to get/print the local IP address. Now shows as
         0.0.0.0 :-( Hints and tips appreciated! -- REW
         Lots of blank space reformatting.
         moved the interface address setting to net.c (where it
-        belongs). 
+        belongs).
 
   v0.60 John Thacker submitted a surprisingly simple patch to
         enable linking against GTK2.  (up to 2.4.0)
 
-  v0.59 Josh Martin suggested to add some bounds checking to 
+  v0.59 Josh Martin suggested to add some bounds checking to
         the dynamic field code. This caused me to delve in, and
         rewrite some things. Now 50 lines of code less, but cleaner
         code. :-)
 
-  v0.58 I don't remember. Fogot to update this. :-( Check the 
+  v0.58 I don't remember. Fogot to update this. :-( Check the
         patch.
 
   v0.57 Lots of whitespace cleanups. And a DNS fix: Don't do DNS
-        lookups in raw mode with -n specified. 
+        lookups in raw mode with -n specified.
 
   v0.56 Fixed compile warnings. Now compiles with -Wall. If your
-        compiler finds things mine didn't feel free to shout. 
+        compiler finds things mine didn't feel free to shout.
 
-  v0.55 Cleanup patch. I'm going to do some maintenance on MTR, 
+  v0.55 Cleanup patch. I'm going to do some maintenance on MTR,
         but I want to be able to say: Can you see which version
-        fixed/broke things for you, so you're going to see a 
-        bunch of new releases soon. 
+        fixed/broke things for you, so you're going to see a
+        bunch of new releases soon.
 
-  v0.54 Added "scrolling" patch from Roland Illig, to allow 
+  v0.54 Added "scrolling" patch from Roland Illig, to allow
         scrolling in text mode. I've always wanted this......
- 
-  v0.53 Added fix for raw mode. 
 
-  v0.52 Mostly cleanups from Brett Johnson on MacOS X. It may 
-        clean up some compilation problems on MacOS X as well. 
+  v0.53 Added fix for raw mode.
 
-  v0.51 Fixed the bug introduced by the previous select loop fix... 
+  v0.52 Mostly cleanups from Brett Johnson on MacOS X. It may
+        clean up some compilation problems on MacOS X as well.
+
+  v0.51 Fixed the bug introduced by the previous select loop fix...
         Thanks Evgeniy
 
   v0.50 Make "interface address" option work.
-        Changes to "select" loop to allow window resizes (select 
+        Changes to "select" loop to allow window resizes (select
         interruption) to work. Thanks Mike!
 
   v0.49 Fix compilation problems on several platforms.
 
-  v0.48 Draw names in red (GTK) or bold (Curses) if host doesn't 
-        respond. 
+  v0.48 Draw names in red (GTK) or bold (Curses) if host doesn't
+        respond.
 
-  v0.47 Fixed a (believed-) non-exploitable bufferoverflow. 
-        Thanks Damian. 
+  v0.47 Fixed a (believed-) non-exploitable bufferoverflow.
+        Thanks Damian.
 
-  v0.46 Included patch to be able to specify outgoing interface 
+  v0.46 Included patch to be able to specify outgoing interface
         address.
 
   v0.45 People are pressuring me to release new versions with their
@@ -142,154 +158,152 @@ WHAT'S NEW?
         stuff I forgot. This release serves as a code-sync-release.
         new version with even more new stuff in about two weeks!
         I'm afraid I don't know how to fix the MaxOS-X compilation
-        problems in the source. Help wanted... 
+        problems in the source. Help wanted...
 
-  v0.44 David Stone adds the "last" column to the gtk version. 
+  v0.44 David Stone adds the "last" column to the gtk version.
 
   v0.43 Compile fixes.
 
-  v0.41 Added afr's patch to allow disabling of gtk without Robn's hack. 
-        Made report mode report the newly added extra resolution. 
+  v0.41 Added afr's patch to allow disabling of gtk without Robn's hack.
+        Made report mode report the newly added extra resolution.
 
   v0.40 Fixed some problems with HPUX and SunOS.
-	Included Olav Kvittem's patch to do packetsize option.
-	Made the timekeeping in micro seconds.
+        Included Olav Kvittem's patch to do packetsize option.
+        Made the timekeeping in micro seconds.
 
   v0.39 Forgot the parentheses around the previous fix... :-(
 
   v0.38 fixed some dubious code in dns.c (noted by someone's lint)
 
-  v0.37 Added Bill Bogstad's "show the local host & time" patch. 
-	Added R. Sparks' show-last-ping patch, submitted by Philip Kizer.
+  v0.37 Added Bill Bogstad's "show the local host & time" patch.
+        Added R. Sparks' show-last-ping patch, submitted by Philip Kizer.
 
   v0.36 Added Craigs change-the-interval-on-the-fly patch.
-        Added Moritz Barsnick's "do something sensible if host not found" 
-	    patch.
+        Added Moritz Barsnick's "do something sensible if host not found"
+            patch.
         Some cleanup of both Craigs and Moritz' patches.
 
   v0.35 Added Craig Milo Rogers pause/resume for GTK patch.
         Added Craig Milo Rogers cleanup of "reset". (restart at the beginning)
-        Net_open used to send a first packet. After that the display-driver 
-            got a chance to distort the timing by taking its time to 
+        Net_open used to send a first packet. After that the display-driver
+            got a chance to distort the timing by taking its time to
             initialize.
 
   v0.34 Added Matt's nifty "use the icmp unreachables to do the timing" patch.
-        Added Steve Kann's pause/resume patch. 
+        Added Steve Kann's pause/resume patch.
 
   v0.33 Fixed the Linux glibc resolver problems.
-        Fixed the off-by-one problem with -c option. 
+        Fixed the off-by-one problem with -c option.
 
-  v0.32 Fixed the FreeBSD bug detection stuff. 
+  v0.32 Fixed the FreeBSD bug detection stuff.
 
   v0.31 Fixed a few documentation issues. -- Matt
-        Changed the autoconf stuff to find the resolver library on 
+        Changed the autoconf stuff to find the resolver library on
             Solaris. -- REW
         Cleaned up the autoconf.in file a bit. -- Matt.
 
   v0.30 Fixed a typo in the changelog (NEWS) entry for 0.27. :-)
-	added use of "MTR_OPTIONS" environment variable for defaults.
+        added use of "MTR_OPTIONS" environment variable for defaults.
 
-  v0.29 Lots of stuff. 
-        Neato overview display by David Sward. 
-        FreeBSD does wrong in the kernel the same that Solaris/x86 (see 
+  v0.29 Lots of stuff.
+        Neato overview display by David Sward.
+        FreeBSD does wrong in the kernel the same that Solaris/x86 (see
             note for 0.27 does right. It forces mtr to send bad packets....
         Adjusted "not too much at once" algorithm. Now probing
            continues as long as not more than 5 hosts are unknown.
-           Returning packets usually allow us to do the first sweep 
-           in one go. 
+           Returning packets usually allow us to do the first sweep
+           in one go.
 
-
-  v0.28 DNS lookups are now suppressed if you don't want them. 
+  v0.28 DNS lookups are now suppressed if you don't want them.
 
   v0.27
-	Fixed bug that showed up on Solaris/x86.
-	GTK mainloop now runs as it's supposed to.
+        Fixed bug that showed up on Solaris/x86.
+        GTK mainloop now runs as it's supposed to.
 
   v0.26
-        Added "-n" flag for numeric output. 
+        Added "-n" flag for numeric output.
         fixed IP numbers displaying backwards.
-        GTK mainloop now runs at 10 packets per second. 
+        GTK mainloop now runs at 10 packets per second.
           - That's too much if there are only 3 hosts
           - that's too little if there are 20 hosts.
-        -> Someone tell me how to change the "ping-timeout" 
+        -> Someone tell me how to change the "ping-timeout"
            callback time in gtk. Can't find it in the docs.
         The default for "hostname" is now "localhost" so that
-        you can start mtr without any arguments and later 
-        fill in the host you want to trace to. 
+        you can start mtr without any arguments and later
+        fill in the host you want to trace to.
 
   v0.25
         Included two "raw" formats. One for separating GUI from
         the setuid program, and one suitable for later parsing and
-        displaying. Volunteers wanted to separate the GTK 
-        backend. Thanks to Bertrand Leconte for contributing 
-        the format that's now called "split". 
+        displaying. Volunteers wanted to separate the GTK
+        backend. Thanks to Bertrand Leconte for contributing
+        the format that's now called "split".
 
-  v0.24 
-        Fixed number of probes. Accidentally was counted per 
-        packet sent instead of per round of packets. 
+  v0.24
+        Fixed number of probes. Accidentally was counted per
+        packet sent instead of per round of packets.
 
   v0.23
         Fixed Sparc alignment problem with statmalloc
 
-  v0.22 
-        Roger has take over maintenance. 
-        mtr now uses an "int" to pass options to the kernel. 
-        Makes things work on Solaris and *BSD I'm told. 
+  v0.22
+        Roger has take over maintenance.
+        mtr now uses an "int" to pass options to the kernel.
+        Makes things work on Solaris and *BSD I'm told.
         mtr doesn't fire off a flurry of packets when a new
         second comes around. Instead they are spaced evenly
-        around the whole second. This allows people with a 
+        around the whole second. This allows people with a
         relatively slow first link to do meaningful measurements
         of whatever is behind that.
 
   v0.21
         mtr now drops root permissions after it acquires the raw
         sockets it needs.
-	mtr should be a bit happier about building under SCO and
+        mtr should be a bit happier about building under SCO and
         Solaris.
-	Fixed the problem with packets arriving after a reset.
+        Fixed the problem with packets arriving after a reset.
 
   v0.20
-	The build process for mtr now uses automake.
+        The build process for mtr now uses automake.
         Fixed a build problem for Irix.
         Now uses non-blocking DNS code, so mtr can attempt
         to do reverse lookup on multiple hosts at once.
-	Fewer packets are sent out each cycle, so mtr
-	doesn't hog quite so much bandwidth.
+        Fewer packets are sent out each cycle, so mtr
+        doesn't hog quite so much bandwidth.
 
   v0.19
-	Fixed a type-o in curses.c
+        Fixed a type-o in curses.c
 
   v0.18
-	Fixed the network code to work properly under FreeBSD.  
-	Hopefully this will fix some other operating systems too.
-	Also, fixed a build problem and the DNS hanging bug.
+        Fixed the network code to work properly under FreeBSD.
+        Hopefully this will fix some other operating systems too.
+        Also, fixed a build problem and the DNS hanging bug.
 
   v0.17
         Fixed the configure script to always like with the math
-	library.  Added an icon.
+        library.  Added an icon.
 
   v0.16
-	Added one #include to select.c.  Some people were unable
-	to build mtr without this line.  
+        Added one #include to select.c.  Some people were unable
+        to build mtr without this line.
 
   v0.15
-	Both the build process and the networking code have
-	been cleaned up and reorganized.  mtr now builds 
-	cleanly with GTK+ 0.99.8.  
+        Both the build process and the networking code have
+        been cleaned up and reorganized.  mtr now builds
+        cleanly with GTK+ 0.99.8.
 
 --- Below is the contents of the old "Changelog file" that annoyed some
-people as it didn't contain any recent changes/news. 
+people as it didn't contain any recent changes/news.
 
 2002-03-06  Cougar <cougar@random.ee>
-	+ If hop doesn't respond, draw its name in red (GTK) or bold (curses)
+        + If hop doesn't respond, draw its name in red (GTK) or bold (curses)
 
 2002-02-09  bodq  <bohdan@vstu.edu.ua>
-	* Added --address option to bind to given IP addess
+        + Added --address option to bind to given IP addess
 
 2001-04-15  root  <alane@geeksrus.net>
-
-	* Added this file so that automake won't complain.
-	* Commented out the test for res_init in configure.in;
-	it does not work for GLIBC2 systems (e.g., RedHat 7+).
-	* Fixed the subordinate CHECK_LIBS on the test for res_mkquery,
-	so that they test for res_mkquery, not res_init.
+        + Added this file so that automake won't complain.
+        + Commented out the test for res_init in configure.in;
+        it does not work for GLIBC2 systems (e.g., RedHat 7+).
+        + Fixed the subordinate CHECK_LIBS on the test for res_mkquery,
+        so that they test for res_mkquery, not res_init.
