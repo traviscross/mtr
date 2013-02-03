@@ -371,12 +371,12 @@ void statfree(void *p)
   if (p) {
     if (*((dword *)p - HEAD_SLACK) == 0) {
       fprintf(stderr,"ERROR: Attempt to free pointer twice.\n");
-      *(int*)0=0;
+      abort();
       exit(-1);
     } else {
       if (*((dword *)p - HEAD_SLACK) > 8192) {
 	fprintf (stderr,"ERROR: Corrupted free() buffer. (header)\n");
-	*(int*)0=0;
+        abort();
 	exit(-1);
       }
 #ifdef CorruptCheck
@@ -385,7 +385,7 @@ void statfree(void *p)
 	  (*(byte *)((char *)p + (*((dword *)p - 1)) + sizeof(byte) * 2) != 0xbe) ||
 	  (*(byte *)((char *)p + (*((dword *)p - 1)) + sizeof(byte) * 3) != 0xef)) {
 	fprintf(stderr,"ERROR: Corrupted free() buffer. (footer)\n");
-	*(int*)0=0;
+	abort();
 	exit(-1);
       }
 #endif
