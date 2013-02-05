@@ -176,6 +176,7 @@ void parse_arg (int argc, char **argv)
       break;
     case 'w':
       reportwide = 1;
+      DisplayMode = DisplayReport;
       break;
     case 't':
       DisplayMode = DisplayCurses;
