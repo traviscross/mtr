@@ -6,6 +6,7 @@ install-exec-hook:
 	chmod u+s $(DESTDIR)$(sbindir)/mtr
 
 mtr_SOURCES = mtr.c \
+              asn.c asn.h \
               net.c net.h \
               dns.c dns.h \
               raw.c raw.h \
