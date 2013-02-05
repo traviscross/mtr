@@ -215,8 +215,10 @@ void parse_arg (int argc, char **argv)
 	fprintf (stderr, "mtr: wait time must be positive\n");
 	exit (1);
       }
-      if (getuid() != 0 && WaitTime < 1.0)
-	WaitTime = 1.0;
+      if (getuid() != 0 && WaitTime < 1.0) {
+        fprintf (stderr, "non-root users cannot request an interval < 1.0 seconds\r\n");
+	exit (1);
+      }
       break;
     case 'f':
       fstTTL = atoi (optarg);

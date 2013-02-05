@@ -74,15 +74,19 @@ starts, it investigates the network connection between the host
 .B mtr
 runs on and 
 .BR HOSTNAME . 
-by sending packets with purposly low TTLs. It continues to send
+by sending packets with purposely low TTLs. It continues to send
 packets with low TTL, noting the response time of the intervening
 routers.  This allows 
 .B mtr 
 to print the response percentage and response times of the internet
 route to 
 .BR HOSTNAME . 
-A sudden increase in packetloss or response time is often an indication
+A sudden increase in packet loss or response time is often an indication
 of a bad (or simply overloaded) link. 
+
+.PP
+The results are usually reported as round-trip-response times in miliseconds 
+and the percentage of packetloss. 
 
 .SH OPTIONS
 
@@ -151,12 +155,12 @@ those machines.  Each cycle lasts one second.
 .B \-\-psize\ BYTES
 .TP
 .B PACKETSIZE
-These options or a trailing PACKETSIZE on the commandline sets 
+These options or a trailing PACKETSIZE on the command line sets 
 the packet size used for probing.
 It is in bytes inclusive IP and ICMP headers
 
 If set to a negative number, every iteration will use a different, random
-packetsize upto that number. 
+packet size upto that number. 
 .TP
 .B \-t
 .TP
@@ -204,9 +208,29 @@ this adds an extra field to the output.
 .br
 Use this option to specify the fields and their order when loading mtr.
 .br
+Available fields:
+.TS
+center allbox tab(%);
+ll.
+L%Loss ratio
+D%Dropped packets
+R%Received packets
+S%Sent Packets
+N%Newest RTT(ms)
+B%Min/Best RTT(ms)
+A%Average RTT(ms)
+W%Max/Worst RTT(ms)
+V%Standard Deviation
+G%Geometric Mean
+J%Current Jitter
+M%Jitter Mean/Avg.
+X%Worst Jitter
+I%Interarrival Jitter
+.TE
+.br
+
 Example:
 -o "LSD NBAW"
-
 .TP
 .B \-g
 .TP
@@ -218,7 +242,7 @@ to use the GTK+ based X11 window interface (if available).
 GTK+ must have been available on the system when 
 .B mtr 
 was built for this to work.  See the GTK+ web page at 
-.B http://www.gimp.org/gtk/
+.B http://www.gtk.org/
 for more information about GTK+.
 
 .TP
@@ -291,20 +315,14 @@ For the latest version, see the mtr web page at
 .BR http://www.bitwizard.nl/mtr/ .
 
 .PP
-Subscribe to the mtr mailing list.  All mtr related announcements
-are posted to the mtr mailing list.  To subscribe, send email to
-.B majordomo@lists.xmission.com
-with 
-.B subscribe\ mtr
-in the body of the message.  To send a message to the mailing list, mail to 
-.BR mtr@lists.xmission.com .
+The mtr mailinglist was little used and is no longer active. 
 
 .PP
-Bug reports and feature requests should be sent to the mtr
-mailing list.
-
+Bug reports and feature requests should be submitted to the
+launchpad mtr bugtracker. 
 
 .SH "SEE ALSO"
 
 traceroute(8),
-ping(8).
+ping(8)
+TCP/IP Illustrated (Stevens, ISBN 0201633469).

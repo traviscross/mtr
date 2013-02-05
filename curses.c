@@ -266,9 +266,11 @@ int mtr_curses_keyaction(void)
   if (tolower(c) == '?'|| tolower(c) == 'h') {
     mvprintw(2, 0, "Command:\n" );
     printw("  ?|h     help\n" );
+    printw("  p       pause (SPACE to resume)\n" );
     printw("  d       switching display mode\n" );
     printw("  e       toggle MPLS information on/off\n" );
     printw("  n       toggle DNS on/off\n" );
+    printw("  r       reset all counters\n" );
     printw("  o str   set the columns to display, default str='LRS N BAWV'\n" );
     printw("  j       toggle latency(LS NABWV)/jitter(DR AGJMXI) stats\n" );
     printw("  c <n>   report cycle n, default n=infinite\n" );

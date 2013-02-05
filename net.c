@@ -526,7 +526,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
   /* begin addByMin do more stats */
   oldavg = host[index].avg;
   host[index].avg += (totusec - oldavg +.0) / host[index].returned;
-  host[index].var += (totusec - oldavg +.0) * (totusec - host[index].avg);
+  host[index].var += (totusec - oldavg +.0) * (totusec - host[index].avg) / 1000000;
 
   oldjavg = host[index].javg;
   host[index].javg += (host[index].jitter - oldjavg) / host[index].returned;
@@ -771,7 +771,7 @@ int net_gmean(int at)
 int net_stdev(int at) 
 {
   if( host[at].returned > 1 ) {
-    return ( sqrt( host[at].var/(host[at].returned -1.0) ) );
+    return ( 1000.0 * sqrt( host[at].var/(host[at].returned -1.0) ) );
   } else {
     return( 0 );
   }

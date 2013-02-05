@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #include "mtr.h"
 #include "report.h"
@@ -45,8 +46,19 @@ extern int af;
 extern int reportwide;
 
 
-void report_open(void) 
+char *get_time_string (void) 
 {
+  time_t now; 
+  char *t;
+  now = time (NULL);
+  t = ctime (&now);
+  t [ strlen (t) -1] = 0; // remove the trailing newline
+  return t;
+}
+
+void report_open(void)
+{
+  printf ("Start: %s\n", get_time_string ());
 }
 
 static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
