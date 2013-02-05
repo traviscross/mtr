@@ -63,6 +63,8 @@
 #include "display.h"
 #include "net.h"
 #include "dns.h"
+#include "asn.h"
+#include <glib.h>
 #endif
 
 #include <time.h>
@@ -312,6 +314,44 @@ void mtr_curses_hosts(int startstat)
     mpls = net_mpls(at);
 
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
+      struct in6_addr addr6 = *addr;
+
+      if (PrintAS) {
+              u_char ipv4[4];
+              ipv4[0] = addr6.s6_addr[0];
+              ipv4[1] = addr6.s6_addr[1];
+              ipv4[2] = addr6.s6_addr[2];
+              ipv4[3] = addr6.s6_addr[3];
+
+#define NAMELEN 127
+              char ipv4_buf[NAMELEN];
+              char* chip = (char*) &ipv4_buf;
+              char* chas = NULL;
+              char** key_ptr = &chip;
+              char** value_ptr = &chas;
+
+
+              if (snprintf(ipv4_buf, NAMELEN, "%d.%d.%d.%d.asn.routeviews.org", ipv4[3],
+                                      ipv4[2], ipv4[1], ipv4[0]) >= NAMELEN) {
+                      return;
+              }
+
+
+
+              gboolean result =
+                      g_hash_table_lookup_extended
+                      (ashash, ipv4_buf, (gpointer*)key_ptr, (gpointer*)value_ptr);
+              if (!result) {
+                      char* as = asn_lookup(ipv4_buf);
+                      chip = (char*) strdup(ipv4_buf);
+                      chas = (char*) as;
+                      g_hash_table_insert(ashash, chip, chas);
+              }
+              //g_hash_table_destroy(hash);
+
+
+              printw("[AS%s] ", chas);
+      }
       name = dns_lookup(addr);
       if (! net_up(at))
 	attron(A_BOLD);
@@ -604,6 +644,7 @@ void mtr_curses_redraw(void)
 
 void mtr_curses_open(void)
 {
+  ashash = g_hash_table_new(g_str_hash, g_str_equal);
   initscr();
   raw();
   noecho(); 
