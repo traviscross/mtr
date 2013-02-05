@@ -142,11 +142,11 @@ void parse_arg (int argc, char **argv)
     { "report-cycles", 1, 0, 'c' },
     { "psize", 1, 0, 's' },	/* changed 'p' to 's' to match ping option
 				   overload psize<0, ->rand(min,max) */
-    { "bitpattern", 1, 0, 'b' },/* overload b>255, ->rand(0,255) */
+    { "bitpattern", 1, 0, 'B' },/* overload b>255, ->rand(0,255) */
     { "tos", 1, 0, 'Q' },	/* typeof service (0,255) */
     { "mpls", 0, 0, 'e' },
     { "no-dns", 0, 0, 'n' },
-    { "show-ips", 0, 0, 'z' },
+    { "show-ips", 0, 0, 'b' },
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
     { "max-ttl", 1, 0, 'm' },
@@ -258,7 +258,7 @@ void parse_arg (int argc, char **argv)
       }
       strcpy ((char*)fld_active, optarg);
       break;
-    case 'b':
+    case 'B':
       bitpattern = atoi (optarg);
       if (bitpattern > 255)
 	bitpattern = -1;
@@ -274,7 +274,7 @@ void parse_arg (int argc, char **argv)
     case 'u':
       mtrtype = IPPROTO_UDP;
       break;
-    case 'z':
+    case 'b':
       show_ips = 1;
       reportwide = 1;
       break;
