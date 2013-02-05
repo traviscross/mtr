@@ -383,16 +383,6 @@ void TreeViewCreate(void)
 
   renderer = gtk_cell_renderer_text_new ();
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
-  column = gtk_tree_view_column_new_with_attributes ("Rcv",
-    renderer,
-    "text", 2,
-    "foreground", COL_COLOR,
-    NULL);
-  gtk_tree_view_column_set_resizable(column, TRUE);
-  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
-
-  renderer = gtk_cell_renderer_text_new ();
-  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Snt",
     renderer,
     "text", 3,
@@ -413,6 +403,16 @@ void TreeViewCreate(void)
 
   renderer = gtk_cell_renderer_text_new ();
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
+  column = gtk_tree_view_column_new_with_attributes ("Avg",
+    renderer,
+    "text", 6,
+    "foreground", COL_COLOR,
+    NULL);
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
+  
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Best",
     renderer,
     "text", 5,
@@ -421,17 +421,7 @@ void TreeViewCreate(void)
   gtk_tree_view_column_set_resizable(column, TRUE);
   gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
 
-  renderer = gtk_cell_renderer_text_new ();
-  g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
-  column = gtk_tree_view_column_new_with_attributes ("Avg",
-    renderer,
-    "text", 6,
-    "foreground", COL_COLOR,
-    NULL);
-  gtk_tree_view_column_set_resizable(column, TRUE);
-  gtk_tree_view_append_column (GTK_TREE_VIEW(ReportTreeView), column);
-
-  renderer = gtk_cell_renderer_text_new ();
+    renderer = gtk_cell_renderer_text_new ();
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Worst",
     renderer,
