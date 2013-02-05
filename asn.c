@@ -46,7 +46,7 @@ char *asn_lookup(const char *domain)
     unsigned char answer[PACKETSZ],  *pt;
     char host[128];
     char *txt;
-    int len, exp, cttl, size, txtlen, type;
+    int len, exp, size, txtlen, type;
 
 
     if(res_init() < 0) {
@@ -85,7 +85,6 @@ char *asn_lookup(const char *domain)
     }
 
     pt += INT16SZ; /* class */
-    GETLONG(cttl, pt);
     GETSHORT(size, pt);
     txtlen = *pt;
 
