@@ -161,7 +161,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglpo:i:c:s:b:Q:ena:f:m:uz46", long_options, NULL);
+		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:ubz46", long_options, NULL);
     if(opt == -1)
       break;
 
