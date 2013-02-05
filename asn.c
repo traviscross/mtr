@@ -50,7 +50,7 @@ char *asn_lookup(const char *domain)
 
 
     if(res_init() < 0) {
-        fprintf(stderr,"@res_init failedn");
+        fprintf(stderr,"@res_init failed\n");
         return NULL;
     }
 
@@ -62,26 +62,26 @@ char *asn_lookup(const char *domain)
     pt = answer + sizeof(HEADER);
 
     if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-        printf("@dn_expand failedn"); return NULL;
+        printf("@dn_expand failed\n"); return NULL;
     }
 
     pt += exp;
 
     GETSHORT(type, pt);
     if(type != T_TXT) {
-        printf("@Broken DNS reply.n"); return NULL;
+        printf("@Broken DNS reply.\n"); return NULL;
     }
 
     pt += INT16SZ; /* class */
 
     if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-        printf("@second dn_expand failedn"); return NULL;
+        printf("@second dn_expand failed\n"); return NULL;
     }
 
     pt += exp;
     GETSHORT(type, pt);
     if(type != T_TXT) {
-        printf("@Not a TXT recordn"); return NULL;
+        printf("@Not a TXT record\n"); return NULL;
     }
 
     pt += INT16SZ; /* class */
@@ -91,7 +91,7 @@ char *asn_lookup(const char *domain)
 
 
     if(txtlen >= size || !txtlen) {
-        printf("@Broken TXT record (txtlen = %d, size = %d)n", txtlen, size); return NULL;
+        printf("@Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size); return NULL;
     }
 
     if(!(txt = malloc(txtlen + 1)))
