@@ -48,6 +48,9 @@ void select_loop(void) {
   int anyset = 0;
   int maxfd = 0;
   int dnsfd, netfd;
+#ifdef ENABLE_IPV6
+  int dnsfd6;
+#endif
   int NumPing = 0;
   int paused = 0;
   struct timeval lasttime, thistime, selecttime;
@@ -70,6 +73,14 @@ void select_loop(void) {
       maxfd = 1;
     }
 
+#ifdef ENABLE_IPV6
+    if (dns) {
+      dnsfd6 = dns_waitfd6();
+      FD_SET(dnsfd6, &readfd);
+      if(dnsfd6 >= maxfd) maxfd = dnsfd6 + 1;
+    } else
+      dnsfd6 = 0;
+#endif
     if (dns) {
       dnsfd = dns_waitfd();
       FD_SET(dnsfd, &readfd);
@@ -148,6 +159,12 @@ void select_loop(void) {
     }
 
     /*  Have we finished a nameservice lookup?  */
+#ifdef ENABLE_IPV6
+    if(dns && FD_ISSET(dnsfd6, &readfd)) {
+      dns_ack6();
+      anyset = 1;
+    }
+#endif
     if(dns && FD_ISSET(dnsfd, &readfd)) {
       dns_ack();
       anyset = 1;

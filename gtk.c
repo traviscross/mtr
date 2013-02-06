@@ -593,6 +593,14 @@ gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUS
   gtk_redraw();
   return TRUE;
 }
+#ifdef ENABLE_IPV6
+gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
+{
+  dns_ack6();
+  gtk_redraw();
+  return TRUE;
+}
+#endif
 
 
 void gtk_loop(void) 
@@ -603,6 +611,10 @@ void gtk_loop(void)
   
   net_iochannel = g_io_channel_unix_new(net_waitfd());
   g_io_add_watch(net_iochannel, G_IO_IN, gtk_net_data, NULL);
+#ifdef ENABLE_IPV6
+  dns_iochannel = g_io_channel_unix_new(dns_waitfd6());
+  g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data6, NULL);
+#endif
   dns_iochannel = g_io_channel_unix_new(dns_waitfd());
   g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, NULL);
 

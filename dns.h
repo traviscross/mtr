@@ -24,6 +24,29 @@
 void dns_open(void);
 int dns_waitfd(void);
 void dns_ack(void);
+#ifdef ENABLE_IPV6
+int dns_waitfd6(void);
+void dns_ack6(void);
+#ifdef BSD
+/* __res_state_ext is missing on many (most?) BSD systems
+   - this should probably be handled by autoconf */
+#ifndef __res_state_ext
+struct __res_state_ext {
+	union res_sockaddr_union nsaddrs[MAXNS];
+	struct sort_list {
+		int     af;
+		union {
+			struct in_addr  ina;
+			struct in6_addr in6a;
+		} addr, mask;
+	} sort_list[MAXRESOLVSORT];
+	char nsuffix[64];
+	char nsuffix2[64];
+};
+#endif
+#endif
+#endif
+
 void dns_events(double *sinterval);
 char *dns_lookup(ip_t * address);
 char *dns_lookup2(ip_t * address);

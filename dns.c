@@ -49,6 +49,16 @@
 #include "dns.h"
 #include "net.h"
 
+#ifdef ENABLE_IPV6
+#ifdef __GLIBC__
+#define NSCOUNT6 myres._u._ext.nscount6
+#define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
+#else
+#define NSCOUNT6 myres.nscount
+#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
+#endif
+#endif
+
 /* OSX  Needs this. I don't know how to enable this for them automatically. 
  * Should be easy with autoconf. Please submit a patch if you know 
  * autoconf.... -- REW
@@ -262,6 +272,9 @@ struct logline *lastlog = NULL;
 
 ip_t alignedip;
 ip_t localhost;
+#ifdef ENABLE_IPV6
+ip_t localhost6;
+#endif
 
 double sweeptime;
 
@@ -298,6 +311,9 @@ struct sockaddr_in * from4 = (struct sockaddr_in *) &from_sastruct;
 struct sockaddr * from = (struct sockaddr *) &from_sastruct;
 
 int resfd;
+#ifdef ENABLE_IPV6
+int resfd6;
+#endif
 socklen_t fromlen = sizeof from_sastruct;
 
 char tempstring[16384+1+1];
@@ -454,9 +470,9 @@ void clearset(fd_set *set)
 char *strlongip(ip_t * ip)
 {
 #ifdef ENABLE_IPV6
-  static char buf[INET6_ADDRSTRLEN];
+  static char addrstr[INET6_ADDRSTRLEN];
 
-  return (char *) inet_ntop( af, ip, buf, sizeof buf );
+  return (char *) inet_ntop( af, ip, addrstr, sizeof addrstr );
 #else
   return inet_ntoa( *ip );
 #endif
@@ -488,6 +504,12 @@ int dns_waitfd(void)
 {
   return resfd;
 }
+#ifdef ENABLE_IPV6
+int dns_waitfd6(void)
+{
+  return resfd6;
+}
+#endif
 
 
 void dns_open(void)
@@ -501,21 +523,41 @@ void dns_open(void)
     exit(-1);
   }
   myres.options|= RES_RECURSE | RES_DEFNAMES | RES_DNSRCH;
-  for (i = 0;i < myres.nscount;i++)
-    myres.nsaddr_list[i].sin_family = AF_INET;
   resfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (resfd == -1) {
-    fprintf(stderr,"Unable to allocate socket for nameserver communication: %s\n",
+    fprintf(stderr,
+            "Unable to allocate IPv4 socket for nameserver communication: %s\n",
 	    strerror(errno));
     exit(-1);
   }
+#ifdef ENABLE_IPV6
+  resfd6 = socket(AF_INET6, SOCK_DGRAM, 0);
+  if (resfd6 == -1) {
+    fprintf(stderr,
+            "Unable to allocate IPv6 socket for nameserver communication: %s\n",
+	    strerror(errno));
+    exit(-1);
+  }
+#endif
   option = 1;
   if (setsockopt(resfd,SOL_SOCKET,SO_BROADCAST,(char *)&option,sizeof(option))) {
-    fprintf(stderr,"Unable to setsockopt() on nameserver communication socket: %s\n",
+    fprintf(stderr,
+            "Unable to setsockopt() on IPv4 nameserver communication socket: %s\n",
 	    strerror(errno));
     exit(-1);
   }
+#ifdef ENABLE_IPV6
+  if (setsockopt(resfd6,SOL_SOCKET,SO_BROADCAST,(char *)&option,sizeof(option))) {
+    fprintf(stderr,
+            "Unable to setsockopt() on IPv6 nameserver communication socket: %s\n",
+	    strerror(errno));
+    exit(-1);
+  }
+#endif
   longipstr( "127.0.0.1", &localhost, AF_INET );
+#ifdef ENABLE_IPV6
+  longipstr( "::1", &localhost6, AF_INET6 );
+#endif
   aseed = time(NULL) ^ (time(NULL) << 3) ^ (dword)getpid();
   for (i = 0;i < BashSize;i++) {
     idbash[i] = NULL;
@@ -894,9 +936,17 @@ void dorequest(char *s,int type,word id)
   }
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
+#ifdef ENABLE_IPV6
+  for (i = 0;i < NSCOUNT6;i++) {
+    if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
+      (void)sendto(resfd6,buf,r,0,(struct sockaddr *) NSSOCKADDR6(i),
+		   sizeof(struct sockaddr_in6));
+  }
+#endif
   for (i = 0;i < myres.nscount;i++)
-    (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
-		 sizeof(struct sockaddr));
+    if (myres.nsaddr_list[i].sin_family == AF_INET)
+      (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
+		   sizeof(struct sockaddr));
 }
 
 void resendrequest(struct resolve *rp,int type)
@@ -1273,6 +1323,45 @@ void dns_ack(void)
     restell(tempstring);
   }
 }
+#ifdef ENABLE_IPV6
+void dns_ack6(void)
+{
+  int r,i;
+  static char addrstr[INET6_ADDRSTRLEN];
+
+  r = recvfrom(resfd6,(byte *)resrecvbuf,MaxPacketsize,0,
+               from, &fromlen);
+  if (r > 0) {
+    /* Check to see if this server is actually one we sent to */
+    if ( addrcmp( (void *) &(from6->sin6_addr), (void *) &localhost6,
+                  (int) AF_INET6 ) == 0 ) {
+      for (i = 0;i < NSCOUNT6;i++) {
+	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
+		      (void *) &(from6->sin6_addr), (int) AF_INET6 ) == 0 ||
+	     addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
+		      (void *) &unspec_addr, (int) AF_INET6 ) == 0 )	/* 0.0.0.0 replies as 127.0.0.1 */
+	  break;
+      }
+    } else
+      for (i = 0;i < NSCOUNT6;i++) {
+	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
+		      (void *) &(from6->sin6_addr), AF_INET6 ) == 0 )
+	  break;
+      }
+    if (i == NSCOUNT6) {
+      snprintf(tempstring, sizeof(tempstring), 
+	       "Resolver error: Received reply from unknown source: %s",
+	       inet_ntop( AF_INET6, &(from6->sin6_addr), addrstr,
+			  sizeof addrstr ));
+      restell(tempstring);
+    } else
+      parserespacket((byte *)resrecvbuf,r);
+  } else {
+    snprintf(tempstring, sizeof(tempstring), "Resolver: Socket error: %s",strerror(errno));
+    restell(tempstring);
+  }
+}
+#endif
 
 
 int istime(double x,double *sinterval)
