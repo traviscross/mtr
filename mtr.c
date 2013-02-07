@@ -276,7 +276,6 @@ void parse_arg (int argc, char **argv)
       break;
     case 'b':
       show_ips = 1;
-      reportwide = 1;
       break;
     case '4':
       af = AF_INET;
