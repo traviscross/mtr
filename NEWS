@@ -1,5 +1,22 @@
 WHAT'S NEW?
 
+V0.83 Move to github. Mostly done by Travis.
+
+Author: Travis Cross <tc@traviscross.com>
+    Add autotools bootstrap script
+    Update README for building from git repository
+    Cleanup whitespace in the NEWS file
+    Resolve -Wunused-but-set-variable warnings
+    Resolve -Wnull-dereference clang warning
+    Add -z / --show-ip support
+Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
+    some running patches
+    Made report wide switch properly to displayreport mode. Bug #780647
+    fixed gtk field order. Bug #701513
+    added aslookup patch from bug #701514
+    added some extra clarifications to the SECURITY file.
+    enable ipv6 resolvers. By Antonio Querubin. Fixes bug #752583
+
   V0.82 Removed old Changelog file appended at the end as oldest
         changes.
         2011-03-28  Mark Kamichoff <prox@prolixium.com>
