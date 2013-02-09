@@ -126,6 +126,7 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   gchar *authors[] = {
+        "Matt Kimball <mkimball@xmission.com>",
         "Roger Wolff <R.E.Wolff@BitWizard.nl>",
         "Bohdan Vlasyuk <bohdan@cec.vstu.vinnica.ua>",
         "Evgeniy Tretyak <evtr@ukr.net>",
@@ -159,11 +160,13 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
         "Rob Foehl <rwf@loonybin.net>",
         "Mircea Damian",
         "Cougar <cougar@random.ee>",
+        "Travis Cross <tc@traviscross.com>",
         "Brian Casey",
         "Andrew Brown <atatat@atatdot.net>",
         "Bill Bogstad <bogstad@pobox.com> ",
         "Marc Bejarano <marc.bejarano@openwave.com>",
         "Moritz Barsnick <barsnick@gmx.net>",
+        "Thomas Klausner <wiz@NetBSD.org>",
         NULL
     };
   
