@@ -29,7 +29,7 @@ BUILT_SOURCES = version.h
 version.h: version.h.tmp Makefile $(mtr_SOURCES)
 	@cat $< > $@; \
 	if [ -d .git ] && [ -n "$$(which git)" ]; then \
-	  xver="+git-$$(git rev-list -n1 --abbrev=8 --abbrev-commit HEAD)"; \
+	  xver="+git:$$(git rev-list -n1 --abbrev=8 --abbrev-commit HEAD)"; \
 	  sed \
 	    -e "/#define *MTR_VERSION */{s/\"\([^\"]*\)\"/\"\1$$xver\"/;}" \
 	    $< > $@; \
