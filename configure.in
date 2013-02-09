@@ -1,6 +1,7 @@
 AC_INIT(mtr.c)
 AM_INIT_AUTOMAKE(mtr, 0.83)
 
+AC_CONFIG_FILES([version.h.tmp:version.h.in])
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)

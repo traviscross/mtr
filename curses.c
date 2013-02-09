@@ -64,6 +64,7 @@
 #include "net.h"
 #include "dns.h"
 #include "asn.h"
+#include "version.h"
 #include <glib.h>
 #endif
 
@@ -565,7 +566,7 @@ void mtr_curses_redraw(void)
 
   move(0, 0);
   attron(A_BOLD);
-  pwcenter("My traceroute  [v" VERSION "]");
+  pwcenter("My traceroute  [v" MTR_VERSION "]");
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());

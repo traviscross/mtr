@@ -20,4 +20,6 @@ stamp-h1*
 /ChangeLog
 /INSTALL
 /mtr
+/version.h
+/version.h.tmp
 

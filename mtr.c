@@ -35,6 +35,7 @@
 #include "report.h"
 #include "net.h"
 #include "asn.h"
+#include "version.h"
 
 
 #ifdef ENABLE_IPV6
@@ -387,7 +388,7 @@ int main(int argc, char **argv)
   }
 
   if (PrintVersion) {
-    printf ("mtr " VERSION "\n");
+    printf ("mtr " MTR_VERSION "\n");
     exit(0);
   }
 
