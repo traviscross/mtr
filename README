@@ -70,22 +70,21 @@ INSTALLING
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 
+  mtr is now hosted on github. 
+      https://github.com/traviscross/mtr
+
   See the mtr web page at 
          http://www.BitWizard.nl/mtr/ 
 
-  Subscribe to the mtr mailing list.  All mtr related announcements
-  are posted to the mtr mailing list.  To subscribe, send email to
-  the 'mtr-subscribe' with the hostname part set to 'BitWizard.nl'.
-  The body or subject of the message doesn't matter. To send an
-  Email to the list, mail to the username part set to 'mtr'. To
-  prevent SPAM to this list, please don't put the full name on 
-  the internet. 
+  There used to be a mailinglist, but all it got was spam. So
+  when the server was upgraded, the mailing list died. 
 
-  Bug reports and feature requests should be submitted the mailing
-  list.
+  Bug reports and feature requests should be submitted to the 
+  bug tracker at launchpad: https://launchpad.net/mtr/+bugs
 
   Patches can be submitted by Email to me, or submitted to the 
-  mailing list. Please use unified diffs. Usually the diff is sort of
+  bug tracker. Or you can clone the github repository and issue a pull
+  request. Please use unified diffs. Usually the diff is sort of
   messy, so please check that the diff is clean and doesn't contain too
   much of your local stuff (for example, I don't want/need the "configure"
   script that /your/ automake made for you). 
