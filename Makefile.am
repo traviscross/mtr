@@ -20,19 +20,20 @@ mtr_SOURCES = mtr.c \
 nodist_mtr_SOURCES = version.h
 EXTRA_mtr_SOURCES = curses.c \
                     gtk.c
+DEFAULT_INCLUDES= $(GLIB_CFLAGS) -I.
 mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
-mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
+mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ) $(GLIB_LIBS)
 
 CLEANFILES = version.h
 BUILT_SOURCES = version.h
 
 version.h: version.h.tmp Makefile $(mtr_SOURCES)
-	@cat $< > $@; \
+	@cat version.h.tmp > $@; \
 	if [ -d .git ] && [ -n "$$(which git)" ]; then \
 	  xver="+git:$$(git rev-list -n1 --abbrev=8 --abbrev-commit HEAD)"; \
 	  sed \
 	    -e "/#define *MTR_VERSION */{s/\"\([^\"]*\)\"/\"\1$$xver\"/;}" \
-	    $< > $@; \
+	    version.h.tmp > $@; \
 	fi;
 
 EXTRA_DIST = SECURITY mtr.8 Makefile Makefile.dist
