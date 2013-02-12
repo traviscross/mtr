@@ -59,6 +59,7 @@ if test "x$WANTS_GTK" = "xyes"; then
 else
 	AC_DEFINE(NO_GTK)
 	GTK_OBJ=""
+	PKG_CHECK_MODULES([GLIB], [glib-2.0])
 fi
 
 AC_CHECK_FUNC(socket, , 
