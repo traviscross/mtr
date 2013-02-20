@@ -257,9 +257,22 @@ int mtr_curses_keyaction(void)
   if (tolower(c) == 'u') {
     switch ( mtrtype ) {
     case IPPROTO_ICMP:
+    case IPPROTO_TCP:
       mtrtype = IPPROTO_UDP;
       break;
     case IPPROTO_UDP:
+      mtrtype = IPPROTO_ICMP;
+      break;
+    }
+    return ActionNone;
+  }
+  if (tolower(c) == 't') {
+    switch ( mtrtype ) {
+    case IPPROTO_ICMP:
+    case IPPROTO_UDP:
+      mtrtype = IPPROTO_TCP;
+      break;
+    case IPPROTO_TCP:
       mtrtype = IPPROTO_ICMP;
       break;
     }

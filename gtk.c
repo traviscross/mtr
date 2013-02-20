@@ -576,6 +576,7 @@ gint gtk_ping(UNUSED gpointer data)
 {
   gtk_redraw();
   net_send_batch();
+  net_harvest_fds();
   g_source_remove (tag);
   gtk_add_ping_timeout ();
   return TRUE;

@@ -35,6 +35,7 @@ void net_reset(void);
 void net_close(void);
 int net_waitfd(void);
 void net_process_return(void);
+void net_harvest_fds(void);
 
 int net_max(void);
 int net_min(void);
@@ -79,6 +80,9 @@ int net_duplicate(int at, int seq);
 void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len );
 int addrcmp( char * a, char * b, int af );
 void addrcpy( char * a, char * b, int af );
+
+void net_add_fds(fd_set *writefd, int *maxfd);
+void net_process_fds(fd_set *writefd);
 
 #define MAXPATH 8
 #define MaxHost 256
