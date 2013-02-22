@@ -16,12 +16,16 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <config.h>
+#ifndef NO_GLIB
 #include <glib.h>
-
+#endif
 
 /*  Prototypes for asn.c  */
 
 extern int PrintAS;
+#ifndef NO_GLIB
 extern GHashTable * ashash;
+#endif
 char *asn_lookup(const char *domain);
 

@@ -32,8 +32,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#ifndef __APPLE__
 #define BIND_8_COMPAT
+#endif
 #include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#endif
 #include <netdb.h>
 #include <resolv.h>
 #include <unistd.h>
@@ -57,14 +62,6 @@
 #define NSCOUNT6 myres.nscount
 #define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
 #endif
-#endif
-
-/* OSX  Needs this. I don't know how to enable this for them automatically. 
- * Should be easy with autoconf. Please submit a patch if you know 
- * autoconf.... -- REW
- */
-#if 0 
-#include "nameser8_compat.h"
 #endif
 
 

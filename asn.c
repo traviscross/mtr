@@ -21,13 +21,19 @@
     Released under GPL, as above.
 */
 
-#include <config.h>
+#include "asn.h"
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
+#ifndef __APPLE__
+#define BIND_8_COMPAT
+#endif
 #include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#endif
 #include <netdb.h>
 #include <netinet/in.h>
 #include <resolv.h>
@@ -35,11 +41,10 @@
 #include <sys/socket.h>
 
 
-#include <glib.h>
-
-
 int  PrintAS = 0;
+#ifndef NO_GLIB
 GHashTable * ashash = NULL;
+#endif
 
 char *asn_lookup(const char *domain)
 {
