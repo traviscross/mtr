@@ -315,14 +315,25 @@ void mtr_curses_hosts(int startstat)
     mpls = net_mpls(at);
 
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
+#ifdef ENABLE_IPV6
       struct in6_addr addr6 = *addr;
+#else
+      unsigned char *addr4 = (unsigned char *)addr;
+#endif
 
       if (PrintAS) {
               u_char ipv4[4];
+#ifdef ENABLE_IPV6
               ipv4[0] = addr6.s6_addr[0];
               ipv4[1] = addr6.s6_addr[1];
               ipv4[2] = addr6.s6_addr[2];
               ipv4[3] = addr6.s6_addr[3];
+#else
+              ipv4[0] = addr4[0];
+              ipv4[1] = addr4[1];
+              ipv4[2] = addr4[2];
+              ipv4[3] = addr4[3];
+#endif
 
 #define NAMELEN 127
               char ipv4_buf[NAMELEN];
