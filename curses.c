@@ -410,7 +410,8 @@ void mtr_curses_hosts(int startstat)
         name = dns_lookup(addrs);
         if (! net_up(at)) attron(A_BOLD);
         if (name != NULL) {
-	  printw("\n    %s", name);
+	  if (show_ips) printw("\n    %s (%s)", name, strlongip(addrs));
+	  else printw("\n    %s", name);
         } else {
 	  printw("\n    %s", strlongip( addrs ) );
         }
