@@ -139,10 +139,8 @@ void report_close(void)
     }
     printf("%s\n",buf);
 
-    /* Thales (thales@paponline.net) -- 
-     * This feature show 'loadbalances' on routes 
-     */
-    
+    /* This feature shows 'loadbalances' on routes */
+
     /* z is starting at 1 because addrs[0] is the same that addr */
     for (z = 1; z < MAXPATH ; z++) {
       addr2 = net_addrs(at, z);
@@ -151,7 +149,7 @@ void report_close(void)
       if ((addrcmp ((void *) &unspec_addr, (void *) addr2, af)) == 0)
         break;
       for (w = 0; w < z; w++)
-        /* Thales -- Ok... checking if there are ips repeated on same hop */
+        /* Ok... checking if there are ips repeated on same hop */
         if ((addrcmp ((void *) addr2, (void *) net_addrs (at,w), af)) == 0) {
            found = 1;
            break;

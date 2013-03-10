@@ -191,9 +191,9 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
  * There is a small problem with the following code:
  * The timeout is canceled and removed in order to ensure that
  * it takes effect (consider what happens if you set the timeout to 999,
- * then try to undo the change); is a better approach possible? -- CMR
+ * then try to undo the change); is a better approach possible?
  *
- * What's the problem with this? (-> "I don't think so)  -- REW
+ * What's the problem with this? (-> "I don't think so)
  */
 
 gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
@@ -215,7 +215,7 @@ gint Host_activate(GtkWidget *Entry, UNUSED gpointer data)
   if(addr) {
     net_reopen(addr);
     /* If we are "Paused" at this point it is usually because someone
-       entered a non-existing host. Therefore do the go-ahead... --REW */
+       entered a non-existing host. Therefore do the go-ahead... */
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
   } else {
     int pos = strlen(gtk_entry_get_text( GTK_ENTRY(Entry)));
@@ -310,7 +310,7 @@ enum {
 // architectures, the pointer is 64 bits and the integer only 32. 
 // The compiler warns us of loss of precision. However we know we
 // casted a normal 32-bit integer into this pointer a few microseconds
-// earlier, so it is ok. Nothing to worry about.... -- REW.
+// earlier, so it is ok. Nothing to worry about....
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
 void  float_formatter(GtkTreeViewColumn *tree_column,

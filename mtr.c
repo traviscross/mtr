@@ -374,7 +374,7 @@ int main(int argc, char **argv)
   display_detect(&argc, &argv);
 
   /* The field options are now in a static array all together, 
-     but that requires a run-time initialization. -- REW */
+     but that requires a run-time initialization. */
   init_fld_options ();
 
   parse_mtr_options (getenv ("MTR_OPTIONS"));

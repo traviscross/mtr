@@ -181,7 +181,7 @@ char *rrtypes[] = {
 
 
 /* Please don't use a trailing comma in enumerations: It doesn't
-   work on all compilers -- REW */
+   work on all compilers */
 enum {
    RR_UNKNOWN,
    RR_QUERY,
@@ -230,8 +230,7 @@ typedef struct {
 #if 0
 
 /* The execution order inside an expression is undefined! That means that
-   this might work, but then again, it might not... Sun Lint pointed this 
-   one out...*/
+   this might work, but then again, it might not... */
 
 #define sucknetword(x) (((word)*(x) << 8) | (((x)+= 2)[-1]))
 #define sucknetshort(x) (((short)*(x) << 8) | (((x)+= 2)[-1]))

@@ -20,10 +20,6 @@ AC_CHECK_SIZEOF(unsigned long, 4)
 AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h fcntl.h)
 AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h arpa/nameser_compat.h)
 
-# Some doc I found somewhere. :-) -- REW
-# - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
-# - Macro: AC_CHECK_LIB (LIBRARY, FUNCTION [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, OTHER-LIBRARIES]]])
-
 # We don't refer to any symbols in termcap, but -lcurses on SunOS does.
 # We have to trust the linker not to mess things up... (It should not
 # pull in anything if we don't refer to anything in the lib). 
@@ -41,12 +37,10 @@ AC_CHECK_FUNCS(attron fcntl)
 
 AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
 
-dnl Added ability to cleanly disable GTK+      (12 Jan 2000, Joseph Carter)
 AC_ARG_WITH(gtk,
 [  --without-gtk           Do not try to use GTK+ at all],
 WANTS_GTK=$withval, WANTS_GTK=yes)
 
-dnl Added ability to cleanly disable glib      (22 Feb 2013, Kyle J. McKay)
 AC_ARG_WITH(glib,
 [  --without-glib          Do not try to use glib at all],
 WANTS_GLIB=$withval, WANTS_GLIB=yes)
@@ -88,13 +82,7 @@ AC_CHECK_FUNCS(seteuid)
 #  AC_CHECK_LIB(bind, res_mkquery, ,
 #   AC_CHECK_LIB(resolv, res_mkquery, ,
 #     AC_CHECK_LIB(resolv, __res_mkquery, , AC_MSG_ERROR(No resolver library found)))))
-# This next line would override the just detected-or-not -lresolv. 
-# This apparently hurts BSD. And it's bad practise. So it should go. 
-# However, it probably didn't get added for nothing..... Holler if
-# removing it hurts your OS.... -- REW
-#LIBS="$LIBS -lresolv"
 
-dnl Improved tests to select resolver library  (22 Feb 2013, Kyle J. McKay)
 # See if a library is needed for res_mkquery and if so put it in RESOLV_LIBS
 RESOLV_LIBS=
 AC_SUBST(RESOLV_LIBS)
@@ -142,7 +130,6 @@ AC_CHECK_FUNC(getaddrinfo,
 	USES_IPV6=yes
 fi])
 
-dnl Check to see whether or not __res_state_ext needs to be defined  (22 Feb 2013, Kyle J. McKay)
 AC_DEFUN([NEED_RES_STATE_EXT_TEST_SRC], [
 AC_LANG_PROGRAM([[
 #include <netinet/in.h>

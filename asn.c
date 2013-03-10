@@ -16,11 +16,6 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-    Copyright (C) 2010 by Roderick Groesbeek <mtr@roderick.triple-it.nl>
-    Released under GPL, as above.
-*/
-
 #include "asn.h"
 
 #include <unistd.h>

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Philippe tells me MacOSX needs this before scoket.h... -- REW */
+/* MacOSX may need this before scoket.h...*/
 #if defined(HAVE_SYS_TYPES_H)
 #include <sys/types.h>
 #else
@@ -127,7 +127,6 @@ int mtr_curses_keyaction(void)
   if (c == '-')
     return ActionScrollUp;
 
-  /* more stuffs added by Min */
   if (tolower(c) == 's') {
     mvprintw(2, 0, "Change Packet Size: %d\n", cpacketsize );
     mvprintw(3, 0, "Size Range: %d-%d, < 0:random.\n", MINPACKET, MAXPACKET);
@@ -222,7 +221,7 @@ int mtr_curses_keyaction(void)
 
     return ActionNone;
   }
-  /* fields to display & their ordering -Min */
+  /* fields to display & their ordering */
   if (tolower(c) == 'o') {
     mvprintw(2, 0, "Fields: %s\n\n", fld_active );
 
@@ -267,7 +266,7 @@ int mtr_curses_keyaction(void)
     }
     return ActionNone;
   }
-  /* reserve to display help message -Min */
+  /* reserve to display help message */
   if (tolower(c) == '?'|| tolower(c) == 'h') {
     mvprintw(2, 0, "Command:\n" );
     printw("  ?|h     help\n" );
@@ -383,7 +382,6 @@ void mtr_curses_hosts(int startstat)
       move(y, startstat);
 
       /* net_xxx returns times in usecs. Just display millisecs */
-      /* changedByMin */
       hd_len = 0;
       for( i=0; i<MAXFLD; i++ ) {
 	/* Ignore options that don't exist */
@@ -415,7 +413,7 @@ void mtr_curses_hosts(int startstat)
         }
       }
 
-      /* Multi path by Min */
+      /* Multi path */
       for (i=0; i < MAXPATH; i++ ) {
         addrs = net_addrs(at, i);
         mplss = net_mplss(at, i);
@@ -612,7 +610,6 @@ void mtr_curses_redraw(void)
   attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
   if (display_mode == 0) {
-    /* changedByMin */
     for (i=0; i < MAXFLD; i++ ) {
 	j = fld_index[fld_active[i]];
 	if (j < 0) continue;
@@ -631,7 +628,6 @@ void mtr_curses_redraw(void)
     mtr_curses_hosts(maxx-hd_len-1);
 
   } else {
-    /* David Sward, Jan 1999 */
     char msg[80];
     int max_cols = maxx<=SAVED_PINGS+30 ? maxx-30 : SAVED_PINGS;
     startstat = 28;

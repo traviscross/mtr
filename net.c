@@ -14,9 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-    
-   1999-08-13 ok Olav@okvittem.priv.no  added -psize
-
 */
 
 #include <config.h>
@@ -137,7 +134,7 @@ struct sequence {
 
 /* Configuration parameter: How many queries to unknown hosts do we
    send? (This limits the amount of traffic generated if a host is not
-   reachable) -- REW */
+   reachable) */
 #define MAX_UNKNOWN_HOSTS 5
 
 
@@ -180,7 +177,7 @@ struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
 ip_t * sourceaddress;
 ip_t * remoteaddress;
 
-/* XXX How do I code this to be IPV6 compatible??? -- REW */
+/* XXX How do I code this to be IPV6 compatible??? */
 #ifdef ENABLE_IPV6
 char localaddr[INET6_ADDRSTRLEN];
 #else
@@ -471,7 +468,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
     host[index].mpls = mpls;
     display_rawhost(index, (void *) &(host[index].addr));
 
-  /* multi paths by Min */
+  /* multi paths */
     addrcpy( (void *) &(host[index].addrs[0]), addrcopy, af );
     host[index].mplss[0] = mpls;
   } else {
@@ -486,11 +483,8 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
         i<MAXPATH ) {
       addrcpy( (void *) &(host[index].addrs[i]), addrcopy, af );
       host[index].mplss[i] = mpls;
-      
-      /* rafaelmartins: multi path support to '--raw' */
       display_rawhost(index, (void *) &(host[index].addrs[i]));
     }
-  /* end multi paths */
   }
 
   host[index].jitter = totusec - host[index].last;
@@ -508,7 +502,6 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
    * at least in linux 2.4.x.
    *  safe guard 1) best[index]>=best[index-1] if index>0
    *             2) best >= average-20,000 usec (good number?)
-   *  Min
   if (index > 0) {
     if (totusec < host[index].best &&
        totusec>= host[index-1].best) host[index].best  = totusec;
@@ -523,7 +516,6 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
 	host[index].jworst = host[index].jitter;
 
   host[index].returned++;
-  /* begin addByMin do more stats */
   oldavg = host[index].avg;
   host[index].avg += (totusec - oldavg +.0) / host[index].returned;
   host[index].var += (totusec - oldavg +.0) * (totusec - host[index].avg) / 1000000;
@@ -536,7 +528,6 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
   if ( host[index].returned > 1 )
   host[index].gmean = pow( (double) host[index].gmean, (host[index].returned-1.0)/host[index].returned )
 			* pow( (double) totusec, 1.0/host[index].returned );
-  /* end addByMin*/
   host[index].sent = 0;
   host[index].up = 1;
   host[index].transit = 0;
@@ -778,7 +769,6 @@ int net_stdev(int at)
 }
 
 
-/* jitter stuff */
 int net_jitter(int at) 
 { 
   return (host[at].jitter); 
@@ -801,7 +791,6 @@ int net_jinta(int at)
 { 
   return (host[at].jinta); 
 }
-/* end jitter */
 
 
 int net_max(void) 
@@ -810,8 +799,7 @@ int net_max(void)
   int max;
 
   max = 0;
-  /* replacedByMin
-     for(at = 0; at < MaxHost-2; at++) { */
+  /* for(at = 0; at < MaxHost-2; at++) { */
   for(at = 0; at < maxTTL-1; at++) {
     if ( addrcmp( (void *) &(host[at].addr),
                   (void *) remoteaddress, af ) == 0 ) {
@@ -826,14 +814,12 @@ int net_max(void)
 }
 
 
-/* add by Min (wonder its named net_min;-)) because of ttl stuff */
 int net_min (void) 
 {
   return ( fstTTL - 1 );
 }
 
 
-/* Added by Brian Casey December 1997 bcasey@imagiware.com*/
 int net_returned(int at) 
 { 
   return host[at].returned;
@@ -890,7 +876,7 @@ int net_send_batch(void)
            As our detination range (in the example 10000) is much 
            smaller (reasonable packet sizes), and our rand() range much 
            larger, this effect is insignificant. Oh! That other formula
-           didn't work. -- REW */
+           didn't work. */
       packetsize = MINPACKET + rand () % (-cpacketsize - MINPACKET);
     } else {
       packetsize = cpacketsize;
@@ -912,7 +898,7 @@ int net_send_batch(void)
 	but I don't remember why. It makes mtr stop skipping sections of unknown
 	hosts. Removed in 0.65. 
 	If the line proves neccesary, it should at least NOT trigger that line 
-	when host[i].addr == 0 -- REW */
+	when host[i].addr == 0 */
     if ( ( addrcmp( (void *) &(host[i].addr),
                     (void *) remoteaddress, af ) == 0 )
 	/* || (host[i].addr == host[batch_at].addr)  */)
