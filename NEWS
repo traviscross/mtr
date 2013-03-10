@@ -1,5 +1,8 @@
 WHAT'S NEW?
 
+V0.84 Fix some glib things by Thomas. 
+
+
 V0.83 Move to github. Mostly done by Travis.
 
 Author: Travis Cross <tc@traviscross.com>
