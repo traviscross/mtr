@@ -76,6 +76,8 @@ int  fstTTL = 1;                /* default start at first hop */
 /*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
+int remoteport = 80;            /* for TCP tracing */
+int timeout = 10 * 1000000;     /* for TCP tracing */
 
 
 /* default display field(defined by key in net.h) and order */
@@ -152,6 +154,9 @@ void parse_arg (int argc, char **argv)
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
     { "max-ttl", 1, 0, 'm' },
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
+    { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
+    { "port", 1, 0, 'P' },      /* target port number for TCP */
+    { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
     { "inet", 0, 0, '4' },	/* IPv4 only */
     { "inet6", 0, 0, '6' },	/* IPv6 only */
     { "aslookup", 0, 0, 'z' },  /* Do AS lookup */
@@ -162,7 +167,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:ubz46", long_options, NULL);
+		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:uTP:Zbz46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -273,10 +278,32 @@ void parse_arg (int argc, char **argv)
       }
       break;
     case 'u':
+      if (mtrtype != IPPROTO_ICMP) {
+        fprintf(stderr, "-u and -T are mutually exclusive.\n");
+        exit(EXIT_FAILURE);
+      }
       mtrtype = IPPROTO_UDP;
+      break;
+    case 'T':
+      if (mtrtype != IPPROTO_ICMP) {
+        fprintf(stderr, "-u and -T are mutually exclusive.\n");
+        exit(EXIT_FAILURE);
+      }
+      mtrtype = IPPROTO_TCP;
       break;
     case 'b':
       show_ips = 1;
+      break;
+    case 'P':
+      remoteport = atoi(optarg);
+      if (remoteport > 65535 || remoteport < 1) {
+        fprintf(stderr, "Illegal port number.\n");
+        exit(EXIT_FAILURE);
+      }
+      break;
+    case 'Z':
+      timeout = atoi(optarg);
+      timeout *= 1000000;
       break;
     case '4':
       af = AF_INET;
@@ -393,12 +420,12 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrwctglspniu46] [--help] [--version] [--report]\n"
+    printf("usage: %s [-hvrwctglspniuT46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
            "\t\t[--address interface]  [--aslookup]\n" /* BL */
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
-           "\t\t[--report-wide|-w] [-u]\n"            /* rew */
+           "\t\t[--report-wide|-w] [-u|-T] [--port=PORT] [--timeout=SECONDS]\n"            /* rew */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
     exit(0);
   }
