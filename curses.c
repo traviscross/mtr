@@ -65,7 +65,9 @@
 #include "dns.h"
 #include "asn.h"
 #include "version.h"
+#ifndef NO_GLIB
 #include <glib.h>
+#endif
 #endif
 
 #include <time.h>
@@ -315,14 +317,26 @@ void mtr_curses_hosts(int startstat)
     mpls = net_mpls(at);
 
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
+#ifndef NO_GLIB
+#ifdef ENABLE_IPV6
       struct in6_addr addr6 = *addr;
+#else
+      unsigned char *addr4 = (unsigned char *)addr;
+#endif
 
       if (PrintAS) {
               u_char ipv4[4];
+#ifdef ENABLE_IPV6
               ipv4[0] = addr6.s6_addr[0];
               ipv4[1] = addr6.s6_addr[1];
               ipv4[2] = addr6.s6_addr[2];
               ipv4[3] = addr6.s6_addr[3];
+#else
+              ipv4[0] = addr4[0];
+              ipv4[1] = addr4[1];
+              ipv4[2] = addr4[2];
+              ipv4[3] = addr4[3];
+#endif
 
 #define NAMELEN 127
               char ipv4_buf[NAMELEN];
@@ -353,6 +367,7 @@ void mtr_curses_hosts(int startstat)
 
               printw("[AS%s] ", chas);
       }
+#endif /* NO_GLIB */
       name = dns_lookup(addr);
       if (! net_up(at))
 	attron(A_BOLD);
@@ -646,7 +661,9 @@ void mtr_curses_redraw(void)
 
 void mtr_curses_open(void)
 {
+#ifndef NO_GLIB
   ashash = g_hash_table_new(g_str_hash, g_str_equal);
+#endif
   initscr();
   raw();
   noecho(); 
