@@ -18,7 +18,7 @@ AC_CHECK_SIZEOF(unsigned int, 4)
 AC_CHECK_SIZEOF(unsigned long, 4)
 
 AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h fcntl.h)
-AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h)
+AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h arpa/nameser_compat.h)
 
 # Some doc I found somewhere. :-) -- REW
 # - Macro: AC_CHECK_FUNC (FUNCTION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
@@ -46,6 +46,11 @@ AC_ARG_WITH(gtk,
 [  --without-gtk           Do not try to use GTK+ at all],
 WANTS_GTK=$withval, WANTS_GTK=yes)
 
+dnl Added ability to cleanly disable glib      (22 Feb 2013, Kyle J. McKay)
+AC_ARG_WITH(glib,
+[  --without-glib          Do not try to use glib at all],
+WANTS_GLIB=$withval, WANTS_GLIB=yes)
+
 AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          Do not enable IPv6],
 WANTS_IPV6=$enableval, WANTS_IPV6=yes)
@@ -59,7 +64,11 @@ if test "x$WANTS_GTK" = "xyes"; then
 else
 	AC_DEFINE(NO_GTK)
 	GTK_OBJ=""
-	PKG_CHECK_MODULES([GLIB], [glib-2.0])
+	if test "x$WANTS_GLIB" = "xyes"; then
+		PKG_CHECK_MODULES([GLIB], [glib-2.0])
+	else
+		AC_DEFINE(NO_GLIB, 1, [Define if you don't have the glib libraries available.])
+	fi
 fi
 
 AC_CHECK_FUNC(socket, , 
@@ -75,23 +84,115 @@ AC_CHECK_FUNC(gethostbyname, ,
 AC_CHECK_FUNCS(seteuid)
 #  AC_CHECK_FUNC(setuid, , AC_MSG_ERROR (I Need either seteuid or setuid))
 
-AC_CHECK_FUNC(res_mkquery, , 
-  AC_CHECK_LIB(bind, res_mkquery, , 
-   AC_CHECK_LIB(resolv, res_mkquery, ,
-     AC_CHECK_LIB(resolv, __res_mkquery, , AC_MSG_ERROR(No resolver library found)))))
+#AC_CHECK_FUNC(res_mkquery, ,
+#  AC_CHECK_LIB(bind, res_mkquery, ,
+#   AC_CHECK_LIB(resolv, res_mkquery, ,
+#     AC_CHECK_LIB(resolv, __res_mkquery, , AC_MSG_ERROR(No resolver library found)))))
 # This next line would override the just detected-or-not -lresolv. 
 # This apparently hurts BSD. And it's bad practise. So it should go. 
 # However, it probably didn't get added for nothing..... Holler if
 # removing it hurts your OS.... -- REW
 #LIBS="$LIBS -lresolv"
 
+dnl Improved tests to select resolver library  (22 Feb 2013, Kyle J. McKay)
+# See if a library is needed for res_mkquery and if so put it in RESOLV_LIBS
+RESOLV_LIBS=
+AC_SUBST(RESOLV_LIBS)
+AC_DEFUN([LIBRESOLVTEST_SRC], [
+AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <resolv.h>
+]], [[
+int (*res_mkquery_func)(int,...) = (int (*)(int,...))res_mkquery;
+(void)(*res_mkquery_func)(0);
+]])])
+AC_MSG_CHECKING([whether library required for res_mkquery])
+RESOLV_LIB_NONE=
+AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
+	[AC_MSG_RESULT([no])
+	RESOLV_LIB_NONE=yes],
+	[AC_MSG_RESULT([yes])])
+if test "x$RESOLV_LIB_NONE" = "x"; then
+	AC_MSG_CHECKING([for res_mkquery in -lbind])
+	STASH_LIBS="$LIBS"
+	LIBS="$STASH_LIBS -lbind"
+	AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
+		[AC_MSG_RESULT([yes])
+		RESOLV_LIBS=-lbind],
+		[AC_MSG_RESULT([no])])
+	if test "x$RESOLV_LIBS" = "x"; then
+		AC_MSG_CHECKING([for res_mkquery in -lresolv])
+		LIBS="$STASH_LIBS -lresolv"
+		AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
+			[AC_MSG_RESULT([yes])
+			RESOLV_LIBS=-lresolv],
+			[AC_MSG_RESULT([no])
+                        AC_MSG_ERROR(No resolver library found)])
+	fi
+	LIBS="$STASH_LIBS"
+fi
+
 AC_CHECK_FUNC(herror, , AC_DEFINE(NO_HERROR, 1, [Define if you don't have the herror() function available.]))
 AC_CHECK_FUNC(strerror, , AC_DEFINE(NO_STRERROR, 1, [Define if you don't have the strerror() function available.]))
 
+USES_IPV6=
 AC_CHECK_FUNC(getaddrinfo,
 [if test "$WANTS_IPV6" = "yes"; then
 	AC_DEFINE([ENABLE_IPV6], [], [Define to enable IPv6])
+	USES_IPV6=yes
 fi])
+
+dnl Check to see whether or not __res_state_ext needs to be defined  (22 Feb 2013, Kyle J. McKay)
+AC_DEFUN([NEED_RES_STATE_EXT_TEST_SRC], [
+AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <resolv.h>
+#ifdef __GLIBC__
+#define RESEXTIN6(r,i) (*(r._u._ext.nsaddrs[i]))
+#else
+#define RESEXTIN6(r,i) (r._u._ext.ext->nsaddrs[i].sin6)
+#endif
+]], [[
+struct __res_state res;
+return RESEXTIN6(res,0).sin6_addr.s6_addr[0];
+]])])
+AC_DEFUN([DEFINE_RES_STATE_EXT_TEST_SRC], [
+AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <resolv.h>
+#ifdef __GLIBC__
+#define RESEXTIN6(r,i) (*(r._u._ext.nsaddrs[i]))
+#else
+#define RESEXTIN6(r,i) (r._u._ext.ext->nsaddrs[i].sin6)
+struct __res_state_ext {
+	union res_sockaddr_union nsaddrs[MAXNS];
+	struct sort_list {
+		int     af;
+		union {
+			struct in_addr  ina;
+			struct in6_addr in6a;
+		} addr, mask;
+	} sort_list[MAXRESOLVSORT];
+	char nsuffix[64];
+	char nsuffix2[64];
+};
+#endif
+]], [[
+struct __res_state res;
+return RESEXTIN6(res,0).sin6_addr.s6_addr[0];
+]])])
+if test "x$USES_IPV6" = "xyes"; then
+	AC_MSG_CHECKING([whether __res_state_ext needs to be defined])
+	AC_COMPILE_IFELSE([NEED_RES_STATE_EXT_TEST_SRC],
+		[AC_MSG_RESULT([no])],
+		[AC_MSG_RESULT([yes])
+		AC_MSG_CHECKING([whether provided __res_state_ext definition can be compiled])
+		AC_COMPILE_IFELSE([DEFINE_RES_STATE_EXT_TEST_SRC],
+			[AC_MSG_RESULT([yes])
+			AC_DEFINE(NEED_RES_STATE_EXT, 1, [Define if struct __res_state_ext needs to be defined.])],
+			[AC_MSG_RESULT([no])
+			AC_MSG_ERROR(Need definition for struct __res_state_ext but unable to define it.)])])
+fi
 
 AC_CHECK_DECLS(errno, , , [[
 #include <errno.h>

@@ -22,7 +22,7 @@ EXTRA_mtr_SOURCES = curses.c \
                     gtk.c
 DEFAULT_INCLUDES= $(GLIB_CFLAGS) -I.
 mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
-mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ) $(GLIB_LIBS)
+mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ) $(GLIB_LIBS) $(RESOLV_LIBS)
 
 CLEANFILES = version.h
 BUILT_SOURCES = version.h
