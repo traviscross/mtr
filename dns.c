@@ -934,6 +934,8 @@ void dorequest(char *s,int type,word id)
   hp->id = id;	/* htons() deliberately left out (redundant) */
 #ifdef ENABLE_IPV6
   for (i = 0;i < NSCOUNT6;i++) {
+    if (!NSSOCKADDR6(i))
+      continue;
     if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
       (void)sendto(resfd6,buf,r,0,(struct sockaddr *) NSSOCKADDR6(i),
 		   sizeof(struct sockaddr_in6));
@@ -1340,6 +1342,8 @@ void dns_ack6(void)
       }
     } else
       for (i = 0;i < NSCOUNT6;i++) {
+        if (!NSSOCKADDR6(i))
+          continue;
 	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
 		      (void *) &(from6->sin6_addr), AF_INET6 ) == 0 )
 	  break;
