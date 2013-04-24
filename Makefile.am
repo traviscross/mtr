@@ -6,7 +6,6 @@ install-exec-hook:
 	chmod u+s $(DESTDIR)$(sbindir)/mtr
 
 mtr_SOURCES = mtr.c \
-              asn.c asn.h \
               net.c net.h \
               dns.c dns.h \
               raw.c raw.h \
@@ -17,6 +16,11 @@ mtr_SOURCES = mtr.c \
               select.c select.h \
               mtr-curses.h \
               mtr-gtk.h
+
+if IPINFO
+mtr_SOURCES += asn.c asn.h
+endif
+
 nodist_mtr_SOURCES = version.h
 EXTRA_mtr_SOURCES = curses.c \
                     gtk.c

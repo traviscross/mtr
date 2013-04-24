@@ -30,6 +30,9 @@
 #include "report.h"
 #include "net.h"
 #include "dns.h"
+#ifndef NO_IPINFO
+#include "asn.h"
+#endif
 
 #define MAXLOADBAL 5
 
@@ -73,9 +76,17 @@ static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
 }
 
 
+#ifndef NO_IPINFO
+void print_mpls(struct mplslen *mpls) {
+  int k;
+  for (k=0; k < mpls->labels; k++)
+    printf("       [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
+}
+#endif
+
 void report_close(void) 
 {
-  int i, j, k, at, max, z, w;
+  int i, j, at, max, z, w;
   struct mplslen *mpls, *mplss;
   ip_t *addr;
   ip_t *addr2 = NULL;  
@@ -100,7 +111,21 @@ void report_close(void)
     }
   }
   
+#ifndef NO_IPINFO
+  int len_tmp = len_hosts;
+  if (ipinfo_no >= 0) {
+    ipinfo_no %= iiwidth_len;
+    if (reportwide) {
+      len_hosts++;    // space
+      len_tmp   += get_iiwidth();
+      if (!ipinfo_no)
+        len_tmp += 2; // align header: AS
+    }
+  }
+  snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
+#else
   snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_hosts);
+#endif
   snprintf(buf, sizeof(buf), fmt, LocalHostname);
   len = reportwide ? strlen(buf) : len_hosts;
   for( i=0; i<MAXFLD; i++ ) {
@@ -120,8 +145,17 @@ void report_close(void)
     mpls = net_mpls(at);
     snprint_addr(name, sizeof(name), addr);
 
+#ifndef NO_IPINFO
+    if (is_printii()) {
+      snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%ds", len_hosts);
+      snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(addr), name);
+    } else {
+#endif
     snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
+#ifndef NO_IPINFO
+    }
+#endif
     len = reportwide ? strlen(buf) : len_hosts;  
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active [i]];
@@ -157,6 +191,17 @@ void report_close(void)
 
       if (!found) {
   
+#ifndef NO_IPINFO
+        if (is_printii()) {
+          if (mpls->labels && z == 1 && enablempls)
+            print_mpls(mpls);
+          snprint_addr(name, sizeof(name), addr2);
+          printf("     %s%s\n", fmt_ipinfo(addr2), name);
+          if (enablempls)
+            print_mpls(mplss);
+        } else {
+#else
+        int k;
         if (mpls->labels && z == 1 && enablempls) {
           for (k=0; k < mpls->labels; k++) {
             printf("    |  |+-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
@@ -174,15 +219,30 @@ void report_close(void)
             printf("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mplss->label[k], mplss->exp[k], mplss->s[k], mplss->ttl[k]);
           }
         }
+#endif
+#ifndef NO_IPINFO
+        }
+#endif
       }
     }
 
     /* No multipath */
+#ifndef NO_IPINFO
+    if (is_printii()) {
+      if (mpls->labels && z == 1 && enablempls)
+        print_mpls(mpls);
+    } else {
+#else
     if(mpls->labels && z == 1 && enablempls) {
+      int k;
       for (k=0; k < mpls->labels; k++) {
         printf("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
       }
     }
+#endif
+#ifndef NO_IPINFO
+    }
+#endif
   }
 }
 

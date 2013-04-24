@@ -29,6 +29,9 @@
 #include "select.h"
 #include "raw.h"
 #include "dns.h"
+#ifndef NO_IPINFO
+#include <asn.h>
+#endif
 
 extern int DisplayMode;
 
@@ -94,6 +97,10 @@ void display_open(void)
     break;
   case DisplayCurses:
     mtr_curses_open();  
+#ifndef NO_IPINFO
+    if (ipinfo_no >= 0)
+        asn_open();
+#endif
     break;
   case DisplaySplit:
     split_open();
@@ -121,6 +128,10 @@ void display_close(void)
     csv_close();
     break;
   case DisplayCurses:
+#ifndef NO_IPINFO
+    if (ipinfo_no >= 0)
+        asn_close();
+#endif
     mtr_curses_close();
     break;
   case DisplaySplit:

@@ -34,7 +34,9 @@
 #include "dns.h"
 #include "report.h"
 #include "net.h"
+#ifndef NO_IPINFO
 #include "asn.h"
+#endif
 #include "version.h"
 
 
@@ -154,7 +156,10 @@ void parse_arg (int argc, char **argv)
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "inet", 0, 0, '4' },	/* IPv4 only */
     { "inet6", 0, 0, '6' },	/* IPv6 only */
-    { "aslookup", 0, 0, 'z' },  /* Do AS lookup */
+#ifndef NO_IPINFO
+    { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
+    { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
+#endif
     { 0, 0, 0, 0 }
   };
 
@@ -162,7 +167,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:ubz46", long_options, NULL);
+		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:uby:z46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -289,9 +294,16 @@ void parse_arg (int argc, char **argv)
       fprintf( stderr, "IPv6 not enabled.\n" );
       break;
 #endif
-    case 'z':
-      PrintAS = 1;
+#ifndef NO_IPINFO
+    case 'y':
+      ipinfo_no = atoi (optarg);
+      if (ipinfo_no < 0)
+        ipinfo_no = 0;
       break;
+    case 'z':
+      ipinfo_no = 0;
+      break;
+#endif
     }
   }
 
@@ -396,7 +408,11 @@ int main(int argc, char **argv)
     printf("usage: %s [-hvrwctglspniu46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
-           "\t\t[--address interface]  [--aslookup]\n" /* BL */
+           "\t\t[--address interface]\n" /* BL */
+#ifndef NO_IPINFO
+           "\t\t[--ipinfo=item_no|-y item_no]\n"
+           "\t\t[--aslookup|-z]\n"
+#endif
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
            "\t\t[--report-wide|-w] [-u]\n"            /* rew */
 	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);

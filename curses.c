@@ -63,11 +63,10 @@
 #include "display.h"
 #include "net.h"
 #include "dns.h"
+#ifndef NO_IPINFO
 #include "asn.h"
-#include "version.h"
-#ifndef NO_GLIB
-#include <glib.h>
 #endif
+#include "version.h"
 #endif
 
 #include <time.h>
@@ -122,6 +121,12 @@ int mtr_curses_keyaction(void)
     return ActionMPLS;
   if (tolower(c) == 'n')
     return ActionDNS;
+#ifndef NO_IPINFO
+  if (tolower(c) == 'y')
+    return ActionII;
+  if (tolower(c) == 'z')
+    return ActionAS;
+#endif
   if (c == '+')
     return ActionScrollDown;
   if (c == '-')
@@ -268,6 +273,7 @@ int mtr_curses_keyaction(void)
   }
   /* reserve to display help message */
   if (tolower(c) == '?'|| tolower(c) == 'h') {
+    int pressanykey_row = 20;
     mvprintw(2, 0, "Command:\n" );
     printw("  ?|h     help\n" );
     printw("  p       pause (SPACE to resume)\n" );
@@ -284,8 +290,14 @@ int mtr_curses_keyaction(void)
     printw("  s <n>   set the packet size to n or random(n<0)\n" );
     printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n" );
     printw("  Q <t>   set ping packet's TOS to t\n" );
-    printw("  u       switch between ICMP ECHO and UDP datagrams\n\n" );
-    mvprintw(16, 0, " press any key to go back..." );
+    printw("  u       switch between ICMP ECHO and UDP datagrams\n" );
+#ifndef NO_IPINFO
+    printw("  y       switching IP info\n");
+    printw("  z       toggle ASN info on/off\n");
+    pressanykey_row += 2;
+#endif
+    printw("\n");
+    mvprintw(pressanykey_row, 0, " press any key to go back..." );
 
     getch();                  /* get any key */
     return ActionNone;
@@ -316,60 +328,13 @@ void mtr_curses_hosts(int startstat)
     mpls = net_mpls(at);
 
     if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-#ifndef NO_GLIB
-#ifdef ENABLE_IPV6
-      struct in6_addr addr6 = *addr;
-#else
-      unsigned char *addr4 = (unsigned char *)addr;
-#endif
-
-      if (PrintAS) {
-              u_char ipv4[4];
-#ifdef ENABLE_IPV6
-              ipv4[0] = addr6.s6_addr[0];
-              ipv4[1] = addr6.s6_addr[1];
-              ipv4[2] = addr6.s6_addr[2];
-              ipv4[3] = addr6.s6_addr[3];
-#else
-              ipv4[0] = addr4[0];
-              ipv4[1] = addr4[1];
-              ipv4[2] = addr4[2];
-              ipv4[3] = addr4[3];
-#endif
-
-#define NAMELEN 127
-              char ipv4_buf[NAMELEN];
-              char* chip = (char*) &ipv4_buf;
-              char* chas = NULL;
-              char** key_ptr = &chip;
-              char** value_ptr = &chas;
-
-
-              if (snprintf(ipv4_buf, NAMELEN, "%d.%d.%d.%d.asn.routeviews.org", ipv4[3],
-                                      ipv4[2], ipv4[1], ipv4[0]) >= NAMELEN) {
-                      return;
-              }
-
-
-
-              gboolean result =
-                      g_hash_table_lookup_extended
-                      (ashash, ipv4_buf, (gpointer*)key_ptr, (gpointer*)value_ptr);
-              if (!result) {
-                      char* as = asn_lookup(ipv4_buf);
-                      chip = (char*) strdup(ipv4_buf);
-                      chas = (char*) as;
-                      g_hash_table_insert(ashash, chip, chas);
-              }
-              //g_hash_table_destroy(hash);
-
-
-              printw("[AS%s] ", chas);
-      }
-#endif /* NO_GLIB */
       name = dns_lookup(addr);
       if (! net_up(at))
 	attron(A_BOLD);
+#ifndef NO_IPINFO
+      if (is_printii())
+        printw(fmt_ipinfo(addr));
+#endif
       if(name != NULL) {
         if (show_ips) printw("%s (%s)", name, strlongip(addr));
         else printw("%s", name);
@@ -422,11 +387,16 @@ void mtr_curses_hosts(int startstat)
 
         name = dns_lookup(addrs);
         if (! net_up(at)) attron(A_BOLD);
+        printw("\n    ");
+#ifndef NO_IPINFO
+        if (is_printii())
+          printw(fmt_ipinfo(addrs));
+#endif
         if (name != NULL) {
-	  if (show_ips) printw("\n    %s (%s)", name, strlongip(addrs));
-	  else printw("\n    %s", name);
+	  if (show_ips) printw("%s (%s)", name, strlongip(addrs));
+	  else printw("%s", name);
         } else {
-	  printw("\n    %s", strlongip( addrs ) );
+	  printw("%s", strlongip( addrs ) );
         }
         for (k=0; k < mplss->labels && enablempls; k++) {
           printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mplss->label[k], mplss->exp[k], mplss->s[k], mplss->ttl[k]);
@@ -542,12 +512,15 @@ void mtr_curses_graph(int startstat, int cols)
 
 		if (! net_up(at))
 			attron(A_BOLD);
-		name = dns_lookup(addr);
-		if (name) {
-			printw("%s", name);
-		} else {
-			printw("%s", strlongip( addr ) );
-		}
+		if (addrcmp((void *) addr, (void *) &unspec_addr, af)) {
+#ifndef NO_IPINFO
+			if (is_printii())
+				printw(fmt_ipinfo(addr));
+#endif
+			name = dns_lookup(addr);
+			printw("%s", name?name:strlongip(addr));
+		} else
+			printw("???");
 		attroff(A_BOLD);
 
 		getyx(stdscr, y, __unused_int);
@@ -629,8 +602,13 @@ void mtr_curses_redraw(void)
 
   } else {
     char msg[80];
-    int max_cols = maxx<=SAVED_PINGS+30 ? maxx-30 : SAVED_PINGS;
-    startstat = 28;
+    int padding = 30;
+#ifndef NO_IPINFO
+    if (is_printii())
+      padding += get_iiwidth();
+#endif
+    int max_cols = maxx<=SAVED_PINGS+padding ? maxx-padding : SAVED_PINGS;
+    startstat = padding - 2;
 
     sprintf(msg, " Last %3d pings", max_cols);
     mvprintw(rowstat - 1, startstat, msg);
@@ -657,9 +635,6 @@ void mtr_curses_redraw(void)
 
 void mtr_curses_open(void)
 {
-#ifndef NO_GLIB
-  ashash = g_hash_table_new(g_str_hash, g_str_equal);
-#endif
   initscr();
   raw();
   noecho(); 

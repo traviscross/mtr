@@ -45,6 +45,18 @@ AC_ARG_WITH(glib,
 [  --without-glib          Do not try to use glib at all],
 WANTS_GLIB=$withval, WANTS_GLIB=yes)
 
+AC_ARG_WITH([ipinfo],
+[  --without-ipinfo        Do not try to use ipinfo lookup at all],
+[case "${withval}" in
+  yes) ipinfo=true ;;
+  no)  ipinfo=false ;;
+  *) AC_MSG_ERROR([bad value ${withval} for --with-ipinfo]) ;;
+esac],[ipinfo=true])
+AM_CONDITIONAL([IPINFO], [test x$ipinfo = xtrue])
+if test "x$ipinfo" = "xfalse"; then
+	AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
+fi
+
 AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          Do not enable IPv6],
 WANTS_IPV6=$enableval, WANTS_IPV6=yes)

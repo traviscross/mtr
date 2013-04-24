@@ -22,6 +22,9 @@
    (notably the one on Irix 5.2) do not like that. */ 
 enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay, 
        ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS, 
+#ifndef NO_IPINFO
+       ActionII, ActionAS,
+#endif
        ActionScrollDown, ActionScrollUp  };
 enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, 
        DisplayRaw,    DisplayXML,    DisplayCSV, DisplayTXT};

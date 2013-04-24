@@ -32,6 +32,9 @@
 #include "display.h"
 #include "dns.h"
 #include "net.h"
+#ifndef NO_IPINFO
+#include "asn.h"
+#endif
 
 extern int Interactive;
 extern int MaxPing;
@@ -201,6 +204,19 @@ void select_loop(void) {
 	  display_clear();
 	}
 	break;
+#ifndef NO_IPINFO
+      case ActionII:
+	if (ipinfo_no >= 0) {
+	  ipinfo_no++;
+          if (ipinfo_no > ipinfo_max)
+            ipinfo_no = 0;
+	}
+	break;
+      case ActionAS:
+	if (ipinfo_no >= 0)
+          ipinfo_no = ipinfo_no?0:ipinfo_max;
+	break;
+#endif
 
       case ActionScrollDown:
         display_offset += 5;

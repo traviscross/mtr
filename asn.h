@@ -16,16 +16,13 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <config.h>
-#ifndef NO_GLIB
-#include <glib.h>
-#endif
-
-/*  Prototypes for asn.c  */
-
-extern int PrintAS;
-#ifndef NO_GLIB
-extern GHashTable * ashash;
-#endif
-char *asn_lookup(const char *domain);
+extern int ipinfo_no;
+extern int ipinfo_max;
+extern int iiwidth_len;
+extern int iihash;
+void asn_open();
+void asn_close();
+char *fmt_ipinfo(ip_t *addr);
+int get_iiwidth(void);
+int is_printii(void);
 
