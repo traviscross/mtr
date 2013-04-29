@@ -8,7 +8,7 @@ mtr \- a network diagnostic tool
 .SH SYNOPSIS
 .B mtr 
 [\c
-.B \-hvrctglspeniu46\c
+.B \-hvrctglspeniuTP46\c
 ]
 [\c
 .B \-\-help\c
@@ -54,6 +54,15 @@ mtr \- a network diagnostic tool
 ]
 [\c
 .B \-\-psize\ BYTES | -s BYTES\c
+]
+[\c
+.B \-\-tcp\c
+]
+[\c
+.B \-\-port\ PORT\c
+]
+[\c
+.B \-\-timeout\ SECONDS\c
 ]
 .B HOSTNAME [PACKETSIZE]
 
@@ -289,6 +298,29 @@ ECHO requests.  The default value for this parameter is one second.
 .B \-u
 .br
 Use UDP datagrams instead of ICMP ECHO.
+
+.TP
+.B \-T
+.TP
+.B \-\-tcp
+.br
+Use TCP SYN packets instead of ICMP ECHO. PACKETSIZE is ignored, since
+SYN packets can not contain data.
+
+.TP
+.B \-P\ PORT
+.TP
+.B \-\-port\ PORT
+.br
+The target port number for TCP traces.
+
+.TP
+.B \-\-timeout\ SECONDS
+.br
+The number of seconds to keep the TCP socket open before giving up on
+the connection. This will only affect the final hop. Using large values
+for this, especially combined with a short interval, will use up a lot
+of file descriptors.
 
 .TP
 .B \-4

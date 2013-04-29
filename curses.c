@@ -263,6 +263,7 @@ int mtr_curses_keyaction(void)
   if (tolower(c) == 'u') {
     switch ( mtrtype ) {
     case IPPROTO_ICMP:
+    case IPPROTO_TCP:
       mtrtype = IPPROTO_UDP;
       break;
     case IPPROTO_UDP:
@@ -271,7 +272,19 @@ int mtr_curses_keyaction(void)
     }
     return ActionNone;
   }
-  /* reserve to display help message */
+  if (tolower(c) == 't') {
+    switch ( mtrtype ) {
+    case IPPROTO_ICMP:
+    case IPPROTO_UDP:
+      mtrtype = IPPROTO_TCP;
+      break;
+    case IPPROTO_TCP:
+      mtrtype = IPPROTO_ICMP;
+      break;
+    }
+    return ActionNone;
+  }
+  /* reserve to display help message -Min */
   if (tolower(c) == '?'|| tolower(c) == 'h') {
     int pressanykey_row = 20;
     mvprintw(2, 0, "Command:\n" );
