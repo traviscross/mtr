@@ -138,6 +138,7 @@ void parse_arg (int argc, char **argv)
     { "curses", 0, 0, 't' },
     { "gtk", 0, 0, 'g' },
     { "raw", 0, 0, 'l' },
+    { "csv", 0, 0, 'C' },
     { "split", 0, 0, 'p' },     /* BL */
     				/* maybe above should change to -d 'x' */
 
@@ -172,7 +173,7 @@ void parse_arg (int argc, char **argv)
   while(1) {
     /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglpo:B:i:c:s:Q:ena:f:m:uTP:Zby:z46", long_options, NULL);
+		      "vhrwxtglCpo:B:i:c:s:Q:ena:f:m:uTP:Zby:z46", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -202,6 +203,9 @@ void parse_arg (int argc, char **argv)
       break;
     case 'l':
       DisplayMode = DisplayRaw;
+      break;
+    case 'C':
+      DisplayMode = DisplayCSV;
       break;
     case 'x':
       DisplayMode = DisplayXML;
