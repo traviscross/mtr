@@ -328,30 +328,10 @@ void csv_close(void)
   ip_t *addr;
   char name[81];
 
-  /* Caption */
-  printf("<SRC=%s DST=%s", LocalHostname, Hostname);
-  printf(" TOS=0x%X", tos);
-  if(cpacketsize >= 0) {
-    printf(" PSIZE=%d", cpacketsize);
-  } else {
-    printf(" PSIZE=rand(%d-%d)",MINPACKET, -cpacketsize);
-  }
-  if( bitpattern>=0 ) {
-    printf(" BITPATTERN=0x%02X", (unsigned char)(bitpattern));
-  } else {
-    printf(" BITPATTERN=rand(0x00-FF)");
-  }
-  printf(" TESTS=%d>\n", MaxPing);
-
-  /* Header */
-  printf("HUPCOUNT, HOST");
   for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[i]];
       if (j < 0) continue; 
-
-      printf( ", %s", data_fields[j].title );
   }
-  printf("\n");
 
   max = net_max();
   at  = net_min();
@@ -359,7 +339,7 @@ void csv_close(void)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    printf("%d, %s", at+1, name);
+    printf("MTR.0;%s;%d;%s", Hostname, at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];
       if (j < 0) continue; 
