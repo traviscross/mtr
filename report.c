@@ -341,7 +341,9 @@ void csv_close(void)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    printf("MTR.%s;%lu;%s;%d;%s", MTR_VERSION, now, Hostname, at+1, name);
+    int last = net_last(at);
+    printf("MTR.%s;%lu;%s;%d;%s;%d", MTR_VERSION, now, Hostname,
+           at+1, name, last);
 
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];
