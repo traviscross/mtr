@@ -328,6 +328,7 @@ void csv_close(void)
   int i, j, at, max;
   ip_t *addr;
   char name[81];
+  time_t now = time(NULL);
 
   for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[i]];
@@ -340,7 +341,7 @@ void csv_close(void)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    printf("MTR.%s;%s;%d;%s", MTR_VERSION, Hostname, at+1, name);
+    printf("MTR.%s;%lu;%s;%d;%s", MTR_VERSION, now, Hostname, at+1, name);
 
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];
