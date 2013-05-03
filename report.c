@@ -27,6 +27,7 @@
 #include <time.h>
 
 #include "mtr.h"
+#include "version.h"
 #include "report.h"
 #include "net.h"
 #include "dns.h"
@@ -339,7 +340,8 @@ void csv_close(void)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    printf("MTR.0;%s;%d;%s", Hostname, at+1, name);
+    printf("MTR.%s;%s;%d;%s", MTR_VERSION, Hostname, at+1, name);
+
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];
       if (j < 0) continue; 
