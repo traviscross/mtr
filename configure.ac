@@ -1,4 +1,4 @@
-AC_INIT([mtr], [0.83])
+AC_INIT([mtr], [0.84])
 AC_CONFIG_SRCDIR([mtr.c])
 AM_INIT_AUTOMAKE([foreign])
 
