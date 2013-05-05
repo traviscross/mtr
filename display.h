@@ -32,7 +32,7 @@ enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit,
 /*  Prototypes for display.c  */
 void display_detect(int *argc, char ***argv);
 void display_open(void);
-void display_close(void);
+void display_close(time_t now);
 void display_redraw(void);
 void display_rawping(int hostnum, int msec);
 void display_rawhost(int hostnum, ip_t *ip_addr);

@@ -26,6 +26,7 @@
 #include <sys/socket.h> 
 #include <unistd.h>
 #include <strings.h>
+#include <time.h>
 
 #include "mtr.h"
 #include "mtr-curses.h"
@@ -348,11 +349,6 @@ void parse_arg (int argc, char **argv)
   if (optind > argc - 1)
     return;
 
-  Hostname = argv[optind++];
-
-  if (argc > optind) {
-    cpacketsize = atoi (argv[optind]);
-  }
 }
 
 
@@ -446,84 +442,93 @@ int main(int argc, char **argv)
 #endif
            "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
            "\t\t[--report-wide|-w] [-u|-T] [--port=PORT] [--timeout=SECONDS]\n"            /* rew */
-	   "\t\t[--interval=SECONDS] HOSTNAME [PACKETSIZE]\n", argv[0]);
+	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
     exit(0);
   }
 
-  if (Hostname == NULL) Hostname = "localhost";
+  time_t now = time(NULL);
 
-  if (gethostname(LocalHostname, sizeof(LocalHostname))) {
-	strcpy(LocalHostname, "UNKNOWNHOST");
-  }
+  while (optind < argc ) {
 
-  if (net_preopen_result != 0) {
-    fprintf(stderr, "mtr: Unable to get raw socket.  (Executable not suid?)\n");
-    exit(1);
-  }
+    Hostname = argv[optind++];
+    if (Hostname == NULL) Hostname = "localhost";
+    if (gethostname(LocalHostname, sizeof(LocalHostname))) {
+    strcpy(LocalHostname, "UNKNOWNHOST");
+    }
+
+    if (net_preopen_result != 0) {
+      fprintf(stderr, "mtr: Unable to get raw socket.  (Executable not suid?)\n");
+      exit(1);
+    }
 
 #ifdef ENABLE_IPV6
-  /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
-  bzero( &hints, sizeof hints );
-  hints.ai_family = af;
-  hints.ai_socktype = SOCK_DGRAM;
-  error = getaddrinfo( Hostname, NULL, &hints, &res );
-  if ( error ) {
-    if (error == EAI_SYSTEM)
-       perror ("Failed to resolve host");
-    else
-       fprintf (stderr, "Failed to resolve host: %s\n", gai_strerror(error));
-    exit( EXIT_FAILURE );
-  }
-  /* Convert the first addrinfo into a hostent. */
-  host = &trhost;
-  bzero( host, sizeof trhost );
-  host->h_name = res->ai_canonname;
-  host->h_aliases = NULL;
-  host->h_addrtype = res->ai_family;
-  af = res->ai_family;
-  host->h_length = res->ai_addrlen;
-  host->h_addr_list = alptr;
-  switch ( af ) {
-  case AF_INET:
-    sa4 = (struct sockaddr_in *) res->ai_addr;
-    alptr[0] = (void *) &(sa4->sin_addr);
-    break;
-  case AF_INET6:
-    sa6 = (struct sockaddr_in6 *) res->ai_addr;
-    alptr[0] = (void *) &(sa6->sin6_addr);
-    break;
-  default:
-    fprintf( stderr, "mtr unknown address type\n" );
-    exit( EXIT_FAILURE );
-  }
-  alptr[1] = NULL;
+    /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
+    bzero( &hints, sizeof hints );
+    hints.ai_family = af;
+    hints.ai_socktype = SOCK_DGRAM;
+    error = getaddrinfo( Hostname, NULL, &hints, &res );
+    if ( error ) {
+      if (error == EAI_SYSTEM)
+         perror ("Failed to resolve host");
+      else
+         fprintf (stderr, "Failed to resolve host: %s\n", gai_strerror(error));
+      exit( EXIT_FAILURE );
+    }
+    /* Convert the first addrinfo into a hostent. */
+    host = &trhost;
+    bzero( host, sizeof trhost );
+    host->h_name = res->ai_canonname;
+    host->h_aliases = NULL;
+    host->h_addrtype = res->ai_family;
+    af = res->ai_family;
+    host->h_length = res->ai_addrlen;
+    host->h_addr_list = alptr;
+    switch ( af ) {
+    case AF_INET:
+      sa4 = (struct sockaddr_in *) res->ai_addr;
+      alptr[0] = (void *) &(sa4->sin_addr);
+      break;
+    case AF_INET6:
+      sa6 = (struct sockaddr_in6 *) res->ai_addr;
+      alptr[0] = (void *) &(sa6->sin6_addr);
+      break;
+    default:
+      fprintf( stderr, "mtr unknown address type\n" );
+      exit( EXIT_FAILURE );
+    }
+    alptr[1] = NULL;
 #else
-    host = gethostbyname(Hostname);
-  if (host == NULL) {
-    herror("mtr gethostbyname");
-    exit(1);
-  }
-  af = host->h_addrtype;
+      host = gethostbyname(Hostname);
+    if (host == NULL) {
+      herror("mtr gethostbyname");
+      exit(1);
+    }
+    af = host->h_addrtype;
 #endif
 
-  if (net_open(host) != 0) {
-	fprintf(stderr, "mtr: Unable to start net module.\n");
-        exit(1);
-      }
+    if (net_open(host) != 0) {
+    fprintf(stderr, "mtr: Unable to start net module.\n");
+          exit(1);
+        }
 
-  if (net_set_interfaceaddress (InterfaceAddress) != 0) {
-    fprintf( stderr, "mtr: Couldn't set interface address.\n" ); 
-    exit( EXIT_FAILURE ); 
+    if (net_set_interfaceaddress (InterfaceAddress) != 0) {
+      fprintf( stderr, "mtr: Couldn't set interface address.\n" ); 
+      exit( EXIT_FAILURE ); 
+    }
+
+    display_open();
+    dns_open();
+
+    display_mode = 0;
+    display_loop();
+
+    net_end_transit();
+    display_close(now);
+
+    if ( DisplayMode != DisplayCSV ) break;
+
   }
 
-  display_open();
-  dns_open();
-
-  display_mode = 0;
-  display_loop();
-
-  net_end_transit();
-  display_close();
   net_close();
 
   return 0;
