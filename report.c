@@ -344,12 +344,11 @@ char *trimwhitespace(char *str) {
 }
 
 
-void csv_close(void)
+void csv_close(time_t now)
 {
   int i, j, at, max;
   ip_t *addr;
   char name[81];
-  time_t now = time(NULL);
 
   for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[i]];

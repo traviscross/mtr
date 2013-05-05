@@ -112,7 +112,7 @@ void display_open(void)
 }
 
 
-void display_close(void)
+void display_close(time_t now)
 {
   switch(DisplayMode) {
   case DisplayReport:
@@ -125,7 +125,7 @@ void display_close(void)
     xml_close();
     break;
   case DisplayCSV:
-    csv_close();
+    csv_close(now);
     break;
   case DisplayCurses:
 #ifndef NO_IPINFO

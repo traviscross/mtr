@@ -25,4 +25,4 @@ void txt_close(void);
 void xml_open(void);
 void xml_close(void);
 void csv_open(void);
-void csv_close(void);
+void csv_close(time_t now);
