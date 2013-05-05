@@ -30,7 +30,9 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <assert.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "mtr.h"
 #include "mtr-curses.h"
@@ -172,6 +174,64 @@ read_from_file(const char* progname, const char *filename) {
   }
 
   if (in != stdin) fclose(in);
+}
+
+/*
+ * If the file stream is associated with a regular file, lock the file
+ * in order coordinate writes to a common file from multiple mtr
+ * instances. This is useful if, for example, multiple mtr instances
+ * try to append results to a common file.
+ */
+
+static void
+lock(const char* progname, FILE *f) {
+    int fd;
+    struct stat buf;
+    static struct flock lock;
+
+    assert(f);
+
+    lock.l_type = F_WRLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_END;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+
+    fd = fileno(f);
+    if ((fstat(fd, &buf) == 0) && S_ISREG(buf.st_mode)) {
+      if (fcntl(fd, F_SETLKW, &lock) == -1) {
+          fprintf(stderr, "%s: fcntl: %s (ignored)\n",
+            progname, strerror(errno));
+      }
+    }
+}
+
+/*
+ * If the file stream is associated with a regular file, unlock the
+ * file (which presumably has previously been locked).
+ */
+
+static void
+unlock(const char* progname, FILE *f) {
+    int fd;
+    struct stat buf;
+    static struct flock lock;
+
+    assert(f);
+
+    lock.l_type = F_UNLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_END;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+
+    fd = fileno(f);
+    if ((fstat(fd, &buf) == 0) && S_ISREG(buf.st_mode)) {
+      if (fcntl(fd, F_SETLKW, &lock) == -1) {
+          fprintf(stderr, "%s: fcntl: %s (ignored)\n",
+            progname, strerror(errno));
+      }
+    }
 }
 
 
@@ -615,14 +675,16 @@ int main(int argc, char **argv)
       }
     }
 
-    display_open();
-    dns_open();
+    lock(argv[0], stdout);
+      display_open();
+      dns_open();
 
-    display_mode = 0;
-    display_loop();
+      display_mode = 0;
+      display_loop();
 
-    net_end_transit();
-    display_close(now);
+      net_end_transit();
+      display_close(now);
+    unlock(argv[0], stdout);
 
     if ( DisplayMode != DisplayCSV ) break;
     else names = names->next;
