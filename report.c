@@ -25,7 +25,6 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
-#include <ctype.h>
 
 #include "mtr.h"
 #include "version.h"
@@ -323,27 +322,6 @@ void csv_open(void)
 {
 }
 
-
-char *trimwhitespace(char *str) {
-  char *end;
-
-  /* Trim leading space*/
-  while(isspace(*str)) str++;
-
-  if(*str == 0)  // All spaces?
-    return str;
-
-   // Trim trailing space
-   end = str + strlen(str) - 1;
-   while(end > str && isspace(*end)) end--;
-
-   // Write new null terminator
-   *(end+1) = 0;
-
-   return str;
-}
-
-
 void csv_close(time_t now)
 {
   int i, j, at, max;
@@ -364,7 +342,7 @@ void csv_close(time_t now)
     int last = net_last(at);
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
-      if (fmtinfo != NULL) fmtinfo = trimwhitespace(fmtinfo);
+      if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
       printf("MTR.%s;%lu;%s;%s;%d;%s;%s;%d", MTR_VERSION, now, "OK", Hostname,
              at+1, name, fmtinfo, last);
     } else {

@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -23,10 +23,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netinet/in.h>
-#include <sys/socket.h> 
+#include <sys/socket.h>
 #include <unistd.h>
 #include <strings.h>
 #include <time.h>
+#include <errno.h>
+#include <string.h>
+#include <ctype.h>
+
 
 #include "mtr.h"
 #include "mtr-curses.h"
@@ -109,6 +113,67 @@ struct fields data_fields[MAXFLD] = {
   {'\0', NULL, NULL, NULL, 0, NULL}
 };
 
+typedef struct names {
+  char*                 name;
+  struct names*         next;
+} names_t;
+static names_t *names = NULL;
+
+char *
+trim(char * s) {
+
+  char * p = s;
+  int l = strlen(p);
+
+  while(isspace(p[l-1]) && l) p[--l] = 0;
+  while(*p && isspace(*p) && l) ++p, --l;
+
+  return p;
+}
+
+static void
+append_to_names(const char* progname, const char* item) {
+
+  names_t* name = calloc(1, sizeof(names_t));
+  if (name == NULL) {
+    fprintf(stderr, "%s: memory allocation failure\n", progname);
+    exit(EXIT_FAILURE);
+  }
+  name->name = strdup(item);
+  name->next = names;
+  names = name;
+}
+
+static void
+read_from_file(const char* progname, const char *filename) {
+
+  FILE *in;
+  char line[512];
+
+  if (! filename || strcmp(filename, "-") == 0) {
+    clearerr(stdin);
+    in = stdin;
+  } else {
+    in = fopen(filename, "r");
+    if (! in) {
+      fprintf(stderr, "%s: fopen: %s\n", progname, strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  while (fgets(line, sizeof(line), in)) {
+    char* name = trim(line);
+    append_to_names(progname, name);
+  }
+
+  if (ferror(in)) {
+    fprintf(stderr, "%s: ferror: %s\n", progname, strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+
+  if (in != stdin) fclose(in);
+}
+
 
 void init_fld_options (void)
 {
@@ -125,7 +190,7 @@ void init_fld_options (void)
 }
 
 
-void parse_arg (int argc, char **argv) 
+void parse_arg (int argc, char **argv)
 {
   int opt;
   int i;
@@ -156,6 +221,7 @@ void parse_arg (int argc, char **argv)
     { "show-ips", 0, 0, 'b' },
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
+    { "filename", 1, 0, 'F' },
     { "max-ttl", 1, 0, 'm' },
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
@@ -247,6 +313,9 @@ void parse_arg (int argc, char **argv)
       if (fstTTL < 1) {                       /* prevent 0 hop */
 	fstTTL = 1;
       }
+      break;
+    case 'F':
+      read_from_file(argv[0], optarg);
       break;
     case 'm':
       maxTTL = atoi (optarg);
@@ -375,7 +444,7 @@ void parse_mtr_options (char *string)
 }
 
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
   int               net_preopen_result;
@@ -409,16 +478,21 @@ int main(int argc, char **argv)
 
   /* reset the random seed */
   srand (getpid());
-  
+
   display_detect(&argc, &argv);
 
-  /* The field options are now in a static array all together, 
+  /* The field options are now in a static array all together,
      but that requires a run-time initialization. */
   init_fld_options ();
 
   parse_mtr_options (getenv ("MTR_OPTIONS"));
 
   parse_arg (argc, argv);
+
+  while (optind < argc) {
+    char* name = argv[optind++];
+    append_to_names(argv[0], name);
+  }
 
   /* Now that we know mtrtype we can select which socket to use */
   if (net_selectsocket() != 0) {
@@ -434,8 +508,8 @@ int main(int argc, char **argv)
   if (PrintHelp) {
     printf("usage: %s [-hvrwctglspniuT46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
-           "\t\t[--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
-           "\t\t[--address interface]\n" /* BL */
+           "\t\t[--csv|-C] [--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
+           "\t\t[--address interface] [--filename=FILE|-F]\n" /* BL */
 #ifndef NO_IPINFO
            "\t\t[--ipinfo=item_no|-y item_no]\n"
            "\t\t[--aslookup|-z]\n"
@@ -447,10 +521,10 @@ int main(int argc, char **argv)
   }
 
   time_t now = time(NULL);
+  names_t* head = names;
+  while (names != NULL) {
 
-  while (optind < argc ) {
-
-    Hostname = argv[optind++];
+    Hostname = names->name;
     if (Hostname == NULL) Hostname = "localhost";
     if (gethostname(LocalHostname, sizeof(LocalHostname))) {
     strcpy(LocalHostname, "UNKNOWNHOST");
@@ -512,8 +586,8 @@ int main(int argc, char **argv)
         }
 
     if (net_set_interfaceaddress (InterfaceAddress) != 0) {
-      fprintf( stderr, "mtr: Couldn't set interface address.\n" ); 
-      exit( EXIT_FAILURE ); 
+      fprintf( stderr, "mtr: Couldn't set interface address.\n" );
+      exit( EXIT_FAILURE );
     }
 
     display_open();
@@ -526,12 +600,19 @@ int main(int argc, char **argv)
     display_close(now);
 
     if ( DisplayMode != DisplayCSV ) break;
+    else names = names->next;
 
   }
 
   net_close();
 
+  while (head != NULL) {
+    names_t* item = head;
+    free(item->name); item->name = NULL;
+    head = head->next;
+    free(item); item = NULL;
+  }
+  head=NULL;
+
   return 0;
 }
-
-

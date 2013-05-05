@@ -72,3 +72,6 @@ extern int use_dns;
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t; 
 #endif
+
+char *
+trim(char * s);
