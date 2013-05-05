@@ -24,6 +24,7 @@ AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h arpa/nameser_compat.h)
 # We have to trust the linker not to mess things up... (It should not
 # pull in anything if we don't refer to anything in the lib). 
 AC_CHECK_LIB(termcap, tgetent)
+AC_CHECK_LIB(tinfo, tgetent)
 
 AC_CHECK_FUNC(initscr, , 
   AC_CHECK_LIB(ncurses, initscr, , 
