@@ -346,7 +346,7 @@ void csv_close(time_t now)
       printf("MTR.%s;%lu;%s;%s;%d;%s;%s;%d", MTR_VERSION, now, "OK", Hostname,
              at+1, name, fmtinfo, last);
     } else {
-      printf("MTR.%s;%lu;%s;%d;%s;%d", MTR_VERSION, now, Hostname,
+      printf("MTR.%s;%lu;%s;%s;%d;%s;%d", MTR_VERSION, now, "OK", Hostname,
              at+1, name, last);
     }
 
