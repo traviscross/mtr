@@ -532,7 +532,11 @@ int main(int argc, char **argv)
 
     if (net_preopen_result != 0) {
       fprintf(stderr, "mtr: Unable to get raw socket.  (Executable not suid?)\n");
-      exit(1);
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
     }
 
 #ifdef ENABLE_IPV6
@@ -546,7 +550,12 @@ int main(int argc, char **argv)
          perror ("Failed to resolve host");
       else
          fprintf (stderr, "Failed to resolve host: %s\n", gai_strerror(error));
-      exit( EXIT_FAILURE );
+
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
     }
     /* Convert the first addrinfo into a hostent. */
     host = &trhost;
@@ -568,26 +577,42 @@ int main(int argc, char **argv)
       break;
     default:
       fprintf( stderr, "mtr unknown address type\n" );
-      exit( EXIT_FAILURE );
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
     }
     alptr[1] = NULL;
 #else
       host = gethostbyname(Hostname);
     if (host == NULL) {
       herror("mtr gethostbyname");
-      exit(1);
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
     }
     af = host->h_addrtype;
 #endif
 
     if (net_open(host) != 0) {
-    fprintf(stderr, "mtr: Unable to start net module.\n");
-          exit(1);
-        }
+      fprintf(stderr, "mtr: Unable to start net module.\n");
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
+    }
 
     if (net_set_interfaceaddress (InterfaceAddress) != 0) {
       fprintf( stderr, "mtr: Couldn't set interface address.\n" );
-      exit( EXIT_FAILURE );
+      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      else {
+        names = names->next;
+        continue;
+      }
     }
 
     display_open();
