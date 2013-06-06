@@ -1334,6 +1334,9 @@ void dns_ack6(void)
     if ( addrcmp( (void *) &(from6->sin6_addr), (void *) &localhost6,
                   (int) AF_INET6 ) == 0 ) {
       for (i = 0;i < NSCOUNT6;i++) {
+        if (!NSSOCKADDR6(i))
+          continue;
+
 	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
 		      (void *) &(from6->sin6_addr), (int) AF_INET6 ) == 0 ||
 	     addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
