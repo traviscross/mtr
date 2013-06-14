@@ -426,9 +426,9 @@ void mtr_curses_hosts(int startstat)
   move(2, 0);
 }
 
-
-static double factors[] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
-static int scale[8];
+#define NUM_FACTORS 8
+static double factors[NUM_FACTORS] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
+static int scale[NUM_FACTORS];
 static int low_ms, high_ms;
 
 void mtr_gen_scale(void) 
@@ -439,7 +439,7 @@ void mtr_gen_scale(void)
 	low_ms = 1000000;
 	high_ms = -1;
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < NUM_FACTORS; i++) {
 		scale[i] = 0;
 	}
 	max = net_max();
@@ -456,19 +456,20 @@ void mtr_gen_scale(void)
 		}
 	}
 	range = high_ms - low_ms;
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < NUM_FACTORS; i++) {
 		scale[i] = low_ms + ((double)range * factors[i]);
 	}
 }
 
 
+/* NB: Must have NUM_FACTORS elements. */
 static const char* block_map = ".123abc>";
 
 void mtr_print_scaled(int ms) 
 {
 	int i;
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < NUM_FACTORS; i++) {
 		if (ms <= scale[i]) {
 			printw("%c", block_map[i]);
 			return;
@@ -494,7 +495,7 @@ void mtr_fill_graph(int at, int cols)
 		} else {
 			if (display_mode == 1) {
 				if (saved[i] > scale[6]) {
-					printw("%c", block_map[7]);
+					printw("%c", block_map[NUM_FACTORS-1]);
 				} else {
 					printw(".");
 				}
@@ -637,7 +638,7 @@ void mtr_curses_redraw(void)
     printw("Scale:");
     attroff(A_BOLD);
     
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < NUM_FACTORS-1; i++) {
       printw("  %c:%d ms", block_map[i], scale[i]/1000);
     }
   }
