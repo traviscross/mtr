@@ -427,7 +427,7 @@ void mtr_curses_hosts(int startstat)
 }
 
 #define NUM_FACTORS 8
-static double factors[NUM_FACTORS] = { 0.02, 0.05, 0.08, 0.15, 0.33, 0.50, 0.80, 1.00 };
+static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static int low_ms, high_ms;
 
@@ -462,8 +462,33 @@ void mtr_gen_scale(void)
 }
 
 
-/* NB: Must have NUM_FACTORS elements. */
-static const char* block_map = ".123abc>";
+static char block_map[NUM_FACTORS];
+
+void mtr_curses_init() {
+	int i;
+	int block_split;
+
+	/* Initialize factors to a log scale. */
+	for (i = 0; i < NUM_FACTORS; i++) {
+		factors[i] = ((double)1 / NUM_FACTORS) * (i + 1);
+		factors[i] *= factors[i]; /* Squared. */
+	}
+
+	/* Initialize block_map. */
+	block_split = (NUM_FACTORS - 2) / 2;
+	if (block_split > 9) {
+		block_split = 9;
+	}
+	for (i = 1; i <= block_split; i++) {
+		block_map[i] = '0' + i;
+	}
+	for (i = block_split+1; i < NUM_FACTORS-1; i++) {
+		block_map[i] = 'a' + i - block_split - 1;
+	}
+	block_map[0] = '.';
+	block_map[NUM_FACTORS-1] = '>';
+}
+
 
 void mtr_print_scaled(int ms) 
 {
@@ -653,6 +678,7 @@ void mtr_curses_open(void)
   raw();
   noecho(); 
 
+  mtr_curses_init();
   mtr_curses_redraw();
 }
 
