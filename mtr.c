@@ -141,7 +141,8 @@ append_to_names(const char* progname, const char* item) {
     fprintf(stderr, "%s: memory allocation failure\n", progname);
     exit(EXIT_FAILURE);
   }
-  name->name = strdup(item);
+  // prepared for adding NULL name, but decided against that in the end.
+  name->name = item?strdup(item):item;
   name->next = names;
   names = name;
 }
@@ -581,13 +582,16 @@ int main(int argc, char **argv)
   }
 
   time_t now = time(NULL);
+
+  if (!names) append_to_names (argv[0], "localhost"); // default: localhost. 
+
   names_t* head = names;
   while (names != NULL) {
 
     Hostname = names->name;
-    if (Hostname == NULL) Hostname = "localhost";
+    //  if (Hostname == NULL) Hostname = "localhost"; // no longer necessary.
     if (gethostname(LocalHostname, sizeof(LocalHostname))) {
-    strcpy(LocalHostname, "UNKNOWNHOST");
+      strcpy(LocalHostname, "UNKNOWNHOST");
     }
 
     if (net_preopen_result != 0) {
