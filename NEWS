@@ -1,7 +1,11 @@
 WHAT'S NEW?
 
-V0.84 Fix some glib things by Thomas. 
+V0.86 fixed default hostname logic. 
 
+V0.85 fixed asn support. (better compile time detection of required features)
+      support for multiple hostnames. (fixed in 0.86)
+
+V0.84 Fix some glib things by Thomas. 
 
 V0.83 Move to github. Mostly done by Travis.
 
