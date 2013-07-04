@@ -343,10 +343,10 @@ void csv_close(time_t now)
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
-      printf("MTR.%s;%lu;%s;%s;%d;%s;%s;%d", MTR_VERSION, now, "OK", Hostname,
+      printf("MTR.%s;%lld;%s;%s;%d;%s;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, fmtinfo, last);
     } else {
-      printf("MTR.%s;%lu;%s;%s;%d;%s;%d", MTR_VERSION, now, "OK", Hostname,
+      printf("MTR.%s;%lld;%s;%s;%d;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, last);
     }
 
