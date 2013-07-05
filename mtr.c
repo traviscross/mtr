@@ -465,6 +465,11 @@ void parse_arg (int argc, char **argv)
     case 'z':
       ipinfo_no = 0;
       break;
+#else
+    case 'y':
+    case 'z':
+      fprintf( stderr, "IPINFO not enabled.\n" );
+      break;
 #endif
     }
   }

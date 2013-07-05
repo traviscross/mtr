@@ -340,6 +340,7 @@ void csv_close(time_t now)
     snprint_addr(name, sizeof(name), addr);
 
     int last = net_last(at);
+#ifndef NO_IPINFO
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
@@ -349,6 +350,7 @@ void csv_close(time_t now)
       printf("MTR.%s;%lld;%s;%s;%d;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, last);
     }
+#endif
 
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];

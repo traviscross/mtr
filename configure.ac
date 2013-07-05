@@ -42,25 +42,22 @@ AC_ARG_WITH(gtk,
 [  --without-gtk           Do not try to use GTK+ at all],
 WANTS_GTK=$withval, WANTS_GTK=yes)
 
-AC_ARG_WITH(glib,
-[  --without-glib          Do not try to use glib at all],
-WANTS_GLIB=$withval, WANTS_GLIB=yes)
-
 AC_ARG_WITH([ipinfo],
 [  --without-ipinfo        Do not try to use ipinfo lookup at all],
-[case "${withval}" in
-  yes) ipinfo=true ;;
-  no)  ipinfo=false ;;
-  *) AC_MSG_ERROR([bad value ${withval} for --with-ipinfo]) ;;
-esac],[ipinfo=true])
-AM_CONDITIONAL([IPINFO], [test x$ipinfo = xtrue])
-if test "x$ipinfo" = "xfalse"; then
-	AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
-fi
+[ipinfo="${withval}"], [ipinfo=yes])
+AM_CONDITIONAL([IPINFO], [test x$ipinfo = xyes])
 
 AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          Do not enable IPv6],
 WANTS_IPV6=$enableval, WANTS_IPV6=yes)
+
+m4_ifndef([AM_PATH_GTK_2_0], [m4_defun([AM_PATH_GTK_2_0], [AC_MSG_ERROR([
+  Could not locate the gtk2 automake macros, these are usually located in
+    .../share/aclocal/gtk-2.0.m4
+  Before running bootstrap try setting the environment variable
+    ACLOCAL_PATH="/own/dir"
+  or configure --without-gtk.
+])])])
    
 if test "x$WANTS_GTK" = "xyes"; then
         AM_PATH_GTK_2_0(2.6.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
@@ -71,11 +68,10 @@ if test "x$WANTS_GTK" = "xyes"; then
 else
 	AC_DEFINE(NO_GTK)
 	GTK_OBJ=""
-	if test "x$WANTS_GLIB" = "xyes"; then
-		PKG_CHECK_MODULES([GLIB], [glib-2.0])
-	else
-		AC_DEFINE(NO_GLIB, 1, [Define if you don't have the glib libraries available.])
-	fi
+fi
+
+if test "x$ipinfo" = "xno"; then
+	AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
 fi
 
 AC_CHECK_FUNC(socket, , 
