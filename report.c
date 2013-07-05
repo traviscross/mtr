@@ -346,11 +346,10 @@ void csv_close(time_t now)
       if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
       printf("MTR.%s;%lld;%s;%s;%d;%s;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, fmtinfo, last);
-    } else {
+    } else
+#endif
       printf("MTR.%s;%lld;%s;%s;%d;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, last);
-    }
-#endif
 
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[j]];
