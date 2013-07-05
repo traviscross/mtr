@@ -2,6 +2,9 @@ WHAT'S NEW?
 
 V0.86 fixed default hostname logic. 
       fix for NetBSD: 64bit time_t -- Thomas Klausner
+      fix unnecessary runtime dependency on glib from VSYakovetsky through 
+           Thomas
+
 
 V0.85 fixed asn support. (better compile time detection of required features)
       support for multiple hostnames. (fixed in 0.86)
