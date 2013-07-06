@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#ifndef __APPLE__
+#ifdef __APPLE__
 #define BIND_8_COMPAT
 #endif
 #include <arpa/nameser.h>
