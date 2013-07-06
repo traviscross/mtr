@@ -4,6 +4,8 @@ V0.86 fixed default hostname logic.
       fix for NetBSD: 64bit time_t -- Thomas Klausner
       fix unnecessary runtime dependency on glib from VSYakovetsky through 
            Thomas
+      inverted IPINFO define in the code. Removes double negatives. 
+         -- Vladimir Yakovetsky, REW.
 
 
 V0.85 fixed asn support. (better compile time detection of required features)
