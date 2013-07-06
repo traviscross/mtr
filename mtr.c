@@ -41,9 +41,7 @@
 #include "dns.h"
 #include "report.h"
 #include "net.h"
-#ifndef NO_IPINFO
 #include "asn.h"
-#endif
 #include "version.h"
 
 
@@ -290,7 +288,7 @@ void parse_arg (int argc, char **argv)
     { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
     { "inet", 0, 0, '4' },	/* IPv4 only */
     { "inet6", 0, 0, '6' },	/* IPv6 only */
-#ifndef NO_IPINFO
+#ifdef IPINFO
     { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
     { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
 #endif
@@ -456,7 +454,7 @@ void parse_arg (int argc, char **argv)
       fprintf( stderr, "IPv6 not enabled.\n" );
       break;
 #endif
-#ifndef NO_IPINFO
+#ifdef IPINFO
     case 'y':
       ipinfo_no = atoi (optarg);
       if (ipinfo_no < 0)
@@ -576,7 +574,7 @@ int main(int argc, char **argv)
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
            "\t\t[--csv|-C] [--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
            "\t\t[--address interface] [--filename=FILE|-F]\n" /* BL */
-#ifndef NO_IPINFO
+#ifdef IPINFO
            "\t\t[--ipinfo=item_no|-y item_no]\n"
            "\t\t[--aslookup|-z]\n"
 #endif

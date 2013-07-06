@@ -29,12 +29,10 @@
 #include <errno.h>
 
 #include "mtr.h"
-#include "display.h"
 #include "dns.h"
 #include "net.h"
-#ifndef NO_IPINFO
 #include "asn.h"
-#endif
+#include "display.h"
 
 extern int Interactive;
 extern int MaxPing;
@@ -210,7 +208,7 @@ void select_loop(void) {
 	  display_clear();
 	}
 	break;
-#ifndef NO_IPINFO
+#ifdef IPINFO
       case ActionII:
 	if (ipinfo_no >= 0) {
 	  ipinfo_no++;

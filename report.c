@@ -31,9 +31,7 @@
 #include "report.h"
 #include "net.h"
 #include "dns.h"
-#ifndef NO_IPINFO
 #include "asn.h"
-#endif
 
 #define MAXLOADBAL 5
 
@@ -77,7 +75,7 @@ static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
 }
 
 
-#ifndef NO_IPINFO
+#ifdef IPINFO
 void print_mpls(struct mplslen *mpls) {
   int k;
   for (k=0; k < mpls->labels; k++)
@@ -112,7 +110,7 @@ void report_close(void)
     }
   }
   
-#ifndef NO_IPINFO
+#ifdef IPINFO
   int len_tmp = len_hosts;
   if (ipinfo_no >= 0) {
     ipinfo_no %= iiwidth_len;
@@ -146,7 +144,7 @@ void report_close(void)
     mpls = net_mpls(at);
     snprint_addr(name, sizeof(name), addr);
 
-#ifndef NO_IPINFO
+#ifdef IPINFO
     if (is_printii()) {
       snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%ds", len_hosts);
       snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(addr), name);
@@ -154,7 +152,7 @@ void report_close(void)
 #endif
     snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
-#ifndef NO_IPINFO
+#ifdef IPINFO
     }
 #endif
     len = reportwide ? strlen(buf) : len_hosts;  
@@ -192,7 +190,7 @@ void report_close(void)
 
       if (!found) {
   
-#ifndef NO_IPINFO
+#ifdef IPINFO
         if (is_printii()) {
           if (mpls->labels && z == 1 && enablempls)
             print_mpls(mpls);
@@ -221,14 +219,14 @@ void report_close(void)
           }
         }
 #endif
-#ifndef NO_IPINFO
+#ifdef IPINFO
         }
 #endif
       }
     }
 
     /* No multipath */
-#ifndef NO_IPINFO
+#ifdef IPINFO
     if (is_printii()) {
       if (mpls->labels && z == 1 && enablempls)
         print_mpls(mpls);
@@ -241,7 +239,7 @@ void report_close(void)
       }
     }
 #endif
-#ifndef NO_IPINFO
+#ifdef IPINFO
     }
 #endif
   }
@@ -340,7 +338,7 @@ void csv_close(time_t now)
     snprint_addr(name, sizeof(name), addr);
 
     int last = net_last(at);
-#ifndef NO_IPINFO
+#ifdef IPINFO
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);

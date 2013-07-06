@@ -60,12 +60,11 @@
 
 #include "mtr.h"
 #include "mtr-curses.h"
-#include "display.h"
 #include "net.h"
 #include "dns.h"
-#ifndef NO_IPINFO
 #include "asn.h"
-#endif
+#include "display.h"
+
 #include "version.h"
 #endif
 
@@ -121,7 +120,7 @@ int mtr_curses_keyaction(void)
     return ActionMPLS;
   if (tolower(c) == 'n')
     return ActionDNS;
-#ifndef NO_IPINFO
+#ifdef IPINFO
   if (tolower(c) == 'y')
     return ActionII;
   if (tolower(c) == 'z')
@@ -304,7 +303,7 @@ int mtr_curses_keyaction(void)
     printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n" );
     printw("  Q <t>   set ping packet's TOS to t\n" );
     printw("  u       switch between ICMP ECHO and UDP datagrams\n" );
-#ifndef NO_IPINFO
+#ifdef IPINFO
     printw("  y       switching IP info\n");
     printw("  z       toggle ASN info on/off\n");
     pressanykey_row += 2;
@@ -344,7 +343,7 @@ void mtr_curses_hosts(int startstat)
       name = dns_lookup(addr);
       if (! net_up(at))
 	attron(A_BOLD);
-#ifndef NO_IPINFO
+#ifdef IPINFO
       if (is_printii())
         printw(fmt_ipinfo(addr));
 #endif
@@ -401,7 +400,7 @@ void mtr_curses_hosts(int startstat)
         name = dns_lookup(addrs);
         if (! net_up(at)) attron(A_BOLD);
         printw("\n    ");
-#ifndef NO_IPINFO
+#ifdef IPINFO
         if (is_printii())
           printw(fmt_ipinfo(addrs));
 #endif
@@ -552,7 +551,7 @@ void mtr_curses_graph(int startstat, int cols)
 		if (! net_up(at))
 			attron(A_BOLD);
 		if (addrcmp((void *) addr, (void *) &unspec_addr, af)) {
-#ifndef NO_IPINFO
+#ifdef IPINFO
 			if (is_printii())
 				printw(fmt_ipinfo(addr));
 #endif
@@ -642,7 +641,7 @@ void mtr_curses_redraw(void)
   } else {
     char msg[80];
     int padding = 30;
-#ifndef NO_IPINFO
+#ifdef IPINFO
     if (is_printii())
       padding += get_iiwidth();
 #endif
