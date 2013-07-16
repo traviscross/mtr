@@ -80,8 +80,12 @@ void select_loop(void) {
 #ifdef ENABLE_IPV6
     if (dns) {
       dnsfd6 = dns_waitfd6();
-      FD_SET(dnsfd6, &readfd);
-      if(dnsfd6 >= maxfd) maxfd = dnsfd6 + 1;
+      if (dnsfd6 >= 0) {
+        FD_SET(dnsfd6, &readfd);
+        if(dnsfd6 >= maxfd) maxfd = dnsfd6 + 1;
+      } else {
+        dnsfd6 = 0;
+      }
     } else
       dnsfd6 = 0;
 #endif

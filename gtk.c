@@ -615,8 +615,10 @@ void gtk_loop(void)
   net_iochannel = g_io_channel_unix_new(net_waitfd());
   g_io_add_watch(net_iochannel, G_IO_IN, gtk_net_data, NULL);
 #ifdef ENABLE_IPV6
-  dns_iochannel = g_io_channel_unix_new(dns_waitfd6());
-  g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data6, NULL);
+  if (dns_waitfd6() > 0) {
+    dns_iochannel = g_io_channel_unix_new(dns_waitfd6());
+    g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data6, NULL);
+  }
 #endif
   dns_iochannel = g_io_channel_unix_new(dns_waitfd());
   g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, NULL);

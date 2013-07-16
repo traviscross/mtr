@@ -529,10 +529,12 @@ void dns_open(void)
 #ifdef ENABLE_IPV6
   resfd6 = socket(AF_INET6, SOCK_DGRAM, 0);
   if (resfd6 == -1) {
+    // consider making removing this warning. For now leave it in to see 
+    // new code activated. -- REW
     fprintf(stderr,
             "Unable to allocate IPv6 socket for nameserver communication: %s\n",
 	    strerror(errno));
-    exit(-1);
+    //    exit(-1);
   }
 #endif
   option = 1;
@@ -543,11 +545,13 @@ void dns_open(void)
     exit(-1);
   }
 #ifdef ENABLE_IPV6
-  if (setsockopt(resfd6,SOL_SOCKET,SO_BROADCAST,(char *)&option,sizeof(option))) {
-    fprintf(stderr,
-            "Unable to setsockopt() on IPv6 nameserver communication socket: %s\n",
-	    strerror(errno));
-    exit(-1);
+  if (resfd6 > 0) {
+    if (setsockopt(resfd6,SOL_SOCKET,SO_BROADCAST,(char *)&option,sizeof(option))) {
+      fprintf(stderr,
+	      "Unable to setsockopt() on IPv6 nameserver communication socket: %s\n",
+	      strerror(errno));
+      exit(-1);
+    }
   }
 #endif
   longipstr( "127.0.0.1", &localhost, AF_INET );
@@ -933,12 +937,14 @@ void dorequest(char *s,int type,word id)
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
 #ifdef ENABLE_IPV6
-  for (i = 0;i < NSCOUNT6;i++) {
-    if (!NSSOCKADDR6(i))
-      continue;
-    if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
-      (void)sendto(resfd6,buf,r,0,(struct sockaddr *) NSSOCKADDR6(i),
-		   sizeof(struct sockaddr_in6));
+  if (resfd6 > 0) {
+    for (i = 0;i < NSCOUNT6;i++) {
+      if (!NSSOCKADDR6(i))
+	continue;
+      if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
+	(void)sendto(resfd6,buf,r,0,(struct sockaddr *) NSSOCKADDR6(i),
+		     sizeof(struct sockaddr_in6));
+    }
   }
 #endif
   for (i = 0;i < myres.nscount;i++)
@@ -1326,6 +1332,9 @@ void dns_ack6(void)
 {
   int r,i;
   static char addrstr[INET6_ADDRSTRLEN];
+
+  // Probably not necessary. -- REW
+  if (resfd6 < 0) return; 
 
   r = recvfrom(resfd6,(byte *)resrecvbuf,MaxPacketsize,0,
                from, &fromlen);
