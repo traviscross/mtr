@@ -6,6 +6,8 @@ V0.86 fixed default hostname logic.
            Thomas
       inverted IPINFO define in the code. Removes double negatives. 
          -- Vladimir Yakovetsky, REW.
+      fixed failure on ipv4 only systems when ipv6 was available at
+         compile time. -- REW.
 
 
 V0.85 fixed asn support. (better compile time detection of required features)
