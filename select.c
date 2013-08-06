@@ -106,7 +106,8 @@ void select_loop(void) {
     do {
       if(anyset || paused) {
 	selecttime.tv_sec = 0;
-	selecttime.tv_usec = 0;
+	// timeout is 0.1s: Almost instantaneous for human operators.
+	selecttime.tv_usec = 100000; 
       
 	rv = select(maxfd, (void *)&readfd, &writefd, NULL, &selecttime);
 
