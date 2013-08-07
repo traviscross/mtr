@@ -1,12 +1,12 @@
 WHAT'S NEW?
 
-V0.86 fixed default hostname logic. 
-      fix for NetBSD: 64bit time_t -- Thomas Klausner
-      fix unnecessary runtime dependency on glib from VSYakovetsky through 
+V0.86 Fixed default hostname logic. 
+      Fix for NetBSD: 64bit time_t -- Thomas Klausner
+      Fix unnecessary runtime dependency on glib from VSYakovetsky through 
            Thomas
-      inverted IPINFO define in the code. Removes double negatives. 
+      Inverted IPINFO define in the code. Removes double negatives. 
          -- Vladimir Yakovetsky, REW.
-      fixed failure on ipv4 only systems when ipv6 was available at
+      Fixed failure on IPv4 only systems when IPv6 was available at
          compile time. -- REW.
 
 
