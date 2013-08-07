@@ -10,7 +10,7 @@ WHAT IS MTR?
   quality of the link to each machine.  As it does this, it prints
   running statistics about each machine.
 
-  mtr is distributed under the GNU General Public License. 
+  mtr is distributed under the GNU General Public License version 2.
   See the COPYING file for details.  
 
 INSTALLING
