@@ -105,8 +105,12 @@ void select_loop(void) {
 
     do {
       if(anyset || paused) {
+	/* Set timeout to 0.1s.
+	 * While this is almost instantaneous for human operators,
+	 * it's slow enough for computers to go do something else;
+	 * this prevents mtr from hogging 100% CPU time on one core.
+	 */
 	selecttime.tv_sec = 0;
-	// timeout is 0.1s: Almost instantaneous for human operators.
 	selecttime.tv_usec = 100000; 
       
 	rv = select(maxfd, (void *)&readfd, &writefd, NULL, &selecttime);
