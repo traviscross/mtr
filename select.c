@@ -111,7 +111,7 @@ void select_loop(void) {
 	 * this prevents mtr from hogging 100% CPU time on one core.
 	 */
 	selecttime.tv_sec = 0;
-	selecttime.tv_usec = 100000; 
+	selecttime.tv_usec = paused?100000:0; 
       
 	rv = select(maxfd, (void *)&readfd, &writefd, NULL, &selecttime);
 

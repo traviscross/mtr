@@ -8,9 +8,10 @@ V0.86 Fixed default hostname logic.
          -- Vladimir Yakovetsky, REW.
       Fixed failure on IPv4 only systems when IPv6 was available at
          compile time. -- REW.
+      Fixed (longstanding) bug that mtr used 100% cpu when paused. 
+      Cosmetic changes from Richard Hartman. 
 
-
-V0.85 fixed asn support. (better compile time detection of required features)
+V0.85 Fixed asn support. (better compile time detection of required features)
       support for multiple hostnames. (fixed in 0.86)
 
 V0.84 Fix some glib things by Thomas. 
