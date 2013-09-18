@@ -45,6 +45,8 @@ static struct timeval intervaltime;
 int display_offset = 0;
 
 
+#define GRACETIME (5 * 1000*1000)
+
 void select_loop(void) {
   fd_set readfd;
   fd_set writefd;
@@ -57,8 +59,12 @@ void select_loop(void) {
   int NumPing = 0;
   int paused = 0;
   struct timeval lasttime, thistime, selecttime;
+  struct timeval startgrace;
   int dt;
   int rv; 
+  int graceperiod = 0;
+
+  memset(&startgrace, 0, sizeof(startgrace));
 
   gettimeofday(&lasttime, NULL);
 
@@ -124,10 +130,24 @@ void select_loop(void) {
 	   (thistime.tv_sec == lasttime.tv_sec + intervaltime.tv_sec &&
 	    thistime.tv_usec >= lasttime.tv_usec + intervaltime.tv_usec)) {
 	  lasttime = thistime;
-	  if(NumPing >= MaxPing && (!Interactive || ForceMaxPing))
+
+	  if (!graceperiod) {
+	    if (NumPing >= MaxPing && (!Interactive || ForceMaxPing)) {
+	      graceperiod = 1;
+	      startgrace = thistime;
+	    }
+
+	    /* do not send out batch when we've already initiated grace period */
+	    if (!graceperiod && net_send_batch())
+	      NumPing++;
+	  }
+	}
+
+	if (graceperiod) {
+	  dt = (thistime.tv_usec - startgrace.tv_usec) +
+		    1000000 * (thistime.tv_sec - startgrace.tv_sec);
+	  if (dt > GRACETIME)
 	    return;
-	  if (net_send_batch())
-	    NumPing++;
 	}
 
 	selecttime.tv_usec = (thistime.tv_usec - lasttime.tv_usec);
