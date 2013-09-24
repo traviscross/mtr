@@ -938,7 +938,7 @@ void dorequest(char *s,int type,word id)
   hp->id = id;	/* htons() deliberately left out (redundant) */
 #ifdef ENABLE_IPV6
   if (resfd6 > 0) {
-    for (i = 0;i < NSCOUNT6;i++) {
+    for (i = 0;i < myres.nscount;i++) {
       if (!NSSOCKADDR6(i))
 	continue;
       if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
@@ -1342,7 +1342,7 @@ void dns_ack6(void)
     /* Check to see if this server is actually one we sent to */
     if ( addrcmp( (void *) &(from6->sin6_addr), (void *) &localhost6,
                   (int) AF_INET6 ) == 0 ) {
-      for (i = 0;i < NSCOUNT6;i++) {
+      for (i = 0;i < myres.nscount;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 
@@ -1353,14 +1353,14 @@ void dns_ack6(void)
 	  break;
       }
     } else
-      for (i = 0;i < NSCOUNT6;i++) {
+      for (i = 0;i < myres.nscount;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
 		      (void *) &(from6->sin6_addr), AF_INET6 ) == 0 )
 	  break;
       }
-    if (i == NSCOUNT6) {
+    if (i == myres.nscount) {
       snprintf(tempstring, sizeof(tempstring), 
 	       "Resolver error: Received reply from unknown source: %s",
 	       inet_ntop( AF_INET6, &(from6->sin6_addr), addrstr,
