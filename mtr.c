@@ -570,16 +570,17 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-hvrwctglspniuT46] [--help] [--version] [--report]\n"
+    printf("usage: %s [-BfhvrwctglxspQomniuT46] [--help] [--version] [--report]\n"
 	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
-           "\t\t[--csv|-C] [--raw] [--split] [--mpls] [--no-dns] [--show-ips]\n"
+           "\t\t[--csv|-C] [--raw] [--xml] [--split] [--mpls] [--no-dns] [--show-ips]\n"
            "\t\t[--address interface] [--filename=FILE|-F]\n" /* BL */
 #ifdef IPINFO
            "\t\t[--ipinfo=item_no|-y item_no]\n"
            "\t\t[--aslookup|-z]\n"
 #endif
-           "\t\t[--psize=bytes/-s bytes]\n"            /* ok */
-           "\t\t[--report-wide|-w] [-u|-T] [--port=PORT] [--timeout=SECONDS]\n"            /* rew */
+           "\t\t[--psize=bytes/-s bytes] [--order fields]\n"            /* ok */
+           "\t\t[--report-wide|-w] [--inet] [--inet6] [--max-ttl=NUM] [--first-ttl=NUM]\n"
+           "\t\t[--bitpattern=NUM] [--tos=NUM] [--udp] [--tcp] [--port=PORT] [--timeout=SECONDS]\n"   /* rew */
 	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
     exit(0);
   }
