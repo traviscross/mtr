@@ -8,7 +8,7 @@ mtr \- a network diagnostic tool
 .SH SYNOPSIS
 .B mtr 
 [\c
-.B \-hvrctglspeniuTP46\c
+.B \-BfhvrctglxspQemniuTP46\c
 ]
 [\c
 .B \-\-help\c
@@ -34,6 +34,9 @@ mtr \- a network diagnostic tool
 [\c
 .B \-\-raw\c
 ]
+[
+.B \-\-xml\c
+]
 [\c
 .B \-\-mpls\c
 ]
@@ -53,10 +56,25 @@ mtr \- a network diagnostic tool
 .B \-\-interval\ SECONDS\c
 ]
 [\c
+.B \-\-max-ttl\ NUM\c
+]
+[\c
+.B \-\-first-ttl\ NUM\c
+]
+[\c
+.B \-\-bitpattern\ NUM\c
+]
+[\c
+.B \-\-tos\ NUM\c
+]
+[\c
 .B \-\-psize\ BYTES | -s BYTES\c
 ]
 [\c
 .B \-\-tcp\c
+]
+[\c
+.B \-\-udp\c
 ]
 [\c
 .B \-\-port\ PORT\c
@@ -270,11 +288,21 @@ to spit out a format that is suitable for a split-user interface.
 .TP
 .B \-\-raw
 .br
-Use this option to tell 
-.B mtr 
+Use this option to tell
+.B mtr
 to use the raw output format. This format is better suited for
 archival of the measurement results. It could be parsed to 
 be presented into any of the other display methods. 
+
+.TP
+.B \-x
+.TP
+.B \-\-xml
+.br
+Use this option to tell
+.B mtr
+to use the xml output format. This format is better suited for
+automated processing of the measurement results.
 
 .TP
 .B \-a\ IP.ADD.RE.SS
@@ -295,7 +323,39 @@ Use this option to specify the positive number of seconds between ICMP
 ECHO requests.  The default value for this parameter is one second.
 
 .TP
+.B \-m\ NUM
+.TP
+.B \-\-max-ttl\ NUM
+.br
+Specifies the maximum number of hops (max time-to-live value) traceroute will
+probe. Default is 30.
+
+.TP
+.B \-f\ NUM
+.TP
+.B \-\-first-ttl\ NUM
+.br
+Specifies with what TTL to start. Defaults to 1.
+
+.TP
+.B \-B\ NUM
+.TP
+.B \-\-bitpattern\ NUM
+.br
+Specifies bit pattern to use in payload. Should be within range 0 - 255.
+
+.TP
+.B \-Q\ NUM
+.TP
+.B \-\-tos\ NUM
+.br
+Specifies value for type of service field in IP header. Should be within range 0
+- 255.
+
+.TP
 .B \-u
+.TP
+.B \-\-udp
 .br
 Use UDP datagrams instead of ICMP ECHO.
 
