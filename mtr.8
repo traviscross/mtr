@@ -101,7 +101,7 @@ starts, it investigates the network connection between the host
 .B mtr
 runs on and 
 .BR HOSTNAME . 
-by sending packets with purposely low TTLs. It continues to send
+by sending packets with purposely low TTLs.  It continues to send
 packets with low TTL, noting the response time of the intervening
 routers.  This allows 
 .B mtr 
@@ -227,7 +227,7 @@ Use this option to tell
 .B mtr
 to display both the host names and numeric IP numbers.  In split mode
 this adds an extra field to the output. In report mode, there is usually
-too little space to add the IPs, and they will be truncated. Use the 
+too little space to add the IPs, and they will be truncated.  Use the
 wide report (-w) mode to see the IPs in report mode. 
 
 .TP
@@ -290,8 +290,8 @@ to spit out a format that is suitable for a split-user interface.
 .br
 Use this option to tell
 .B mtr
-to use the raw output format. This format is better suited for
-archival of the measurement results. It could be parsed to 
+to use the raw output format.  This format is better suited for
+archival of the measurement results.  It could be parsed to 
 be presented into any of the other display methods. 
 
 .TP
@@ -301,7 +301,7 @@ be presented into any of the other display methods.
 .br
 Use this option to tell
 .B mtr
-to use the xml output format. This format is better suited for
+to use the xml output format.  This format is better suited for
 automated processing of the measurement results.
 
 .TP
@@ -310,7 +310,7 @@ automated processing of the measurement results.
 .B \-\-address\ IP.ADD.RE.SS
 .br
 Use this option to bind outgoing packets' socket to specific interface,
-so that any packet will be sent through this interface. NOTE that this
+so that any packet will be sent through this interface.  NOTE that this
 option doesn't apply to DNS requests (which could be and could not be 
 what you want).
 
@@ -328,28 +328,28 @@ ECHO requests.  The default value for this parameter is one second.
 .B \-\-max-ttl\ NUM
 .br
 Specifies the maximum number of hops (max time-to-live value) traceroute will
-probe. Default is 30.
+probe.  Default is 30.
 
 .TP
 .B \-f\ NUM
 .TP
 .B \-\-first-ttl\ NUM
 .br
-Specifies with what TTL to start. Defaults to 1.
+Specifies with what TTL to start.  Defaults to 1.
 
 .TP
 .B \-B\ NUM
 .TP
 .B \-\-bitpattern\ NUM
 .br
-Specifies bit pattern to use in payload. Should be within range 0 - 255.
+Specifies bit pattern to use in payload.  Should be within range 0 - 255.
 
 .TP
 .B \-Q\ NUM
 .TP
 .B \-\-tos\ NUM
 .br
-Specifies value for type of service field in IP header. Should be within range 0
+Specifies value for type of service field in IP header.  Should be within range 0
 - 255.
 
 .TP
@@ -364,7 +364,7 @@ Use UDP datagrams instead of ICMP ECHO.
 .TP
 .B \-\-tcp
 .br
-Use TCP SYN packets instead of ICMP ECHO. PACKETSIZE is ignored, since
+Use TCP SYN packets instead of ICMP ECHO.  PACKETSIZE is ignored, since
 SYN packets can not contain data.
 
 .TP
@@ -378,7 +378,7 @@ The target port number for TCP traces.
 .B \-\-timeout\ SECONDS
 .br
 The number of seconds to keep the TCP socket open before giving up on
-the connection. This will only affect the final hop. Using large values
+the connection.  This will only affect the final hop.  Using large values
 for this, especially combined with a short interval, will use up a lot
 of file descriptors.
 
@@ -390,7 +390,7 @@ Use IPv4 only.
 .TP
 .B \-6
 .br
-Use IPv6 only. (IPV4 may be used for DNS lookups). 
+Use IPv6 only.  (IPV4 may be used for DNS lookups). 
 
 .SH BUGS
 
