@@ -16,7 +16,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <config.h>
+#include "config.h"
 
 #if defined(HAVE_SYS_XTI_H)
 #include <sys/xti.h>

@@ -18,7 +18,8 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <config.h>
+#include "config.h"
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,7 +27,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 
 #include "mtr.h"
 #include "raw.h"
