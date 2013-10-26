@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "config.h"
+
 #ifdef __APPLE__
 #define BIND_8_COMPAT
 #endif
@@ -35,7 +37,6 @@
 #include <sys/socket.h>
 #include <search.h>
 
-#include "config.h"
 #include "mtr.h"
 #include "asn.h"
 
