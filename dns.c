@@ -57,10 +57,8 @@
 
 #ifdef ENABLE_IPV6
 #ifdef __GLIBC__
-#define NSCOUNT6 myres._u._ext.nscount6
 #define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
 #else
-#define NSCOUNT6 myres.nscount
 #define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
 #endif
 #endif
@@ -937,21 +935,19 @@ void dorequest(char *s,int type,word id)
   }
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
+  for (i = 0;i < myres.nscount;i++)
+    if (myres.nsaddr_list[i].sin_family == AF_INET)
+      (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
+		   sizeof(struct sockaddr));
 #ifdef ENABLE_IPV6
-  if (resfd6 > 0) {
-    for (i = 0;i < myres.nscount;i++) {
+    else if (resfd6 > 0) {
       if (!NSSOCKADDR6(i))
 	continue;
       if (NSSOCKADDR6(i)->sin6_family == AF_INET6)
 	(void)sendto(resfd6,buf,r,0,(struct sockaddr *) NSSOCKADDR6(i),
 		     sizeof(struct sockaddr_in6));
     }
-  }
 #endif
-  for (i = 0;i < myres.nscount;i++)
-    if (myres.nsaddr_list[i].sin_family == AF_INET)
-      (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
-		   sizeof(struct sockaddr));
 }
 
 void resendrequest(struct resolve *rp,int type)
