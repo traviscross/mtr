@@ -4,10 +4,8 @@ AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_FILES([version.h.tmp:version.h.in])
 
-AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
 
-GTK_OBJ=gtk.o
 CURSES_OBJ=curses.o
 
 AC_PROG_CC
@@ -38,10 +36,6 @@ AC_CHECK_FUNCS(attron fcntl)
 
 AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
 
-AC_ARG_WITH(gtk,
-[  --without-gtk           Do not try to use GTK+ at all],
-WANTS_GTK=$withval, WANTS_GTK=yes)
-
 AC_ARG_WITH([ipinfo],
 [  --without-ipinfo        Do not try to use ipinfo lookup at all],
 [ipinfo="${withval}"], [ipinfo=yes])
@@ -51,24 +45,6 @@ AC_ARG_ENABLE(ipv6,
 [  --disable-ipv6          Do not enable IPv6],
 WANTS_IPV6=$enableval, WANTS_IPV6=yes)
 
-m4_ifndef([AM_PATH_GTK_2_0], [m4_defun([AM_PATH_GTK_2_0], [AC_MSG_ERROR([
-  Could not locate the gtk2 automake macros, these are usually located in
-    .../share/aclocal/gtk-2.0.m4
-  Before running bootstrap try setting the environment variable
-    ACLOCAL_PATH="/own/dir"
-  or configure --without-gtk.
-])])])
-   
-if test "x$WANTS_GTK" = "xyes"; then
-        AM_PATH_GTK_2_0(2.6.0, CFLAGS="$CFLAGS $GTK_CFLAGS"
-                           LIBS="$LIBS $GTK_LIBS -lm",
-                           AC_MSG_WARN(Building without GTK2 display support)
-                   AC_DEFINE(NO_GTK, 1, [Define if you don't have the GTK+ libraries available.])
-                           GTK_OBJ="")
-else
-	AC_DEFINE(NO_GTK)
-	GTK_OBJ=""
-fi
 
 if test "x$ipinfo" = "xno"; then
 	AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])

@@ -25,7 +25,6 @@
 #include "mtr.h"
 #include "display.h"
 #include "mtr-curses.h"
-#include "mtr-gtk.h"
 #include "report.h"
 #include "select.h"
 #include "raw.h"
@@ -44,16 +43,6 @@ extern int DisplayMode;
 #include "mtr-curses.h"
 #endif
 
-#ifdef NO_GTK
-#define gtk_open()
-#define gtk_close()
-#define gtk_redraw()
-#define gtk_keyaction() 0
-#define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit (1); } 
-#else
-#include "mtr-gtk.h"
-#endif
-
 #ifdef NO_SPLIT
 #define split_open()
 #define split_close()
@@ -70,13 +59,7 @@ void display_detect(int *argc, char ***argv) {
   DisplayMode = DisplayCurses;
 #endif
 
-#ifndef NO_GTK
-  if(gtk_detect(argc, argv)) {
-    DisplayMode = DisplayGTK;
-  }
-#endif
 }
-
 
 void display_open(void)
 {
@@ -103,9 +86,6 @@ void display_open(void)
     break;
   case DisplaySplit:
     split_open();
-    break;
-  case DisplayGTK:
-    gtk_open();
     break;
   }
 }
@@ -136,9 +116,6 @@ void display_close(time_t now)
   case DisplaySplit:
     split_close();
     break;
-  case DisplayGTK:
-    gtk_close();
-    break;
   }
 }
 
@@ -154,10 +131,6 @@ void display_redraw(void)
   case DisplaySplit:
     split_redraw();
     break;
-
-  case DisplayGTK:
-    gtk_redraw();
-    break;
   }
 }
 
@@ -170,9 +143,6 @@ int display_keyaction(void)
 
   case DisplaySplit:
     return split_keyaction();
-
-  case DisplayGTK:
-    return gtk_keyaction();
   }
   return 0;
 }
@@ -187,8 +157,6 @@ void display_rawping(int host, int msec)
   case DisplayCSV:
   case DisplaySplit:
   case DisplayCurses:
-  case DisplayGTK:
-    break;
   case DisplayRaw:
     raw_rawping (host, msec);
     break;
@@ -205,8 +173,6 @@ void display_rawhost(int host, ip_t *ip_addr)
   case DisplayCSV:
   case DisplaySplit:
   case DisplayCurses:
-  case DisplayGTK:
-    break;
   case DisplayRaw:
     raw_rawhost (host, ip_addr);
     break;
@@ -226,9 +192,6 @@ void display_loop(void)
   case DisplayRaw:
     select_loop();
     break;
-  case DisplayGTK:
-    gtk_loop();
-    break;
   }
 }
 
@@ -245,9 +208,6 @@ void display_clear(void)
   case DisplayCSV:
   case DisplaySplit:
   case DisplayRaw:
-    break;
-
-  case DisplayGTK:
     break;
   }
 }

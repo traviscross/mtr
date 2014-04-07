@@ -14,19 +14,17 @@ mtr_SOURCES = mtr.c \
               report.c report.h \
               getopt.c getopt1.c getopt.h \
               select.c select.h \
-              mtr-curses.h \
-              mtr-gtk.h
+              mtr-curses.h
 
 if IPINFO
 mtr_SOURCES += asn.c asn.h
 endif
 
 nodist_mtr_SOURCES = version.h
-EXTRA_mtr_SOURCES = curses.c \
-                    gtk.c
+EXTRA_mtr_SOURCES = curses.c
 DEFAULT_INCLUDES= $(GLIB_CFLAGS) -I.
-mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
-mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
+mtr_DEPENDENCIES = $(CURSES_OBJ)
+mtr_LDFLAGS = $(CURSES_OBJ)
 mtr_LDADD = $(GLIB_LIBS) $(RESOLV_LIBS)
 
 CLEANFILES = version.h
