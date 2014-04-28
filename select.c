@@ -197,12 +197,12 @@ void select_loop(void) {
 
     /*  Have we finished a nameservice lookup?  */
 #ifdef ENABLE_IPV6
-    if(dns && FD_ISSET(dnsfd6, &readfd)) {
+    if(dns && dnsfd6 && FD_ISSET(dnsfd6, &readfd)) {
       dns_ack6();
       anyset = 1;
     }
 #endif
-    if(dns && FD_ISSET(dnsfd, &readfd)) {
+    if(dns && dnsfd && FD_ISSET(dnsfd, &readfd)) {
       dns_ack();
       anyset = 1;
     }
