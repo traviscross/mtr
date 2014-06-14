@@ -1393,7 +1393,7 @@ void net_save_return(int at, int seq, int ms)
 {
   int idx;
   idx = seq - host[at].saved_seq_offset;
-  if (idx < 0 || idx > SAVED_PINGS) {
+  if (idx < 0 || idx >= SAVED_PINGS) {
     return;
   }
   host[at].saved[idx] = ms;
