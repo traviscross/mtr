@@ -76,6 +76,9 @@ int   enablempls = 0;
 int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
 int   tos = 0;
+#ifdef SO_MARK
+int   mark = -1;
+#endif
 int   reportwide = 0;
 int af = DEFAULT_AF;
 int mtrtype = IPPROTO_ICMP;     /* Use ICMP as default packet type */
@@ -294,6 +297,9 @@ void parse_arg (int argc, char **argv)
     { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
     { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
 #endif
+#ifdef SO_MARK
+    { "mark", 1, 0, 'M' },      /* use SO_MARK */
+#endif
     { 0, 0, 0, 0 }
   };
 
@@ -471,6 +477,15 @@ void parse_arg (int argc, char **argv)
       fprintf( stderr, "IPINFO not enabled.\n" );
       break;
 #endif
+#ifdef SO_MARK
+    case 'M':
+      mark = atoi (optarg);
+      if (mark < 0) {
+        fprintf( stderr, "SO_MARK must be positive.\n" );
+        exit(EXIT_FAILURE);
+      }
+      break;
+#endif
     }
   }
 
@@ -579,6 +594,9 @@ int main(int argc, char **argv)
 #ifdef IPINFO
            "\t\t[--ipinfo=item_no|-y item_no]\n"
            "\t\t[--aslookup|-z]\n"
+#endif
+#ifdef SO_MARK
+           "\t\t[--mark=NUM]\n"
 #endif
            "\t\t[--psize=bytes/-s bytes] [--order fields]\n"            /* ok */
            "\t\t[--report-wide|-w] [--inet] [--inet6] [--max-ttl=NUM] [--first-ttl=NUM]\n"

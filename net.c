@@ -210,6 +210,9 @@ extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
 extern int timeout;             /* timeout for TCP connections */
+#ifdef SO_MARK
+extern int mark;		/* SO_MARK to set for ping packet*/
+#endif
 
 /* return the number of microseconds to wait before sending the next
    ping */
@@ -381,6 +384,13 @@ void net_send_tcp(int index)
 #endif
   }
 
+#ifdef SO_MARK
+    if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+      perror( "setsockopt SO_MARK" );
+      exit( EXIT_FAILURE );
+    }
+#endif
+
   switch (local.ss_family) {
   case AF_INET:
     port = ntohs(local4->sin_port);
@@ -480,6 +490,13 @@ void net_send_query(int index)
     break;
 #endif
   }
+
+#ifdef SO_MARK
+    if (mark >= 0 && setsockopt( sendsock, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+      perror( "setsockopt SO_MARK" );
+      exit( EXIT_FAILURE );
+    }
+#endif
 
   switch ( mtrtype ) {
   case IPPROTO_ICMP:
