@@ -144,8 +144,7 @@ append_to_names(const char* progname, const char* item) {
     fprintf(stderr, "%s: memory allocation failure\n", progname);
     exit(EXIT_FAILURE);
   }
-  // prepared for adding NULL name, but decided against that in the end.
-  name->name = item?strdup(item):item;
+  name->name = strdup(item);
   name->next = names;
   names = name;
 }

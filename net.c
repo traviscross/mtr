@@ -330,23 +330,24 @@ void net_send_tcp(int index)
     addrcpy((void *) &local4->sin_addr, (void *) &ssa4->sin_addr, af);
     addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, af);
     remote4->sin_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in);
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
     addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, af);
     addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, af);
     remote6->sin6_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in6);
     break;
 #endif
   }
 
-  if (bind(s, (struct sockaddr *) &local, sizeof (local))) {
+  if (bind(s, (struct sockaddr *) &local, len)) {
     display_clear();
     perror("bind()");
     exit(EXIT_FAILURE);
   }
 
-  len = sizeof (local);
   if (getsockname(s, (struct sockaddr *) &local, &len)) {
     display_clear();
     perror("getsockname()");
@@ -410,7 +411,7 @@ void net_send_tcp(int index)
   gettimeofday(&sequence[port].time, NULL);
   sequence[port].socket = s;
 
-  connect(s, (struct sockaddr *) &remote, sizeof (remote));
+  connect(s, (struct sockaddr *) &remote, len);
 }
 
 /*  Attempt to find the host at a particular number of hops away  */
