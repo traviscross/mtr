@@ -490,13 +490,27 @@ void mtr_curses_init() {
 }
 
 
+static int block_col[NUM_FACTORS] =
+{	// 1:black 2:red 3:green 4:brown/yellow 5:blue 6:magenta 7:cyan 8:white
+	A_NORMAL,
+	COLOR_PAIR(3),
+	COLOR_PAIR(3)|A_BOLD,
+	COLOR_PAIR(4)|A_BOLD,
+	COLOR_PAIR(6)|A_BOLD,
+	COLOR_PAIR(6),
+	COLOR_PAIR(2),
+	COLOR_PAIR(2)|A_BOLD,
+};
+
 void mtr_print_scaled(int ms) 
 {
 	int i;
 
 	for (i = 0; i < NUM_FACTORS; i++) {
 		if (ms <= scale[i]) {
+			attrset(block_col[i]);
 			printw("%c", block_map[i]);
+			attrset(A_NORMAL);
 			return;
 		}
 	}
@@ -664,8 +678,16 @@ void mtr_curses_redraw(void)
     attroff(A_BOLD);
     
     for (i = 0; i < NUM_FACTORS-1; i++) {
-      printw("  %c:%d ms", block_map[i], scale[i]/1000);
+      printw("  ");
+      attrset(block_col[i]);
+      printw("%c", block_map[i]);
+      attrset(A_NORMAL);
+      printw(":%d ms", block_map[i], scale[i]/1000);
     }
+    printw("  ");
+    attrset(block_col[NUM_FACTORS-1]);
+    printw("%c", block_map[NUM_FACTORS-1]);
+    attrset(A_NORMAL);
   }
 
   refresh();
@@ -677,6 +699,10 @@ void mtr_curses_open(void)
   initscr();
   raw();
   noecho(); 
+  start_color();
+  int i;
+  for (i = 0; i < 8; i++)
+      init_pair(i+1, i, 0);
 
   mtr_curses_init();
   mtr_curses_redraw();
