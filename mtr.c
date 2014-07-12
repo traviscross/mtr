@@ -491,6 +491,10 @@ void parse_arg (int argc, char **argv)
         exit(EXIT_FAILURE);
       }
       break;
+#else
+    case 'M':
+      fprintf( stderr, "SO_MARK not enabled.\n" );
+      break;
 #endif
     }
   }
