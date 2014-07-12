@@ -257,9 +257,20 @@ void parse_arg (int argc, char **argv)
 {
   int opt;
   int i;
+  /* IMPORTANT: when adding or modifying an option:
+       1/ mind the order of options, there is some logic;
+       2/ update the getopt_long call below;
+       3/ update the man page (use the same order);
+       4/ update the help message showed when using --help.
+   */
   static struct option long_options[] = {
-    { "version", 0, 0, 'v' },
     { "help", 0, 0, 'h' },
+    { "version", 0, 0, 'v' },
+
+    { "inet", 0, 0, '4' },	/* IPv4 only */
+    { "inet6", 0, 0, '6' },	/* IPv6 only */
+
+    { "filename", 1, 0, 'F' },
 
     { "report", 0, 0, 'r' },
     { "report-wide", 0, 0, 'w' },
@@ -271,7 +282,13 @@ void parse_arg (int argc, char **argv)
     { "split", 0, 0, 'p' },     /* BL */
     				/* maybe above should change to -d 'x' */
 
-    { "order", 1, 0, 'o' },	/* fileds to display & their order */
+    { "no-dns", 0, 0, 'n' },
+    { "show-ips", 0, 0, 'b' },
+    { "order", 1, 0, 'o' },	/* fields to display & their order */
+#ifdef IPINFO
+    { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
+    { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
+#endif
 
     { "interval", 1, 0, 'i' },
     { "report-cycles", 1, 0, 'c' },
@@ -280,22 +297,13 @@ void parse_arg (int argc, char **argv)
     { "bitpattern", 1, 0, 'B' },/* overload b>255, ->rand(0,255) */
     { "tos", 1, 0, 'Q' },	/* typeof service (0,255) */
     { "mpls", 0, 0, 'e' },
-    { "no-dns", 0, 0, 'n' },
-    { "show-ips", 0, 0, 'b' },
     { "address", 1, 0, 'a' },
     { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
-    { "filename", 1, 0, 'F' },
     { "max-ttl", 1, 0, 'm' },
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
     { "port", 1, 0, 'P' },      /* target port number for TCP */
     { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
-    { "inet", 0, 0, '4' },	/* IPv4 only */
-    { "inet6", 0, 0, '6' },	/* IPv6 only */
-#ifdef IPINFO
-    { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
-    { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
-#endif
 #ifdef SO_MARK
     { "mark", 1, 0, 'M' },      /* use SO_MARK */
 #endif
@@ -304,9 +312,8 @@ void parse_arg (int argc, char **argv)
 
   opt = 0;
   while(1) {
-    /* added f:m:o: byMin */
     opt = getopt_long(argc, argv,
-		      "vhrwxtglCpo:B:i:c:s:Q:ena:f:m:uTP:Zby:z46", long_options, NULL);
+		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTP:Z:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -484,6 +491,10 @@ void parse_arg (int argc, char **argv)
         exit(EXIT_FAILURE);
       }
       break;
+#else
+    case 'M':
+      fprintf( stderr, "SO_MARK not enabled.\n" );
+      break;
 #endif
     }
   }
@@ -586,21 +597,16 @@ int main(int argc, char **argv)
   }
 
   if (PrintHelp) {
-    printf("usage: %s [-BfhvrwctglxspQomniuT46] [--help] [--version] [--report]\n"
-	   "\t\t[--report-wide] [--report-cycles=COUNT] [--curses] [--gtk]\n"
-           "\t\t[--csv|-C] [--raw] [--xml] [--split] [--mpls] [--no-dns] [--show-ips]\n"
-           "\t\t[--address interface] [--filename=FILE|-F]\n" /* BL */
-#ifdef IPINFO
-           "\t\t[--ipinfo=item_no|-y item_no]\n"
-           "\t\t[--aslookup|-z]\n"
-#endif
-#ifdef SO_MARK
-           "\t\t[--mark=NUM]\n"
-#endif
-           "\t\t[--psize=bytes/-s bytes] [--order fields]\n"            /* ok */
-           "\t\t[--report-wide|-w] [--inet] [--inet6] [--max-ttl=NUM] [--first-ttl=NUM]\n"
-           "\t\t[--bitpattern=NUM] [--tos=NUM] [--udp] [--tcp] [--port=PORT] [--timeout=SECONDS]\n"   /* rew */
-	   "\t\t[--interval=SECONDS] HOSTNAME\n", argv[0]);
+       printf("usage: %s [--help] [--version] [-4|-6] [-F FILENAME]\n"
+              "\t\t[--report] [--report-wide]\n"
+              "\t\t[--xml] [--gtk] [--curses] [--raw] [--csv] [--split]\n"
+              "\t\t[--no-dns] [--show-ips] [-o FIELDS] [-y IPINFO] [--aslookup]\n"
+              "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
+              "\t\t[-Q TOS] [--mpls]\n"
+              "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL]\n"
+              "\t\t[--udp] [--tcp] [-P PORT] [-Z TIMEOUT]\n"
+              "\t\t[-M MARK] HOSTNAME\n", argv[0]);
+       printf("See the man page for details.\n");
     exit(0);
   }
 
