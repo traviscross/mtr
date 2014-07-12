@@ -58,7 +58,6 @@ extern int DisplayMode;
 #define split_open()
 #define split_close()
 #define split_redraw()
-#define split_keyaction() 0
 #else
 #include "split.h"
 #endif
@@ -167,9 +166,6 @@ int display_keyaction(void)
   switch(DisplayMode) {
   case DisplayCurses:
     return mtr_curses_keyaction();
-
-  case DisplaySplit:
-    return split_keyaction();
 
   case DisplayGTK:
     return gtk_keyaction();
