@@ -315,6 +315,37 @@ of file descriptors.
 .TP
 .B \-M \fIMARK\fR, \fB\-\-mark \fIMARK
 MISSING
+.SH ENVIRONMENT
+.B mtr
+recognizes a few environment variables.
+.TP
+.B MTR_OPTIONS
+This environment variable allows to specify options, as if they were
+passed on the command line.  It is parsed before reading the actual
+command line options, so that options specified in
+.B MTR_OPTIONS
+are overriden by command-line options.
+
+Example:
+
+.BI MTR_OPTIONS ="-4\ -c\ 1"
+.B mtr
+.I \-6\ localhost
+
+would send one probe (because of
+.I -c\ 1\c
+) towards
+.B ::1
+(because of
+.IR -6 ,
+which overrides the
+.I -4
+passed in
+.B MTR_OPTIONS\c
+).
+.TP
+.B DISPLAY
+Used for the GTK+ frontend.
 .SH BUGS
 Some modern routers give a lower priority to ICMP ECHO packets than 
 to other network traffic.  Consequently, the reliability of these
