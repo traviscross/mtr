@@ -282,10 +282,12 @@ to display information from ICMP extensions for MPLS (RFC 4950)
 that are encoded in the response packets.
 .TP
 .B \-a \fIADDRESS\fR, \fB\-\-address \fIADDRESS
-Use this option to bind outgoing packets' socket to specific interface,
-so that any packet will be sent through this interface.  NOTE that this
-option doesn't apply to DNS requests (which could be and could not be 
-what you want).
+Use this option to bind the outgoing socket to
+.IR ADDRESS ,
+so that all packets will be sent with
+.I ADDRESS
+as source address.  NOTE that this option doesn't apply to DNS requests
+(which could be and could not be what you want).
 .TP
 .B \-f \fINUM\fR, \fB\-\-first-ttl \fINUM
 Specifies with what TTL to start.  Defaults to 1.
