@@ -528,9 +528,9 @@ void mtr_fill_graph(int at, int cols)
 		if (saved[i] == -2) {
 			printw(" ");
 		} else if (saved[i] == -1) {
-			attron(A_BOLD);
+		        attrset(COLOR_PAIR(2)|A_BOLD);
 			printw("?");
-			attroff(A_BOLD);
+			attrset(A_NORMAL);
 		} else {
 			if (display_mode == 1) {
 				if (saved[i] > scale[6]) {
