@@ -490,8 +490,9 @@ void mtr_curses_init() {
 }
 
 
-static int block_col[NUM_FACTORS] =
+static int block_col[NUM_FACTORS+1] =
 {	// 1:black 2:red 3:green 4:brown/yellow 5:blue 6:magenta 7:cyan 8:white
+        COLOR_PAIR(2)|A_BOLD,
 	A_NORMAL,
 	COLOR_PAIR(3),
 	COLOR_PAIR(3)|A_BOLD,
@@ -499,7 +500,7 @@ static int block_col[NUM_FACTORS] =
 	COLOR_PAIR(6)|A_BOLD,
 	COLOR_PAIR(6),
 	COLOR_PAIR(2),
-	COLOR_PAIR(2)|A_BOLD,
+	COLOR_PAIR(2)|A_BOLD
 };
 
 void mtr_print_scaled(int ms) 
@@ -508,7 +509,7 @@ void mtr_print_scaled(int ms)
 
 	for (i = 0; i < NUM_FACTORS; i++) {
 		if (ms <= scale[i]) {
-			attrset(block_col[i]);
+			attrset(block_col[i+1]);
 			printw("%c", block_map[i]);
 			attrset(A_NORMAL);
 			return;
@@ -528,8 +529,8 @@ void mtr_fill_graph(int at, int cols)
 		if (saved[i] == -2) {
 			printw(" ");
 		} else if (saved[i] == -1) {
-		        attrset(COLOR_PAIR(2)|A_BOLD);
-			printw("?");
+		        attrset(block_col[0]);
+			printw("%c", '?');
 			attrset(A_NORMAL);
 		} else {
 			if (display_mode == 1) {
@@ -679,13 +680,13 @@ void mtr_curses_redraw(void)
     
     for (i = 0; i < NUM_FACTORS-1; i++) {
       printw("  ");
-      attrset(block_col[i]);
+      attrset(block_col[i+1]);
       printw("%c", block_map[i]);
       attrset(A_NORMAL);
       printw(":%d ms", block_map[i], scale[i]/1000);
     }
     printw("  ");
-    attrset(block_col[NUM_FACTORS-1]);
+    attrset(block_col[NUM_FACTORS]);
     printw("%c", block_map[NUM_FACTORS-1]);
     attrset(A_NORMAL);
   }
