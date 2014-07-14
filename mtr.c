@@ -104,7 +104,7 @@ struct fields data_fields[MAXFLD] = {
   {'L', "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },
   {'D', "D: Dropped Packets",     "Drop",   " %4d",     5, &net_drop  },
   {'R', "R: Received Packets",    "Rcv",    " %5d",     6, &net_returned},
-  {'S', "S: Sent Packets",        "Snt",    " %5d",     6, &net_xmit  },
+  {'S', "S: Sent Packets",        "Snt",    " %8d",     9, &net_xmit  },
   {'N', "N: Newest RTT(ms)",      "Last",   " %5.1f",   6, &net_last  },
   {'B', "B: Min/Best RTT(ms)",    "Best",   " %5.1f",   6, &net_best  },
   {'A', "A: Average RTT(ms)",     "Avg",    " %5.1f",   6, &net_avg   },
