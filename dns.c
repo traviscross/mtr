@@ -56,22 +56,15 @@
 #include "net.h"
 
 #ifdef ENABLE_IPV6
-
-// hloeung suggested testing for glibc here. 
-//
-// Testing: The "touching" of the internals of "myres" was not-portable
-// anyway. Apparently the implementation of res_init and family is very
-// consistent, so that it usually works. Lets hope this also goes for the
-// IPV6 fields.  -- REW
-//#ifdef __GLIBC__
+#ifdef __GLIBC__
 #define NSCOUNT (myres.nscount + myres._u._ext.nscount6)
 #define NSCOUNT6 myres._u._ext.nscount6
 #define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
-//#else
-//#define NSCOUNT myres.nscount
-//#define NSCOUNT6 myres.nscount
-//#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
-//#endif
+#else
+#define NSCOUNT myres.nscount
+#define NSCOUNT6 myres.nscount
+#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
+#endif
 #endif
 
 
