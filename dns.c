@@ -57,7 +57,7 @@
 
 #ifdef ENABLE_IPV6
 #ifdef __GLIBC__
-#define NSCOUNT myres.nscount + myres._u._ext.nscount6
+#define NSCOUNT (myres.nscount + myres._u._ext.nscount6)
 #define NSCOUNT6 myres._u._ext.nscount6
 #define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
 #else
