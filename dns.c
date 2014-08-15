@@ -57,8 +57,12 @@
 
 #ifdef ENABLE_IPV6
 #ifdef __GLIBC__
+#define NSCOUNT myres.nscount + myres._u._ext.nscount6
+#define NSCOUNT6 myres._u._ext.nscount6
 #define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
 #else
+#define NSCOUNT myres.nscount
+#define NSCOUNT6 myres.nscount
 #define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
 #endif
 #endif
@@ -509,16 +513,11 @@ int dns_waitfd6(void)
 
 void dns_open(void)
 {
-  int option,i,nscount;
+  int option,i;
 
   if (!dns) return;
   MY_RES_INIT();
-#ifdef ENABLE_IPV6
-  nscount = myres.nscount + myres._u._ext.nscount6;
-#else
-  nscount = myres.nscount;
-#endif
-  if (!nscount) {
+  if (!NSCOUNT) {
     fprintf(stderr,"No nameservers defined.\n");
     exit(-1);
   }
@@ -940,7 +939,7 @@ void dorequest(char *s,int type,word id)
   }
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
-  for (i = 0;i < myres.nscount;i++)
+  for (i = 0;i < NSCOUNT;i++)
     if (myres.nsaddr_list[i].sin_family == AF_INET)
       (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
 		   sizeof(struct sockaddr));
@@ -1344,7 +1343,7 @@ void dns_ack6(void)
     /* Check to see if this server is actually one we sent to */
     if ( addrcmp( (void *) &(from6->sin6_addr), (void *) &localhost6,
                   (int) AF_INET6 ) == 0 ) {
-      for (i = 0;i < myres.nscount;i++) {
+      for (i = 0;i < NSCOUNT6;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 
@@ -1355,14 +1354,14 @@ void dns_ack6(void)
 	  break;
       }
     } else
-      for (i = 0;i < myres.nscount;i++) {
+      for (i = 0;i < NSCOUNT6;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
 		      (void *) &(from6->sin6_addr), AF_INET6 ) == 0 )
 	  break;
       }
-    if (i == myres.nscount) {
+    if (i == NSCOUNT6) {
       snprintf(tempstring, sizeof(tempstring), 
 	       "Resolver error: Received reply from unknown source: %s",
 	       inet_ntop( AF_INET6, &(from6->sin6_addr), addrstr,
