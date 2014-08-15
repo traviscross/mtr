@@ -305,10 +305,13 @@ void net_send_tcp(int index)
   int port;
   struct sockaddr_storage local;
   struct sockaddr_storage remote;
-  struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
-  struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
-  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
+  struct sockaddr_in  *local4  = (struct sockaddr_in  *) &local;
+  struct sockaddr_in  *remote4 = (struct sockaddr_in  *) &remote;
+#ifdef ENABLE_IPV6
+  struct sockaddr_in6 *local6  = (struct sockaddr_in6 *) &local;
   struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
+#endif
+
   socklen_t len;
 
   ttl = index + 1;
