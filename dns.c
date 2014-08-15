@@ -509,11 +509,16 @@ int dns_waitfd6(void)
 
 void dns_open(void)
 {
-  int option,i;
+  int option,i,nscount;
 
   if (!dns) return;
   MY_RES_INIT();
-  if (!myres.nscount) {
+#ifdef ENABLE_IPV6
+  nscount = myres.nscount + myres._u._ext.nscount6;
+#else
+  nscount = myres.nscount;
+#endif
+  if (!nscount) {
     fprintf(stderr,"No nameservers defined.\n");
     exit(-1);
   }
