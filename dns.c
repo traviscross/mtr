@@ -72,12 +72,6 @@
 //#define NSCOUNT6 myres.nscount
 //#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
 //#endif
-#else
-
-// No IPV6
-#define NSCOUNT myres.nscount
-#define NSCOUNT6 0
-#define NSSOCKADDR6(i) NULL
 #endif
 
 
