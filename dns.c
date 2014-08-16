@@ -56,28 +56,11 @@
 #include "net.h"
 
 #ifdef ENABLE_IPV6
-
-// hloeung suggested testing for glibc here. 
-//
-// Testing: The "touching" of the internals of "myres" was not-portable
-// anyway. Apparently the implementation of res_init and family is very
-// consistent, so that it usually works. Lets hope this also goes for the
-// IPV6 fields.  -- REW
-//#ifdef __GLIBC__
-#define NSCOUNT (myres.nscount + myres._u._ext.nscount6)
-#define NSCOUNT6 myres._u._ext.nscount6
+#ifdef __GLIBC__
 #define NSSOCKADDR6(i) (myres._u._ext.nsaddrs[i])
-//#else
-//#define NSCOUNT myres.nscount
-//#define NSCOUNT6 myres.nscount
-//#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
-//#endif
 #else
-
-// No IPV6
-#define NSCOUNT myres.nscount
-#define NSCOUNT6 0
-#define NSSOCKADDR6(i) NULL
+#define NSSOCKADDR6(i) (&(myres._u._ext.ext->nsaddrs[i].sin6))
+#endif
 #endif
 
 
@@ -530,7 +513,7 @@ void dns_open(void)
 
   if (!dns) return;
   MY_RES_INIT();
-  if (!NSCOUNT) {
+  if (!myres.nscount) {
     fprintf(stderr,"No nameservers defined.\n");
     exit(-1);
   }
@@ -952,7 +935,7 @@ void dorequest(char *s,int type,word id)
   }
   hp = (packetheader *)buf;
   hp->id = id;	/* htons() deliberately left out (redundant) */
-  for (i = 0;i < NSCOUNT;i++)
+  for (i = 0;i < myres.nscount;i++)
     if (myres.nsaddr_list[i].sin_family == AF_INET)
       (void)sendto(resfd,buf,r,0,(struct sockaddr *)&myres.nsaddr_list[i],
 		   sizeof(struct sockaddr));
@@ -1356,7 +1339,7 @@ void dns_ack6(void)
     /* Check to see if this server is actually one we sent to */
     if ( addrcmp( (void *) &(from6->sin6_addr), (void *) &localhost6,
                   (int) AF_INET6 ) == 0 ) {
-      for (i = 0;i < NSCOUNT6;i++) {
+      for (i = 0;i < myres.nscount;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 
@@ -1367,14 +1350,14 @@ void dns_ack6(void)
 	  break;
       }
     } else
-      for (i = 0;i < NSCOUNT6;i++) {
+      for (i = 0;i < myres.nscount;i++) {
         if (!NSSOCKADDR6(i))
           continue;
 	if ( addrcmp( (void *) &(NSSOCKADDR6(i)->sin6_addr),
 		      (void *) &(from6->sin6_addr), AF_INET6 ) == 0 )
 	  break;
       }
-    if (i == NSCOUNT6) {
+    if (i == myres.nscount) {
       snprintf(tempstring, sizeof(tempstring), 
 	       "Resolver error: Received reply from unknown source: %s",
 	       inet_ntop( AF_INET6, &(from6->sin6_addr), addrstr,
