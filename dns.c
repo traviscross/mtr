@@ -24,32 +24,32 @@
 
 #include "config.h"
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <sys/stat.h>
-#include <sys/errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+//#include <sys/types.h>
+//#include <sys/time.h>
+//#include <sys/select.h>
+//#include <sys/stat.h>
+//#include <sys/errno.h>
+//#include <sys/socket.h>
+//#include <netinet/in.h>
+//#include <arpa/inet.h>
 
-#ifndef __APPLE__
-#define BIND_8_COMPAT
-#endif
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#endif
-#include <netdb.h>
-#include <resolv.h>
+//#ifndef __APPLE__
+//#define BIND_8_COMPAT
+//#endif
+//#include <arpa/nameser.h>
+//#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+//#include <arpa/nameser_compat.h>
+//#endif
+//#include <netdb.h>
+//#include <resolv.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <ctype.h>
-#include <string.h>
+//#include <ctype.h>
+//#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <time.h>
+//#include <errno.h>
+//#include <time.h>
 
 #include "mtr.h"
 #include "dns.h"
@@ -215,7 +215,8 @@ void dns_open(void)
 
         printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
 
-        write (fromdns[1], result, strlen (result));
+        rv = write (fromdns[1], result, strlen (result));
+        if (rv < 0) perror ("write DNS lookup result");
         exit (0);
       }
     }
@@ -280,6 +281,7 @@ char *dns_lookup2(ip_t * ip)
 {
   struct dns_results *r;
   char buf[0x100];
+  int rv;
    
   r = findip (ip);
   if (r) {
@@ -299,7 +301,8 @@ char *dns_lookup2(ip_t * ip)
      printf ("lookup: %s\n", strlongip (ip));
 
      sprintf (buf, "%s\n", strlongip (ip));
-     write  (todns[1], buf, strlen (buf));
+     rv = write  (todns[1], buf, strlen (buf));
+     if (rv < 0) perror ("couldn't write to resolver process");
   }
   return strlongip (ip);
 }
