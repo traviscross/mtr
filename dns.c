@@ -116,6 +116,23 @@ struct dns_results *findip (ip_t *ip)
   return NULL;
 }
 
+void set_sockaddr_ip (struct sockaddr *sa, ip_t *ip)
+{
+  struct sockaddr_in *sa_in;
+  struct sockaddr_in6 *sa_in6;
+
+  sa->sa_family = af;
+  switch (af) {
+  case AF_INET:
+    sa_in = (struct sockaddr_in *) sa;
+    addrcpy ((void *) &sa_in->sin_addr, (void*) ip, af);
+    break;
+  case AF_INET6:
+    sa_in6 = (struct sockaddr_in6 *) sa;
+    addrcpy ((void *) &sa_in6->sin6_addr,  (void*)ip, af);
+    break;
+  }
+}
 
 
 static int todns[2], fromdns[2];
@@ -150,45 +167,54 @@ void dns_open(void)
   if (pid == 0) {
     char buf[1024];
     int i;
-    FILE *infp, *outfp;
+    FILE *infp; //, *outfp;
 
-    // The child: We're going to handle the DNS requests here. 
-    close (todns[1]); // close the pipe ends we don't need. 
-    close (fromdns[0]);
-
+    // Automatically reap children. 
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
       perror("signal");
       exit(1);
     }
 
+#if 0
+    // No longer necessary: we close all of them below.
+    // The child: We're going to handle the DNS requests here. 
+    close (todns[1]); // close the pipe ends we don't need. 
+    close (fromdns[0]);
+#endif
     // Close all unneccessary FDs.
+    // for debugging and error reporting, keep std-in/out/err.
     for (i=3;i<fromdns[1];i++) {
        if (i == todns[0]) continue;
        if (i == fromdns[1]) continue;
        close (i);
     }
     infp = fdopen (todns[0],"r"); 
-    outfp = fdopen (fromdns[1],"w"); 
+    //outfp = fdopen (fromdns[1],"w"); 
 
     while (fgets (buf, 1024, infp)) {
       ip_t host; 
-      struct sockaddr_in sa;
+      struct sockaddr sa;
       char hostname [0x100];
       char result [0x100];
       // Find IPV6 version
       if (!fork ()) {
+        int rv;
+
+        buf[strlen(buf)-1] = 0; // chomp newline.
+
         longipstr (buf, &host, af);
-        printf ("resolving %s\n", strlongip (&host));
-        sa.sin_family = af;
-        addrcpy ((void *) &sa.sin_addr, &host, af);
 
-        //longipstr (buf, (void *)&sa.sin_addr, af);
+        printf ("resolving %s (%d)\n", strlongip (&host), af);
 
-        getnameinfo  ((struct sockaddr *)&sa, sizeof  (sa), 
+        set_sockaddr_ip (&sa, &host);
+
+        rv = getnameinfo  (&sa, sizeof  (sa), 
 			       hostname, 0x100, NULL, 0, 0);
-        sprintf (result, "%s %s\n", strlongip ((ip_t *)&sa.sin_addr), hostname);
-        //sprintf (result, "%s name%s\n", strlongip (&host), strlongip (&host));
-        printf ("resoved: %s -> %s\n", strlongip (&host), hostname);
+
+        sprintf (result, "%s %s\n", strlongip (&host), hostname);
+
+        printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
+
         write (fromdns[1], result, strlen (result));
         exit (0);
       }
