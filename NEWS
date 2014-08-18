@@ -13,6 +13,7 @@ V0.86 Fixed default hostname logic.
 
 V0.85 Fixed asn support. (better compile time detection of required features)
       support for multiple hostnames. (fixed in 0.86)
+      support for TCP probes
 
 V0.84 Fix some glib things by Thomas. 
 
