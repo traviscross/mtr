@@ -116,19 +116,20 @@ struct dns_results *findip (ip_t *ip)
   return NULL;
 }
 
-void set_sockaddr_ip (struct sockaddr *sa, ip_t *ip)
+void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
 {
   struct sockaddr_in *sa_in;
   struct sockaddr_in6 *sa_in6;
 
-  sa->sa_family = af;
   switch (af) {
   case AF_INET:
     sa_in = (struct sockaddr_in *) sa;
+    sa_in->sin_family = af;
     addrcpy ((void *) &sa_in->sin_addr, (void*) ip, af);
     break;
   case AF_INET6:
     sa_in6 = (struct sockaddr_in6 *) sa;
+    sa_in6->sin6_family = af;
     addrcpy ((void *) &sa_in6->sin6_addr,  (void*)ip, af);
     break;
   }
@@ -165,7 +166,7 @@ void dns_open(void)
     exit (-1);
   }
   if (pid == 0) {
-    char buf[1024];
+    char buf[2048];
     int i;
     FILE *infp; //, *outfp;
 
@@ -191,11 +192,11 @@ void dns_open(void)
     infp = fdopen (todns[0],"r"); 
     //outfp = fdopen (fromdns[1],"w"); 
 
-    while (fgets (buf, 1024, infp)) {
+    while (fgets (buf, sizeof (buf), infp)) {
       ip_t host; 
-      struct sockaddr sa;
-      char hostname [0x100];
-      char result [0x100];
+      struct sockaddr_storage sa;
+      char hostname [NI_MAXHOST];
+      char result [INET6_ADDRSTRLEN + NI_MAXHOST + 2];
       // Find IPV6 version
       if (!fork ()) {
         int rv;
@@ -208,8 +209,8 @@ void dns_open(void)
 
         set_sockaddr_ip (&sa, &host);
 
-        rv = getnameinfo  (&sa, sizeof  (sa), 
-			       hostname, 0x100, NULL, 0, 0);
+        rv = getnameinfo  ((struct sockaddr *) &sa, sizeof  (sa), 
+			       hostname, sizeof (hostname), NULL, 0, 0);
 
         sprintf (result, "%s %s\n", strlongip (&host), hostname);
 
@@ -243,12 +244,11 @@ int dns_waitfd (void)
 
 void dns_ack(void)
 {
-  char buf[0x100], host[0x100], name[0x100];  
+  char buf[2048], host[NI_MAXHOST], name[NI_MAXHOST];  
   ip_t hostip; 
   struct dns_results *r;
 
-     //read (fromdns[0], buf, 0x100);
-  while ( fgets (buf, 0x100,  fromdnsfp )) {
+  while ( fgets (buf, sizeof (buf),  fromdnsfp )) {
     sscanf (buf, "%s %s", host, name);
 
     longipstr (host, &hostip, af);
@@ -280,7 +280,7 @@ void dns_ack6(void)
 char *dns_lookup2(ip_t * ip)
 {
   struct dns_results *r;
-  char buf[0x100];
+  char buf[INET6_ADDRSTRLEN + 1];
   int rv;
    
   r = findip (ip);
