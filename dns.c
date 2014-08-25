@@ -304,7 +304,7 @@ char *dns_lookup2(ip_t * ip)
      r->next = results;
      results = r;
 
-     printf ("lookup: %s\n", strlongip (ip));
+     //printf ("lookup: %s\n", strlongip (ip));
 
      sprintf (buf, "%s\n", strlongip (ip));
      rv = write  (todns[1], buf, strlen (buf));
