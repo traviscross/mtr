@@ -24,6 +24,10 @@
 
 #include "config.h"
 
+// This was a big "include everything" section. I've now commented out
+// most includes and we'll get complaints if we need something. Compiles
+// cleanly like this on Unbuntu 14.04 -- REW
+// AQ: Added signal.h for RedHat derivatives. 
 //#include <sys/types.h>
 //#include <sys/time.h>
 //#include <sys/select.h>
@@ -48,6 +52,7 @@
 //#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 //#include <errno.h>
 //#include <time.h>
 
@@ -195,26 +200,27 @@ void dns_open(void)
     while (fgets (buf, sizeof (buf), infp)) {
       ip_t host; 
       struct sockaddr_storage sa;
+      socklen_t salen;
       char hostname [NI_MAXHOST];
       char result [INET6_ADDRSTRLEN + NI_MAXHOST + 2];
-      // Find IPV6 version
+
       if (!fork ()) {
         int rv;
 
         buf[strlen(buf)-1] = 0; // chomp newline.
 
         longipstr (buf, &host, af);
-
-        printf ("resolving %s (%d)\n", strlongip (&host), af);
-
+        //printf ("resolving %s (%d)\n", strlongip (&host), af);
         set_sockaddr_ip (&sa, &host);
+        salen = (af == AF_INET)?sizeof(struct sockaddr_in):
+                                sizeof(struct sockaddr_in6);
 
-        rv = getnameinfo  ((struct sockaddr *) &sa, sizeof  (sa), 
+        rv = getnameinfo  ((struct sockaddr *) &sa, salen, 
 			       hostname, sizeof (hostname), NULL, 0, 0);
 
         sprintf (result, "%s %s\n", strlongip (&host), hostname);
 
-        printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
+        //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
 
         rv = write (fromdns[1], result, strlen (result));
         if (rv < 0) perror ("write DNS lookup result");
