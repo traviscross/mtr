@@ -126,6 +126,7 @@ void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
   struct sockaddr_in *sa_in;
   struct sockaddr_in6 *sa_in6;
 
+  bzero (sa, sizeof (struct sockaddr_storage));
   switch (af) {
   case AF_INET:
     sa_in = (struct sockaddr_in *) sa;
