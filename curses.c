@@ -683,7 +683,7 @@ void mtr_curses_redraw(void)
       attrset(block_col[i+1]);
       printw("%c", block_map[i]);
       attrset(A_NORMAL);
-      printw(":%d ms", block_map[i], scale[i]/1000);
+      printw(":%d ms", scale[i]/1000);
     }
     printw("  ");
     attrset(block_col[NUM_FACTORS]);
