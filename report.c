@@ -270,19 +270,20 @@ void xml_close(void)
   ip_t *addr;
   char name[81];
 
-  printf("<MTR SRC=%s DST=%s", LocalHostname, Hostname);
-  printf(" TOS=0x%X", tos);
+  printf("<?xml version=\"1.0\"?>\n");
+  printf("<MTR SRC=\"%s\" DST=\"%s\"", LocalHostname, Hostname);
+  printf(" TOS=\"0x%X\"", tos);
   if(cpacketsize >= 0) {
-    printf(" PSIZE=%d", cpacketsize);
+    printf(" PSIZE=\"%d\"", cpacketsize);
   } else {
-    printf(" PSIZE=rand(%d-%d)",MINPACKET, -cpacketsize);
+    printf(" PSIZE=\"rand(%d-%d)\"",MINPACKET, -cpacketsize);
   }
   if( bitpattern>=0 ) {
-    printf(" BITPATTERN=0x%02X", (unsigned char)(bitpattern));
+    printf(" BITPATTERN=\"0x%02X\"", (unsigned char)(bitpattern));
   } else {
-    printf(" BITPATTERN=rand(0x00-FF)");
+    printf(" BITPATTERN=\"rand(0x00-FF)\"");
   }
-  printf(" TESTS=%d>\n", MaxPing);
+  printf(" TESTS=\"%d\">\n", MaxPing);
 
   max = net_max();
   at  = net_min();
@@ -290,7 +291,7 @@ void xml_close(void)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    printf("    <HUB COUNT=%d HOST=%s>\n", at+1, name);
+    printf("    <HUB COUNT=\"%d\" HOST=\"%s\">\n", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[i]];
       if (j < 0) continue;
@@ -298,17 +299,25 @@ void xml_close(void)
       strcpy(name, "        <%s>");
       strcat(name, data_fields[j].format);
       strcat(name, "</%s>\n");
+
+      /* XML doesn't allow "%" in tag names, rename Loss% to just Loss */
+      const char *title;
+      title = data_fields[j].title;
+      if( strcmp(data_fields[j].title, "Loss%") == 0 ) {
+		title = "Loss";
+      }
+
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
       if( index( data_fields[j].format, 'f' ) ) {
 	printf( name,
-		data_fields[j].title,
+		title,
 		data_fields[j].net_xxx(at) /1000.0,
-		data_fields[j].title );
+		title );
       } else {
 	printf( name,
-		data_fields[j].title,
+		title,
 		data_fields[j].net_xxx(at),
-		data_fields[j].title );
+		title );
       }
     }
     printf("    </HUB>\n");
