@@ -527,14 +527,9 @@ void dns_open(void)
   }
 #ifdef ENABLE_IPV6
   resfd6 = socket(AF_INET6, SOCK_DGRAM, 0);
-  if (resfd6 == -1) {
-    // consider making removing this warning. For now leave it in to see 
-    // new code activated. -- REW
-    fprintf(stderr,
-            "Unable to allocate IPv6 socket for nameserver communication: %s\n",
-	    strerror(errno));
-    //    exit(-1);
-  }
+  // If this fails, e.g. because the user has runtime-disabled IPV6, 
+  // the error can be ignored: the resfd6 is only used if it is 
+  // not the error return code. -- REW
 #endif
   option = 1;
   if (setsockopt(resfd,SOL_SOCKET,SO_BROADCAST,(char *)&option,sizeof(option))) {
