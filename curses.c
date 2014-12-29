@@ -701,6 +701,9 @@ void mtr_curses_open(void)
   raw();
   noecho(); 
   start_color();
+#ifdef HAVE_USE_DEFAULT_COLORS
+  use_default_colors();
+#endif
   int i;
   for (i = 0; i < 8; i++)
       init_pair(i+1, i, 0);

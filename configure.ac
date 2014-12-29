@@ -34,6 +34,9 @@ AC_CHECK_FUNC(initscr, ,
 	AC_DEFINE(NO_CURSES, 1, Define if you don't have the curses libraries available.)
 	CURSES_OBJ=))))
 
+AC_CHECK_LIB(ncurses, use_default_colors, 
+  AC_DEFINE(HAVE_USE_DEFAULT_COLORS, 1, [Define this if your curses library has the use_default_colors() command.]))
+
 AC_CHECK_FUNCS(attron fcntl)
 
 AC_CHECK_LIB(m, floor, , AC_MSG_ERROR(No math library found))
