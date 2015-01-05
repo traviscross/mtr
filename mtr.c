@@ -279,6 +279,7 @@ void parse_arg (int argc, char **argv)
     { "gtk", 0, 0, 'g' },
     { "raw", 0, 0, 'l' },
     { "csv", 0, 0, 'C' },
+    { "displaymode", 1, 0, 'd' },
     { "split", 0, 0, 'p' },     /* BL */
     				/* maybe above should change to -d 'x' */
 
@@ -351,6 +352,9 @@ void parse_arg (int argc, char **argv)
       DisplayMode = DisplayXML;
       break;
 
+    case 'd':
+      display_mode = (atoi (optarg)) % 3;
+      break;
     case 'c':
       MaxPing = atoi (optarg);
       ForceMaxPing = 1;
@@ -571,6 +575,7 @@ int main(int argc, char **argv)
   srand (getpid());
 
   display_detect(&argc, &argv);
+  display_mode = 0;
 
   /* The field options are now in a static array all together,
      but that requires a run-time initialization. */
@@ -598,7 +603,7 @@ int main(int argc, char **argv)
 
   if (PrintHelp) {
        printf("usage: %s [--help] [--version] [-4|-6] [-F FILENAME]\n"
-              "\t\t[--report] [--report-wide]\n"
+              "\t\t[--report] [--report-wide] [--displaymode MODE]\n"
               "\t\t[--xml] [--gtk] [--curses] [--raw] [--csv] [--split]\n"
               "\t\t[--no-dns] [--show-ips] [-o FIELDS] [-y IPINFO] [--aslookup]\n"
               "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
@@ -712,7 +717,6 @@ int main(int argc, char **argv)
       display_open();
       dns_open();
 
-      display_mode = 0;
       display_loop();
 
       net_end_transit();

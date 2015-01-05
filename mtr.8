@@ -26,6 +26,9 @@ mtr \- a network diagnostic tool
 .B \-\-curses\c
 ]
 [\c
+.BI \--displaymode \ MODE\c
+]
+[\c
 .B \-\-raw\c
 ]
 [\c
@@ -175,6 +178,12 @@ Use this option to force
 .B mtr 
 to use the curses based terminal
 interface (if available).
+.TP
+.B -\-displaymode \fIMODE
+Use this option to select the initial display mode: 0 (default)
+selects statistics, 1 selects the stripchart without latency
+information, and 2 selects the stripchart with latency
+information.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
