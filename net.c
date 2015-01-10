@@ -204,6 +204,7 @@ extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
 extern int cpacketsize;		/* packet size used by ping */
 static int packetsize;		/* packet size used by ping */
+static int spacketsize;		/* packet size used by sendto */
 extern int bitpattern;		/* packet bit pattern used by ping */
 extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
@@ -563,13 +564,15 @@ void net_send_query(int index)
 #endif
   }
 
-  rv = sendto(sendsock, packet, abs(packetsize), 0, 
-	      remotesockaddr, salen);
+  /* sendto() assumes packet length includes the IPv4 header but not the 
+     IPv6 header. */
+  spacketsize = abs(packetsize)	-
+		( ( af == AF_INET ) ? 0 : sizeof (struct ip6_hdr) );
+  rv = sendto(sendsock, packet, spacketsize, 0, remotesockaddr, salen);
   if (first && (rv < 0) && ((errno == EINVAL) || (errno == EMSGSIZE))) {
     /* Try the first packet again using host byte order. */
-    ip->len = abs (packetsize);
-    rv = sendto(sendsock, packet, abs(packetsize), 0, 
-		remotesockaddr, salen);
+    ip->len = spacketsize;
+    rv = sendto(sendsock, packet, spacketsize, 0, remotesockaddr, salen);
     if (rv >= 0) {
       BSDfix = 1;
     }
