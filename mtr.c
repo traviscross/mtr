@@ -89,7 +89,7 @@ int  fstTTL = 1;                /* default start at first hop */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
 int remoteport = 80;            /* for TCP tracing */
-int timeout = 10 * 1000000;     /* for TCP tracing */
+int tcp_timeout = 10 * 1000000;     /* for TCP tracing */
 
 
 /* default display field(defined by key in net.h) and order */
@@ -458,8 +458,8 @@ void parse_arg (int argc, char **argv)
       }
       break;
     case 'Z':
-      timeout = atoi(optarg);
-      timeout *= 1000000;
+      tcp_timeout = atoi(optarg);
+      tcp_timeout *= 1000000;
       break;
     case '4':
       af = AF_INET;

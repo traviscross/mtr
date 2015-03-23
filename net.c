@@ -209,7 +209,7 @@ extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
-extern int timeout;             /* timeout for TCP connections */
+extern int tcp_timeout;             /* timeout for TCP connections */
 #ifdef SO_MARK
 extern int mark;		/* SO_MARK to set for ping packet*/
 #endif
@@ -1559,7 +1559,7 @@ void net_process_fds(fd_set *writefd)
     }
     if (fd > 0) {
       utime = sequence[at].time.tv_sec * 1000000L + sequence[at].time.tv_usec;
-      if (unow - utime > timeout) {
+      if (unow - utime > tcp_timeout) {
         close(fd);
         sequence[at].socket = 0;
       }
