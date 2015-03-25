@@ -20,19 +20,10 @@ AC_CHECK_SIZEOF(unsigned long, 4)
 AC_CHECK_HEADERS(ncurses.h ncurses/curses.h curses.h cursesX.h sys/types.h fcntl.h)
 AC_CHECK_HEADERS(socket.h sys/socket.h sys/xti.h arpa/nameser_compat.h)
 
-# We don't refer to any symbols in termcap, but -lcurses on SunOS does.
-# We have to trust the linker not to mess things up... (It should not
-# pull in anything if we don't refer to anything in the lib). 
-AC_CHECK_LIB(termcap, tgetent)
-AC_CHECK_LIB(tinfo, tgetent)
-
-AC_CHECK_FUNC(initscr, , 
-  AC_CHECK_LIB(ncurses, initscr, , 
-    AC_CHECK_LIB(curses, initscr, , 
-      AC_CHECK_LIB(cursesX, initscr, , 
-	AC_MSG_WARN(Building without curses display support)
-	AC_DEFINE(NO_CURSES, 1, Define if you don't have the curses libraries available.)
-	CURSES_OBJ=))))
+AC_SEARCH_LIBS(initscr, [ncurses curses cursesX], ,
+  AC_MSG_WARN(Building without curses display support)
+  AC_DEFINE(NO_CURSES, 1, [Define if you don't have the curses libraries available.])
+  CURSES_OBJ=)
 
 AC_CHECK_LIB(ncurses, use_default_colors, 
   AC_DEFINE(HAVE_USE_DEFAULT_COLORS, 1, [Define this if your curses library has the use_default_colors() command.]))
