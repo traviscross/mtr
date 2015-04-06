@@ -57,8 +57,10 @@ static GtkWidget *main_window;
 
 void gtk_add_ping_timeout (void)
 {
+  if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
+    return;
+  }
   int dt;
-
   dt = calc_deltatime (WaitTime);
   tag = g_timeout_add(dt / 1000, gtk_ping, NULL);
 }
