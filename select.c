@@ -107,7 +107,7 @@ void select_loop(void) {
     FD_SET(netfd, &readfd);
     if(netfd >= maxfd) maxfd = netfd + 1;
 
-    if (mtrtype == IPPROTO_TCP)
+    if (mtrtype == IPPROTO_TCP || mtrtype == IPPROTO_SCTP)
       net_add_fds(&writefd, &maxfd);
 
     do {
@@ -266,7 +266,7 @@ void select_loop(void) {
     }
 
     /* Check for activity on open sockets */
-    if (mtrtype == IPPROTO_TCP)
+    if (mtrtype == IPPROTO_TCP || mtrtype == IPPROTO_SCTP)
       net_process_fds(&writefd);
   }
   return;
