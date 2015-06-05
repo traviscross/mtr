@@ -75,7 +75,6 @@ struct SCTPHeader {
   uint16 srcport;
   uint16 dstport;
   uint32 veri_tag;
-  uint32 checksum;
 };
 
 /* Structure of an IPv4 UDP pseudoheader.  */
@@ -980,43 +979,6 @@ void net_process_return(void)
         if ((size_t) num < sizeof(struct IPHeader) +
                            sizeof(struct ICMPHeader) +
                            sizeof (struct IPHeader) +
-                           sizeof (struct SCTPHeader))
-          return;
-        sctpheader = (struct SCTPHeader *)(packet + sizeof (struct IPHeader) +
-                                                  sizeof (struct ICMPHeader) +
-                                                  sizeof (struct IPHeader));
-
-        if(num > 160)
-          decodempls(num, packet, &mpls, 156);
-
-      break;
-#ifdef ENABLE_IPV6
-      case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
-                   sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
-          return;
-        sctpheader = (struct SCTPHeader *) ( packet +
-                                           sizeof (struct ICMPHeader) +
-                                           sizeof (struct ip6_hdr) );
-
-        if(num > 140)
-          decodempls(num, packet, &mpls, 136);
-
-        break;
-#endif
-      }
-      sequence = ntohs(tcpheader->srcport);
-    }
-    break;
-    
-  case IPPROTO_SCTP:
-    if (header->type == timeexceededtype || header->type == unreachabletype) {
-      switch ( af ) {
-      case AF_INET:
-
-        if ((size_t) num < sizeof(struct IPHeader) +
-                           sizeof(struct ICMPHeader) +
-                           sizeof (struct IPHeader) +
                            sizeof (struct TCPHeader))
           return;
         tcpheader = (struct TCPHeader *)(packet + sizeof (struct IPHeader) +
@@ -1045,8 +1007,44 @@ void net_process_return(void)
       sequence = ntohs(tcpheader->srcport);
     }
     break;
-  }
+    
+  case IPPROTO_SCTP:
+    if (header->type == timeexceededtype || header->type == unreachabletype) {
+      switch ( af ) {
+      case AF_INET:
 
+        if ((size_t) num < sizeof(struct IPHeader) +
+                           sizeof(struct ICMPHeader) +
+                           sizeof (struct IPHeader) +
+                           sizeof (struct SCTPHeader))
+          return;
+        sctpheader = (struct SCTPHeader *)(packet + sizeof (struct IPHeader) +
+                                                  sizeof (struct ICMPHeader) +
+                                                  sizeof (struct IPHeader));
+
+        if(num > 160)
+          decodempls(num, packet, &mpls, 156);
+
+      break;
+#ifdef ENABLE_IPV6
+      case AF_INET6:
+        if ( num < sizeof (struct ICMPHeader) +
+                   sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
+          return;
+        sctpheader = (struct SCTPHeader *) ( packet +
+                                           sizeof (struct ICMPHeader) +
+                                           sizeof (struct ip6_hdr) );
+
+        if(num > 140)
+          decodempls(num, packet, &mpls, 136);
+
+        break;
+#endif
+      }
+      sequence = ntohs(sctpheader->srcport);
+    }
+    break;
+  }
   if (sequence)
     net_process_ping (sequence, mpls, (void *) fromaddress, now);
 }
