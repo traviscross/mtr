@@ -1712,7 +1712,7 @@ void net_process_fds(fd_set *writefd)
   for (at = 0; at < MaxSequence; at++) {
     fd = sequence[at].socket;
     if (fd > 0 && FD_ISSET(fd, writefd)) {
-      r = write(fd, "G", 1);
+      r = send(fd, "G", 1, MSG_NOSIGNAL);
       /* if write was successful, or connection refused we have
        * (probably) reached the remote address. Anything else happens to the
        * connection, we write it off to avoid leaking sockets */
