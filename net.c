@@ -76,11 +76,6 @@ struct SCTPHeader {
   uint16 dstport;
   uint32 veri_tag;
   uint32 checksum;
-  /*
-  uint8 chunk_type;
-  uint8 chunk_flag;
-  uint16 chunk_length;
-  * */
 };
 
 /* Structure of an IPv4 UDP pseudoheader.  */
