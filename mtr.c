@@ -303,6 +303,7 @@ void parse_arg (int argc, char **argv)
     { "max-ttl", 1, 0, 'm' },
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
+    { "sctp", 0, 0, 'S' },	/* SCTP (default is ICMP) */
     { "port", 1, 0, 'P' },      /* target port number for TCP */
     { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
 #ifdef SO_MARK
@@ -314,7 +315,7 @@ void parse_arg (int argc, char **argv)
   opt = 0;
   while(1) {
     opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTP:Z:M:", long_options, NULL);
+		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTSP:Z:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -435,18 +436,24 @@ void parse_arg (int argc, char **argv)
       break;
     case 'u':
       if (mtrtype != IPPROTO_ICMP) {
-        fprintf(stderr, "-u and -T are mutually exclusive.\n");
+        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
         exit(EXIT_FAILURE);
       }
       mtrtype = IPPROTO_UDP;
       break;
     case 'T':
       if (mtrtype != IPPROTO_ICMP) {
-        fprintf(stderr, "-u and -T are mutually exclusive.\n");
+        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
         exit(EXIT_FAILURE);
       }
       mtrtype = IPPROTO_TCP;
       break;
+    case 'S':
+      if (mtrtype != IPPROTO_ICMP) {
+        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
+        exit(EXIT_FAILURE);
+      }
+      mtrtype = IPPROTO_SCTP;
     case 'b':
       show_ips = 1;
       break;
@@ -609,7 +616,7 @@ int main(int argc, char **argv)
               "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
               "\t\t[-Q TOS] [--mpls]\n"
               "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL]\n"
-              "\t\t[--udp] [--tcp] [-P PORT] [-Z TIMEOUT]\n"
+              "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-Z TIMEOUT]\n"
               "\t\t[-M MARK] HOSTNAME\n", argv[0]);
        printf("See the man page for details.\n");
     exit(0);
