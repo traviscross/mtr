@@ -70,6 +70,19 @@ struct TCPHeader {
   uint32 seq;
 };
 
+/* Structure of an SCTP header */
+struct SCTPHeader {
+  uint16 srcport;
+  uint16 dstport;
+  uint32 veri_tag;
+  uint32 checksum;
+  /*
+  uint8 chunk_type;
+  uint8 chunk_flag;
+  uint16 chunk_length;
+  * */
+};
+
 /* Structure of an IPv4 UDP pseudoheader.  */
 struct UDPv4PHeader {
   uint32 saddr;
@@ -414,11 +427,133 @@ void net_send_tcp(int index)
   connect(s, (struct sockaddr *) &remote, len);
 }
 
+/*  Attempt to connect to a SCTP port with a TTL */
+void net_send_sctp(int index)
+{
+  int ttl, s;
+  int opt = 1;
+  int port;
+  struct sockaddr_storage local;
+  struct sockaddr_storage remote;
+  struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
+  struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
+  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
+  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
+  socklen_t len;
+
+  ttl = index + 1;
+
+  s = socket(af, SOCK_STREAM, IPPROTO_SCTP);
+  if (s < 0) {
+    display_clear();
+    perror("socket()");
+    exit(EXIT_FAILURE);
+  }
+
+  memset(&local, 0, sizeof (local));
+  memset(&remote, 0, sizeof (remote));
+  local.ss_family = af;
+  remote.ss_family = af;
+
+  switch (af) {
+  case AF_INET:
+    addrcpy((void *) &local4->sin_addr, (void *) &ssa4->sin_addr, af);
+    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, af);
+    remote4->sin_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, af);
+    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, af);
+    remote6->sin6_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in6);
+    break;
+#endif
+  }
+
+  if (bind(s, (struct sockaddr *) &local, len)) {
+    display_clear();
+    perror("bind()");
+    exit(EXIT_FAILURE);
+  }
+
+  if (getsockname(s, (struct sockaddr *) &local, &len)) {
+    display_clear();
+    perror("getsockname()");
+    exit(EXIT_FAILURE);
+  }
+
+  opt = 1;
+  if (ioctl(s, FIONBIO, &opt)) {
+    display_clear();
+    perror("ioctl FIONBIO");
+    exit(EXIT_FAILURE);
+  }
+
+  switch (af) {
+  case AF_INET:
+    if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
+      display_clear();
+      perror("setsockopt IP_TTL");
+      exit(EXIT_FAILURE);
+    }
+    if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof (tos))) {
+      display_clear();
+      perror("setsockopt IP_TOS");
+      exit(EXIT_FAILURE);
+    }
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
+      display_clear();
+      perror("setsockopt IP_TTL");
+      exit(EXIT_FAILURE);
+    }
+    break;
+#endif
+  }
+
+#ifdef SO_MARK
+    if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+      perror( "setsockopt SO_MARK" );
+      exit( EXIT_FAILURE );
+    }
+#endif
+
+  switch (local.ss_family) {
+  case AF_INET:
+    port = ntohs(local4->sin_port);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    port = ntohs(local6->sin6_port);
+    break;
+#endif
+  default:
+    display_clear();
+    perror("unknown AF?");
+    exit(EXIT_FAILURE);
+  }
+
+  save_sequence(index, port);
+  gettimeofday(&sequence[port].time, NULL);
+  sequence[port].socket = s;
+
+  connect(s, (struct sockaddr *) &remote, len);
+}
+
 /*  Attempt to find the host at a particular number of hops away  */
 void net_send_query(int index) 
 {
   if (mtrtype == IPPROTO_TCP) {
     net_send_tcp(index);
+    return;
+  }
+  
+  if (mtrtype == IPPROTO_SCTP) {
+    net_send_sctp(index);
     return;
   }
 
@@ -709,6 +844,7 @@ void net_process_return(void)
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
+  struct SCTPHeader *sctpheader = NULL;
   struct timeval now;
   ip_t * fromaddress = NULL;
   int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
@@ -842,6 +978,43 @@ void net_process_return(void)
     break;
 
   case IPPROTO_TCP:
+    if (header->type == timeexceededtype || header->type == unreachabletype) {
+      switch ( af ) {
+      case AF_INET:
+
+        if ((size_t) num < sizeof(struct IPHeader) +
+                           sizeof(struct ICMPHeader) +
+                           sizeof (struct IPHeader) +
+                           sizeof (struct SCTPHeader))
+          return;
+        sctpheader = (struct SCTPHeader *)(packet + sizeof (struct IPHeader) +
+                                                  sizeof (struct ICMPHeader) +
+                                                  sizeof (struct IPHeader));
+
+        if(num > 160)
+          decodempls(num, packet, &mpls, 156);
+
+      break;
+#ifdef ENABLE_IPV6
+      case AF_INET6:
+        if ( num < sizeof (struct ICMPHeader) +
+                   sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
+          return;
+        sctpheader = (struct SCTPHeader *) ( packet +
+                                           sizeof (struct ICMPHeader) +
+                                           sizeof (struct ip6_hdr) );
+
+        if(num > 140)
+          decodempls(num, packet, &mpls, 136);
+
+        break;
+#endif
+      }
+      sequence = ntohs(tcpheader->srcport);
+    }
+    break;
+    
+  case IPPROTO_SCTP:
     if (header->type == timeexceededtype || header->type == unreachabletype) {
       switch ( af ) {
       case AF_INET:
