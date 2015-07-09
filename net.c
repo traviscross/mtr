@@ -278,6 +278,8 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize)
 
 void save_sequence(int index, int seq)
 {
+  display_rawxmit(index, seq);
+
   sequence[seq].index = index;
   sequence[seq].transit = 1;
   sequence[seq].saved_seq = ++host[index].xmit;
@@ -815,7 +817,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
   host[index].transit = 0;
 
   net_save_return(index, sequence[seq].saved_seq, totusec);
-  display_rawping(index, totusec);
+  display_rawping(index, totusec, seq);
 }
 
 
