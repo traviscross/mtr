@@ -11,13 +11,16 @@ The split format is:
 
 The "raw" format is:
 
-hostline|pingline|dnsline|timestampline
+hostline|xmitline|pingline|dnsline|timestampline
 
 hostline:
 h <pos> <host IP>
 
+xmitline:
+x <pos> <seqnum>
+
 pingline:
-p <pos> <pingtime (ms)>
+p <pos> <pingtime (ms)> <seqnum>
 
 dnsline: 
 d <pos> <hostname>

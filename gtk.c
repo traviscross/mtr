@@ -50,17 +50,19 @@ gchar* getSelectedHost(GtkTreePath *path);
 extern char *Hostname;
 extern float WaitTime;
 extern int af;
-static int tag;
+static int ping_timeout_timer;
 static GtkWidget *Pause_Button;
 static GtkWidget *Entry;
 static GtkWidget *main_window;
 
 void gtk_add_ping_timeout (void)
 {
+  if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
+    return;
+  }
   int dt;
-
   dt = calc_deltatime (WaitTime);
-  tag = g_timeout_add(dt / 1000, gtk_ping, NULL);
+  ping_timeout_timer = g_timeout_add(dt / 1000, gtk_ping, NULL);
 }
 
 
@@ -113,7 +115,7 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
   if (paused) {
     gtk_add_ping_timeout ();
   } else {
-    g_source_remove (tag);
+    g_source_remove (ping_timeout_timer);
   }
   paused = ! paused;
   gtk_redraw();
@@ -199,7 +201,7 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
 {
   WaitTime = gtk_spin_button_get_value(GTK_SPIN_BUTTON(Button));
-  g_source_remove (tag);
+  g_source_remove (ping_timeout_timer);
   gtk_add_ping_timeout ();
   gtk_redraw();
 
@@ -577,7 +579,7 @@ gint gtk_ping(UNUSED gpointer data)
   gtk_redraw();
   net_send_batch();
   net_harvest_fds();
-  g_source_remove (tag);
+  g_source_remove (ping_timeout_timer);
   gtk_add_ping_timeout ();
   return TRUE;
 }

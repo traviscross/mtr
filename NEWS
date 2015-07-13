@@ -1,5 +1,14 @@
 WHAT'S NEW?
 
+In the git-repo we will start adding things here under the next
+version number, even before it's been released. So don't worry
+if  you see a version number here but can't find the release
+files: It hasn't been released. Doing it this way reduces the
+chance for a manual messup if I just "go ahead and release it"
+without any editing here. 
+
+V0.87
+
 V0.86 Fixed default hostname logic. 
       Fix for NetBSD: 64bit time_t -- Thomas Klausner
       Fix unnecessary runtime dependency on glib from VSYakovetsky through 
