@@ -38,7 +38,7 @@ extern int DisplayMode;
 #define mtr_curses_open()
 #define mtr_curses_close()
 #define mtr_curses_redraw()
-#define mtr_curses_keyaction()
+#define mtr_curses_keyaction() 0
 #define mtr_curses_clear()
 #else
 #include "mtr-curses.h"
