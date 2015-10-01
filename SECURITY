@@ -1,12 +1,42 @@
 SECURITY ISSUES RELATED TO MTR
 
+mtr requires extra privileges to send custom packets, and there are
+security implications from granting this.
+
+There are several different ways to provide the privileges:
+
+1. Add limited privileges on systems that support this. (Preferred.)
+2. Run mtr as the root user.
+3. Make mtr a setuid-root binary.
+
+Details:
+
+1. Add limited privileges on systems that support this.
+
+Some operating systems allow binaries to be run with only the subset
+of security privileges that are actually needed.
+
+Linux:
+On Linux, privileges are known as capabilities. The only additional
+capability that mtr needs is cap_net_raw. To give this capability
+to the mtr binary, run the following command as root:
+
+# setcap cap_net_raw+ep mtr
+
+
+2. Run mtr as the root user.
+
 You can limit mtr usage to the root user by not putting a setuid bit
 on the mtr binary. In that case, the security implications are
-minimal. 
+minimal.
 
-Or you can make mtr setuid-root, and the following applies to you....
 
-Since mtr is installed as suid-root, some concern over security is
+3. Make mtr a setuid-root binary.
+
+The mtr binary can be made setuid-root, which is what "make install"
+does by default.
+
+When mtr is installed as suid-root, some concern over security is
 justified.  Since version 0.21, mtr does the following two things
 after it is launched:
 
@@ -39,5 +69,6 @@ have mtr-core always run in "raw" mode, and have the backends interpret
 the output from the mtr-core. Maybe a nice project for a college-level
 student.
 
+
 If you have further questions or comments about security issues,
-please direct them to the mtr mailing list.  See README for details.
+please see the README file for details on how to submit them.
