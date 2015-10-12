@@ -700,13 +700,15 @@ void mtr_curses_open(void)
   initscr();
   raw();
   noecho(); 
+  int bg_col = 0;
   start_color();
 #ifdef HAVE_USE_DEFAULT_COLORS
-  use_default_colors();
+  if (use_default_colors() == OK)
+    bg_col = -1;
 #endif
   int i;
   for (i = 0; i < 8; i++)
-      init_pair(i+1, i, 0);
+      init_pair(i+1, i, bg_col);
 
   mtr_curses_init();
   mtr_curses_redraw();
