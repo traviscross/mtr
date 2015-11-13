@@ -76,18 +76,17 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
   See the mtr web page at 
          http://www.BitWizard.nl/mtr/ 
 
-  There used to be a mailinglist, but all it got was spam. So
-  when the server was upgraded, the mailing list died. 
+  Bug reports and feature requests should be submitted to the Github
+  bug tracking system.
 
-  Bug reports and feature requests should be submitted to the 
-  bug tracker at launchpad: https://launchpad.net/mtr/+bugs
+  Patches can be submitted by cloning the Github repository and issuing
+  a pull request, or by email to me. Please use unified diffs. Usually
+  the diff is sort of messy, so please check that the diff is clean and
+  doesn't contain too much of your local stuff (for example, I don't
+  want/need the "configure" script that /your/ automake made for you).
 
-  Patches can be submitted by Email to me, or submitted to the 
-  bug tracker. Or you can clone the github repository and issue a pull
-  request. Please use unified diffs. Usually the diff is sort of
-  messy, so please check that the diff is clean and doesn't contain too
-  much of your local stuff (for example, I don't want/need the "configure"
-  script that /your/ automake made for you). 
+  (There used to be a mailinglist, but all it got was spam. So
+  when the server was upgraded, the mailing list died.)
 
 -- REW
 
