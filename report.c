@@ -360,7 +360,7 @@ void csv_close(time_t now)
              at+1, name, last);
 
     for( i=0; i<MAXFLD; i++ ) {
-      j = fld_index[fld_active[j]];
+      j = fld_index[fld_active[i]];
       if (j < 0) continue; 
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
