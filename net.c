@@ -652,10 +652,8 @@ void net_send_query(int index)
       mypid += MinPort;
 
     udp->srcport = htons(mypid);
-    udp->length = abs(packetsize) - iphsize;
-    if(!BSDfix)
-      udp->length = htons(udp->length);
- 
+    udp->length = htons(abs(packetsize) - iphsize);
+
     udp->dstport = new_sequence(index);
     gettimeofday(&sequence[udp->dstport].time, NULL);
     udp->dstport = htons(udp->dstport);
