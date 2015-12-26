@@ -25,8 +25,9 @@
 // It will evaluate to nothing if we don't need it. 
 
 #ifndef NO_IPINFO
-#define IPINFO
 
+#ifndef IPINFO
+#define IPINFO
 
 extern int ipinfo_no;
 extern int ipinfo_max;
@@ -38,4 +39,5 @@ char *fmt_ipinfo(ip_t *addr);
 int get_iiwidth(void);
 int is_printii(void);
 
-#endif
+#endif /* IPINFO */
+#endif /* NO_IPINFO */
