@@ -60,7 +60,7 @@ char fmtinfo[32];
 extern int af;                  /* address family of remote target */
 
 // items width: ASN, Route, Country, Registry, Allocated 
-int iiwidth[] = { 6, 19, 4, 8, 11};	// item len + space
+int iiwidth[] = { 7, 19, 4, 8, 11};	// item len + space
 int iiwidth_len = sizeof(iiwidth)/sizeof((iiwidth)[0]);
 
 typedef char* items_t[ITEMSMAX + 1];
