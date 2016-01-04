@@ -55,7 +55,7 @@ reply. So in the example above, we'd see a reply from router at
 position 4, then we'd send out 5-9 (and because the max-host is now at
 9, we'll send them out at 1s/9 = 111ms intervals). When the reply from
 host 9 comes back, we'll start probing for host 10-15 (at about 60ms
-intervals). But suppose the network delay upto host 9 is already 200ms
+intervals). But suppose the network delay up to host 9 is already 200ms
 and suppose our destination host is at position 11. Then by the time
 the packet from host 11 comes back, we'll already have sent probe
 packets for position 12, 13, and 14! Those will come back as

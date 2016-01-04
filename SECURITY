@@ -49,13 +49,13 @@ process.  Note that no code from GTK+ or curses is executed before
 dropping root privileges.
 
 This should severely limit the possibilities of using mtr to breach
-system security.  This means the worst case scenerio is as follows:
+system security.  This means the worst case scenario is as follows:
 
 Due to some oversight in the mtr code, a malicious user is able to
 overrun one of mtr's internal buffers with binary code that is
 eventually executed.  The malicious user is still not able to read
 from or write to any system files which they wouldn't normally have
-permission to read or write to, repectively.  The only privilege
+permission to read or write to, respectively.  The only privilege
 gained is access to the raw socket descriptors, which would allow
 the malicious user to listen to all ICMP packets arriving at the
 system, and to send forged packets with arbitrary contents.
