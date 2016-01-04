@@ -18,10 +18,10 @@
 
 // The autoconf system provides us with the NO_IPINFO define. 
 // Littering the code with #ifndef NO_IPINFO (double negative)
-// does not benefit readabilty. So here we invert the sense of the
+// does not benefit readability. So here we invert the sense of the
 // define. 
 //
-// Similarly, this include file should be included unconditially. 
+// Similarly, this include file should be included unconditionally. 
 // It will evaluate to nothing if we don't need it. 
 
 #ifndef NO_IPINFO

@@ -126,7 +126,7 @@ struct nethost {
   int best;
   int worst;
   int avg;	/* average:  addByMin */
-  int gmean;	/* geometirc mean: addByMin */
+  int gmean;	/* geometric mean: addByMin */
   int jitter;	/* current jitter, defined as t1-t0 addByMin */
 /*int jbest;*/	/* min jitter, of cause it is 0, not needed */
   int javg;	/* avg jitter */
@@ -1257,7 +1257,7 @@ int net_send_batch(void)
     /* The second condition in the next "if" statement was added in mtr-0.56, 
 	but I don't remember why. It makes mtr stop skipping sections of unknown
 	hosts. Removed in 0.65. 
-	If the line proves neccesary, it should at least NOT trigger that line 
+	If the line proves necessary, it should at least NOT trigger that line
 	when host[i].addr == 0 */
     if ( ( addrcmp( (void *) &(host[i].addr),
                     (void *) remoteaddress, af ) == 0 )
@@ -1268,7 +1268,7 @@ int net_send_batch(void)
   if (	/* success in reaching target */
      ( addrcmp( (void *) &(host[batch_at].addr),
                 (void *) remoteaddress, af ) == 0 ) ||
-      /* fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?) */
+      /* fail in consecutive MAX_UNKNOWN_HOSTS (firewall?) */
       (n_unknown > MAX_UNKNOWN_HOSTS) ||
       /* or reach limit  */
       (batch_at >= maxTTL-1)) {
