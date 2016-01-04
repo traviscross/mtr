@@ -194,7 +194,7 @@ typedef struct {
    byte databyte_a;
       /* rd:1           recursion desired
        * tc:1           truncated message
-       * aa:1           authoritive answer
+       * aa:1           authoritative answer
        * opcode:4       purpose of message
        * qr:1           response flag
        */
@@ -1143,7 +1143,7 @@ void parserespacket(byte *s, int l)
       }
       for (rr = hp->ancount + hp->nscount + hp->arcount;rr;rr--) {
 	if (c > eob) {
-	  restell("Resolver error: Packet does not contain all specified resouce records.");
+	  restell("Resolver error: Packet does not contain all specified resource records.");
 	  return;
 	}
 	*namestring = '\0';

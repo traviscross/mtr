@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* MacOSX may need this before scoket.h...*/
+/* MacOSX may need this before socket.h...*/
 #if defined(HAVE_SYS_TYPES_H)
 #include <sys/types.h>
 #else
