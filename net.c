@@ -70,6 +70,13 @@ struct TCPHeader {
   uint32 seq;
 };
 
+/* Structure of an SCTP header */
+struct SCTPHeader {
+  uint16 srcport;
+  uint16 dstport;
+  uint32 veri_tag;
+};
+
 /* Structure of an IPv4 UDP pseudoheader.  */
 struct UDPv4PHeader {
   uint32 saddr;
@@ -119,7 +126,7 @@ struct nethost {
   int best;
   int worst;
   int avg;	/* average:  addByMin */
-  int gmean;	/* geometirc mean: addByMin */
+  int gmean;	/* geometric mean: addByMin */
   int jitter;	/* current jitter, defined as t1-t0 addByMin */
 /*int jbest;*/	/* min jitter, of cause it is 0, not needed */
   int javg;	/* avg jitter */
@@ -210,7 +217,7 @@ extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
-extern int timeout;             /* timeout for TCP connections */
+extern int tcp_timeout;             /* timeout for TCP connections */
 #ifdef SO_MARK
 extern int mark;		/* SO_MARK to set for ping packet*/
 #endif
@@ -272,6 +279,8 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize)
 
 void save_sequence(int index, int seq)
 {
+  display_rawxmit(index, seq);
+
   sequence[seq].index = index;
   sequence[seq].transit = 1;
   sequence[seq].saved_seq = ++host[index].xmit;
@@ -415,11 +424,133 @@ void net_send_tcp(int index)
   connect(s, (struct sockaddr *) &remote, len);
 }
 
+/*  Attempt to connect to a SCTP port with a TTL */
+void net_send_sctp(int index)
+{
+  int ttl, s;
+  int opt = 1;
+  int port;
+  struct sockaddr_storage local;
+  struct sockaddr_storage remote;
+  struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
+  struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
+  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
+  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
+  socklen_t len;
+
+  ttl = index + 1;
+
+  s = socket(af, SOCK_STREAM, IPPROTO_SCTP);
+  if (s < 0) {
+    display_clear();
+    perror("socket()");
+    exit(EXIT_FAILURE);
+  }
+
+  memset(&local, 0, sizeof (local));
+  memset(&remote, 0, sizeof (remote));
+  local.ss_family = af;
+  remote.ss_family = af;
+
+  switch (af) {
+  case AF_INET:
+    addrcpy((void *) &local4->sin_addr, (void *) &ssa4->sin_addr, af);
+    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, af);
+    remote4->sin_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, af);
+    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, af);
+    remote6->sin6_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in6);
+    break;
+#endif
+  }
+
+  if (bind(s, (struct sockaddr *) &local, len)) {
+    display_clear();
+    perror("bind()");
+    exit(EXIT_FAILURE);
+  }
+
+  if (getsockname(s, (struct sockaddr *) &local, &len)) {
+    display_clear();
+    perror("getsockname()");
+    exit(EXIT_FAILURE);
+  }
+
+  opt = 1;
+  if (ioctl(s, FIONBIO, &opt)) {
+    display_clear();
+    perror("ioctl FIONBIO");
+    exit(EXIT_FAILURE);
+  }
+
+  switch (af) {
+  case AF_INET:
+    if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
+      display_clear();
+      perror("setsockopt IP_TTL");
+      exit(EXIT_FAILURE);
+    }
+    if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof (tos))) {
+      display_clear();
+      perror("setsockopt IP_TOS");
+      exit(EXIT_FAILURE);
+    }
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
+      display_clear();
+      perror("setsockopt IP_TTL");
+      exit(EXIT_FAILURE);
+    }
+    break;
+#endif
+  }
+
+#ifdef SO_MARK
+    if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+      perror( "setsockopt SO_MARK" );
+      exit( EXIT_FAILURE );
+    }
+#endif
+
+  switch (local.ss_family) {
+  case AF_INET:
+    port = ntohs(local4->sin_port);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    port = ntohs(local6->sin6_port);
+    break;
+#endif
+  default:
+    display_clear();
+    perror("unknown AF?");
+    exit(EXIT_FAILURE);
+  }
+
+  save_sequence(index, port);
+  gettimeofday(&sequence[port].time, NULL);
+  sequence[port].socket = s;
+
+  connect(s, (struct sockaddr *) &remote, len);
+}
+
 /*  Attempt to find the host at a particular number of hops away  */
 void net_send_query(int index) 
 {
   if (mtrtype == IPPROTO_TCP) {
     net_send_tcp(index);
+    return;
+  }
+  
+  if (mtrtype == IPPROTO_SCTP) {
+    net_send_sctp(index);
     return;
   }
 
@@ -521,10 +652,8 @@ void net_send_query(int index)
       mypid += MinPort;
 
     udp->srcport = htons(mypid);
-    udp->length = abs(packetsize) - iphsize;
-    if(!BSDfix)
-      udp->length = htons(udp->length);
- 
+    udp->length = htons(abs(packetsize) - iphsize);
+
     udp->dstport = new_sequence(index);
     gettimeofday(&sequence[udp->dstport].time, NULL);
     udp->dstport = htons(udp->dstport);
@@ -689,7 +818,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
   host[index].transit = 0;
 
   net_save_return(index, sequence[seq].saved_seq, totusec);
-  display_rawping(index, totusec);
+  display_rawping(index, totusec, seq);
 }
 
 
@@ -712,6 +841,7 @@ void net_process_return(void)
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
+  struct SCTPHeader *sctpheader = NULL;
   struct timeval now;
   ip_t * fromaddress = NULL;
   int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
@@ -880,8 +1010,44 @@ void net_process_return(void)
       sequence = ntohs(tcpheader->srcport);
     }
     break;
-  }
+    
+  case IPPROTO_SCTP:
+    if (header->type == timeexceededtype || header->type == unreachabletype) {
+      switch ( af ) {
+      case AF_INET:
 
+        if ((size_t) num < sizeof(struct IPHeader) +
+                           sizeof(struct ICMPHeader) +
+                           sizeof (struct IPHeader) +
+                           sizeof (struct SCTPHeader))
+          return;
+        sctpheader = (struct SCTPHeader *)(packet + sizeof (struct IPHeader) +
+                                                  sizeof (struct ICMPHeader) +
+                                                  sizeof (struct IPHeader));
+
+        if(num > 160)
+          decodempls(num, packet, &mpls, 156);
+
+      break;
+#ifdef ENABLE_IPV6
+      case AF_INET6:
+        if ( num < sizeof (struct ICMPHeader) +
+                   sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
+          return;
+        sctpheader = (struct SCTPHeader *) ( packet +
+                                           sizeof (struct ICMPHeader) +
+                                           sizeof (struct ip6_hdr) );
+
+        if(num > 140)
+          decodempls(num, packet, &mpls, 136);
+
+        break;
+#endif
+      }
+      sequence = ntohs(sctpheader->srcport);
+    }
+    break;
+  }
   if (sequence)
     net_process_ping (sequence, mpls, (void *) fromaddress, now);
 }
@@ -1091,7 +1257,7 @@ int net_send_batch(void)
     /* The second condition in the next "if" statement was added in mtr-0.56, 
 	but I don't remember why. It makes mtr stop skipping sections of unknown
 	hosts. Removed in 0.65. 
-	If the line proves neccesary, it should at least NOT trigger that line 
+	If the line proves necessary, it should at least NOT trigger that line
 	when host[i].addr == 0 */
     if ( ( addrcmp( (void *) &(host[i].addr),
                     (void *) remoteaddress, af ) == 0 )
@@ -1102,7 +1268,7 @@ int net_send_batch(void)
   if (	/* success in reaching target */
      ( addrcmp( (void *) &(host[batch_at].addr),
                 (void *) remoteaddress, af ) == 0 ) ||
-      /* fail in consecuitive MAX_UNKNOWN_HOSTS (firewall?) */
+      /* fail in consecutive MAX_UNKNOWN_HOSTS (firewall?) */
       (n_unknown > MAX_UNKNOWN_HOSTS) ||
       /* or reach limit  */
       (batch_at >= maxTTL-1)) {
@@ -1562,7 +1728,7 @@ void net_process_fds(fd_set *writefd)
     }
     if (fd > 0) {
       utime = sequence[at].time.tv_sec * 1000000L + sequence[at].time.tv_usec;
-      if (unow - utime > timeout) {
+      if (unow - utime > tcp_timeout) {
         close(fd);
         sequence[at].socket = 0;
       }

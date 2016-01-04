@@ -1,5 +1,14 @@
 WHAT'S NEW?
 
+In the git-repo we will start adding things here under the next
+version number, even before it's been released. So don't worry
+if  you see a version number here but can't find the release
+files: It hasn't been released. Doing it this way reduces the
+chance for a manual messup if I just "go ahead and release it"
+without any editing here. 
+
+V0.87
+
 V0.86 Fixed default hostname logic. 
       Fix for NetBSD: 64bit time_t -- Thomas Klausner
       Fix unnecessary runtime dependency on glib from VSYakovetsky through 
@@ -58,7 +67,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
 
   v0.74 Martin Pels' patch to allow UDP probes.
         KES reported a build problem. Turns out I need to install gtk-1.2
-        on my development sytem, otherwise my release script causes the
+        on my development system, otherwise my release script causes the
         build to break.
         changed some docs to advertise the new mailing list.
         added documentation for the Mac OS X compilation problem.
@@ -66,7 +75,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
         Nico Lichtmaier's cleanup-gtk patch. (now mtr uses a more modern
         dialect of gtk).
 
-  v0.73 Some securty patches. Although MTR drops privileges as soon
+  v0.73 Some security patches. Although MTR drops privileges as soon
         as possible after opening the sockets, it still had some
         sprintf calls, which have now been converted into snprintf.
 
@@ -100,7 +109,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
         No changes.
 
   v0.66 Through the Debian bugtracking system a bug report and
-        fix was sent my way, that deals with stupid optmization
+        fix was sent my way, that deals with stupid optimization
         trying to save some 768 bytes of memory, sacrificing "it
         works" on a different architecture... (default char signedness)
 
@@ -115,7 +124,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
 
   v0.63 Suggestion by RCW: Add -lm at line 70 of Configure.in.
         On my system no ill effects ensued, so this version released
-        so that he can test if it still works on his sytem.
+        so that he can test if it still works on his system.
 
         Let me add that it's stupid that I have to specify that this
         this program now requires Automake version 1.5 to build, where
@@ -146,7 +155,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
         rewrite some things. Now 50 lines of code less, but cleaner
         code. :-)
 
-  v0.58 I don't remember. Fogot to update this. :-( Check the
+  v0.58 I don't remember. Forgot to update this. :-( Check the
         patch.
 
   v0.57 Lots of whitespace cleanups. And a DNS fix: Don't do DNS
@@ -180,7 +189,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
   v0.48 Draw names in red (GTK) or bold (Curses) if host doesn't
         respond.
 
-  v0.47 Fixed a (believed-) non-exploitable bufferoverflow.
+  v0.47 Fixed a (believed-) non-exploitable buffer overflow.
         Thanks Damian.
 
   v0.46 Included patch to be able to specify outgoing interface
@@ -191,7 +200,7 @@ Author: R.E. Wolff <R.E.Wolff@BitWizard.nl> (mostly from patches by others)
         switching between numeric / dns names, and some minor
         stuff I forgot. This release serves as a code-sync-release.
         new version with even more new stuff in about two weeks!
-        I'm afraid I don't know how to fix the MaxOS-X compilation
+        I'm afraid I don't know how to fix the MacOS-X compilation
         problems in the source. Help wanted...
 
   v0.44 David Stone adds the "last" column to the gtk version.
@@ -333,7 +342,7 @@ people as it didn't contain any recent changes/news.
         + If hop doesn't respond, draw its name in red (GTK) or bold (curses)
 
 2002-02-09  bodq  <bohdan@vstu.edu.ua>
-        + Added --address option to bind to given IP addess
+        + Added --address option to bind to given IP address
 
 2001-04-15  root  <alane@geeksrus.net>
         + Added this file so that automake won't complain.

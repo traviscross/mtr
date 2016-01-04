@@ -6,7 +6,7 @@ WHAT IS MTR?
   As mtr starts, it investigates the network connection between the host
   mtr runs on and a user-specified destination host.  After it
   determines the address of each network hop between the machines, 
-  it sends a sequence ICMP ECHO requests to each one to determine the 
+  it sends a sequence of ICMP ECHO requests to each one to determine the 
   quality of the link to each machine.  As it does this, it prints
   running statistics about each machine.
 
@@ -34,9 +34,9 @@ INSTALLING
   Note that mtr must be suid-root because it requires access to raw IP 
   sockets.  See SECURITY for security information.
 
-  Older versions used to require a non-existant path to GTK for a
+  Older versions used to require a non-existent path to GTK for a
   correct build of a non-gtk version while GTK was installed. This is
-  no longer neccesary. ./configure --WITHOUT_GTK should now work. 
+  no longer necessary. ./configure --without-gtk should now work. 
   If it doesn't, try "make WITHOUT_X11=YES" as the make step. 
 
   On Solaris (and possibly other systems) the "gtk" library may be
@@ -47,7 +47,7 @@ INSTALLING
   you're out of luck when you use the sun LD. That's not quite true, as
   you can move the gtk libraries to /usr/lib instead of leaving them in
   /usr/local/lib.  (when the ld tells you that /usr/local/lib is untrusted
-  and /usr/lib is trusted, and you trust hte gtk libs enough to want them
+  and /usr/lib is trusted, and you trust the gtk libs enough to want them
   in a setuid program, then there is something to say for moving them
   to the "trusted" directory.)
 
@@ -76,18 +76,17 @@ WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
   See the mtr web page at 
          http://www.BitWizard.nl/mtr/ 
 
-  There used to be a mailinglist, but all it got was spam. So
-  when the server was upgraded, the mailing list died. 
+  Bug reports and feature requests should be submitted to the Github
+  bug tracking system.
 
-  Bug reports and feature requests should be submitted to the 
-  bug tracker at launchpad: https://launchpad.net/mtr/+bugs
+  Patches can be submitted by cloning the Github repository and issuing
+  a pull request, or by email to me. Please use unified diffs. Usually
+  the diff is sort of messy, so please check that the diff is clean and
+  doesn't contain too much of your local stuff (for example, I don't
+  want/need the "configure" script that /your/ automake made for you).
 
-  Patches can be submitted by Email to me, or submitted to the 
-  bug tracker. Or you can clone the github repository and issue a pull
-  request. Please use unified diffs. Usually the diff is sort of
-  messy, so please check that the diff is clean and doesn't contain too
-  much of your local stuff (for example, I don't want/need the "configure"
-  script that /your/ automake made for you). 
+  (There used to be a mailinglist, but all it got was spam. So
+  when the server was upgraded, the mailing list died.)
 
 -- REW
 
