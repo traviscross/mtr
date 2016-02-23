@@ -151,8 +151,9 @@ struct sequence {
 
 /* Configuration parameter: How many queries to unknown hosts do we
    send? (This limits the amount of traffic generated if a host is not
-   reachable) */
-#define MAX_UNKNOWN_HOSTS 5
+   reachable)  Adjusted from 5 to 12. Some cloud networks appear to have 
+   greater than 5 hosts before resuming. */
+#define MAX_UNKNOWN_HOSTS 12
 
 
 /* BSD-derived kernels use host byte order for the IP length and 
