@@ -216,6 +216,7 @@ extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
+extern int localport;  /* source port for UDP tracing */
 extern int tcp_timeout;             /* timeout for TCP connections */
 #ifdef SO_MARK
 extern int mark;		/* SO_MARK to set for ping packet*/
@@ -251,11 +252,14 @@ int checksum(void *data, int sz)
 
 
 /* Prepend pseudoheader to the udp datagram and calculate checksum */
-int udp_checksum(void *pheader, void *udata, int psize, int dsize)
+int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_checksum)
 {
   unsigned int tsize = psize + dsize;
   char csumpacket[tsize];
   memset(csumpacket, (unsigned char) abs(bitpattern), abs(tsize));
+  if (alt_checksum && dsize >= 2) {
+    csumpacket[psize] = csumpacket[psize + 1] = 0;
+  }
 
   struct UDPv4PHeader *prepend = (struct UDPv4PHeader *) csumpacket;
   struct UDPv4PHeader *udppheader = (struct UDPv4PHeader *) pheader;
@@ -559,6 +563,7 @@ void net_send_query(int index)
   struct ICMPHeader *icmp = NULL;
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
+  uint16 checksum_result;
   uint16 mypid;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
@@ -575,6 +580,9 @@ void net_send_query(int index)
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
+  if ( mtrtype == IPPROTO_UDP && remoteport && packetsize < (MINPACKET + 2)) {
+    packetsize = MINPACKET + 2;
+  }
 
   memset(packet, (unsigned char) abs(bitpattern), abs(packetsize));
 
@@ -646,16 +654,27 @@ void net_send_query(int index)
   case IPPROTO_UDP:
     udp = (struct UDPHeader *)(packet + iphsize);
     udp->checksum  = 0;
-    mypid = (uint16)getpid();
-    if (mypid < MinPort)
-      mypid += MinPort;
-
+    if (!localport) {
+      mypid = (uint16)getpid();
+      if (mypid < MinPort)
+        mypid += MinPort;
+    } else {
+      mypid = (uint16)localport;
+    }
     udp->srcport = htons(mypid);
     udp->length = htons(abs(packetsize) - iphsize);
 
-    udp->dstport = new_sequence(index);
-    gettimeofday(&sequence[udp->dstport].time, NULL);
-    udp->dstport = htons(udp->dstport);
+    if (!remoteport) {
+      udp->dstport = new_sequence(index);
+      gettimeofday(&sequence[udp->dstport].time, NULL);
+      udp->dstport = htons(udp->dstport);
+    } else {
+      // keep dstport constant, stuff sequence into the checksum
+      udp->dstport = htons(remoteport);
+      udp->checksum = new_sequence(index);
+      gettimeofday(&sequence[udp->checksum].time, NULL);
+      udp->checksum = htons(udp->checksum);
+    }
     break;
   }
 
@@ -664,13 +683,22 @@ void net_send_query(int index)
     switch ( mtrtype ) {
     case IPPROTO_UDP:
       /* checksum is not mandatory. only calculate if we know ip->saddr */
-      if (ip->saddr) {
+      if (udp->checksum) {
         udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
         udpp->saddr = ip->saddr;
         udpp->daddr = ip->daddr;
         udpp->protocol = ip->protocol;
         udpp->len = udp->length;
-        udp->checksum = udp_checksum(udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize);
+        checksum_result = udp_checksum(udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize, 1);
+        packet[iphsize + sizeof(struct UDPHeader)] = checksum_result & 0xff;
+        packet[iphsize + sizeof(struct UDPHeader) + 1] = checksum_result >> 8;
+      } else if (ip->saddr) {
+        udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
+        udpp->saddr = ip->saddr;
+        udpp->daddr = ip->daddr;
+        udpp->protocol = ip->protocol;
+        udpp->len = udp->length;
+        udp->checksum = udp_checksum(udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize, 0);
       }
       break;
     }
@@ -682,6 +710,9 @@ void net_send_query(int index)
     switch ( mtrtype ) {
     case IPPROTO_UDP:
       /* kernel checksum calculation */
+      if (udp->checksum) {
+        offset = sizeof(struct UDPHeader);
+      }
       if ( setsockopt(sendsock, IPPROTO_IPV6, IPV6_CHECKSUM, &offset, sizeof(offset)) ) {
         perror( "setsockopt IPV6_CHECKSUM" );
         exit( EXIT_FAILURE);
@@ -967,7 +998,11 @@ void net_process_return(void)
         break;
 #endif
       }
-      sequence = ntohs(udpheader->dstport);
+      if (remoteport && remoteport == ntohs(udpheader->dstport)) {
+        sequence = ntohs(udpheader->checksum);
+      } else if (!remoteport) {
+        sequence = ntohs(udpheader->dstport);
+      }
     }
     break;
 
