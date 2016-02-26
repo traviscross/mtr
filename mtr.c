@@ -637,11 +637,6 @@ int main(int argc, char **argv)
     exit(0);
   }
 
-  if (mtrtype == IPPROTO_UDP && remoteport && !InterfaceAddress) {
-    fprintf(stderr, "mtr: -a ADDRESS required in udp mode (-u) with remote port set (-P).\n");
-    exit(EXIT_FAILURE);
-  }
-
   time_t now = time(NULL);
 
   if (!names) append_to_names (argv[0], "localhost"); // default: localhost. 

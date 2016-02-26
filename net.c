@@ -1528,6 +1528,70 @@ void net_reset(void)
   gettimeofday(&reset, NULL);
 }
 
+int net_set_interfaceaddress_udp()
+{
+#ifdef ENABLE_IPV6
+  struct sockaddr_storage name_struct;
+#else
+  struct sockaddr_in name_struct;
+#endif
+  struct sockaddr_in *  sa4;
+  struct sockaddr_in6 * sa6;
+  struct sockaddr * name = (struct sockaddr *) &name_struct;
+  struct sockaddr_storage remote;
+  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
+  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
+  socklen_t len;
+  int s;
+
+  memset(&remote, 0, sizeof (remote));
+  remote.ss_family = af;
+
+  switch (af) {
+  case AF_INET:
+    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, af);
+    remote4->sin_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in);
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, af);
+    remote6->sin6_port = htons(remoteport);
+    len = sizeof (struct sockaddr_in6);
+    break;
+#endif
+  }
+
+  s = socket (af, SOCK_DGRAM, 0);
+  if (s < 0) {
+    perror("udp socket()");
+    exit(EXIT_FAILURE);
+  }
+
+  if (connect(s, (struct sockaddr *) &remote, len)) {
+    perror("udp connect() failed");
+    exit(EXIT_FAILURE);
+  }
+
+  getsockname(s, name, &len);
+  sockaddrtop( name, localaddr, sizeof localaddr );
+  switch (af) {
+  case AF_INET:
+    sa4 = (struct sockaddr_in *) name;
+    addrcpy((void*)&ssa4->sin_addr, (void *) &(sa4->sin_addr), AF_INET );
+    break;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    sa6 = (struct sockaddr_in6 *) name;
+    addrcpy((void*)&ssa6->sin6_addr, (void *) &(sa6->sin6_addr), AF_INET );
+    break;
+#endif
+  }
+  close(s);
+
+  return 0;
+}
+
 
 int net_set_interfaceaddress (char *InterfaceAddress)
 {
@@ -1539,6 +1603,9 @@ int net_set_interfaceaddress (char *InterfaceAddress)
   struct sockaddr * name = (struct sockaddr *) &name_struct;
   socklen_t len = 0;
 
+  if (mtrtype == IPPROTO_UDP && remoteport && !InterfaceAddress) {
+    return net_set_interfaceaddress_udp();
+  }
   if (!InterfaceAddress) return 0; 
 
   sourcesockaddr->sa_family = af;
@@ -1567,7 +1634,6 @@ int net_set_interfaceaddress (char *InterfaceAddress)
     perror("mtr: failed to bind to interface");
       return( 1 );
   }
-  len = sizeof name_struct;
   getsockname (sendsock, name, &len);
   sockaddrtop( name, localaddr, sizeof localaddr );
   return 0; 
