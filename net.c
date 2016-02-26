@@ -1531,7 +1531,13 @@ void net_reset(void)
 
 int net_set_interfaceaddress (char *InterfaceAddress)
 {
-  int len = 0;
+#ifdef ENABLE_IPV6
+  struct sockaddr_storage name_struct;
+#else
+  struct sockaddr_in name_struct;
+#endif
+  struct sockaddr * name = (struct sockaddr *) &name_struct;
+  socklen_t len = 0;
 
   if (!InterfaceAddress) return 0; 
 
@@ -1561,6 +1567,9 @@ int net_set_interfaceaddress (char *InterfaceAddress)
     perror("mtr: failed to bind to interface");
       return( 1 );
   }
+  len = sizeof name_struct;
+  getsockname (sendsock, name, &len);
+  sockaddrtop( name, localaddr, sizeof localaddr );
   return 0; 
 }
 
