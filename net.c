@@ -231,15 +231,19 @@ int calc_deltatime (float waittime)
 }
 
 
-/* This doesn't work for odd sz. I don't know enough about this to say
-   that this is wrong. It doesn't seem to cripple mtr though. -- REW */
 int checksum(void *data, int sz) 
 {
   unsigned short *ch;
   unsigned int sum;
+  char odd[2];
 
   sum = 0;
   ch = data;
+  if (sz % 2) {
+    odd[0] = ((char*)data)[sz - 1];
+    odd[1] = 0;
+    sum = *(unsigned short*)(void*)&odd;
+  }
   sz = sz / 2;
   while (sz--) {
     sum += *(ch++);
