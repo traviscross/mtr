@@ -247,8 +247,9 @@ int checksum(void *data, int sz)
   while (sz--) {
     sum += *(ch++);
   }
-  
-  sum = (sum >> 16) + (sum & 0xffff);  
+  while (sum >> 16) {
+    sum = (sum >> 16) + (sum & 0xffff);
+  }
 
   return (~sum & 0xffff);  
 }
