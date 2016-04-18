@@ -692,8 +692,8 @@ void net_send_query(int index)
         udpp->protocol = ip->protocol;
         udpp->len = udp->length;
         checksum_result = udp_checksum(udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize, 1);
-        packet[iphsize + sizeof(struct UDPHeader)] = checksum_result & 0xff;
-        packet[iphsize + sizeof(struct UDPHeader) + 1] = checksum_result >> 8;
+        packet[iphsize + sizeof(struct UDPHeader)] = ((char *)&checksum_result)[0];
+        packet[iphsize + sizeof(struct UDPHeader) + 1] = ((char *)&checksum_result)[1];
       } else if (ip->saddr) {
         udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
         udpp->saddr = ip->saddr;
