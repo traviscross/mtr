@@ -233,13 +233,15 @@ int calc_deltatime (float waittime)
 
 int checksum(void *data, int sz) 
 {
-  unsigned short *ch;
-  unsigned int sum;
+  uint16 *ch;
+  uint32 sum;
+  uint16 odd;
 
   sum = 0;
   ch = data;
   if (sz % 2) {
-    ((char *)&sum)[0] = ((char *)data)[sz - 1];
+    ((char *)&odd)[0] = ((char *)data)[sz - 1];
+    sum = odd;
   }
   sz = sz / 2;
   while (sz--) {
