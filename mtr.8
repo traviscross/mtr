@@ -89,6 +89,9 @@ mtr \- a network diagnostic tool
 .BI \-P \ PORT\c
 ]
 [\c
+.BI \-L \ LOCALPORT\c
+]
+[\c
 .BI \-Z \ TIMEOUT\c
 ]
 [\c
@@ -353,7 +356,10 @@ Use TCP SYN packets instead of ICMP ECHO.
 is ignored, since SYN packets can not contain data.
 .TP
 .B \-P \fIPORT\fR, \fB\-\-port \fIPORT
-The target port number for TCP traces.
+The target port number for TCP/SCTP/UDP traces.
+.TP
+.B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
+The source port number for UDP traces.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
 The number of seconds to keep the TCP socket open before giving up on

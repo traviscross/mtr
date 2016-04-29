@@ -88,7 +88,8 @@ int  fstTTL = 1;                /* default start at first hop */
 /*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
-int remoteport = 80;            /* for TCP tracing */
+int remoteport = 0;            /* for TCP tracing */
+int localport = 0;             /* for UDP tracing */
 int tcp_timeout = 10 * 1000000;     /* for TCP tracing */
 
 
@@ -304,7 +305,8 @@ void parse_arg (int argc, char **argv)
     { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
     { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
     { "sctp", 0, 0, 'S' },	/* SCTP (default is ICMP) */
-    { "port", 1, 0, 'P' },      /* target port number for TCP */
+    { "port", 1, 0, 'P' },      /* target port number for TCP/SCTP/UDP */
+    { "localport", 1, 0, 'L' }, /* source port number for UDP */
     { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
 #ifdef SO_MARK
     { "mark", 1, 0, 'M' },      /* use SO_MARK */
@@ -315,7 +317,7 @@ void parse_arg (int argc, char **argv)
   opt = 0;
   while(1) {
     opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTSP:Z:M:", long_options, NULL);
+		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTSP:L:Z:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -446,12 +448,18 @@ void parse_arg (int argc, char **argv)
         fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
         exit(EXIT_FAILURE);
       }
+      if (!remoteport) {
+        remoteport = 80;
+      }
       mtrtype = IPPROTO_TCP;
       break;
     case 'S':
       if (mtrtype != IPPROTO_ICMP) {
         fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
         exit(EXIT_FAILURE);
+      }
+      if (!remoteport) {
+        remoteport = 80;
       }
       mtrtype = IPPROTO_SCTP;
     case 'b':
@@ -461,6 +469,13 @@ void parse_arg (int argc, char **argv)
       remoteport = atoi(optarg);
       if (remoteport > 65535 || remoteport < 1) {
         fprintf(stderr, "Illegal port number.\n");
+        exit(EXIT_FAILURE);
+      }
+      break;
+    case 'L':
+      localport = atoi(optarg);
+      if (localport > 65535 || localport < MinPort) {
+        fprintf(stderr, "Illegal local port number.\n");
         exit(EXIT_FAILURE);
       }
       break;
@@ -616,7 +631,7 @@ int main(int argc, char **argv)
               "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
               "\t\t[-Q TOS] [--mpls]\n"
               "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL]\n"
-              "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-Z TIMEOUT]\n"
+              "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-L LOCALPORT] [-Z TIMEOUT]\n"
               "\t\t[-M MARK] HOSTNAME\n", argv[0]);
        printf("See the man page for details.\n");
     exit(0);
@@ -719,6 +734,7 @@ int main(int argc, char **argv)
         continue;
       }
     }
+
 
     lock(argv[0], stdout);
       display_open();
