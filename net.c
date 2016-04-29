@@ -1579,12 +1579,12 @@ int net_set_interfaceaddress_udp()
   switch (af) {
   case AF_INET:
     sa4 = (struct sockaddr_in *) name;
-    addrcpy((void*)&ssa4->sin_addr, (void *) &(sa4->sin_addr), AF_INET );
+    addrcpy((void*)&ssa4->sin_addr, (void *) &(sa4->sin_addr), af );
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
     sa6 = (struct sockaddr_in6 *) name;
-    addrcpy((void*)&ssa6->sin6_addr, (void *) &(sa6->sin6_addr), AF_INET );
+    addrcpy((void*)&ssa6->sin6_addr, (void *) &(sa6->sin6_addr), af );
     break;
 #endif
   }
