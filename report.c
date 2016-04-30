@@ -294,7 +294,7 @@ void xml_close(void)
     printf("    <HUB COUNT=\"%d\" HOST=\"%s\">\n", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
       j = fld_index[fld_active[i]];
-      if (j < 0) continue;
+      if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method. 
 
       strcpy(name, "        <%s>");
       strcat(name, data_fields[j].format);
@@ -347,27 +347,41 @@ void csv_close(time_t now)
     addr = net_addr(at);
     snprint_addr(name, sizeof(name), addr);
 
-    int last = net_last(at);
+    if (at == net_min()) {
+      printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
+#ifdef IPINFO
+      if(!ipinfo_no) {
+	printf("Asn,");
+      }
+#endif
+      for( i=0; i<MAXFLD; i++ ) {
+	j = fld_index[fld_active[i]];
+	if (j < 0) continue;
+	printf("%s,", data_fields[j].title);
+      }
+      printf("\n");
+    }
+
 #ifdef IPINFO
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
-      printf("MTR.%s;%lld;%s;%s;%d;%s;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
-             at+1, name, fmtinfo, last);
+      printf("MTR.%s,%lld,%s,%s,%d,%s,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+             at+1, name, fmtinfo);
     } else
 #endif
-      printf("MTR.%s;%lld;%s;%s;%d;%s;%d", MTR_VERSION, (long long)now, "OK", Hostname,
-             at+1, name, last);
+      printf("MTR.%s,%lld,%s,%s,%d,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+             at+1, name);
 
     for( i=0; i<MAXFLD; i++ ) {
-      j = fld_index[fld_active[j]];
+      j = fld_index[fld_active[i]];
       if (j < 0) continue; 
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
       if( index( data_fields[j].format, 'f' ) ) {
-	printf( ", %.2f", data_fields[j].net_xxx(at) / 1000.0);
+	printf( ",%.2f", data_fields[j].net_xxx(at) / 1000.0);
       } else {
-	printf( ", %d",   data_fields[j].net_xxx(at) );
+	printf( ",%d",   data_fields[j].net_xxx(at) );
       }
     }
     printf("\n");
