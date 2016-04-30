@@ -26,6 +26,9 @@ mtr \- a network diagnostic tool
 .B \-\-curses\c
 ]
 [\c
+.BI \--displaymode \ MODE\c
+]
+[\c
 .B \-\-raw\c
 ]
 [\c
@@ -86,6 +89,9 @@ mtr \- a network diagnostic tool
 .BI \-P \ PORT\c
 ]
 [\c
+.BI \-L \ LOCALPORT\c
+]
+[\c
 .BI \-Z \ TIMEOUT\c
 ]
 [\c
@@ -116,7 +122,7 @@ route to
 A sudden increase in packet loss or response time is often an indication
 of a bad (or simply overloaded) link. 
 .PP
-The results are usually reported as round-trip-response times in miliseconds 
+The results are usually reported as round-trip-response times in milliseconds
 and the percentage of packetloss. 
 .SH OPTIONS
 .TP
@@ -130,10 +136,10 @@ Print the installed version of mtr.
 Use IPv4 only.
 .TP
 .B \-6
-Use IPv6 only.  (IPV4 may be used for DNS lookups). 
+Use IPv6 only.  (IPV4 may be used for DNS lookups.)
 .TP
 .B \-F \fIFILENAME\fR, \fB\-\-filename \fIFILENAME
-MISSING
+Reads the list of hostnames from the specified file.
 .TP
 .B \-r\fR, \fB\-\-report
 This option puts 
@@ -176,6 +182,12 @@ Use this option to force
 to use the curses based terminal
 interface (if available).
 .TP
+.B -\-displaymode \fIMODE
+Use this option to select the initial display mode: 0 (default)
+selects statistics, 1 selects the stripchart without latency
+information, and 2 selects the stripchart with latency
+information.
+.TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
 .B mtr 
@@ -187,14 +199,42 @@ was built for this to work.  See the GTK+ web page at
 for more information about GTK+.
 .TP
 .B \-l\fR, \fB\-\-raw
-Use this option to tell
-.B mtr
-to use the raw output format.  This format is better suited for
+Use the raw output format.  This format is better suited for
 archival of the measurement results.  It could be parsed to 
 be presented into any of the other display methods. 
+.IP
+Example of the raw output format:
+.nf
+h 0 10.1.1.1
+p 0 339
+h 1 46.149.16.4
+p 1 530
+h 2 172.31.1.16
+p 2 531
+h 3 82.221.168.236
+p 3 1523
+h 5 195.130.211.8
+p 5 1603
+h 6 193.4.58.17
+p 6 1127
+h 7 193.4.58.17
+d 7 www.isnic.is
+.fi
 .TP
 .B \-C\fR, \fB\-\-csv
-MISSING
+Use the Comma-Separated-Value (CSV) output format.
+(Note: The separator is actually a semi-colon ';'.)
+.IP
+Example of the CSV output format:
+.nf
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;1;r-76520-PROD.greenqloud.internal;288
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;2;46.149.16.4;2086
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;3;172.31.1.16;600
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;4;82.221.168.236;1163
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;5;???;0
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;6;rix-k2-gw.isnic.is;1654
+MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;7;www.isnic.is;1036
+.fi
 .TP
 .B \-p\fR, \fB\-\-split
 Use this option to set
@@ -247,7 +287,18 @@ Example:
 MISSING
 .TP
 .B \-z\fR, \fB\-\-aslookup
-MISSING
+Displays the Autonomous System (AS) number alongside each hop.
+.IP
+Example (columns to the right not shown for clarity):
+.nf
+1. AS???   r-76520-PROD.greenqloud.internal
+2. AS51969 46.149.16.4
+3. AS???   172.31.1.16
+4. AS30818 82.221.168.236
+5. ???
+6. AS???   rix-k2-gw.isnic.is
+7. AS1850  www.isnic.is
+.fi
 .TP
 .B \-i \fISECONDS\fR, \fB\-\-interval \fISECONDS
 Use this option to specify the positive number of seconds between ICMP
@@ -305,7 +356,10 @@ Use TCP SYN packets instead of ICMP ECHO.
 is ignored, since SYN packets can not contain data.
 .TP
 .B \-P \fIPORT\fR, \fB\-\-port \fIPORT
-The target port number for TCP traces.
+The target port number for TCP/SCTP/UDP traces.
+.TP
+.B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
+The source port number for UDP traces.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
 The number of seconds to keep the TCP socket open before giving up on
@@ -324,7 +378,7 @@ This environment variable allows to specify options, as if they were
 passed on the command line.  It is parsed before reading the actual
 command line options, so that options specified in
 .B MTR_OPTIONS
-are overriden by command-line options.
+are overridden by command-line options.
 
 Example:
 
@@ -365,5 +419,5 @@ GitHub at:
 .BR https://github.com/traviscross/mtr .
 .SH "SEE ALSO"
 traceroute(8),
-ping(8)
+ping(8),
 TCP/IP Illustrated (Stevens, ISBN 0201633469).
