@@ -218,13 +218,13 @@ void dns_open(void)
 
         rv = getnameinfo  ((struct sockaddr *) &sa, salen, 
 			       hostname, sizeof (hostname), NULL, 0, 0);
+        if (rv == 0) {
+          sprintf (result, "%s %s\n", strlongip (&host), hostname);
+          //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
+          rv = write (fromdns[1], result, strlen (result));
+          if (rv < 0) perror ("write DNS lookup result");
+        }
 
-        sprintf (result, "%s %s\n", strlongip (&host), hostname);
-
-        //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
-
-        rv = write (fromdns[1], result, strlen (result));
-        if (rv < 0) perror ("write DNS lookup result");
         exit (0);
       }
     }
