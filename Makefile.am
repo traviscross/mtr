@@ -3,7 +3,8 @@ SUBDIRS = img
 sbin_PROGRAMS = mtr
 man_MANS = mtr.8
 install-exec-hook: 
-	chmod u+s $(DESTDIR)$(sbindir)/mtr
+	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr` \
+	|| chmod u+s $(DESTDIR)$(sbindir)/mtr
 
 mtr_SOURCES = mtr.c \
               net.c net.h \
