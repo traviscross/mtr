@@ -173,15 +173,19 @@ char* split_txtrec(char *txtrec) {
         }
     }
 
-    char* prev = (*items)[0] = trimsep(txtrec);
+    char* prev = txtrec;
     char* next;
     int i = 0, j;
 
     while ((next = strchr(prev, ITEMSEP)) && (i < ITEMSMAX)) {
-        *next++ = '\0';
-        (*items)[i++] = trimsep(prev);
-        (*items)[i] = prev = trimsep(next);
+        *next = '\0';
+        next++;
+        (*items)[i] = trimsep(prev);
+        prev = next;
+        i++;
     }
+    (*items)[i] = trimsep(prev);
+
     if (i < ITEMSMAX)
         i++;
     for (j = i;  j <= ITEMSMAX; j++)
