@@ -259,57 +259,58 @@ void parse_arg (int argc, char **argv)
   int opt;
   int i;
   /* IMPORTANT: when adding or modifying an option:
-       1/ mind the order of options, there is some logic;
-       2/ update the getopt_long call below;
+       0/ try to find a somewhat logical order;
+       1/ add the long option name in "long_options" below;
+       2/ add the short option name in the "getopt_long" call;
        3/ update the man page (use the same order);
-       4/ update the help message showed when using --help.
+       4/ update the help message (see PrintHelp).
    */
   static struct option long_options[] = {
-    { "help", 0, 0, 'h' },
-    { "version", 0, 0, 'v' },
+    /* option name, has argument, NULL, short name */
+    { "help",           0, NULL, 'h' },
+    { "version",        0, NULL, 'v' },
 
-    { "inet", 0, 0, '4' },	/* IPv4 only */
-    { "inet6", 0, 0, '6' },	/* IPv6 only */
+    { "inet",           0, NULL, '4' }, /* IPv4 only */
+    { "inet6",          0, NULL, '6' }, /* IPv6 only */
 
-    { "filename", 1, 0, 'F' },
+    { "filename",       1, NULL, 'F' },
 
-    { "report", 0, 0, 'r' },
-    { "report-wide", 0, 0, 'w' },
-    { "xml", 0, 0, 'x' },
-    { "curses", 0, 0, 't' },
-    { "gtk", 0, 0, 'g' },
-    { "raw", 0, 0, 'l' },
-    { "csv", 0, 0, 'C' },
-    { "displaymode", 1, 0, 'd' },
-    { "split", 0, 0, 'p' },     /* BL */
-    				/* maybe above should change to -d 'x' */
+    { "report",         0, NULL, 'r' },
+    { "report-wide",    0, NULL, 'w' },
+    { "xml",            0, NULL, 'x' },
+    { "curses",         0, NULL, 't' },
+    { "gtk",            0, NULL, 'g' },
+    { "raw",            0, NULL, 'l' },
+    { "csv",            0, NULL, 'C' },
+    { "displaymode",    1, NULL, 'd' },
+    { "split",          0, NULL, 'p' }, /* BL */
+                                        /* maybe above should change to -d 'x' */
 
-    { "no-dns", 0, 0, 'n' },
-    { "show-ips", 0, 0, 'b' },
-    { "order", 1, 0, 'o' },	/* fields to display & their order */
+    { "no-dns",         0, NULL, 'n' },
+    { "show-ips",       0, NULL, 'b' },
+    { "order",          1, NULL, 'o' }, /* fields to display & their order */
 #ifdef IPINFO
-    { "ipinfo", 1, 0, 'y' },    /* IP info lookup */
-    { "aslookup", 0, 0, 'z' },  /* Do AS lookup (--ipinfo 0) */
+    { "ipinfo",         1, NULL, 'y' }, /* IP info lookup */
+    { "aslookup",       0, NULL, 'z' }, /* Do AS lookup (--ipinfo 0) */
 #endif
 
-    { "interval", 1, 0, 'i' },
-    { "report-cycles", 1, 0, 'c' },
-    { "psize", 1, 0, 's' },	/* changed 'p' to 's' to match ping option
-				   overload psize<0, ->rand(min,max) */
-    { "bitpattern", 1, 0, 'B' },/* overload b>255, ->rand(0,255) */
-    { "tos", 1, 0, 'Q' },	/* typeof service (0,255) */
-    { "mpls", 0, 0, 'e' },
-    { "address", 1, 0, 'a' },
-    { "first-ttl", 1, 0, 'f' },	/* -f & -m are borrowed from traceroute */
-    { "max-ttl", 1, 0, 'm' },
-    { "udp", 0, 0, 'u' },	/* UDP (default is ICMP) */
-    { "tcp", 0, 0, 'T' },	/* TCP (default is ICMP) */
-    { "sctp", 0, 0, 'S' },	/* SCTP (default is ICMP) */
-    { "port", 1, 0, 'P' },      /* target port number for TCP/SCTP/UDP */
-    { "localport", 1, 0, 'L' }, /* source port number for UDP */
-    { "timeout", 1, 0, 'Z' },   /* timeout for TCP sockets */
+    { "interval",       1, NULL, 'i' },
+    { "report-cycles",  1, NULL, 'c' },
+    { "psize",          1, NULL, 's' }, /* overload psize<0, ->rand(min,max) */
+    { "bitpattern",     1, NULL, 'B' }, /* overload B>255, ->rand(0,255) */
+    { "tos",            1, NULL, 'Q' }, /* typeof service (0,255) */
+    { "mpls",           0, NULL, 'e' },
+    { "address",        1, NULL, 'a' },
+    { "first-ttl",      1, NULL, 'f' }, /* -f & -m are borrowed from traceroute */
+    { "max-ttl",        1, NULL, 'm' },
+    { "udp",            0, NULL, 'u' }, /* UDP (default is ICMP) */
+    { "tcp",            0, NULL, 'T' }, /* TCP (default is ICMP) */
+    { "sctp",           0, NULL, 'S' }, /* SCTP (default is ICMP) */
+    { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
+    { "localport",      1, NULL, 'L' }, /* source port number for UDP */
+    { "timeout",        1, NULL, 'Z' }, /* timeout for TCP sockets */
 #ifdef SO_MARK
-    { "mark", 1, 0, 'M' },      /* use SO_MARK */
+    { "mark",           1, NULL, 'M' }, /* use SO_MARK */
 #endif
     { 0, 0, 0, 0 }
   };
