@@ -149,12 +149,6 @@ struct sequence {
 };
 
 
-/* Configuration parameter: How many queries to unknown hosts do we
-   send? (This limits the amount of traffic generated if a host is not
-   reachable) */
-#define MAX_UNKNOWN_HOSTS 5
-
-
 /* BSD-derived kernels use host byte order for the IP length and 
    offset fields when using raw sockets.  We detect this automatically at 
    run-time and do the right thing. */
@@ -209,6 +203,7 @@ static int numhosts = 10;
 
 extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
+extern int maxUnknown;	/* stop ping threshold */
 extern int cpacketsize;		/* packet size used by ping */
 static int packetsize;		/* packet size used by ping */
 static int spacketsize;		/* packet size used by sendto */
@@ -1308,8 +1303,8 @@ int net_send_batch(void)
   if (	/* success in reaching target */
      ( addrcmp( (void *) &(host[batch_at].addr),
                 (void *) remoteaddress, af ) == 0 ) ||
-      /* fail in consecutive MAX_UNKNOWN_HOSTS (firewall?) */
-      (n_unknown > MAX_UNKNOWN_HOSTS) ||
+      /* fail in consecutive maxUnknown (firewall?) */
+      (n_unknown > maxUnknown) ||
       /* or reach limit  */
       (batch_at >= maxTTL-1)) {
     numhosts = batch_at+1;

@@ -88,6 +88,8 @@ int  fstTTL = 1;                /* default start at first hop */
 /*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
+int maxUnknown = 5;				/* stop send package */
+                                /*when larger than this count */
 int remoteport = 0;            /* for TCP tracing */
 int localport = 0;             /* for UDP tracing */
 int tcp_timeout = 10 * 1000000;     /* for TCP tracing */
@@ -303,6 +305,7 @@ void parse_arg (int argc, char **argv)
     { "address",        1, NULL, 'a' },
     { "first-ttl",      1, NULL, 'f' }, /* -f & -m are borrowed from traceroute */
     { "max-ttl",        1, NULL, 'm' },
+	{ "max-unknown",    1, NULL, 'U' },
     { "udp",            0, NULL, 'u' }, /* UDP (default is ICMP) */
     { "tcp",            0, NULL, 'T' }, /* TCP (default is ICMP) */
     { "sctp",           0, NULL, 'S' }, /* SCTP (default is ICMP) */
@@ -318,7 +321,7 @@ void parse_arg (int argc, char **argv)
   opt = 0;
   while(1) {
     opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:uTSP:L:Z:M:", long_options, NULL);
+		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -410,6 +413,12 @@ void parse_arg (int argc, char **argv)
 	fstTTL = maxTTL;
       }
       break;
+	case 'U':
+		maxUnknown = atoi(optarg);
+		if (maxUnknown < 1) {
+			maxUnknown = 1;
+		}
+		break;
     case 'o':
       /* Check option before passing it on to fld_active. */
       if (strlen (optarg) > MAXFLD) {
@@ -631,7 +640,7 @@ int main(int argc, char **argv)
               "\t\t[--no-dns] [--show-ips] [-o FIELDS] [-y IPINFO] [--aslookup]\n"
               "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
               "\t\t[-Q TOS] [--mpls]\n"
-              "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL]\n"
+              "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL] [-U MAX_UNKNOWN]\n"
               "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-L LOCALPORT] [-Z TIMEOUT]\n"
               "\t\t[-M MARK] HOSTNAME\n", argv[0]);
        printf("See the man page for details.\n");
