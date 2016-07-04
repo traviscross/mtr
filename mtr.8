@@ -80,6 +80,9 @@ mtr \- a network diagnostic tool
 .BI \-m \ MAX\-TTL\c
 ]
 [\c
+.BI \-U \ MAX\-UNKNOWN\c
+]
+[\c
 .B \-\-udp\c
 ]
 [\c
@@ -358,6 +361,9 @@ Specifies with what TTL to start.  Defaults to 1.
 .B \-m \fINUM\fR, \fB\-\-max-ttl \fINUM
 Specifies the maximum number of hops (max time-to-live value) traceroute will
 probe.  Default is 30.
+.TP
+.B \-U \fINUM\fR, \fB\-\-max-unknown \fINUM
+Specifies the maximum unknown host. Default is 5.
 .TP
 .B \-u\fR, \fB\-\-udp
 Use UDP datagrams instead of ICMP ECHO.
