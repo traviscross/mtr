@@ -106,6 +106,10 @@ void display_open(void)
     break;
   case DisplayGTK:
     gtk_open();
+#ifdef IPINFO
+    if (ipinfo_no >= 0)
+        asn_open();
+#endif
     break;
   }
 }
