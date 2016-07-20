@@ -80,6 +80,9 @@ mtr \- a network diagnostic tool
 .BI \-m \ MAX\-TTL\c
 ]
 [\c
+.BI \-U \ MAX\-UNKNOWN\c
+]
+[\c
 .B \-\-udp\c
 ]
 [\c
@@ -284,10 +287,22 @@ Example:
 -o "LSD NBAW  X"
 .TP
 .B \-y \fIn\fR, \fB\-\-ipinfo \fIn
-MISSING
+Displays information about each IP hop.  Valid values for \fIn\fR are:
+.TS
+tab(%);
+ll.
+0%Display AS number (equivalent to \fB-z\fR)
+1%Display IP prefix
+2%Display country code of the origin AS
+3%Display RIR (ripencc, arin, ...)
+4%Display the allocation date of the IP prefix
+.TE
+.br
+
+It is possible to cycle between these fields at runtime (using the \fBy\fR key).
 .TP
 .B \-z\fR, \fB\-\-aslookup
-Displays the Autonomous System (AS) number alongside each hop.
+Displays the Autonomous System (AS) number alongside each hop.  Equivalent to \fB\-\-ipinfo 0\fR.
 .IP
 Example (columns to the right not shown for clarity):
 .nf
@@ -346,6 +361,9 @@ Specifies with what TTL to start.  Defaults to 1.
 .B \-m \fINUM\fR, \fB\-\-max-ttl \fINUM
 Specifies the maximum number of hops (max time-to-live value) traceroute will
 probe.  Default is 30.
+.TP
+.B \-U \fINUM\fR, \fB\-\-max-unknown \fINUM
+Specifies the maximum unknown host. Default is 5.
 .TP
 .B \-u\fR, \fB\-\-udp
 Use UDP datagrams instead of ICMP ECHO.
