@@ -141,7 +141,7 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
         "Mike Simons <msimons@moria.simons-clan.com>",
         "Aaron Scarisbrick,",
         "Craig Milo Rogers <Rogers@ISI.EDU>",
-        "Antonio Querubin <tony@aloha.net>",
+        "Antonio Querubin <tony@lavanauts.org>",
         "Russell Nelson <rn-mtr@crynwr.com>",
         "Davin Milun <milun@acm.org>",
         "Josh Martin <jmartin@columbiaservices.net>",
