@@ -409,7 +409,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Snt",
     renderer,
-    "text", 3,
+    "text", COL_SNT,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
@@ -419,7 +419,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Last",
     renderer,
-    "text", 4,
+    "text", COL_LAST,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
@@ -429,7 +429,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Avg",
     renderer,
-    "text", 6,
+    "text", COL_AVG,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
@@ -439,7 +439,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Best",
     renderer,
-    "text", 5,
+    "text", COL_BEST,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
@@ -449,7 +449,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("Worst",
     renderer,
-    "text", 7,
+    "text", COL_WORST,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
@@ -459,7 +459,7 @@ void TreeViewCreate(void)
   g_object_set (G_OBJECT(renderer), "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes ("StDev",
     renderer,
-    "text", 8,
+    "text", COL_STDEV,
     "foreground", COL_COLOR,
     NULL);
   gtk_tree_view_column_set_resizable(column, TRUE);
