@@ -88,6 +88,9 @@ void display_open(void)
   case DisplayTXT:
     txt_open();
     break;
+  case DisplayJSON:
+    json_open();
+    break;
   case DisplayXML:
     xml_open();
     break;
@@ -123,6 +126,9 @@ void display_close(time_t now)
     break;
   case DisplayTXT:
     txt_close();
+    break;
+  case DisplayJSON:
+    json_close();
     break;
   case DisplayXML:
     xml_close();
@@ -197,6 +203,7 @@ void display_rawping(int host, int msec, int seq)
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
+  case DisplayJSON:
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
@@ -215,6 +222,7 @@ void display_rawhost(int host, ip_t *ip_addr)
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
+  case DisplayJSON:
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
@@ -233,6 +241,7 @@ void display_loop(void)
   switch(DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
+  case DisplayJSON:
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
@@ -255,6 +264,7 @@ void display_clear(void)
     break;
   case DisplayReport:
   case DisplayTXT:
+  case DisplayJSON:
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:

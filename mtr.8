@@ -35,6 +35,9 @@ mtr \- a network diagnostic tool
 .B \-\-csv\c
 ]
 [\c
+.B \-\-json\c
+]
+[\c
 .B \-\-split\c
 ]
 [\c
@@ -241,6 +244,12 @@ MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;5;???;0
 MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;6;rix-k2-gw.isnic.is;1654
 MTR.0.86+git:16e39fc0;1435562787;OK;nic.is;7;www.isnic.is;1036
 .fi
+.TP
+.B \-j\fR, \fB\-\-json
+Use this option to tell
+.B mtr
+to use the JSON output format.  This format is better suited for
+automated processing of the measurement results.
 .TP
 .B \-p\fR, \fB\-\-split
 Use this option to set

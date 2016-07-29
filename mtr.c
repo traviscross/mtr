@@ -285,6 +285,7 @@ void parse_arg (int argc, char **argv)
     { "gtk",            0, NULL, 'g' },
     { "raw",            0, NULL, 'l' },
     { "csv",            0, NULL, 'C' },
+    { "json",           0, NULL, 'j' },
     { "displaymode",    1, NULL, 'd' },
     { "split",          0, NULL, 'p' }, /* BL */
                                         /* maybe above should change to -d 'x' */
@@ -323,7 +324,7 @@ void parse_arg (int argc, char **argv)
   opt = 0;
   while(1) {
     opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:G:M:", long_options, NULL);
+		      "hv46F:rwxtglCjpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:G:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -356,6 +357,9 @@ void parse_arg (int argc, char **argv)
       break;
     case 'C':
       DisplayMode = DisplayCSV;
+      break;
+    case 'j':
+      DisplayMode = DisplayJSON;
       break;
     case 'x':
       DisplayMode = DisplayXML;
@@ -546,6 +550,7 @@ void parse_arg (int argc, char **argv)
 
   if (DisplayMode == DisplayReport ||
       DisplayMode == DisplayTXT ||
+      DisplayMode == DisplayJSON ||
       DisplayMode == DisplayXML ||
       DisplayMode == DisplayRaw ||
       DisplayMode == DisplayCSV)
@@ -645,7 +650,7 @@ int main(int argc, char **argv)
   if (PrintHelp) {
        printf("usage: %s [--help] [--version] [-4|-6] [-F FILENAME]\n"
               "\t\t[--report] [--report-wide] [--displaymode MODE]\n"
-              "\t\t[--xml] [--gtk] [--curses] [--raw] [--csv] [--split]\n"
+              "\t\t[--xml] [--gtk] [--curses] [--raw] [--csv] [--json] [--split]\n"
               "\t\t[--no-dns] [--show-ips] [-o FIELDS] [-y IPINFO] [--aslookup]\n"
               "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
               "\t\t[-Q TOS] [--mpls]\n"
