@@ -65,6 +65,9 @@ mtr \- a network diagnostic tool
 .BI \-B \ BITPATTERN\c
 ]
 [\c
+.BI \-G \ GRACEPERIOD\c
+]
+[\c
 .BI \-Q \ TOS\c
 ]
 [\c
@@ -336,6 +339,10 @@ packet size up to that number.
 Specifies bit pattern to use in payload.  Should be within range 0 - 255.  If
 .I NUM
 is greater than 255, a random pattern is used.
+.TP
+.B \-G \fISECONDS\fR, \fB\-\-graceperiod \fISECONDS
+Use this option to specify the positive number of seconds to wait for responses
+after the final request. The default value is five seconds.
 .TP
 .B \-Q \fINUM\fR, \fB\-\-tos \fINUM
 Specifies value for type of service field in IP header.  Should be within range 0

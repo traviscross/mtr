@@ -39,14 +39,14 @@ extern int Interactive;
 extern int MaxPing;
 extern int ForceMaxPing;
 extern float WaitTime;
+extern float GraceTime;
 double dnsinterval;
 extern int mtrtype;
 
 static struct timeval intervaltime;
 int display_offset = 0;
 
-
-#define GRACETIME (5 * 1000*1000)
+#define GRACETIME (GraceTime * 1000*1000)
 
 void select_loop(void) {
   fd_set readfd;

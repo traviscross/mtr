@@ -67,6 +67,7 @@ int   PrintHelp = 0;
 int   MaxPing = 10;
 int   ForceMaxPing = 0;
 float WaitTime = 1.0;
+float GraceTime = 5.0;
 char *Hostname = NULL;
 char *InterfaceAddress = NULL;
 char  LocalHostname[128];
@@ -312,6 +313,7 @@ void parse_arg (int argc, char **argv)
     { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
     { "localport",      1, NULL, 'L' }, /* source port number for UDP */
     { "timeout",        1, NULL, 'Z' }, /* timeout for TCP sockets */
+    { "gracetime",      1, NULL, 'G' }, /* graceperiod for replies after last probe */
 #ifdef SO_MARK
     { "mark",           1, NULL, 'M' }, /* use SO_MARK */
 #endif
@@ -321,7 +323,7 @@ void parse_arg (int argc, char **argv)
   opt = 0;
   while(1) {
     opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:M:", long_options, NULL);
+		      "hv46F:rwxtglCpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:G:M:", long_options, NULL);
     if(opt == -1)
       break;
 
@@ -437,6 +439,13 @@ void parse_arg (int argc, char **argv)
       bitpattern = atoi (optarg);
       if (bitpattern > 255)
 	bitpattern = -1;
+      break;
+    case 'G':
+      GraceTime = atof (optarg);
+      if (GraceTime <= 0.0) {
+        fprintf (stderr, "mtr: wait time must be positive\n");
+        exit (1);
+      }
       break;
     case 'Q':
       tos = atoi (optarg);
@@ -642,7 +651,7 @@ int main(int argc, char **argv)
               "\t\t[-Q TOS] [--mpls]\n"
               "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL] [-U MAX_UNKNOWN]\n"
               "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-L LOCALPORT] [-Z TIMEOUT]\n"
-              "\t\t[-M MARK] HOSTNAME\n", argv[0]);
+              "\t\t[-G GRACEPERIOD] [-M MARK] HOSTNAME\n", argv[0]);
        printf("See the man page for details.\n");
     exit(0);
   }
