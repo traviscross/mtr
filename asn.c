@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "config.h"
+
 #ifdef __APPLE__
 #define BIND_8_COMPAT
 #endif
