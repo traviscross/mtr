@@ -89,8 +89,8 @@ int  fstTTL = 1;                /* default start at first hop */
 /*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
 int   maxTTL = 30;              /* inline with traceroute */
                                 /* end ttl window stuff. */
-int maxUnknown = 5;				/* stop send package */
-                                /*when larger than this count */
+int maxUnknown = 12;            /* stop send package */
+                                /* when larger than this count */
 int remoteport = 0;            /* for TCP tracing */
 int localport = 0;             /* for UDP tracing */
 int tcp_timeout = 10 * 1000000;     /* for TCP tracing */
