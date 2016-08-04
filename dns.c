@@ -164,7 +164,7 @@ void dns_open(void)
     perror ("can't make a pipe for DNS process");
     exit (-1);
   }
-
+  fflush (stdout);
   pid = fork ();
   //pid = 1;
   if (pid < 0) {

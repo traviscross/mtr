@@ -7,7 +7,97 @@ files: It hasn't been released. Doing it this way reduces the
 chance for a manual messup if I just "go ahead and release it"
 without any editing here. 
 
+V0.88
+
 V0.87
+Antonio Querubin (1):
+      Use setcap instead of setuid when installing the binary.
+
+Baptiste Jonglez (4):
+      Allow enabling IP info and ASN lookup from the curses interface
+      Document the -y option in the manpage
+      Cosmetic cleanup of the option-parsing code
+      Fix wrap-around bug when displaying IP info (-y option)
+
+Danek Duvall (1):
+      Fix issue #76: rationalize the discovery of a terminal handling library
+
+Gareth Randall (6):
+      Corrected the "without gtk" reference to "./configure --without-gtk",
+      Filled in some of the missing man page sections.
+      Remove a warning message at compile time.
+      Fix typos and update mailing list references.
+      Add a section about granting limited security capabilities.
+      State that Github is the preferred way to report bugs.
+
+Guo Yixuan (1):
+      Raw output: add x for a ping-packet-sent event.
+
+Hajimu UMEMOTO (1):
+      Add aslookup support to gtk interface
+
+Jakub Wilk (1):
+      Fix typos.
+
+Kris Coward (1):
+      Added --displaymode option
+
+Narthorn (1):
+      curses: Fix background transparency in terminal
+
+Nikolai R Kristiansen (1):
+      Add support for JSON as report output format
+
+R.E. Wolff (9):
+      explanation of the version numbers in NEWS.
+      Merge branch 'master' of github.com:traviscross/mtr
+      removed warning about IPV6 socket when IPV6 is not available at runtime
+      fix for printing space field in XML.
+      modified name of timeout variable to prevent warning on solaris.
+      changed the name of the ping timout timer from 'tag' to 'ping timeout timer'
+      net.c fix from AQ.
+      issue 128: compile should be in .gitignore
+      The release script bumped the version number
+      added use-default-colors...
+
+Theo Baschak (1):
+      Update asn.c - 32bit asn widths
+
+Tobias Rittweiler (5):
+      Fix typo in csv_close() that prevented any of the data columns from being printed.
+      --csv: Don't print spaces in columns.
+      --csv: Print a header line as the first line which names all columns.
+      asn.h: Guard against being included twice.
+      Fix setting length field of UDP header to broken value on BSD systems.
+
+Vojtech Kurka (1):
+      Fixed behaviour of Pause button
+
+aquerubin (3):
+      Correct psize for IPv6.
+      Fix Avg and Best column order to match column headers in GTK display.
+      Update Tony's email address in the GTK credits.
+
+penyu (1):
+      add max-unknown option
+
+russor (10):
+      allow setting local and remote port for UDP probing
+      fix checksum for odd sized packets
+      set the local address for display if it was bound
+      automatically set udp address if needed
+      fix improper aliasing
+      fix placement of zeros when running alternate udp checksum
+      endian neutral placement of alternate checksum
+      copy odd byte into a 16-bit temp value; used bit-sized types for calrity
+      correct checksum calculation when adding the overflow overflows
+      add option to set graceperiod
+
+swordfeng (3):
+      Add SCTP support (same way with tcp)
+      remove comment
+      fix sctp header structure
+
 
 V0.86 Fixed default hostname logic. 
       Fix for NetBSD: 64bit time_t -- Thomas Klausner
@@ -350,3 +440,4 @@ people as it didn't contain any recent changes/news.
         it does not work for GLIBC2 systems (e.g., RedHat 7+).
         + Fixed the subordinate CHECK_LIBS on the test for res_mkquery,
         so that they test for res_mkquery, not res_init.
+
