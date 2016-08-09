@@ -96,6 +96,41 @@ void pwcenter(char *str)
 }
 
 
+char *format_number (int n, int w, char *buf)
+{
+   // XXX todo: implement w != 5.. 
+   if (w != 5) return ("unimpl");
+
+   if (n < 100000) {
+     snprintf (buf, w+1, "%5d", n);
+     return buf;
+   }
+   if (n < 1000000) {
+     snprintf (buf, w+1, "%3dk%1d", n/1000, (n%1000)/100);
+     return buf;
+   }
+   if (n < 10000000) {
+     snprintf (buf, w+1, "%1dM%03d", n/1000000, (n%1000000)/1000);
+     return buf;
+   }
+   if (n < 100000000) {
+     snprintf (buf, w+1, "%2dM%02d", n/1000000, (n%1000000)/10000);
+     return buf;
+   }
+   if (n < 1000000000) {
+     snprintf (buf, w+1, "%3dM%01d", n/1000000, (n%1000000)/100000);
+     return buf;
+   }
+   //if (n < 10000000000) {
+     snprintf (buf, w+1, "%1dG%03d", n/1000000000, (n%1000000000)/1000000);
+     return buf;
+   //}
+
+   //return ("big");
+}
+
+
+
 int mtr_curses_keyaction(void)
 {
   int c = getch();
@@ -320,6 +355,21 @@ int mtr_curses_keyaction(void)
 }
 
 
+void format_field (char *dst, const char *format, int n)
+{
+  if (index (format, 'N' ) ) {
+    *dst++ = ' ';
+    format_number (n, 5, dst);
+  } else if (strchr( format, 'f' ) ) {
+    // this is for fields where we measure integer microseconds but
+    // display floating point miliseconds. Convert to float here.
+    sprintf(dst, format, n / 1000.0 ); 
+    // this was marked as a temporary hack over 10 years ago. -- REW
+  } else {
+    sprintf(dst, format, n);
+  } 
+} 
+
 void mtr_curses_hosts(int startstat) 
 {
   int max;
@@ -367,15 +417,7 @@ void mtr_curses_hosts(int startstat)
 	   can't be careful enough. */
 	j = fld_index[fld_active[i]];
 	if (j == -1) continue; 
-
-	/* temporay hack for stats usec to ms... */
-	if( index( data_fields[j].format, 'f' ) ) {
-	  sprintf(buf + hd_len, data_fields[j].format,
-		data_fields[j].net_xxx(at) /1000.0 );
-	} else {
-	  sprintf(buf + hd_len, data_fields[j].format,
-		data_fields[j].net_xxx(at) );
-	}
+        format_field (buf+hd_len, data_fields[j].format, data_fields[j].net_xxx(at));
 	hd_len +=  data_fields[j].length;
       }
       buf[hd_len] = 0;
