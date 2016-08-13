@@ -203,7 +203,7 @@ static int numhosts = 10;
 
 extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
-extern int maxUnknown;	/* stop ping threshold */
+extern int maxUnknown;		/* stop ping threshold */
 extern int cpacketsize;		/* packet size used by ping */
 static int packetsize;		/* packet size used by ping */
 static int spacketsize;		/* packet size used by sendto */
@@ -212,8 +212,8 @@ extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
-extern int localport;  /* source port for UDP tracing */
-extern int tcp_timeout;             /* timeout for TCP connections */
+extern int localport;		/* source port for UDP tracing */
+extern int tcp_timeout;         /* timeout for TCP connections */
 #ifdef SO_MARK
 extern int mark;		/* SO_MARK to set for ping packet*/
 #endif
@@ -565,7 +565,6 @@ void net_send_query(int index)
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
   uint16 checksum_result;
-  uint16 mypid;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
@@ -656,13 +655,11 @@ void net_send_query(int index)
     udp = (struct UDPHeader *)(packet + iphsize);
     udp->checksum  = 0;
     if (!localport) {
-      mypid = (uint16)getpid();
-      if (mypid < MinPort)
-        mypid += MinPort;
-    } else {
-      mypid = (uint16)localport;
+      localport = (uint16)getpid();
+      if (localport < MinPort)
+        localport += MinPort;
     }
-    udp->srcport = htons(mypid);
+    udp->srcport = htons(localport);
     udp->length = htons(abs(packetsize) - iphsize);
 
     if (!remoteport) {
@@ -1001,6 +998,9 @@ void net_process_return(void)
         break;
 #endif
       }
+      if (ntohs(udpheader->srcport) != (uint16)localport)
+        return;
+
       if (remoteport && remoteport == ntohs(udpheader->dstport)) {
         sequence = ntohs(udpheader->checksum);
       } else if (!remoteport) {
