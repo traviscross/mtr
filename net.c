@@ -1001,6 +1001,15 @@ void net_process_return(void)
         break;
 #endif
       }
+
+      if (!localport) {
+        if (ntohs(udpheader->srcport) != (uint16)getpid())
+          return;
+      } else {
+        if (ntohs(udpheader->srcport) != (uint16)localport)
+          return;
+      }
+
       if (remoteport && remoteport == ntohs(udpheader->dstport)) {
         sequence = ntohs(udpheader->checksum);
       } else if (!remoteport) {
