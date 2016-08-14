@@ -86,10 +86,10 @@ char *strlongip(ip_t * ip)
 }
 
 
-int longipstr( char *s, ip_t *dst, int af )
+int longipstr( char *s, ip_t *dst, int family )
 {
 #ifdef ENABLE_IPV6
-  return inet_pton( af, s, dst );
+  return inet_pton( family, s, dst );
 #else
   return inet_aton( s, dst );
 #endif
@@ -348,9 +348,9 @@ char *strlongip(ip_t * ip)
 // XXX check if necessary/exported. 
 
 /* Resolve an IP address to a hostname. */ 
-struct hostent *addr2host( const char *addr, int af ) {
+struct hostent *addr2host( const char *addr, int family ) {
   int len = 0;
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     len = sizeof( struct in_addr );
     break;
@@ -360,7 +360,7 @@ struct hostent *addr2host( const char *addr, int af ) {
     break;
 #endif
   }
-  return gethostbyaddr( addr, len, af );
+  return gethostbyaddr( addr, len, family );
 }
 
 

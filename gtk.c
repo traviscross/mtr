@@ -210,20 +210,20 @@ gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button)
 }
 
 
-gint Host_activate(GtkWidget *Entry, UNUSED gpointer data) 
+gint Host_activate(GtkWidget *entry, UNUSED gpointer data) 
 {
   struct hostent * addr;
 
-  addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(Entry)));
+  addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
   if(addr) {
     net_reopen(addr);
     /* If we are "Paused" at this point it is usually because someone
        entered a non-existing host. Therefore do the go-ahead... */
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
   } else {
-    int pos = strlen(gtk_entry_get_text( GTK_ENTRY(Entry)));
+    int pos = strlen(gtk_entry_get_text( GTK_ENTRY(entry)));
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 1);
-    gtk_editable_insert_text( GTK_EDITABLE(Entry), ": not found", -1, &pos);
+    gtk_editable_insert_text( GTK_EDITABLE(entry), ": not found", -1, &pos);
   }
 
   return FALSE;

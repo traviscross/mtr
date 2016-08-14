@@ -157,23 +157,23 @@ char* trimsep(char *s) {
 }
 
 // originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
-char* split_txtrec(char *txtrec) {
-    if (!txtrec)
+char* split_txtrec(char *txt_rec) {
+    if (!txt_rec)
 	return NULL;
     if (iihash) {
 #ifdef IIDEBUG
-        syslog(LOG_INFO, "Malloc-tbl: %s", txtrec);
+        syslog(LOG_INFO, "Malloc-tbl: %s", txt_rec);
 #endif
         if (!(items = malloc(sizeof(*items)))) {
 #ifdef IIDEBUG
-            syslog(LOG_INFO, "Free-txt(%p)", txtrec);
+            syslog(LOG_INFO, "Free-txt(%p)", txt_rec);
 #endif
-            free(txtrec);
+            free(txt_rec);
             return NULL;
         }
     }
 
-    char* prev = txtrec;
+    char* prev = txt_rec;
     char* next;
     int i = 0, j;
 
