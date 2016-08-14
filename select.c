@@ -192,7 +192,6 @@ void select_loop(void) {
     if (dns) {
       /* Handle any pending resolver events */
       dnsinterval = WaitTime;
-      dns_events(&dnsinterval);
     }
 
     /*  Have we finished a nameservice lookup?  */

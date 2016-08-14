@@ -315,12 +315,6 @@ char *dns_lookup2(ip_t * ip)
 }
 
 
-void dns_events(double *sinterval)
-{
-  return;
-}
-
-
 char *dns_lookup(ip_t * ip)
 {
   char *t;
