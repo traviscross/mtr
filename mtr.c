@@ -723,7 +723,7 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_IPV6
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
-    bzero( &hints, sizeof hints );
+    memset( &hints, 0, sizeof hints );
     hints.ai_family = af;
     hints.ai_socktype = SOCK_DGRAM;
     error = getaddrinfo( Hostname, NULL, &hints, &res );
@@ -741,7 +741,7 @@ int main(int argc, char **argv)
     }
     /* Convert the first addrinfo into a hostent. */
     host = &trhost;
-    bzero( host, sizeof trhost );
+    memset( host, 0, sizeof trhost );
     host->h_name = res->ai_canonname;
     host->h_aliases = NULL;
     host->h_addrtype = res->ai_family;

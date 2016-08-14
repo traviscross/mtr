@@ -162,7 +162,7 @@ void report_close(void)
       if (j < 0) continue;
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[j].format, 'f' ) ) {
+      if( strchr( data_fields[j].format, 'f' ) ) {
         snprintf( buf + len, sizeof(buf), data_fields[j].format,
 		data_fields[j].net_xxx(at) /1000.0 );
       } else {
@@ -318,7 +318,7 @@ void json_close(void)
       /* Format value */
       const char *format;
       format = data_fields[j].format;
-      if( index(format, 'f') ) {
+      if( strchr(format, 'f') ) {
         format = "%.2f";
       } else {
         format = "%d";
@@ -329,7 +329,7 @@ void json_close(void)
       strcat(name, format);
 
       /* Output json line */
-      if(index(data_fields[j].format, 'f')) {
+      if(strchr(data_fields[j].format, 'f')) {
         /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
         printf(name,
                data_fields[j].title,
@@ -401,7 +401,7 @@ void xml_close(void)
       }
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[j].format, 'f' ) ) {
+      if( strchr( data_fields[j].format, 'f' ) ) {
 	printf( name,
 		title,
 		data_fields[j].net_xxx(at) /1000.0,
@@ -471,7 +471,7 @@ void csv_close(time_t now)
       if (j < 0) continue; 
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-      if( index( data_fields[j].format, 'f' ) ) {
+      if( strchr( data_fields[j].format, 'f' ) ) {
 	printf( ",%.2f", data_fields[j].net_xxx(at) / 1000.0);
       } else {
 	printf( ",%d",   data_fields[j].net_xxx(at) );
