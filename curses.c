@@ -288,7 +288,7 @@ int mtr_curses_keyaction(void)
     return ActionNone;
   }
   if (tolower(c) == 'j') {
-    if( index(fld_active, 'N') ) {
+    if( strchr(fld_active, 'N') ) {
       strcpy(fld_active, "DR AGJMXI");        /* GeoMean and jitter */
     } else {
       strcpy(fld_active, "LS NABWV");         /* default */

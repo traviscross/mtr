@@ -873,7 +873,7 @@ void net_process_return(void)
   struct timeval now;
   ip_t * fromaddress = NULL;
   int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
-  int sequence = 0;
+  int seq_num = 0;
 
   /* MPLS decoding */
   struct mplslen mpls;
@@ -924,7 +924,7 @@ void net_process_return(void)
       if(header->id != (uint16)getpid())
         return;
 
-      sequence = header->sequence;
+      seq_num = header->sequence;
     } else if (header->type == timeexceededtype) {
       switch ( af ) {
       case AF_INET:
@@ -961,7 +961,7 @@ void net_process_return(void)
       if (header->id != (uint16)getpid())
         return;
   
-      sequence = header->sequence;
+      seq_num = header->sequence;
     }
     break;
   
@@ -1002,9 +1002,9 @@ void net_process_return(void)
         return;
 
       if (remoteport && remoteport == ntohs(udpheader->dstport)) {
-        sequence = ntohs(udpheader->checksum);
+        seq_num = ntohs(udpheader->checksum);
       } else if (!remoteport) {
-        sequence = ntohs(udpheader->dstport);
+        seq_num = ntohs(udpheader->dstport);
       }
     }
     break;
@@ -1042,7 +1042,7 @@ void net_process_return(void)
         break;
 #endif
       }
-      sequence = ntohs(tcpheader->srcport);
+      seq_num = ntohs(tcpheader->srcport);
     }
     break;
     
@@ -1079,12 +1079,12 @@ void net_process_return(void)
         break;
 #endif
       }
-      sequence = ntohs(sctpheader->srcport);
+      seq_num = ntohs(sctpheader->srcport);
     }
     break;
   }
-  if (sequence)
-    net_process_ping (sequence, mpls, (void *) fromaddress, now);
+  if (seq_num)
+    net_process_ping (seq_num, mpls, (void *) fromaddress, now);
 }
 
 
@@ -1405,7 +1405,7 @@ int net_selectsocket(void)
 }
 
 
-int net_open(struct hostent * host) 
+int net_open(struct hostent * hostent) 
 {
 #ifdef ENABLE_IPV6
   struct sockaddr_storage name_struct;
@@ -1417,13 +1417,13 @@ int net_open(struct hostent * host)
 
   net_reset();
 
-  remotesockaddr->sa_family = host->h_addrtype;
+  remotesockaddr->sa_family = hostent->h_addrtype;
 
-  switch ( host->h_addrtype ) {
+  switch ( hostent->h_addrtype ) {
   case AF_INET:
     sendsock = sendsock4;
     recvsock = recvsock4;
-    addrcpy( (void *) &(rsa4->sin_addr), host->h_addr, AF_INET );
+    addrcpy( (void *) &(rsa4->sin_addr), hostent->h_addr, AF_INET );
     sourceaddress = (ip_t *) &(ssa4->sin_addr);
     remoteaddress = (ip_t *) &(rsa4->sin_addr);
     break;
@@ -1435,7 +1435,7 @@ int net_open(struct hostent * host)
     }
     sendsock = sendsock6;
     recvsock = recvsock6;
-    addrcpy( (void *) &(rsa6->sin6_addr), host->h_addr, AF_INET6 );
+    addrcpy( (void *) &(rsa6->sin6_addr), hostent->h_addr, AF_INET6 );
     sourceaddress = (ip_t *) &(ssa6->sin6_addr);
     remoteaddress = (ip_t *) &(rsa6->sin6_addr);
     break;
@@ -1723,10 +1723,10 @@ void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
 }
 
 /* Address comparison. */
-int addrcmp( char * a, char * b, int af ) {
+int addrcmp( char * a, char * b, int family ) {
   int rc = -1;
 
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     rc = memcmp( a, b, sizeof (struct in_addr) );
     break;
@@ -1741,9 +1741,9 @@ int addrcmp( char * a, char * b, int af ) {
 }
 
 /* Address copy. */
-void addrcpy( char * a, char * b, int af ) {
+void addrcpy( char * a, char * b, int family ) {
 
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     memcpy( a, b, sizeof (struct in_addr) );
     break;

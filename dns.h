@@ -45,7 +45,6 @@ struct __res_state_ext {
 #endif
 #endif
 
-void dns_events(double *sinterval);
 char *dns_lookup(ip_t * address);
 char *dns_lookup2(ip_t * address);
 struct hostent * dns_forward(const char *name);
