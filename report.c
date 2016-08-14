@@ -458,7 +458,7 @@ void csv_close(time_t now)
 #ifdef IPINFO
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
-      if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
+      fmtinfo = trim(fmtinfo);
       printf("MTR.%s,%lld,%s,%s,%d,%s,%s", MTR_VERSION, (long long)now, "OK", Hostname,
              at+1, name, fmtinfo);
     } else
