@@ -80,7 +80,7 @@ static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
 void print_mpls(struct mplslen *mpls) {
   int k;
   for (k=0; k < mpls->labels; k++)
-    printf("       [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
+    printf("       [MPLS: Lbl %lu Exp %u S %cu TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
 }
 #endif
 
@@ -472,7 +472,7 @@ void csv_close(time_t now)
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
       if( strchr( data_fields[j].format, 'f' ) ) {
-	printf( ",%.2f", data_fields[j].net_xxx(at) / 1000.0);
+	printf( ",%.2f", (float) (data_fields[j].net_xxx(at) / 1000.0));
       } else {
 	printf( ",%d",   data_fields[j].net_xxx(at) );
       }
