@@ -1817,14 +1817,12 @@ void net_process_fds(fd_set *writefd)
 {
   int at, fd, r;
   struct timeval now;
-  uint64_t unow, utime;
 
   /* Can't do MPLS decoding */
   struct mplslen mpls;
   mpls.labels = 0;
 
   gettimeofday(&now, NULL);
-  unow = now.tv_sec * 1000000L + now.tv_usec;
 
   for (at = 0; at < MaxSequence; at++) {
     fd = sequence[at].socket;
@@ -1841,8 +1839,9 @@ void net_process_fds(fd_set *writefd)
       }
     }
     if (fd > 0) {
-      utime = sequence[at].time.tv_sec * 1000000L + sequence[at].time.tv_usec;
-      if (unow - utime > tcp_timeout) {
+     struct timeval subtract;
+     timersub(&now, &sequence[at].time, &subtract);
+     if ((subtract.tv_sec * 1000000L + subtract.tv_usec) > tcp_timeout) {
         close(fd);
         sequence[at].socket = 0;
       }
