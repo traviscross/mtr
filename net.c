@@ -256,7 +256,7 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_check
 {
   unsigned int tsize = psize + dsize;
   char csumpacket[tsize];
-  memset(csumpacket, (unsigned char) abs(bitpattern), abs(tsize));
+  memset(csumpacket, (unsigned char) abs(bitpattern), tsize);
   if (alt_checksum && dsize >= 2) {
     csumpacket[psize + sizeof(struct UDPHeader)] = 0;
     csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
