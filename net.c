@@ -865,7 +865,7 @@ void net_process_return(void)
   struct sockaddr * fromsockaddr = (struct sockaddr *) &fromsockaddr_struct;
   struct sockaddr_in * fsa4 = (struct sockaddr_in *) &fromsockaddr_struct;
   socklen_t fromsockaddrsize;
-  int num;
+  ssize_t num;
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
@@ -901,6 +901,10 @@ void net_process_return(void)
 
   num = recvfrom(recvsock, packet, MAXPACKET, 0, 
 		 fromsockaddr, &fromsockaddrsize);
+  if(num < 0) {
+    perror("recvfrom failed");
+    exit(EXIT_FAILURE);
+  }
 
   switch ( af ) {
   case AF_INET:
@@ -910,7 +914,7 @@ void net_process_return(void)
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
-    if(num < sizeof(struct ICMPHeader))
+    if((size_t) num < sizeof(struct ICMPHeader))
       return;
 
     header = (struct ICMPHeader *) packet;
@@ -944,7 +948,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) + 
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
           return;
         header = (struct ICMPHeader *) ( packet + 
@@ -985,7 +989,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct UDPHeader) )
           return;
         udpheader = (struct UDPHeader *) ( packet +
@@ -1029,7 +1033,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct TCPHeader) )
           return;
         tcpheader = (struct TCPHeader *) ( packet +
@@ -1066,7 +1070,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
           return;
         sctpheader = (struct SCTPHeader *) ( packet +
