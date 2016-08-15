@@ -93,8 +93,8 @@ void report_close(void)
   char name[81];
   char buf[1024];
   char fmt[16];
-  int len=0;
-  int len_hosts = 33;
+  size_t len=0;
+  size_t len_hosts = 33;
 
   if (reportwide)
   {
@@ -103,7 +103,7 @@ void report_close(void)
     max = net_max();
     at  = net_min();
     for (; at < max; at++) {
-      int nlen;
+      size_t nlen;
       addr = net_addr(at);
       if ((nlen = snprint_addr(name, sizeof(name), addr)))
         if (len_hosts < nlen)
@@ -147,11 +147,11 @@ void report_close(void)
 
 #ifdef IPINFO
     if (is_printii()) {
-      snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%ds", len_hosts);
+      snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%zus", len_hosts);
       snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(addr), name);
     } else {
 #endif
-    snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
+    snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%zus", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
 #ifdef IPINFO
     }
