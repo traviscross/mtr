@@ -2,6 +2,9 @@ AC_INIT([mtr], [0.87])
 AC_CONFIG_SRCDIR([mtr.c])
 AM_INIT_AUTOMAKE([foreign])
 
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
+			    [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
+
 AC_CONFIG_FILES([version.h.tmp:version.h.in])
 
 AC_SUBST(GTK_OBJ)
@@ -199,6 +202,6 @@ fi
 
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile img/Makefile])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 

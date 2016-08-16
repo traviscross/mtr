@@ -518,9 +518,6 @@ void mtr_curses_init() {
 
 	/* Initialize block_map. */
 	block_split = (NUM_FACTORS - 2) / 2;
-	if (block_split > 9) {
-		block_split = 9;
-	}
 	for (i = 1; i <= block_split; i++) {
 		block_map[i] = '0' + i;
 	}

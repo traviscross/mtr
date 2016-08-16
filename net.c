@@ -256,7 +256,7 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_check
 {
   unsigned int tsize = psize + dsize;
   char csumpacket[tsize];
-  memset(csumpacket, (unsigned char) abs(bitpattern), abs(tsize));
+  memset(csumpacket, (unsigned char) abs(bitpattern), tsize);
   if (alt_checksum && dsize >= 2) {
     csumpacket[psize + sizeof(struct UDPHeader)] = 0;
     csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
@@ -865,7 +865,7 @@ void net_process_return(void)
   struct sockaddr * fromsockaddr = (struct sockaddr *) &fromsockaddr_struct;
   struct sockaddr_in * fsa4 = (struct sockaddr_in *) &fromsockaddr_struct;
   socklen_t fromsockaddrsize;
-  int num;
+  ssize_t num;
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
@@ -901,6 +901,10 @@ void net_process_return(void)
 
   num = recvfrom(recvsock, packet, MAXPACKET, 0, 
 		 fromsockaddr, &fromsockaddrsize);
+  if(num < 0) {
+    perror("recvfrom failed");
+    exit(EXIT_FAILURE);
+  }
 
   switch ( af ) {
   case AF_INET:
@@ -910,7 +914,7 @@ void net_process_return(void)
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
-    if(num < sizeof(struct ICMPHeader))
+    if((size_t) num < sizeof(struct ICMPHeader))
       return;
 
     header = (struct ICMPHeader *) packet;
@@ -944,7 +948,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) + 
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
           return;
         header = (struct ICMPHeader *) ( packet + 
@@ -985,7 +989,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct UDPHeader) )
           return;
         udpheader = (struct UDPHeader *) ( packet +
@@ -1029,7 +1033,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct TCPHeader) )
           return;
         tcpheader = (struct TCPHeader *) ( packet +
@@ -1066,7 +1070,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
           return;
         sctpheader = (struct SCTPHeader *) ( packet +
@@ -1813,14 +1817,12 @@ void net_process_fds(fd_set *writefd)
 {
   int at, fd, r;
   struct timeval now;
-  uint64_t unow, utime;
 
   /* Can't do MPLS decoding */
   struct mplslen mpls;
   mpls.labels = 0;
 
   gettimeofday(&now, NULL);
-  unow = now.tv_sec * 1000000L + now.tv_usec;
 
   for (at = 0; at < MaxSequence; at++) {
     fd = sequence[at].socket;
@@ -1837,8 +1839,9 @@ void net_process_fds(fd_set *writefd)
       }
     }
     if (fd > 0) {
-      utime = sequence[at].time.tv_sec * 1000000L + sequence[at].time.tv_usec;
-      if (unow - utime > tcp_timeout) {
+     struct timeval subtract;
+     timersub(&now, &sequence[at].time, &subtract);
+     if ((subtract.tv_sec * 1000000L + subtract.tv_usec) > tcp_timeout) {
         close(fd);
         sequence[at].socket = 0;
       }

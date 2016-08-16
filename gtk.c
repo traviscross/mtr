@@ -319,7 +319,7 @@ enum {
 // earlier, so it is ok. Nothing to worry about....
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
-void  float_formatter(GtkTreeViewColumn *tree_column,
+void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -332,7 +332,7 @@ void  float_formatter(GtkTreeViewColumn *tree_column,
   g_object_set(cell, "text", text, NULL);
 }
 
-void  percent_formatter(GtkTreeViewColumn *tree_column,
+void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -652,7 +652,7 @@ void gtk_loop(void)
   gtk_main();
 }
 
-gboolean NewDestination_activate(GtkWidget *widget, gpointer data)
+gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -667,7 +667,7 @@ gboolean NewDestination_activate(GtkWidget *widget, gpointer data)
 }
 
 
-gboolean Copy_activate(GtkWidget *widget, gpointer data)
+gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -701,7 +701,7 @@ gchar *getSelectedHost(GtkTreePath *path)
 }
 
 
-gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event)
+gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event)
 {
   GtkWidget* popup_menu; 
   GtkWidget* copy_item; 

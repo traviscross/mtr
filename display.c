@@ -64,10 +64,11 @@ extern int DisplayMode;
 #endif
 
 void display_detect(int *argc, char ***argv) {
-  DisplayMode = DisplayReport;
 
 #ifndef NO_CURSES
   DisplayMode = DisplayCurses;
+#else
+  DisplayMode = DisplayReport;
 #endif
 
 #ifndef NO_GTK

@@ -1,4 +1,4 @@
-SUBDIRS = img
+EXTRA_DIST = img/mtr_icon.xpm
 
 sbin_PROGRAMS = mtr
 man_MANS = mtr.8
