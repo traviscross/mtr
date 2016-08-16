@@ -516,7 +516,7 @@ void mtr_curses_init() {
 		factors[i] *= factors[i]; /* Squared. */
 	}
 
-	/* Initialize block_map. */
+	/* Initialize block_map.  The block_split is always smaller than 9 */
 	block_split = (NUM_FACTORS - 2) / 2;
 	for (i = 1; i <= block_split; i++) {
 		block_map[i] = '0' + i;
