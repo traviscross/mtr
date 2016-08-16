@@ -230,13 +230,6 @@ gint Host_activate(GtkWidget *entry, UNUSED gpointer data)
 }
 
 
-GdkPixmap *gtk_load_pixmap(char **pixmap) 
-{
-  return gdk_pixmap_colormap_create_from_xpm_d(NULL, 
-					       gdk_colormap_get_system(), 
-					       NULL, NULL, pixmap);
-}
-
 
 void Toolbar_fill(GtkWidget *Toolbar) 
 {
