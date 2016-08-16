@@ -48,19 +48,15 @@ extern int af;
 extern int reportwide;
 
 
-char *get_time_string (void) 
-{
-  time_t now; 
-  char *t;
-  now = time (NULL);
-  t = ctime (&now);
-  t [ strlen (t) -1] = 0; // remove the trailing newline
-  return t;
-}
-
 void report_open(void)
 {
-  printf ("Start: %s\n", get_time_string ());
+  const time_t now = time(NULL);
+  char *t = ctime (&now);
+  const size_t len = strlen(t);
+
+  if (t[len - 1] == '\n')
+    t[len - 1] = '\0';
+  printf ("Start: %s\n", t);
 }
 
 static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
