@@ -63,7 +63,15 @@ extern int DisplayMode;
 #include "split.h"
 #endif
 
-void display_detect(int *argc, char ***argv) {
+void display_detect(int *argc
+#ifdef NO_GTK
+UNUSED
+#endif
+  , char ***argv
+#ifdef NO_GTK
+UNUSED
+#endif
+) {
 
 #ifndef NO_CURSES
   DisplayMode = DisplayCurses;
