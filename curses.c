@@ -66,7 +66,6 @@
 #include "asn.h"
 #include "display.h"
 
-#include "version.h"
 #endif
 
 #include <time.h>
@@ -646,7 +645,7 @@ void mtr_curses_redraw(void)
 
   move(0, 0);
   attron(A_BOLD);
-  pwcenter("My traceroute  [v" MTR_VERSION "]");
+  pwcenter("My traceroute  [v" PACKAGE_VERSION "]");
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());

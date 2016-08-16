@@ -28,7 +28,6 @@
 #include <time.h>
 
 #include "mtr.h"
-#include "version.h"
 #include "report.h"
 #include "net.h"
 #include "dns.h"
@@ -459,11 +458,11 @@ void csv_close(time_t now)
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       fmtinfo = trim(fmtinfo);
-      printf("MTR.%s,%lld,%s,%s,%d,%s,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+      printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION, (long long)now, "OK", Hostname,
              at+1, name, fmtinfo);
     } else
 #endif
-      printf("MTR.%s,%lld,%s,%s,%d,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+      printf("MTR.%s,%lld,%s,%s,%d,%s", PACKAGE_VERSION, (long long)now, "OK", Hostname,
              at+1, name);
 
     for( i=0; i<MAXFLD; i++ ) {

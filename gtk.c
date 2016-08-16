@@ -35,7 +35,6 @@
 #include "dns.h"
 #include "asn.h"
 #include "mtr-gtk.h"
-#include "version.h"
 
 #include "img/mtr_icon.xpm"
 #endif
@@ -172,7 +171,7 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
     };
   
   gtk_show_about_dialog(GTK_WINDOW(main_window)
-    , "version", MTR_VERSION
+    , "version", PACKAGE_VERSION
     , "copyright", "Copyright \xc2\xa9 1997,1998  Matt Kimball"
     , "website", "http://www.bitwizard.nl/mtr/"
     , "authors", authors

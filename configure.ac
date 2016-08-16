@@ -1,11 +1,14 @@
-AC_INIT([mtr], [0.87])
+AC_PREREQ([2.59])
+AC_INIT([mtr],
+	[m4_esyscmd([build-aux/git-version-gen .tarball-version])],
+	[R.E.Wolff@BitWizard.nl], [],
+	[http://www.BitWizard.nl/mtr/])
 AC_CONFIG_SRCDIR([mtr.c])
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
 			    [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
-
-AC_CONFIG_FILES([version.h.tmp:version.h.in])
 
 AC_SUBST(GTK_OBJ)
 AC_SUBST(CURSES_OBJ)
