@@ -157,19 +157,19 @@ void dns_open(void)
  
   if (pipe (todns) < 0) {
     perror ("can't make a pipe for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
 
   if (pipe (fromdns) < 0) {
     perror ("can't make a pipe for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
   fflush (stdout);
   pid = fork ();
   //pid = 1;
   if (pid < 0) {
     perror ("can't fork for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
   if (pid == 0) {
     char buf[2048];
@@ -179,7 +179,7 @@ void dns_open(void)
     // Automatically reap children. 
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
       perror("signal");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
 #if 0
@@ -225,10 +225,10 @@ void dns_open(void)
           if (rv < 0) perror ("write DNS lookup result");
         }
 
-        exit (0);
+        exit(EXIT_SUCCESS);
       }
     }
-    exit (0);
+    exit(EXIT_SUCCESS);
   } else {
      int flags;
 

@@ -435,11 +435,11 @@ void parse_arg (int argc, char **argv)
       WaitTime = atof (optarg);
       if (WaitTime <= 0.0) {
 	fprintf (stderr, "mtr: wait time must be positive\n");
-	exit (1);
+	exit(EXIT_FAILURE);
       }
       if (getuid() != 0 && WaitTime < 1.0) {
         fprintf (stderr, "non-root users cannot request an interval < 1.0 seconds\r\n");
-	exit (1);
+	exit(EXIT_FAILURE);
       }
       break;
     case 'f':
@@ -476,12 +476,12 @@ void parse_arg (int argc, char **argv)
       /* Check option before passing it on to fld_active. */
       if (strlen (optarg) > MAXFLD) {
 	fprintf (stderr, "Too many fields: %s\n", optarg);
-        exit (1);
+        exit(EXIT_FAILURE);
       }
       for (i=0; optarg[i]; i++) {
         if(!strchr (available_options, optarg[i])) {
           fprintf (stderr, "Unknown field identifier: %c\n", optarg[i]);
-          exit (1);
+          exit(EXIT_FAILURE);
         }
       }
       strcpy ((char*)fld_active, optarg);
@@ -495,7 +495,7 @@ void parse_arg (int argc, char **argv)
       GraceTime = atof (optarg);
       if (GraceTime <= 0.0) {
         fprintf (stderr, "mtr: wait time must be positive\n");
-        exit (1);
+        exit(EXIT_FAILURE);
       }
       break;
     case 'Q':
@@ -655,13 +655,13 @@ int main(int argc, char **argv)
   /*  Now drop to user permissions  */
   if (setgid(getgid()) || setuid(getuid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*  Double check, just in case  */
   if ((geteuid() != getuid()) || (getegid() != getgid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /* reset the random seed */
@@ -691,7 +691,7 @@ int main(int argc, char **argv)
 
   if (PrintVersion) {
     printf ("mtr " PACKAGE_VERSION "\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
   }
 
   if (PrintHelp) {
