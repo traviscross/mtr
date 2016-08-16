@@ -6,7 +6,7 @@ install-exec-hook:
 	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr` \
 	|| chmod u+s $(DESTDIR)$(sbindir)/mtr
 
-mtr_SOURCES = mtr.c \
+mtr_SOURCES = mtr.c mtr.h \
               net.c net.h \
               dns.c dns.h \
               raw.c raw.h \
@@ -16,6 +16,7 @@ mtr_SOURCES = mtr.c \
               getopt.c getopt1.c getopt.h \
               select.c select.h \
               mtr-curses.h \
+              img/mtr_icon.xpm \
               mtr-gtk.h
 
 if IPINFO
@@ -25,7 +26,8 @@ endif
 nodist_mtr_SOURCES = version.h
 EXTRA_mtr_SOURCES = curses.c \
                     gtk.c
-DEFAULT_INCLUDES= $(GLIB_CFLAGS) -I.
+
+mtr_INCLUDES = $(GLIB_CFLAGS) -I$(top_builddir) -I$(top_srcdir)
 mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
 mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
 mtr_LDADD = $(GLIB_LIBS) $(RESOLV_LIBS)

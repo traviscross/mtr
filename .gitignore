@@ -24,3 +24,5 @@ stamp-h1*
 /version.h.tmp
 
 compile
+
+/mtr-*.tar.gz
