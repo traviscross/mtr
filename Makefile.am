@@ -1,7 +1,7 @@
-EXTRA_DIST = img/mtr_icon.xpm
+EXTRA_DIST = SECURITY img/mtr_icon.xpm
 
 sbin_PROGRAMS = mtr
-man_MANS = mtr.8
+dist_man_MANS = mtr.8
 install-exec-hook: 
 	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr` \
 	|| chmod u+s $(DESTDIR)$(sbindir)/mtr
@@ -43,11 +43,3 @@ version.h: version.h.tmp Makefile $(mtr_SOURCES)
 	    -e "/#define *MTR_VERSION */{s/\"\([^\"]*\)\"/\"\1$$xver\"/;}" \
 	    version.h.tmp > $@; \
 	fi;
-
-EXTRA_DIST = SECURITY mtr.8 Makefile Makefile.dist
-distclean-local:
-	(sleep 3; cp Makefile.dist Makefile) &
-	rm -f *.orig
-
-DISTCLEANFILES = *~
-
