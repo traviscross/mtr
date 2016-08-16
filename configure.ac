@@ -5,7 +5,10 @@ AC_INIT([mtr],
   [http://www.BitWizard.nl/mtr/])
 AC_CONFIG_SRCDIR([mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([
+  1.11.6
+  foreign
+])
 
 # --enable-silent-rules
 m4_ifdef([AM_SILENT_RULES],
