@@ -49,7 +49,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 //#include <ctype.h>
-//#include <string.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -86,7 +86,11 @@ char *strlongip(ip_t * ip)
 }
 
 
-int longipstr( char *s, ip_t *dst, int family )
+int longipstr( char *s, ip_t *dst, int family
+#ifndef ENABLE_IPV6
+UNUSED
+#endif
+)
 {
 #ifdef ENABLE_IPV6
   return inet_pton( family, s, dst );
@@ -126,7 +130,7 @@ void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
   struct sockaddr_in *sa_in;
   struct sockaddr_in6 *sa_in6;
 
-  bzero (sa, sizeof (struct sockaddr_storage));
+  memset (sa, 0, sizeof (struct sockaddr_storage));
   switch (af) {
   case AF_INET:
     sa_in = (struct sockaddr_in *) sa;

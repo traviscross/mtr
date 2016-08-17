@@ -119,7 +119,7 @@ void report_close(void)
   }
   snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
 #else
-  snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_hosts);
+  snprintf( fmt, sizeof(fmt), "HOST: %%-%zus", len_hosts);
 #endif
   snprintf(buf, sizeof(buf), fmt, LocalHostname);
   len = reportwide ? strlen(buf) : len_hosts;
