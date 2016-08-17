@@ -1231,12 +1231,6 @@ int net_xmit(int at)
 }
 
 
-int net_transit(int at) 
-{ 
-  return host[at].transit;
-}
-
-
 int net_up(int at) 
 {
    return host[at].up;

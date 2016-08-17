@@ -65,7 +65,6 @@ int calc_deltatime (float WaitTime);
 
 int net_returned(int at);
 int net_xmit(int at);
-int net_transit(int at);
 
 int net_up(int at);
 

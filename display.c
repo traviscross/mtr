@@ -49,7 +49,7 @@ extern int DisplayMode;
 #define gtk_close()
 #define gtk_redraw()
 #define gtk_keyaction() 0
-#define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit (1); } 
+#define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit(EXIT_FAILURE); }
 #else
 #include "mtr-gtk.h"
 #endif
@@ -63,7 +63,15 @@ extern int DisplayMode;
 #include "split.h"
 #endif
 
-void display_detect(int *argc, char ***argv) {
+void display_detect(int *argc
+#ifdef NO_GTK
+UNUSED
+#endif
+  , char ***argv
+#ifdef NO_GTK
+UNUSED
+#endif
+) {
 
 #ifndef NO_CURSES
   DisplayMode = DisplayCurses;

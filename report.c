@@ -28,7 +28,6 @@
 #include <time.h>
 
 #include "mtr.h"
-#include "version.h"
 #include "report.h"
 #include "net.h"
 #include "dns.h"
@@ -49,19 +48,15 @@ extern int af;
 extern int reportwide;
 
 
-char *get_time_string (void) 
-{
-  time_t now; 
-  char *t;
-  now = time (NULL);
-  t = ctime (&now);
-  t [ strlen (t) -1] = 0; // remove the trailing newline
-  return t;
-}
-
 void report_open(void)
 {
-  printf ("Start: %s\n", get_time_string ());
+  const time_t now = time(NULL);
+  char *t = ctime (&now);
+  const size_t len = strlen(t);
+
+  if (t[len - 1] == '\n')
+    t[len - 1] = '\0';
+  printf ("Start: %s\n", t);
 }
 
 static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
@@ -93,8 +88,8 @@ void report_close(void)
   char name[81];
   char buf[1024];
   char fmt[16];
-  int len=0;
-  int len_hosts = 33;
+  size_t len=0;
+  size_t len_hosts = 33;
 
   if (reportwide)
   {
@@ -103,7 +98,7 @@ void report_close(void)
     max = net_max();
     at  = net_min();
     for (; at < max; at++) {
-      int nlen;
+      size_t nlen;
       addr = net_addr(at);
       if ((nlen = snprint_addr(name, sizeof(name), addr)))
         if (len_hosts < nlen)
@@ -147,11 +142,11 @@ void report_close(void)
 
 #ifdef IPINFO
     if (is_printii()) {
-      snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%ds", len_hosts);
+      snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%zus", len_hosts);
       snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(addr), name);
     } else {
 #endif
-    snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%ds", len_hosts);
+    snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%zus", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
 #ifdef IPINFO
     }
@@ -459,11 +454,11 @@ void csv_close(time_t now)
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       fmtinfo = trim(fmtinfo);
-      printf("MTR.%s,%lld,%s,%s,%d,%s,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+      printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION, (long long)now, "OK", Hostname,
              at+1, name, fmtinfo);
     } else
 #endif
-      printf("MTR.%s,%lld,%s,%s,%d,%s", MTR_VERSION, (long long)now, "OK", Hostname,
+      printf("MTR.%s,%lld,%s,%s,%d,%s", PACKAGE_VERSION, (long long)now, "OK", Hostname,
              at+1, name);
 
     for( i=0; i<MAXFLD; i++ ) {
@@ -472,7 +467,7 @@ void csv_close(time_t now)
 
       /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
       if( strchr( data_fields[j].format, 'f' ) ) {
-	printf( ",%.2f", (float) (data_fields[j].net_xxx(at) / 1000.0));
+	printf( ",%.2f", (double) (data_fields[j].net_xxx(at) / 1000.0));
       } else {
 	printf( ",%d",   data_fields[j].net_xxx(at) );
       }

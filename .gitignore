@@ -10,17 +10,17 @@ configure
 confinc
 confmf
 conftest.*
-depcomp
-install-sh
-missing
 stamp-h1*
+
+/build-aux/compile
+/build-aux/depcomp
+/build-aux/install-sh
+/build-aux/missing
 
 /autom4te.cache/
 /.deps/
 /ChangeLog
 /INSTALL
 /mtr
-/version.h
-/version.h.tmp
 
-compile
+/mtr-*.tar.gz

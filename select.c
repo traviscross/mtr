@@ -179,7 +179,7 @@ void select_loop(void) {
 
     if (rv < 0) {
       perror ("Select failed");
-      exit (1);
+      exit(EXIT_FAILURE);
     }
     anyset = 0;
 
