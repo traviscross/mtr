@@ -505,7 +505,7 @@ void mtr_gen_scale(void)
 
 static char block_map[NUM_FACTORS];
 
-void mtr_curses_init() {
+void mtr_curses_init(void) {
 	int i;
 	int block_split;
 

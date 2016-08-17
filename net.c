@@ -1525,7 +1525,7 @@ void net_reset(void)
   gettimeofday(&reset, NULL);
 }
 
-int net_set_interfaceaddress_udp()
+int net_set_interfaceaddress_udp(void)
 {
 #ifdef ENABLE_IPV6
   struct sockaddr_storage name_struct;
