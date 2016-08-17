@@ -102,7 +102,7 @@ AC_ARG_WITH([ipinfo],
   [AS_HELP_STRING([--without-ipinfo], [Do not try to use ipinfo lookup at all])],
   [], [with_ipinfo=yes])
 AM_CONDITIONAL([IPINFO], [test "x$with_ipinfo" = "xyes"])
-AS_IF([test "x$ipinfo" = "xno"], [
+AS_IF([test "x$with_ipinfo" = "xno"], [
   AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
 ])
 
@@ -113,7 +113,7 @@ AC_ARG_ENABLE([ipv6],
 USES_IPV6=
 AC_CHECK_FUNC([getaddrinfo], [
   AS_IF([test "x$WANTS_IPV6" = "xyes"], [
-    AC_DEFINE([ENABLE_IPV6], [], [Define to enable IPv6])
+    AC_DEFINE([ENABLE_IPV6], [1], [Define to enable IPv6])
     USES_IPV6=yes
   ])
 ])
