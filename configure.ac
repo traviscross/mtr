@@ -93,7 +93,7 @@ AS_IF([test "x$WANTS_GTK" = "xyes"], [
     GTK_OBJ=""
   ])
 ], [
-  AC_DEFINE([NO_GTK])
+  AC_DEFINE([NO_GTK], [1], [Define if you don't have the GTK+ libraries available.])
   GTK_OBJ=""
 ])
 
