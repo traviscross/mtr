@@ -179,7 +179,7 @@ void select_loop(void) {
 
     if (rv < 0) {
       perror ("Select failed");
-      exit (1);
+      exit(EXIT_FAILURE);
     }
     anyset = 0;
 
@@ -192,7 +192,6 @@ void select_loop(void) {
     if (dns) {
       /* Handle any pending resolver events */
       dnsinterval = WaitTime;
-      dns_events(&dnsinterval);
     }
 
     /*  Have we finished a nameservice lookup?  */

@@ -203,7 +203,7 @@ static int numhosts = 10;
 
 extern int fstTTL;		/* initial hub(ttl) to ping byMin */
 extern int maxTTL;		/* last hub to ping byMin*/
-extern int maxUnknown;	/* stop ping threshold */
+extern int maxUnknown;		/* stop ping threshold */
 extern int cpacketsize;		/* packet size used by ping */
 static int packetsize;		/* packet size used by ping */
 static int spacketsize;		/* packet size used by sendto */
@@ -212,8 +212,8 @@ extern int tos;			/* type of service set in ping packet*/
 extern int af;			/* address family of remote target */
 extern int mtrtype;		/* type of query packet used */
 extern int remoteport;          /* target port for TCP tracing */
-extern int localport;  /* source port for UDP tracing */
-extern int tcp_timeout;             /* timeout for TCP connections */
+extern int localport;		/* source port for UDP tracing */
+extern int tcp_timeout;         /* timeout for TCP connections */
 #ifdef SO_MARK
 extern int mark;		/* SO_MARK to set for ping packet*/
 #endif
@@ -256,7 +256,7 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_check
 {
   unsigned int tsize = psize + dsize;
   char csumpacket[tsize];
-  memset(csumpacket, (unsigned char) abs(bitpattern), abs(tsize));
+  memset(csumpacket, (unsigned char) abs(bitpattern), tsize);
   if (alt_checksum && dsize >= 2) {
     csumpacket[psize + sizeof(struct UDPHeader)] = 0;
     csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
@@ -565,7 +565,6 @@ void net_send_query(int index)
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
   uint16 checksum_result;
-  uint16 mypid;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
@@ -656,13 +655,11 @@ void net_send_query(int index)
     udp = (struct UDPHeader *)(packet + iphsize);
     udp->checksum  = 0;
     if (!localport) {
-      mypid = (uint16)getpid();
-      if (mypid < MinPort)
-        mypid += MinPort;
-    } else {
-      mypid = (uint16)localport;
+      localport = (uint16)getpid();
+      if (localport < MinPort)
+        localport += MinPort;
     }
-    udp->srcport = htons(mypid);
+    udp->srcport = htons(localport);
     udp->length = htons(abs(packetsize) - iphsize);
 
     if (!remoteport) {
@@ -868,7 +865,7 @@ void net_process_return(void)
   struct sockaddr * fromsockaddr = (struct sockaddr *) &fromsockaddr_struct;
   struct sockaddr_in * fsa4 = (struct sockaddr_in *) &fromsockaddr_struct;
   socklen_t fromsockaddrsize;
-  int num;
+  ssize_t num;
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
@@ -876,7 +873,7 @@ void net_process_return(void)
   struct timeval now;
   ip_t * fromaddress = NULL;
   int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
-  int sequence = 0;
+  int seq_num = 0;
 
   /* MPLS decoding */
   struct mplslen mpls;
@@ -904,6 +901,10 @@ void net_process_return(void)
 
   num = recvfrom(recvsock, packet, MAXPACKET, 0, 
 		 fromsockaddr, &fromsockaddrsize);
+  if(num < 0) {
+    perror("recvfrom failed");
+    exit(EXIT_FAILURE);
+  }
 
   switch ( af ) {
   case AF_INET:
@@ -913,7 +914,7 @@ void net_process_return(void)
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
-    if(num < sizeof(struct ICMPHeader))
+    if((size_t) num < sizeof(struct ICMPHeader))
       return;
 
     header = (struct ICMPHeader *) packet;
@@ -927,7 +928,7 @@ void net_process_return(void)
       if(header->id != (uint16)getpid())
         return;
 
-      sequence = header->sequence;
+      seq_num = header->sequence;
     } else if (header->type == timeexceededtype) {
       switch ( af ) {
       case AF_INET:
@@ -947,7 +948,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) + 
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
           return;
         header = (struct ICMPHeader *) ( packet + 
@@ -964,7 +965,7 @@ void net_process_return(void)
       if (header->id != (uint16)getpid())
         return;
   
-      sequence = header->sequence;
+      seq_num = header->sequence;
     }
     break;
   
@@ -988,7 +989,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct UDPHeader) )
           return;
         udpheader = (struct UDPHeader *) ( packet +
@@ -1001,10 +1002,13 @@ void net_process_return(void)
         break;
 #endif
       }
+      if (ntohs(udpheader->srcport) != (uint16)localport)
+        return;
+
       if (remoteport && remoteport == ntohs(udpheader->dstport)) {
-        sequence = ntohs(udpheader->checksum);
+        seq_num = ntohs(udpheader->checksum);
       } else if (!remoteport) {
-        sequence = ntohs(udpheader->dstport);
+        seq_num = ntohs(udpheader->dstport);
       }
     }
     break;
@@ -1029,7 +1033,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct TCPHeader) )
           return;
         tcpheader = (struct TCPHeader *) ( packet +
@@ -1042,7 +1046,7 @@ void net_process_return(void)
         break;
 #endif
       }
-      sequence = ntohs(tcpheader->srcport);
+      seq_num = ntohs(tcpheader->srcport);
     }
     break;
     
@@ -1066,7 +1070,7 @@ void net_process_return(void)
       break;
 #ifdef ENABLE_IPV6
       case AF_INET6:
-        if ( num < sizeof (struct ICMPHeader) +
+        if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
           return;
         sctpheader = (struct SCTPHeader *) ( packet +
@@ -1079,12 +1083,12 @@ void net_process_return(void)
         break;
 #endif
       }
-      sequence = ntohs(sctpheader->srcport);
+      seq_num = ntohs(sctpheader->srcport);
     }
     break;
   }
-  if (sequence)
-    net_process_ping (sequence, mpls, (void *) fromaddress, now);
+  if (seq_num)
+    net_process_ping (seq_num, mpls, (void *) fromaddress, now);
 }
 
 
@@ -1224,12 +1228,6 @@ int net_returned(int at)
 int net_xmit(int at) 
 { 
   return host[at].xmit;
-}
-
-
-int net_transit(int at) 
-{ 
-  return host[at].transit;
 }
 
 
@@ -1405,7 +1403,7 @@ int net_selectsocket(void)
 }
 
 
-int net_open(struct hostent * host) 
+int net_open(struct hostent * hostent) 
 {
 #ifdef ENABLE_IPV6
   struct sockaddr_storage name_struct;
@@ -1417,13 +1415,13 @@ int net_open(struct hostent * host)
 
   net_reset();
 
-  remotesockaddr->sa_family = host->h_addrtype;
+  remotesockaddr->sa_family = hostent->h_addrtype;
 
-  switch ( host->h_addrtype ) {
+  switch ( hostent->h_addrtype ) {
   case AF_INET:
     sendsock = sendsock4;
     recvsock = recvsock4;
-    addrcpy( (void *) &(rsa4->sin_addr), host->h_addr, AF_INET );
+    addrcpy( (void *) &(rsa4->sin_addr), hostent->h_addr, AF_INET );
     sourceaddress = (ip_t *) &(ssa4->sin_addr);
     remoteaddress = (ip_t *) &(rsa4->sin_addr);
     break;
@@ -1435,7 +1433,7 @@ int net_open(struct hostent * host)
     }
     sendsock = sendsock6;
     recvsock = recvsock6;
-    addrcpy( (void *) &(rsa6->sin6_addr), host->h_addr, AF_INET6 );
+    addrcpy( (void *) &(rsa6->sin6_addr), hostent->h_addr, AF_INET6 );
     sourceaddress = (ip_t *) &(ssa6->sin6_addr);
     remoteaddress = (ip_t *) &(rsa6->sin6_addr);
     break;
@@ -1723,10 +1721,10 @@ void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
 }
 
 /* Address comparison. */
-int addrcmp( char * a, char * b, int af ) {
+int addrcmp( char * a, char * b, int family ) {
   int rc = -1;
 
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     rc = memcmp( a, b, sizeof (struct in_addr) );
     break;
@@ -1741,9 +1739,9 @@ int addrcmp( char * a, char * b, int af ) {
 }
 
 /* Address copy. */
-void addrcpy( char * a, char * b, int af ) {
+void addrcpy( char * a, char * b, int family ) {
 
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     memcpy( a, b, sizeof (struct in_addr) );
     break;
@@ -1813,14 +1811,12 @@ void net_process_fds(fd_set *writefd)
 {
   int at, fd, r;
   struct timeval now;
-  uint64_t unow, utime;
 
   /* Can't do MPLS decoding */
   struct mplslen mpls;
   mpls.labels = 0;
 
   gettimeofday(&now, NULL);
-  unow = now.tv_sec * 1000000L + now.tv_usec;
 
   for (at = 0; at < MaxSequence; at++) {
     fd = sequence[at].socket;
@@ -1837,8 +1833,9 @@ void net_process_fds(fd_set *writefd)
       }
     }
     if (fd > 0) {
-      utime = sequence[at].time.tv_sec * 1000000L + sequence[at].time.tv_usec;
-      if (unow - utime > tcp_timeout) {
+     struct timeval subtract;
+     timersub(&now, &sequence[at].time, &subtract);
+     if ((subtract.tv_sec * 1000000L + subtract.tv_usec) > tcp_timeout) {
         close(fd);
         sequence[at].socket = 0;
       }

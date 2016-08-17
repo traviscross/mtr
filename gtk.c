@@ -35,7 +35,6 @@
 #include "dns.h"
 #include "asn.h"
 #include "mtr-gtk.h"
-#include "version.h"
 
 #include "img/mtr_icon.xpm"
 #endif
@@ -172,7 +171,7 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
     };
   
   gtk_show_about_dialog(GTK_WINDOW(main_window)
-    , "version", MTR_VERSION
+    , "version", PACKAGE_VERSION
     , "copyright", "Copyright \xc2\xa9 1997,1998  Matt Kimball"
     , "website", "http://www.bitwizard.nl/mtr/"
     , "authors", authors
@@ -210,32 +209,25 @@ gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button)
 }
 
 
-gint Host_activate(GtkWidget *Entry, UNUSED gpointer data) 
+gint Host_activate(GtkWidget *entry, UNUSED gpointer data) 
 {
   struct hostent * addr;
 
-  addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(Entry)));
+  addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
   if(addr) {
     net_reopen(addr);
     /* If we are "Paused" at this point it is usually because someone
        entered a non-existing host. Therefore do the go-ahead... */
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
   } else {
-    int pos = strlen(gtk_entry_get_text( GTK_ENTRY(Entry)));
+    int pos = strlen(gtk_entry_get_text( GTK_ENTRY(entry)));
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 1);
-    gtk_editable_insert_text( GTK_EDITABLE(Entry), ": not found", -1, &pos);
+    gtk_editable_insert_text( GTK_EDITABLE(entry), ": not found", -1, &pos);
   }
 
   return FALSE;
 }
 
-
-GdkPixmap *gtk_load_pixmap(char **pixmap) 
-{
-  return gdk_pixmap_colormap_create_from_xpm_d(NULL, 
-					       gdk_colormap_get_system(), 
-					       NULL, NULL, pixmap);
-}
 
 
 void Toolbar_fill(GtkWidget *Toolbar) 
@@ -319,7 +311,7 @@ enum {
 // earlier, so it is ok. Nothing to worry about....
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
-void  float_formatter(GtkTreeViewColumn *tree_column,
+void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -332,7 +324,7 @@ void  float_formatter(GtkTreeViewColumn *tree_column,
   g_object_set(cell, "text", text, NULL);
 }
 
-void  percent_formatter(GtkTreeViewColumn *tree_column,
+void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -652,7 +644,7 @@ void gtk_loop(void)
   gtk_main();
 }
 
-gboolean NewDestination_activate(GtkWidget *widget, gpointer data)
+gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -667,7 +659,7 @@ gboolean NewDestination_activate(GtkWidget *widget, gpointer data)
 }
 
 
-gboolean Copy_activate(GtkWidget *widget, gpointer data)
+gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -701,7 +693,7 @@ gchar *getSelectedHost(GtkTreePath *path)
 }
 
 
-gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event)
+gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event)
 {
   GtkWidget* popup_menu; 
   GtkWidget* copy_item; 

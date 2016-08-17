@@ -44,7 +44,6 @@
 #include "report.h"
 #include "net.h"
 #include "asn.h"
-#include "version.h"
 
 
 #ifdef ENABLE_IPV6
@@ -127,6 +126,54 @@ typedef struct names {
   struct names*         next;
 } names_t;
 static names_t *names = NULL;
+
+
+static void __attribute__((__noreturn__)) usage(FILE *out)
+{
+  fputs("\nUsage:\n", out);
+  fputs(" mtr [options] hostname\n", out);
+  fputs("\n", out);
+  fputs(" -F, --filename FILE        read hostname(s) from a file\n", out);
+  fputs(" -4                         use IPv4 only\n", out);
+  fputs(" -6                         use IPv6 only\n", out);
+  fputs(" -u, --udp                  use udp instead of icmp echo\n", out);
+  fputs(" -T, --tcp                  use tcp instead of icmp echo\n", out);
+  fputs(" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n", out);
+  fputs(" -f, --first-ttl NUMBER     set what TTL to start\n", out);
+  fputs(" -m, --max-ttl NUMBER       maximum number of hops\n", out);
+  fputs(" -U, --max-unknown NUMBER   maximum unknown host\n", out);
+  fputs(" -P, --port PORT            target port number for tcp, sctp, or udp\n", out);
+  fputs(" -L, --localport LOCALPORT  source port number for udp\n", out);
+  fputs(" -s, --psize PACKETSIZE     set the packet size used for probing\n", out);
+  fputs(" -B, --bitpattern NUMBER    set bit pattern to use in payload\n", out);
+  fputs(" -i, --interval SECONDS     icmp echo request interval\n", out);
+  fputs(" -G, --graceperiod SECONDS  number of seconds to wait for responses\n", out);
+  fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
+  fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
+  fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
+  fputs(" -M, --mark MARK            MARK text to use in missing hop\n", out);
+  fputs(" -r, --report               output using report mode\n", out);
+  fputs(" -w, --report-wide          output wide report\n", out);
+  fputs(" -c, --report-cycles COUNT  set the number of pings sent\n", out);
+  fputs(" -j, --json                 output json\n", out);
+  fputs(" -x, --xml                  output xml\n", out);
+  fputs(" -C, --csv                  output comma separated values\n", out);
+  fputs(" -l, --raw                  output raw format\n", out);
+  fputs(" -p, --split                split output\n", out);
+  fputs(" -t, --curses               use curses terminal interface\n", out);
+  fputs("     --displaymode MODE     select initial display mode\n", out);
+  fputs(" -g, --gtk                  use GTK+ xwindow interface\n", out);
+  fputs(" -n, --no-dns               do not resove host names\n", out);
+  fputs(" -b, --show-ips             show IP numbers and host names\n", out);
+  fputs(" -o, --order FIELDS         select output fields\n", out);
+  fputs(" -y, --ipinfo NUMBER        select ip information in output\n", out);
+  fputs(" -z, --aslookup             display AS number\n", out);
+  fputs(" -h, --help                 display this help and exit\n", out);
+  fputs(" -v, --version              output version information and exit\n", out);
+  fputs("\n", out);
+  fputs("See the 'man 8 mtr' for details.\n", out);
+  exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
+}
 
 char *
 trim(char * s) {
@@ -388,11 +435,11 @@ void parse_arg (int argc, char **argv)
       WaitTime = atof (optarg);
       if (WaitTime <= 0.0) {
 	fprintf (stderr, "mtr: wait time must be positive\n");
-	exit (1);
+	exit(EXIT_FAILURE);
       }
       if (getuid() != 0 && WaitTime < 1.0) {
         fprintf (stderr, "non-root users cannot request an interval < 1.0 seconds\r\n");
-	exit (1);
+	exit(EXIT_FAILURE);
       }
       break;
     case 'f':
@@ -429,12 +476,12 @@ void parse_arg (int argc, char **argv)
       /* Check option before passing it on to fld_active. */
       if (strlen (optarg) > MAXFLD) {
 	fprintf (stderr, "Too many fields: %s\n", optarg);
-        exit (1);
+        exit(EXIT_FAILURE);
       }
       for (i=0; optarg[i]; i++) {
         if(!strchr (available_options, optarg[i])) {
           fprintf (stderr, "Unknown field identifier: %c\n", optarg[i]);
-          exit (1);
+          exit(EXIT_FAILURE);
         }
       }
       strcpy ((char*)fld_active, optarg);
@@ -448,7 +495,7 @@ void parse_arg (int argc, char **argv)
       GraceTime = atof (optarg);
       if (GraceTime <= 0.0) {
         fprintf (stderr, "mtr: wait time must be positive\n");
-        exit (1);
+        exit(EXIT_FAILURE);
       }
       break;
     case 'Q':
@@ -608,13 +655,13 @@ int main(int argc, char **argv)
   /*  Now drop to user permissions  */
   if (setgid(getgid()) || setuid(getuid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*  Double check, just in case  */
   if ((geteuid() != getuid()) || (getegid() != getgid())) {
     fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /* reset the random seed */
@@ -643,22 +690,12 @@ int main(int argc, char **argv)
   }
 
   if (PrintVersion) {
-    printf ("mtr " MTR_VERSION "\n");
-    exit(0);
+    printf ("mtr " PACKAGE_VERSION "\n");
+    exit(EXIT_SUCCESS);
   }
 
   if (PrintHelp) {
-       printf("usage: %s [--help] [--version] [-4|-6] [-F FILENAME]\n"
-              "\t\t[--report] [--report-wide] [--displaymode MODE]\n"
-              "\t\t[--xml] [--gtk] [--curses] [--raw] [--csv] [--json] [--split]\n"
-              "\t\t[--no-dns] [--show-ips] [-o FIELDS] [-y IPINFO] [--aslookup]\n"
-              "\t\t[-i INTERVAL] [-c COUNT] [-s PACKETSIZE] [-B BITPATTERN]\n"
-              "\t\t[-Q TOS] [--mpls]\n"
-              "\t\t[-a ADDRESS] [-f FIRST-TTL] [-m MAX-TTL] [-U MAX_UNKNOWN]\n"
-              "\t\t[--udp] [--tcp] [--sctp] [-P PORT] [-L LOCALPORT] [-Z TIMEOUT]\n"
-              "\t\t[-G GRACEPERIOD] [-M MARK] HOSTNAME\n", argv[0]);
-       printf("See the man page for details.\n");
-    exit(0);
+    usage(stdout);
   }
 
   time_t now = time(NULL);
@@ -685,7 +722,7 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_IPV6
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
-    bzero( &hints, sizeof hints );
+    memset( &hints, 0, sizeof hints );
     hints.ai_family = af;
     hints.ai_socktype = SOCK_DGRAM;
     error = getaddrinfo( Hostname, NULL, &hints, &res );
@@ -703,7 +740,7 @@ int main(int argc, char **argv)
     }
     /* Convert the first addrinfo into a hostent. */
     host = &trhost;
-    bzero( host, sizeof trhost );
+    memset( host, 0, sizeof trhost );
     host->h_name = res->ai_canonname;
     host->h_aliases = NULL;
     host->h_addrtype = res->ai_family;

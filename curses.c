@@ -66,7 +66,6 @@
 #include "asn.h"
 #include "display.h"
 
-#include "version.h"
 #endif
 
 #include <time.h>
@@ -288,7 +287,7 @@ int mtr_curses_keyaction(void)
     return ActionNone;
   }
   if (tolower(c) == 'j') {
-    if( index(fld_active, 'N') ) {
+    if( strchr(fld_active, 'N') ) {
       strcpy(fld_active, "DR AGJMXI");        /* GeoMean and jitter */
     } else {
       strcpy(fld_active, "LS NABWV");         /* default */
@@ -516,11 +515,8 @@ void mtr_curses_init() {
 		factors[i] *= factors[i]; /* Squared. */
 	}
 
-	/* Initialize block_map. */
+	/* Initialize block_map.  The block_split is always smaller than 9 */
 	block_split = (NUM_FACTORS - 2) / 2;
-	if (block_split > 9) {
-		block_split = 9;
-	}
 	for (i = 1; i <= block_split; i++) {
 		block_map[i] = '0' + i;
 	}
@@ -649,7 +645,7 @@ void mtr_curses_redraw(void)
 
   move(0, 0);
   attron(A_BOLD);
-  pwcenter("My traceroute  [v" MTR_VERSION "]");
+  pwcenter("My traceroute  [v" PACKAGE_VERSION "]");
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());

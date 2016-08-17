@@ -86,10 +86,10 @@ char *strlongip(ip_t * ip)
 }
 
 
-int longipstr( char *s, ip_t *dst, int af )
+int longipstr( char *s, ip_t *dst, int family )
 {
 #ifdef ENABLE_IPV6
-  return inet_pton( af, s, dst );
+  return inet_pton( family, s, dst );
 #else
   return inet_aton( s, dst );
 #endif
@@ -157,19 +157,19 @@ void dns_open(void)
  
   if (pipe (todns) < 0) {
     perror ("can't make a pipe for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
 
   if (pipe (fromdns) < 0) {
     perror ("can't make a pipe for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
   fflush (stdout);
   pid = fork ();
   //pid = 1;
   if (pid < 0) {
     perror ("can't fork for DNS process");
-    exit (-1);
+    exit(EXIT_FAILURE);
   }
   if (pid == 0) {
     char buf[2048];
@@ -179,7 +179,7 @@ void dns_open(void)
     // Automatically reap children. 
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
       perror("signal");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
 #if 0
@@ -225,10 +225,10 @@ void dns_open(void)
           if (rv < 0) perror ("write DNS lookup result");
         }
 
-        exit (0);
+        exit(EXIT_SUCCESS);
       }
     }
-    exit (0);
+    exit(EXIT_SUCCESS);
   } else {
      int flags;
 
@@ -315,12 +315,6 @@ char *dns_lookup2(ip_t * ip)
 }
 
 
-void dns_events(double *sinterval)
-{
-  return;
-}
-
-
 char *dns_lookup(ip_t * ip)
 {
   char *t;
@@ -348,9 +342,9 @@ char *strlongip(ip_t * ip)
 // XXX check if necessary/exported. 
 
 /* Resolve an IP address to a hostname. */ 
-struct hostent *addr2host( const char *addr, int af ) {
+struct hostent *addr2host( const char *addr, int family ) {
   int len = 0;
-  switch ( af ) {
+  switch ( family ) {
   case AF_INET:
     len = sizeof( struct in_addr );
     break;
@@ -360,7 +354,7 @@ struct hostent *addr2host( const char *addr, int af ) {
     break;
 #endif
   }
-  return gethostbyaddr( addr, len, af );
+  return gethostbyaddr( addr, len, family );
 }
 
 
