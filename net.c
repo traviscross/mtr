@@ -121,7 +121,7 @@ struct nethost {
   int returned;
   int sent;
   int up;
-  long long var;/* variance, could be overflowed */
+  long long ssd; /* sum of squares of differences from the current average */
   int last;
   int best;
   int worst;
@@ -814,7 +814,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
 
   if (host[index].returned < 1) {
     host[index].best = host[index].worst = host[index].gmean = totusec;
-    host[index].avg  = host[index].var  = 0;
+    host[index].avg  = host[index].ssd  = 0;
 
     host[index].jitter = host[index].jworst = host[index].jinta= 0;
   }
@@ -839,7 +839,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
   host[index].returned++;
   oldavg = host[index].avg;
   host[index].avg += (totusec - oldavg +.0) / host[index].returned;
-  host[index].var += (totusec - oldavg +.0) * (totusec - host[index].avg) / 1000000;
+  host[index].ssd += (totusec - oldavg +.0) * (totusec - host[index].avg);
 
   oldjavg = host[index].javg;
   host[index].javg += (host[index].jitter - oldjavg) / host[index].returned;
@@ -1169,7 +1169,7 @@ int net_gmean(int at)
 int net_stdev(int at) 
 {
   if( host[at].returned > 1 ) {
-    return ( 1000.0 * sqrt( host[at].var/(host[at].returned -1.0) ) );
+    return ( sqrt( host[at].ssd/(host[at].returned -1.0) ) );
   } else {
     return( 0 );
   }
@@ -1511,7 +1511,7 @@ void net_reset(void)
     host[at].best = 0;
     host[at].worst = 0;
     host[at].gmean = 0;
-    host[at].var = 0;
+    host[at].ssd = 0;
     host[at].jitter = 0;
     host[at].javg = 0;
     host[at].jworst = 0;
