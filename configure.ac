@@ -23,6 +23,16 @@ CURSES_OBJ=curses.o
 
 AC_PROG_CC
 
+# Check pkg-config availability.
+m4_ifndef([PKG_PROG_PKG_CONFIG],
+  [m4_fatal(
+[Could not locate the pkg-config autoconf macros.  These are usually located
+in /usr/share/aclocal/pkg.m4.  If your macros are in a different location,
+try setting the environment variable ACLOCAL_OPTS="-I/other/macro/dir"
+before running ./bootstrap.sh again.])
+])
+PKG_PROG_PKG_CONFIG
+
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])
 AC_CHECK_SIZEOF([unsigned short], [2])
