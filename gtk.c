@@ -25,7 +25,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#ifndef NO_GTK
+#ifdef HAVE_GTK
 #include <string.h>
 #include <sys/types.h>
 #include <gtk/gtk.h>

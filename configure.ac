@@ -15,10 +15,7 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
-AC_SUBST([GTK_OBJ])
 AC_SUBST([CURSES_OBJ])
-
-GTK_OBJ=gtk.o
 CURSES_OBJ=curses.o
 
 AC_PROG_CC
@@ -78,34 +75,14 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([No math library found])])
 
 # Find GTK
 AC_ARG_WITH([gtk],
-  [AS_HELP_STRING([--without-gtk], [Do not try to use GTK+ at all])],
+  [AS_HELP_STRING([--without-gtk], [Build without the GTK+2.0 interface])],
   [], [with_gtk=yes])
-AS_IF([test "x$with_gtk" = "xyes"], [WANTS_GTK=yes], [WANTS_GTK=no])
-
-m4_ifndef([AM_PATH_GTK_2_0],
-  [m4_defun([AM_PATH_GTK_2_0], [
-    AC_MSG_ERROR([dnl
-Could not locate the gtk2 automake macros, these are usually located in
-  .../share/aclocal/gtk-2.0.m4
-Before running bootstrap try setting the environment variable
-  ACLOCAL_PATH="/own/dir"
-or configure --without-gtk.])
-  ])
+AS_IF([test "x$with_gtk" = "xyes"],
+  [PKG_CHECK_MODULES([GTK], [gtk+-2.0],
+    [AC_DEFINE([HAVE_GTK], [1], [Define if gtk+-2.0 library available])],
+    [with_gtk=no])
 ])
-
-AS_IF([test "x$WANTS_GTK" = "xyes"], [
-  AM_PATH_GTK_2_0([2.6.0], [
-    CFLAGS="$CFLAGS $GTK_CFLAGS"
-    LIBS="$LIBS $GTK_LIBS -lm"
-  ], [
-    AC_MSG_WARN([Building without GTK2 display support])
-    AC_DEFINE([NO_GTK], [1], [Define if you don't have the GTK+ libraries available.])
-    GTK_OBJ=""
-  ])
-], [
-  AC_DEFINE([NO_GTK], [1], [Define if you don't have the GTK+ libraries available.])
-  GTK_OBJ=""
-])
+AM_CONDITIONAL([WITH_GTK], [test "x$with_gtk" = xyes])
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],

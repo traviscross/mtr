@@ -23,10 +23,14 @@ if IPINFO
 mtr_SOURCES += asn.c asn.h
 endif
 
-EXTRA_mtr_SOURCES = curses.c \
-                    gtk.c
+EXTRA_mtr_SOURCES = curses.c
 
+if WITH_GTK
+mtr_SOURCES += gtk.c
+endif
+
+mtr_DEPENDENCIES = $(CURSES_OBJ)
+mtr_LDFLAGS = $(CURSES_OBJ)
 mtr_INCLUDES = $(GLIB_CFLAGS) -I$(top_builddir) -I$(top_srcdir)
-mtr_DEPENDENCIES = $(GTK_OBJ) $(CURSES_OBJ)
-mtr_LDFLAGS = $(GTK_OBJ) $(CURSES_OBJ)
-mtr_LDADD = $(GLIB_LIBS) $(RESOLV_LIBS)
+mtr_CFLAGS = $(GTK_CFLAGS) $(NCURSES_CFLAGS)
+mtr_LDADD = $(GTK_LIBS) $(NCURSES_LDADD) $(RESOLV_LIBS)

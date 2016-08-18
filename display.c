@@ -45,15 +45,15 @@ extern int DisplayMode;
 #include "mtr-curses.h"
 #endif
 
-#ifdef NO_GTK
+#ifdef HAVE_GTK
+#include "mtr-gtk.h"
+#else
 // No support for gtk mode, allow the calls to remain in the code.
 #define gtk_open()
 #define gtk_close()
 #define gtk_redraw()
 #define gtk_keyaction() 0
 #define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit(EXIT_FAILURE); }
-#else
-#include "mtr-gtk.h"
 #endif
 
 #ifdef NO_SPLIT
@@ -78,17 +78,17 @@ extern int DisplayMode;
 #define DEFAULT_DISPLAY DisplayCurses
 #endif
 
-#ifdef NO_GTK
-#define UNUSED_IF_NO_GTK UNUSED
-#else
+#ifdef HAVE_GTK
 #define UNUSED_IF_NO_GTK
+#else
+#define UNUSED_IF_NO_GTK UNUSED
 #endif
 
 void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
 {
   DisplayMode = DEFAULT_DISPLAY;
 
-#ifndef NO_GTK
+#ifdef HAVE_GTK
   if(gtk_detect(argc, argv)) {
     DisplayMode = DisplayGTK;
   }
