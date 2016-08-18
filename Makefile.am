@@ -19,7 +19,7 @@ mtr_SOURCES = mtr.c mtr.h \
               img/mtr_icon.xpm \
               mtr-gtk.h
 
-if IPINFO
+if WITH_IPINFO
 mtr_SOURCES += asn.c asn.h
 endif
 

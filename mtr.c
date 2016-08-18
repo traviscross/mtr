@@ -340,7 +340,7 @@ void parse_arg (int argc, char **argv)
     { "no-dns",         0, NULL, 'n' },
     { "show-ips",       0, NULL, 'b' },
     { "order",          1, NULL, 'o' }, /* fields to display & their order */
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     { "ipinfo",         1, NULL, 'y' }, /* IP info lookup */
     { "aslookup",       0, NULL, 'z' }, /* Do AS lookup (--ipinfo 0) */
 #endif
@@ -570,7 +570,7 @@ void parse_arg (int argc, char **argv)
       fprintf( stderr, "IPv6 not enabled.\n" );
       break;
 #endif
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     case 'y':
       ipinfo_no = atoi (optarg);
       if (ipinfo_no < 0)

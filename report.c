@@ -71,7 +71,7 @@ static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
 }
 
 
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
 void print_mpls(struct mplslen *mpls) {
   int k;
   for (k=0; k < mpls->labels; k++)
@@ -106,7 +106,7 @@ void report_close(void)
     }
   }
   
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
   int len_tmp = len_hosts;
   if (ipinfo_no >= 0) {
     ipinfo_no %= iiwidth_len;
@@ -140,7 +140,7 @@ void report_close(void)
     mpls = net_mpls(at);
     snprint_addr(name, sizeof(name), addr);
 
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     if (is_printii()) {
       snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%zus", len_hosts);
       snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(addr), name);
@@ -148,7 +148,7 @@ void report_close(void)
 #endif
     snprintf( fmt, sizeof(fmt), " %%2d.|-- %%-%zus", len_hosts);
     snprintf(buf, sizeof(buf), fmt, at+1, name);
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     }
 #endif
     len = reportwide ? strlen(buf) : len_hosts;  
@@ -186,7 +186,7 @@ void report_close(void)
 
       if (!found) {
   
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
         if (is_printii()) {
           if (mpls->labels && z == 1 && enablempls)
             print_mpls(mpls);
@@ -215,14 +215,14 @@ void report_close(void)
           }
         }
 #endif
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
         }
 #endif
       }
     }
 
     /* No multipath */
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     if (is_printii()) {
       if (mpls->labels && z == 1 && enablempls)
         print_mpls(mpls);
@@ -235,7 +235,7 @@ void report_close(void)
       }
     }
 #endif
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     }
 #endif
   }
@@ -437,7 +437,7 @@ void csv_close(time_t now)
 
     if (at == net_min()) {
       printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
       if(!ipinfo_no) {
 	printf("Asn,");
       }
@@ -450,7 +450,7 @@ void csv_close(time_t now)
       printf("\n");
     }
 
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     if(!ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(addr);
       fmtinfo = trim(fmtinfo);

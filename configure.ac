@@ -87,9 +87,9 @@ AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
 AC_ARG_WITH([ipinfo],
   [AS_HELP_STRING([--without-ipinfo], [Do not try to use ipinfo lookup at all])],
   [], [with_ipinfo=yes])
-AM_CONDITIONAL([IPINFO], [test "x$with_ipinfo" = "xyes"])
-AS_IF([test "x$with_ipinfo" = "xno"], [
-  AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
+AM_CONDITIONAL([WITH_IPINFO], [test "x$with_ipinfo" = "xyes"])
+AS_IF([test "x$with_ipinfo" = "xyes"], [
+  AC_DEFINE([HAVE_IPINFO], [1], [Define when ipinfo lookups are in use])
 ])
 
 AC_ARG_ENABLE([ipv6],

@@ -66,7 +66,7 @@ extern int DisplayMode;
 #include "split.h"
 #endif
 
-#ifndef IPINFO
+#ifndef HAVE_IPINFO
 // No support for IPINFO allow the calls to remain in the main code.
 #define asn_open()
 #define asn_close()

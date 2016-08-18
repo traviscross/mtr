@@ -287,7 +287,7 @@ static GtkWidget *ReportTreeView;
 static GtkListStore *ReportStore;
 
 enum {
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
   COL_ASN,
 #endif
   COL_HOSTNAME,
@@ -343,7 +343,7 @@ void TreeViewCreate(void)
   GtkTreeViewColumn *column;
 
   ReportStore = gtk_list_store_new(N_COLS,
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     G_TYPE_STRING,
 #endif
     G_TYPE_STRING,
@@ -363,7 +363,7 @@ void TreeViewCreate(void)
   g_signal_connect(GTK_OBJECT(ReportTreeView), "button_press_event", 
   		    G_CALLBACK(ReportTreeView_clicked),NULL);
 
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
   if (is_printii()) {
     renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("ASN",
@@ -491,7 +491,7 @@ void update_tree_row(int row, GtkTreeIter *iter)
     COL_COLOR, net_up(row) ? "black" : "red",
 
     -1);
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
   if (is_printii())
     gtk_list_store_set(ReportStore, iter, COL_ASN, fmt_ipinfo(addr), -1);
 #endif
