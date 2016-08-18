@@ -56,15 +56,7 @@ extern int DisplayMode;
 #define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit(EXIT_FAILURE); }
 #endif
 
-#ifdef NO_SPLIT
-// No support for split mode, allow the calls to remain in the code.
-#define split_open()
-#define split_close()
-#define split_redraw()
-#define split_keyaction() 0
-#else
 #include "split.h"
-#endif
 
 #ifndef HAVE_IPINFO
 // No support for IPINFO allow the calls to remain in the main code.
