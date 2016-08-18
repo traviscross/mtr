@@ -86,11 +86,13 @@ char *strlongip(ip_t * ip)
 }
 
 
-int longipstr( char *s, ip_t *dst, int family
-#ifndef ENABLE_IPV6
-UNUSED
+#ifdef ENABLE_IPV6
+#define UNUSED_IF_NO_IPV6
+#else
+#define UNUSED_IF_NO_IPV6 UNUSED
 #endif
-)
+
+int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
 {
 #ifdef ENABLE_IPV6
   return inet_pton( family, s, dst );

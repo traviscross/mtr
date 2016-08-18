@@ -35,6 +35,7 @@
 extern int DisplayMode;
 
 #ifdef NO_CURSES
+// No support for curses mode, allow the calls to remain in the code.
 #define mtr_curses_open()
 #define mtr_curses_close()
 #define mtr_curses_redraw()
@@ -45,6 +46,7 @@ extern int DisplayMode;
 #endif
 
 #ifdef NO_GTK
+// No support for gtk mode, allow the calls to remain in the code.
 #define gtk_open()
 #define gtk_close()
 #define gtk_redraw()
@@ -55,6 +57,7 @@ extern int DisplayMode;
 #endif
 
 #ifdef NO_SPLIT
+// No support for split mode, allow the calls to remain in the code.
 #define split_open()
 #define split_close()
 #define split_redraw()
@@ -63,21 +66,27 @@ extern int DisplayMode;
 #include "split.h"
 #endif
 
-void display_detect(int *argc
-#ifdef NO_GTK
-UNUSED
+#ifndef IPINFO
+// No support for IPINFO allow the calls to remain in the main code.
+#define asn_open()
+#define asn_close()
 #endif
-  , char ***argv
-#ifdef NO_GTK
-UNUSED
-#endif
-) {
 
-#ifndef NO_CURSES
-  DisplayMode = DisplayCurses;
+#ifdef NO_CURSES
+#define DEFAULT_DISPLAY DisplayReport
 #else
-  DisplayMode = DisplayReport;
+#define DEFAULT_DISPLAY DisplayCurses
 #endif
+
+#ifdef NO_GTK
+#define UNUSED_IF_NO_GTK UNUSED
+#else
+#define UNUSED_IF_NO_GTK
+#endif
+
+void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
+{
+  DisplayMode = DEFAULT_DISPLAY;
 
 #ifndef NO_GTK
   if(gtk_detect(argc, argv)) {
@@ -108,20 +117,14 @@ void display_open(void)
     break;
   case DisplayCurses:
     mtr_curses_open();  
-#ifdef IPINFO
-    if (ipinfo_no >= 0)
-        asn_open();
-#endif
+    asn_open();
     break;
   case DisplaySplit:
     split_open();
     break;
   case DisplayGTK:
     gtk_open();
-#ifdef IPINFO
-    if (ipinfo_no >= 0)
-        asn_open();
-#endif
+    asn_open();
     break;
   }
 }
@@ -146,10 +149,7 @@ void display_close(time_t now)
     csv_close(now);
     break;
   case DisplayCurses:
-#ifdef IPINFO
-    if (ipinfo_no >= 0)
-        asn_close();
-#endif
+    asn_close();
     mtr_curses_close();
     break;
   case DisplaySplit:

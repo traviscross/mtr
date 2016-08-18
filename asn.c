@@ -40,12 +40,15 @@
 #include "mtr.h"
 #include "asn.h"
 
-/*
-#ifndef IIDEBUG
-#define IIDEBUG
+//#define IIDEBUG
+
+#ifdef IIDEBUG
 #include <syslog.h>
+#define DEB_syslog syslog
+#else
+#define DEB_syslog(...) do {} while (0)
 #endif
-*/
+
 
 #define IIHASH_HI	128
 #define ITEMSMAX	15
@@ -83,10 +86,8 @@ char *ipinfo_lookup(const char *domain) {
 
     memset(answer, 0, PACKETSZ);
     if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
-#ifdef IIDEBUG
         if (iihash)
-            syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
-#endif
+            DEB_syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
         return (iihash)?strdup(UNKN):UNKN;
     }
 
@@ -138,10 +139,8 @@ char *ipinfo_lookup(const char *domain) {
     strncpy(txt, (char*) pt, txtlen);
     txt[txtlen] = 0;
 
-#ifdef IIDEBUG
     if (iihash)
-        syslog(LOG_INFO, "Malloc-txt(%p): %s", txt, txt);
-#endif
+        DEB_syslog(LOG_INFO, "Malloc-txt(%p): %s", txt, txt);
 
     return txt;
 }
@@ -161,13 +160,9 @@ char* split_txtrec(char *txt_rec) {
     if (!txt_rec)
 	return NULL;
     if (iihash) {
-#ifdef IIDEBUG
-        syslog(LOG_INFO, "Malloc-tbl: %s", txt_rec);
-#endif
+        DEB_syslog(LOG_INFO, "Malloc-tbl: %s", txt_rec);
         if (!(items = malloc(sizeof(*items)))) {
-#ifdef IIDEBUG
-            syslog(LOG_INFO, "Free-txt(%p)", txt_rec);
-#endif
+            DEB_syslog(LOG_INFO, "Free-txt(%p)", txt_rec);
             free(txt_rec);
             return NULL;
         }
@@ -240,35 +235,25 @@ char *get_ipinfo(ip_t *addr) {
     ENTRY item;
 
     if (iihash) {
-#ifdef IIDEBUG
-        syslog(LOG_INFO, ">> Search: %s", key);
-#endif
+        DEB_syslog(LOG_INFO, ">> Search: %s", key);
         item.key = key;;
         ENTRY *found_item;
         if ((found_item = hsearch(item, FIND))) {
             if (!(val = (*((items_t*)found_item->data))[ipinfo_no]))
                 val = (*((items_t*)found_item->data))[0];
-#ifdef IIDEBUG
-        syslog(LOG_INFO, "Found (hashed): %s", val);
-#endif
+        DEB_syslog(LOG_INFO, "Found (hashed): %s", val);
         }
     }
 
     if (!val) {
-#ifdef IIDEBUG
-        syslog(LOG_INFO, "Lookup: %s", key);
-#endif
+        DEB_syslog(LOG_INFO, "Lookup: %s", key);
         if ((val = split_txtrec(ipinfo_lookup(lookup_key)))) {
-#ifdef IIDEBUG
-            syslog(LOG_INFO, "Looked up: %s", key);
-#endif
+            DEB_syslog(LOG_INFO, "Looked up: %s", key);
             if (iihash)
                 if ((item.key = strdup(key))) {
                     item.data = items;
                     hsearch(item, ENTER);
-#ifdef IIDEBUG
-                    syslog(LOG_INFO, "Insert into hash: %s", key);
-#endif
+                    DEB_syslog(LOG_INFO, "Insert into hash: %s", key);
                 }
         }
     }
@@ -294,19 +279,15 @@ int is_printii(void) {
 
 void asn_open(void) {
     if (ipinfo_no >= 0) {
-#ifdef IIDEBUG
-        syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
-#endif
+        DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
             perror("ipinfo hash");
     }
 }
 
 void asn_close(void) {
-    if (iihash) {
-#ifdef IIDEBUG
-        syslog(LOG_INFO, "hdestroy()");
-#endif
+    if ((ipinfo_no >= 0) && iihash) {
+        DEB_syslog(LOG_INFO, "hdestroy()");
         hdestroy();
         iihash = 0;
     }
