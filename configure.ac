@@ -15,9 +15,6 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
-AC_SUBST([CURSES_OBJ])
-CURSES_OBJ=curses.o
-
 AC_PROG_CC
 
 # Check pkg-config availability.
@@ -50,24 +47,8 @@ AC_CHECK_HEADERS([ \
   sys/xti.h \
 ])
 
-# Find ncursses.
-AC_SEARCH_LIBS([initscr],
-  [ncurses curses cursesX],
-  [],
-  [AC_MSG_WARN([Building without curses display support])
-  AC_DEFINE([NO_CURSES], [1], [Define if you don't have the curses libraries available.])
-  CURSES_OBJ=])
-
-AC_CHECK_LIB([ncurses],
-  [use_default_colors],
-  [AC_DEFINE([HAVE_USE_DEFAULT_COLORS],
-    [1],
-    [Define this if your curses library has the use_default_colors() command.])
-  ])
-
 # Check functions.
 AC_CHECK_FUNCS([ \
-  attron \
   fcntl \
 ])
 
@@ -83,6 +64,24 @@ AS_IF([test "x$with_gtk" = "xyes"],
     [with_gtk=no])
 ])
 AM_CONDITIONAL([WITH_GTK], [test "x$with_gtk" = xyes])
+
+# Find ncurses
+AC_ARG_WITH([ncurses],
+  [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
+  [], [with_ncurses=yes])
+AS_IF([test "x$with_ncurses" = "xyes"],
+  [PKG_CHECK_MODULES([NCURSES], [ncurses], [
+      AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses library available])
+      AC_CHECK_LIB([ncurses],
+        [use_default_colors],
+        [AC_DEFINE([HAVE_USE_DEFAULT_COLORS], [1],
+          [Define this if your curses library has the use_default_colors() command.]
+        )
+      ])
+    ],
+    [with_ncurses=no])
+])
+AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],

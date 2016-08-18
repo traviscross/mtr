@@ -21,7 +21,7 @@
 #include <strings.h>
 #include <unistd.h>
 
-#ifndef NO_CURSES
+#ifdef HAVE_NCURSES
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,11 +48,6 @@
 #  include <cursesX.h>
 #else
 #  error No curses header file available
-#endif
-
-#ifndef HAVE_ATTRON
-#define attron(x) 
-#define attroff(x) 
 #endif
 
 #ifndef getmaxyx

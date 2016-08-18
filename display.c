@@ -34,15 +34,15 @@
 
 extern int DisplayMode;
 
-#ifdef NO_CURSES
+#ifdef HAVE_NCURSES
+#include "mtr-curses.h"
+#else
 // No support for curses mode, allow the calls to remain in the code.
 #define mtr_curses_open()
 #define mtr_curses_close()
 #define mtr_curses_redraw()
 #define mtr_curses_keyaction() 0
 #define mtr_curses_clear()
-#else
-#include "mtr-curses.h"
 #endif
 
 #ifdef HAVE_GTK
@@ -72,10 +72,10 @@ extern int DisplayMode;
 #define asn_close()
 #endif
 
-#ifdef NO_CURSES
-#define DEFAULT_DISPLAY DisplayReport
-#else
+#ifdef HAVE_NCURSES
 #define DEFAULT_DISPLAY DisplayCurses
+#else
+#define DEFAULT_DISPLAY DisplayReport
 #endif
 
 #ifdef HAVE_GTK
