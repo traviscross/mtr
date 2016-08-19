@@ -315,8 +315,8 @@ int new_sequence(int index)
 void net_send_tcp(int index)
 {
   int ttl, s;
-  int opt = 1;
   int port;
+  int flags;
   struct sockaddr_storage local;
   struct sockaddr_storage remote;
   struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
@@ -370,12 +370,20 @@ void net_send_tcp(int index)
     exit(EXIT_FAILURE);
   }
 
-  opt = 1;
-  if (ioctl(s, FIONBIO, &opt)) {
+  //  opt = 1;
+  flags = fcntl(s, F_GETFL, 0);
+  if (flags < 0) {
     display_clear();
     perror("ioctl FIONBIO");
     exit(EXIT_FAILURE);
   }
+
+  if (fcntl (s, F_SETFL, flags | O_NONBLOCK) < 0) {
+    display_clear();
+    perror("ioctl FIONBIO");
+    exit(EXIT_FAILURE);
+  }
+
 
   switch (af) {
   case AF_INET:
