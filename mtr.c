@@ -53,11 +53,6 @@
 #endif
 
 
-#ifdef NO_HERROR
-#define herror(str) fprintf(stderr, str ": error looking up \"%s\"\n", Hostname);
-#endif
-
-
 int   DisplayMode;
 int   display_mode;
 int   Interactive = 1;
@@ -642,12 +637,12 @@ int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
   int               net_preopen_result;
-#ifdef ENABLE_IPV6
   struct addrinfo       hints, *res;
   int                   error;
   struct hostent        trhost;
   char *                alptr[2];
   struct sockaddr_in *  sa4;
+#ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
 
@@ -726,7 +721,6 @@ int main(int argc, char **argv)
       }
     }
 
-#ifdef ENABLE_IPV6
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset( &hints, 0, sizeof hints );
     hints.ai_family = af;
@@ -758,10 +752,12 @@ int main(int argc, char **argv)
       sa4 = (struct sockaddr_in *) res->ai_addr;
       alptr[0] = (void *) &(sa4->sin_addr);
       break;
+#ifdef ENABLE_IPV6
     case AF_INET6:
       sa6 = (struct sockaddr_in6 *) res->ai_addr;
       alptr[0] = (void *) &(sa6->sin6_addr);
       break;
+#endif
     default:
       fprintf( stderr, "mtr unknown address type\n" );
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
@@ -771,18 +767,6 @@ int main(int argc, char **argv)
       }
     }
     alptr[1] = NULL;
-#else
-      host = gethostbyname(Hostname);
-    if (host == NULL) {
-      herror("mtr gethostbyname");
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
-      else {
-        names = names->next;
-        continue;
-      }
-    }
-    af = host->h_addrtype;
-#endif
 
     if (net_open(host) != 0) {
       fprintf(stderr, "mtr: Unable to start net module.\n");

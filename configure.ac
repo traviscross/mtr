@@ -122,10 +122,7 @@ AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
 ])
 AC_SUBST([RESOLV_LIBS])
 
-# Error printing functions.
-AC_CHECK_FUNC([herror], [],
-  [AC_DEFINE([NO_HERROR], [1], [Define if you don't have the herror() function available.])])
-
+# Check errno and socket data types.
 AC_CHECK_DECLS([errno], [], [], [[
 #include <errno.h>
 #include <sys/errno.h>
