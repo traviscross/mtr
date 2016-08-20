@@ -110,62 +110,20 @@ AC_CHECK_FUNC([socket], [],
 AC_CHECK_FUNC([gethostbyname], [],
   [AC_CHECK_LIB([nsl], [gethostbyname], [], [AC_MSG_ERROR([No nameservice library found])])])
 
-dnl AC_CHECK_FUNC([res_init], [], [
-dnl   AC_CHECK_LIB([bind], [res_init], [], [
-dnl   AC_CHECK_LIB([resolv], [res_init], [], [AC_MSG_ERROR([No resolver library found])])])])
-
 AC_CHECK_FUNCS([seteuid])
 dnl  AC_CHECK_FUNC([setuid], [], [AC_MSG_ERROR([I Need either seteuid or setuid])])
 
-dnl AC_CHECK_FUNC([res_mkquery], [], [
-dnl   AC_CHECK_LIB([bind], [res_mkquery], , [
-dnl    AC_CHECK_LIB([resolv], [res_mkquery], [], [
-dnl      AC_CHECK_LIB([resolv], [__res_mkquery], [],
-dnl        [AC_MSG_ERROR([No resolver library found])
-dnl      ])
-dnl    ])
-dnl  ])
-dnl ])
-
-# See if a library is needed for res_mkquery and if so put it in RESOLV_LIBS
-RESOLV_LIBS=
-AC_SUBST([RESOLV_LIBS])
-AC_DEFUN([LIBRESOLVTEST_SRC], [
-AC_LANG_PROGRAM([[
-#include <netinet/in.h>
-#include <resolv.h>
-]], [[
-int (*res_mkquery_func)(int,...) = (int (*)(int,...))res_mkquery;
-(void)(*res_mkquery_func)(0);
-]])])
-AC_MSG_CHECKING([whether library required for res_mkquery])
-RESOLV_LIB_NONE=
-AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-  [AC_MSG_RESULT([no])
-  RESOLV_LIB_NONE=yes],
-  [AC_MSG_RESULT([yes])])
-
-AS_IF([test "x$RESOLV_LIB_NONE" = "x"], [
-  AC_MSG_CHECKING([for res_mkquery in -lbind])
-  STASH_LIBS="$LIBS"
-  LIBS="$STASH_LIBS -lbind"
-  AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-    [AC_MSG_RESULT([yes])
-    RESOLV_LIBS=-lbind],
-    [AC_MSG_RESULT([no])
-  ])
-  AS_IF([test "x$RESOLV_LIBS" = "x"], [
-    AC_MSG_CHECKING([for res_mkquery in -lresolv])
-    LIBS="$STASH_LIBS -lresolv"
-    AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-    [AC_MSG_RESULT([yes])
-    RESOLV_LIBS=-lresolv],
-    [AC_MSG_RESULT([no])
-      AC_MSG_ERROR([No resolver library found])
+# Find resolver library.
+AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
+  AC_CHECK_LIB([resolv], [__res_query], [RESOLV_LIBS="-lresolv"], [
+    AC_CHECK_LIB([resolv], [res_query], [RESOLV_LIBS="-lresolv"], [
+      AC_CHECK_LIB([bind], [res_query], [RESOLV_LIBS="-lbind"], [
+        AC_MSG_ERROR([No resolver library found])
+      ])
     ])
   ])
-  LIBS="$STASH_LIBS"
 ])
+AC_SUBST([RESOLV_LIBS])
 
 # Error printing functions.
 AC_CHECK_FUNC([herror], [],
