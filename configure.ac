@@ -110,9 +110,6 @@ AC_CHECK_FUNC([socket], [],
 AC_CHECK_FUNC([gethostbyname], [],
   [AC_CHECK_LIB([nsl], [gethostbyname], [], [AC_MSG_ERROR([No nameservice library found])])])
 
-AC_CHECK_FUNCS([seteuid])
-dnl  AC_CHECK_FUNC([setuid], [], [AC_MSG_ERROR([I Need either seteuid or setuid])])
-
 # Find resolver library.
 AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
   AC_CHECK_LIB([resolv], [__res_query], [RESOLV_LIBS="-lresolv"], [
@@ -128,8 +125,6 @@ AC_SUBST([RESOLV_LIBS])
 # Error printing functions.
 AC_CHECK_FUNC([herror], [],
   [AC_DEFINE([NO_HERROR], [1], [Define if you don't have the herror() function available.])])
-AC_CHECK_FUNC([strerror], [],
-  [AC_DEFINE([NO_STRERROR], [1], [Define if you don't have the strerror() function available.])])
 
 AC_CHECK_DECLS([errno], [], [], [[
 #include <errno.h>
@@ -145,10 +140,6 @@ AC_CHECK_TYPE([socklen_t],
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif]])
-
-AC_CHECK_TYPE([struct in_addr],
-  [AC_DEFINE([HAVE_STRUCT_INADDR], [], [Define if you have struct in_addr])], [],
-  [[#include <netinet/in.h>]])
 
 # Add C flags to display more warnings
 AC_MSG_CHECKING([for C flags to get more warnings])
