@@ -43,6 +43,12 @@ enum {
   DisplayJSON
 };
 
+enum {
+  DisplayModeDefalt,
+  DisplayModeBlockmap,
+  DisplayModeMAX	/* this must be the last DisplayMode entry */
+};
+
 /*  Prototypes for display.c  */
 void display_detect(int *argc, char ***argv);
 void display_open(void);

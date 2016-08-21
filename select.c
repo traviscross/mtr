@@ -216,7 +216,7 @@ void select_loop(void) {
 	net_reset();
 	break;
       case ActionDisplay:
-        display_mode = (display_mode+1) % 3;
+        display_mode = (display_mode + 1) % DisplayModeMAX;
 	break;
       case ActionClear:
 	display_clear();

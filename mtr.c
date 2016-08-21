@@ -26,6 +26,8 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#include <error.h>
+#include <values.h>
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -175,6 +177,42 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs("See the 'man 8 mtr' for details.\n", out);
   exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
+
+/* Parse string, and return positive signed int. */
+static int
+strtoint_or_err (const char *str, const char *errmesg)
+{
+  unsigned long int num;
+  char *end = NULL;
+
+  if (str != NULL && *str != '\0') {
+      errno = 0;
+      num = strtoul (str, &end, 10);
+      if (errno == 0 && str != end && end != NULL && *end == '\0' &&
+          num < INT_MAX)
+	return num;
+    }
+  error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
+  return 0;
+}
+
+static float
+strtofloat_or_err (const char *str, const char *errmesg)
+{
+  double num;
+  char *end = NULL;
+
+  if (str != NULL && *str != '\0') {
+      errno = 0;
+      num = strtod (str, &end);
+      if (errno == 0 && str != end && end != NULL && *end == '\0' &&
+          num < FLT_MAX)
+	return num;
+    }
+  error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
+  return 0;
+}
+
 
 char *
 trim(char * s) {
@@ -440,14 +478,17 @@ void parse_arg (int argc, char **argv)
       break;
 
     case OPT_DISPLAYMODE:
-      display_mode = (atoi (optarg)) % 3;
+      display_mode = strtoint_or_err(optarg, "invalid argument");
+      if ((DisplayModeMAX - 1) < display_mode)
+        error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
+              DisplayModeDefalt, (DisplayModeMAX - 1), optarg);
       break;
     case 'c':
-      MaxPing = atoi (optarg);
+      MaxPing = strtoint_or_err(optarg, "invalid argument");
       ForceMaxPing = 1;
       break;
     case 's':
-      cpacketsize = atoi (optarg);
+      cpacketsize = strtoint_or_err(optarg, "invalid argument");
       break;
     case 'a':
       InterfaceAddress = optarg;
@@ -459,7 +500,7 @@ void parse_arg (int argc, char **argv)
       dns = 0;
       break;
     case 'i':
-      WaitTime = atof (optarg);
+      WaitTime = strtofloat_or_err(optarg, "invalid argument");
       if (WaitTime <= 0.0) {
 	fprintf (stderr, "mtr: wait time must be positive\n");
 	exit(EXIT_FAILURE);
@@ -470,7 +511,7 @@ void parse_arg (int argc, char **argv)
       }
       break;
     case 'f':
-      fstTTL = atoi (optarg);
+      fstTTL = strtoint_or_err(optarg, "invalid argument");
       if (fstTTL > maxTTL) {
 	fstTTL = maxTTL;
       }
@@ -482,7 +523,7 @@ void parse_arg (int argc, char **argv)
       read_from_file(argv[0], optarg);
       break;
     case 'm':
-      maxTTL = atoi (optarg);
+      maxTTL = strtoint_or_err(optarg, "invalid argument");
       if (maxTTL > (MaxHost - 1)) {
 	maxTTL = MaxHost-1;
       }
@@ -494,7 +535,7 @@ void parse_arg (int argc, char **argv)
       }
       break;
 	case 'U':
-		maxUnknown = atoi(optarg);
+                maxUnknown = strtoint_or_err(optarg, "invalid argument");
 		if (maxUnknown < 1) {
 			maxUnknown = 1;
 		}
@@ -514,19 +555,19 @@ void parse_arg (int argc, char **argv)
       strcpy ((char*)fld_active, optarg);
       break;
     case 'B':
-      bitpattern = atoi (optarg);
+      bitpattern = strtoint_or_err(optarg, "invalid argument");
       if (bitpattern > 255)
 	bitpattern = -1;
       break;
     case 'G':
-      GraceTime = atof (optarg);
+      GraceTime = strtofloat_or_err(optarg, "invalid argument");
       if (GraceTime <= 0.0) {
         fprintf (stderr, "mtr: wait time must be positive\n");
         exit(EXIT_FAILURE);
       }
       break;
     case 'Q':
-      tos = atoi (optarg);
+      tos = strtoint_or_err(optarg, "invalid argument");
       if (tos > 255 || tos < 0) {
 	/* error message, should do more checking for valid values,
 	 * details in rfc2474 */
@@ -569,21 +610,21 @@ void parse_arg (int argc, char **argv)
       show_ips = 1;
       break;
     case 'P':
-      remoteport = atoi(optarg);
+      remoteport = strtoint_or_err(optarg, "invalid argument");
       if (remoteport > 65535 || remoteport < 1) {
         fprintf(stderr, "Illegal port number.\n");
         exit(EXIT_FAILURE);
       }
       break;
     case 'L':
-      localport = atoi(optarg);
+      localport = strtoint_or_err(optarg, "invalid argument");
       if (localport > 65535 || localport < MinPort) {
         fprintf(stderr, "Illegal local port number.\n");
         exit(EXIT_FAILURE);
       }
       break;
     case 'Z':
-      tcp_timeout = atoi(optarg);
+      tcp_timeout = strtoint_or_err(optarg, "invalid argument");
       tcp_timeout *= 1000000;
       break;
     case '4':
@@ -599,7 +640,7 @@ void parse_arg (int argc, char **argv)
 #endif
 #ifdef HAVE_IPINFO
     case 'y':
-      ipinfo_no = atoi (optarg);
+      ipinfo_no = strtoint_or_err(optarg, "invalid argument");
       if (ipinfo_no < 0)
         ipinfo_no = 0;
       break;
@@ -614,11 +655,7 @@ void parse_arg (int argc, char **argv)
 #endif
 #ifdef SO_MARK
     case 'M':
-      mark = atoi (optarg);
-      if (mark < 0) {
-        fprintf( stderr, "SO_MARK must be positive.\n" );
-        exit(EXIT_FAILURE);
-      }
+      mark = strtoint_or_err(optarg, "invalid argument");
       break;
 #else
     case 'M':
@@ -701,7 +738,7 @@ int main(int argc, char **argv)
   srand (getpid());
 
   display_detect(&argc, &argv);
-  display_mode = 0;
+  display_mode = DisplayModeDefalt;
 
   /* The field options are now in a static array all together,
      but that requires a run-time initialization. */

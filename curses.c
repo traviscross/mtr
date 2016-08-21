@@ -566,7 +566,7 @@ void mtr_fill_graph(int at, int cols)
 			printw("%c", '?');
 			attrset(A_NORMAL);
 		} else {
-			if (display_mode == 1) {
+			if (display_mode == DisplayModeBlockmap) {
 				if (saved[i] > scale[6]) {
 					printw("%c", block_map[NUM_FACTORS-1]);
 				} else {
@@ -669,7 +669,7 @@ void mtr_curses_redraw(void)
   attron(A_BOLD); printw("O"); attroff(A_BOLD); printw("rder of fields   ");
   attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
-  if (display_mode == 0) {
+  if (display_mode == DisplayModeDefalt) {
     for (i=0; i < MAXFLD; i++ ) {
 	j = fld_index[fld_active[i]];
 	if (j < 0) continue;
