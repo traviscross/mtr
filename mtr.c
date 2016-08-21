@@ -524,6 +524,7 @@ void parse_arg (int argc, char **argv)
       mtrtype = IPPROTO_TCP;
       break;
     case 'S':
+#ifdef HAS_SCTP
       if (mtrtype != IPPROTO_ICMP) {
         fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
         exit(EXIT_FAILURE);
@@ -532,6 +533,11 @@ void parse_arg (int argc, char **argv)
         remoteport = 80;
       }
       mtrtype = IPPROTO_SCTP;
+#else
+      fprintf (stderr, "No SCTP support found at compiletime\n");
+      exit (EXIT_FAILURE);
+#endif
+      break;
     case 'b':
       show_ips = 1;
       break;

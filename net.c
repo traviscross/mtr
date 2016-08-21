@@ -70,12 +70,17 @@ struct TCPHeader {
   uint32 seq;
 };
 
+// This ifdef is unnecessary. But it should trigger errors if I forget
+// an ifdef HAS_SCTP further down.  (Success! I forgot one and the compiler
+// told me the line number!)
+#ifdef HAS_SCTP 
 /* Structure of an SCTP header */
 struct SCTPHeader {
   uint16 srcport;
   uint16 dstport;
   uint32 veri_tag;
 };
+#endif
 
 /* Structure of an IPv4 UDP pseudoheader.  */
 struct UDPv4PHeader {
@@ -438,6 +443,7 @@ void net_send_tcp(int index)
   connect(s, (struct sockaddr *) &remote, len);
 }
 
+#ifdef HAS_SCTP
 /*  Attempt to connect to a SCTP port with a TTL */
 void net_send_sctp(int index)
 {
@@ -556,6 +562,7 @@ void net_send_sctp(int index)
 
   connect(s, (struct sockaddr *) &remote, len);
 }
+#endif
 
 /*  Attempt to find the host at a particular number of hops away  */
 void net_send_query(int index) 
@@ -565,10 +572,12 @@ void net_send_query(int index)
     return;
   }
   
+#ifdef HAS_SCTP
   if (mtrtype == IPPROTO_SCTP) {
     net_send_sctp(index);
     return;
   }
+#endif
 
   /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
   char packet[MAXPACKET];
@@ -885,7 +894,9 @@ void net_process_return(void)
   struct ICMPHeader *header = NULL;
   struct UDPHeader *udpheader = NULL;
   struct TCPHeader *tcpheader = NULL;
+#ifdef HAS_SCTP
   struct SCTPHeader *sctpheader = NULL;
+#endif
   struct timeval now;
   ip_t * fromaddress = NULL;
   int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
@@ -1065,7 +1076,8 @@ void net_process_return(void)
       seq_num = ntohs(tcpheader->srcport);
     }
     break;
-    
+
+#ifdef HAS_SCTP
   case IPPROTO_SCTP:
     if (header->type == timeexceededtype || header->type == unreachabletype) {
       switch ( af ) {
@@ -1102,6 +1114,7 @@ void net_process_return(void)
       seq_num = ntohs(sctpheader->srcport);
     }
     break;
+#endif
   }
   if (seq_num)
     net_process_ping (seq_num, mpls, (void *) fromaddress, now);

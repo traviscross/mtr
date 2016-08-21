@@ -134,3 +134,9 @@ struct mplslen {
 };
 
 void decodempls(int, char *, struct mplslen *, int);
+
+#ifdef IPPROTO_SCTP
+    #define HAS_SCTP
+#endif
+
+
