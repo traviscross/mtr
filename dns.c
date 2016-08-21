@@ -46,6 +46,8 @@
 //#endif
 //#include <netdb.h>
 //#include <resolv.h>
+#include <error.h>
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 //#include <ctype.h>
@@ -162,20 +164,17 @@ void dns_open(void)
   int pid; 
  
   if (pipe (todns) < 0) {
-    perror ("can't make a pipe for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't make a pipe for DNS process");
   }
 
   if (pipe (fromdns) < 0) {
-    perror ("can't make a pipe for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't make a pipe for DNS process");
   }
   fflush (stdout);
   pid = fork ();
   //pid = 1;
   if (pid < 0) {
-    perror ("can't fork for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't fork for DNS process");
   }
   if (pid == 0) {
     char buf[2048];
@@ -184,8 +183,7 @@ void dns_open(void)
 
     // Automatically reap children. 
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-      perror("signal");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "signal");
     }
 
 #if 0
@@ -228,7 +226,8 @@ void dns_open(void)
           sprintf (result, "%s %s\n", strlongip (&host), hostname);
           //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
           rv = write (fromdns[1], result, strlen (result));
-          if (rv < 0) perror ("write DNS lookup result");
+          if (rv < 0)
+            error (0, errno, "write DNS lookup result");
         }
 
         exit(EXIT_SUCCESS);
@@ -269,7 +268,7 @@ void dns_ack(void)
     if (r)  
       r->name = strdup (name);
     else 
-      fprintf (stderr, "dns_ack: Couldn't find host %s\n", host);
+      error (0, 0, "dns_ack: Couldn't find host %s", host);
   }
 }
 
@@ -315,7 +314,8 @@ char *dns_lookup2(ip_t * ip)
 
      sprintf (buf, "%s\n", strlongip (ip));
      rv = write  (todns[1], buf, strlen (buf));
-     if (rv < 0) perror ("couldn't write to resolver process");
+     if (rv < 0)
+       error (0, errno, "couldn't write to resolver process");
   }
   return strlongip (ip);
 }

@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <error.h>
+#include <errno.h>
 
 #ifdef __APPLE__
 #define BIND_8_COMPAT
@@ -80,7 +82,7 @@ char *ipinfo_lookup(const char *domain) {
 
 
     if(res_init() < 0) {
-        fprintf(stderr,"@res_init failed\n");
+        error(0, 0, "@res_init failed");
         return NULL;
     }
 
@@ -281,7 +283,7 @@ void asn_open(void) {
     if (ipinfo_no >= 0) {
         DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
-            perror("ipinfo hash");
+            error(0, errno, "ipinfo hash");
     }
 }
 

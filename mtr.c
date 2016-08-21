@@ -227,12 +227,11 @@ trim(char * s) {
 }
 
 static void
-append_to_names(const char* progname, const char* item) {
+append_to_names(const char* item) {
 
   names_t* name = calloc(1, sizeof(names_t));
   if (name == NULL) {
-    fprintf(stderr, "%s: memory allocation failure\n", progname);
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "memory allocation failure");
   }
   name->name = strdup(item);
   name->next = names;
@@ -240,7 +239,7 @@ append_to_names(const char* progname, const char* item) {
 }
 
 static void
-read_from_file(const char* progname, const char *filename) {
+read_from_file(const char *filename) {
 
   FILE *in;
   char line[512];
@@ -251,19 +250,17 @@ read_from_file(const char* progname, const char *filename) {
   } else {
     in = fopen(filename, "r");
     if (! in) {
-      fprintf(stderr, "%s: fopen: %s\n", progname, strerror(errno));
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "open %s", filename);
     }
   }
 
   while (fgets(line, sizeof(line), in)) {
     char* name = trim(line);
-    append_to_names(progname, name);
+    append_to_names(name);
   }
 
   if (ferror(in)) {
-    fprintf(stderr, "%s: ferror: %s\n", progname, strerror(errno));
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "ferror %s", filename);
   }
 
   if (in != stdin) fclose(in);
@@ -277,7 +274,7 @@ read_from_file(const char* progname, const char *filename) {
  */
 
 static void
-lock(const char* progname, FILE *f) {
+lock(FILE *f) {
     int fd;
     struct stat buf;
     static struct flock lock;
@@ -293,8 +290,7 @@ lock(const char* progname, FILE *f) {
     fd = fileno(f);
     if ((fstat(fd, &buf) == 0) && S_ISREG(buf.st_mode)) {
       if (fcntl(fd, F_SETLKW, &lock) == -1) {
-          fprintf(stderr, "%s: fcntl: %s (ignored)\n",
-            progname, strerror(errno));
+        error(0, errno, "fcntl (ignored)");
       }
     }
 }
@@ -305,7 +301,7 @@ lock(const char* progname, FILE *f) {
  */
 
 static void
-unlock(const char* progname, FILE *f) {
+unlock(FILE *f) {
     int fd;
     struct stat buf;
     static struct flock lock;
@@ -321,8 +317,7 @@ unlock(const char* progname, FILE *f) {
     fd = fileno(f);
     if ((fstat(fd, &buf) == 0) && S_ISREG(buf.st_mode)) {
       if (fcntl(fd, F_SETLKW, &lock) == -1) {
-          fprintf(stderr, "%s: fcntl: %s (ignored)\n",
-            progname, strerror(errno));
+        error(0, errno, "fcntl (ignored)");
       }
     }
 }
@@ -502,12 +497,10 @@ void parse_arg (int argc, char **argv)
     case 'i':
       WaitTime = strtofloat_or_err(optarg, "invalid argument");
       if (WaitTime <= 0.0) {
-	fprintf (stderr, "mtr: wait time must be positive\n");
-	exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "wait time must be positive");
       }
       if (getuid() != 0 && WaitTime < 1.0) {
-        fprintf (stderr, "non-root users cannot request an interval < 1.0 seconds\r\n");
-	exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "non-root users cannot request an interval < 1.0 seconds");
       }
       break;
     case 'f':
@@ -520,7 +513,7 @@ void parse_arg (int argc, char **argv)
       }
       break;
     case 'F':
-      read_from_file(argv[0], optarg);
+      read_from_file(optarg);
       break;
     case 'm':
       maxTTL = strtoint_or_err(optarg, "invalid argument");
@@ -543,13 +536,11 @@ void parse_arg (int argc, char **argv)
     case 'o':
       /* Check option before passing it on to fld_active. */
       if (strlen (optarg) > MAXFLD) {
-	fprintf (stderr, "Too many fields: %s\n", optarg);
-        exit(EXIT_FAILURE);
+	error(EXIT_FAILURE, 0, "Too many fields: %s", optarg);
       }
       for (i=0; optarg[i]; i++) {
         if(!strchr (available_options, optarg[i])) {
-          fprintf (stderr, "Unknown field identifier: %c\n", optarg[i]);
-          exit(EXIT_FAILURE);
+          error(EXIT_FAILURE, 0, "Unknown field identifier: %c", optarg[i]);
         }
       }
       strcpy ((char*)fld_active, optarg);
@@ -562,8 +553,7 @@ void parse_arg (int argc, char **argv)
     case 'G':
       GraceTime = strtofloat_or_err(optarg, "invalid argument");
       if (GraceTime <= 0.0) {
-        fprintf (stderr, "mtr: wait time must be positive\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "wait time must be positive");
       }
       break;
     case 'Q':
@@ -576,15 +566,13 @@ void parse_arg (int argc, char **argv)
       break;
     case 'u':
       if (mtrtype != IPPROTO_ICMP) {
-        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
       mtrtype = IPPROTO_UDP;
       break;
     case 'T':
       if (mtrtype != IPPROTO_ICMP) {
-        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
       if (!remoteport) {
         remoteport = 80;
@@ -594,16 +582,14 @@ void parse_arg (int argc, char **argv)
     case 'S':
 #ifdef HAS_SCTP
       if (mtrtype != IPPROTO_ICMP) {
-        fprintf(stderr, "-u , -T and -S are mutually exclusive.\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
       if (!remoteport) {
         remoteport = 80;
       }
       mtrtype = IPPROTO_SCTP;
 #else
-      fprintf (stderr, "No SCTP support found at compiletime\n");
-      exit (EXIT_FAILURE);
+      error(EXIT_FAILURE, 0, "No SCTP support found at compiletime");
 #endif
       break;
     case 'b':
@@ -612,15 +598,13 @@ void parse_arg (int argc, char **argv)
     case 'P':
       remoteport = strtoint_or_err(optarg, "invalid argument");
       if (remoteport > 65535 || remoteport < 1) {
-        fprintf(stderr, "Illegal port number.\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
       }
       break;
     case 'L':
       localport = strtoint_or_err(optarg, "invalid argument");
       if (localport > 65535 || localport < MinPort) {
-        fprintf(stderr, "Illegal local port number.\n");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", localport);
       }
       break;
     case 'Z':
@@ -635,7 +619,7 @@ void parse_arg (int argc, char **argv)
       af = AF_INET6;
       break;
 #else
-      fprintf( stderr, "IPv6 not enabled.\n" );
+      error(EXIT_FAILURE, 0, "IPv6 not enabled");
       break;
 #endif
 #ifdef HAVE_IPINFO
@@ -650,7 +634,7 @@ void parse_arg (int argc, char **argv)
 #else
     case 'y':
     case 'z':
-      fprintf( stderr, "IPINFO not enabled.\n" );
+      error(EXIT_FAILURE, 0, "IPINFO not enabled");
       break;
 #endif
 #ifdef SO_MARK
@@ -659,7 +643,7 @@ void parse_arg (int argc, char **argv)
       break;
 #else
     case 'M':
-      fprintf( stderr, "SO_MARK not enabled.\n" );
+      error(EXIT_FAILURE, 0, "SO_MARK not enabled");
       break;
 #endif
     }
@@ -694,7 +678,7 @@ void parse_mtr_options (char *string)
     p = strtok (NULL, " \t");
   }
   if (p != NULL) {
-    fprintf (stderr, "Warning: extra arguments ignored: %s", p);
+    error(0, 0, "Warning: extra arguments ignored: %s", p);
   }
 
   parse_arg (argc, argv);
@@ -707,7 +691,7 @@ int main(int argc, char **argv)
   struct hostent *  host                = NULL;
   int               net_preopen_result;
   struct addrinfo       hints, *res;
-  int                   error;
+  int                   gai_error;
   struct hostent        trhost;
   char *                alptr[2];
   struct sockaddr_in *  sa4;
@@ -718,20 +702,17 @@ int main(int argc, char **argv)
   /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
 
   if ( ( net_preopen_result = net_preopen () ) ) {
-    fprintf( stderr, "mtr: unable to get raw sockets.\n" );
-    exit( EXIT_FAILURE );
+    error(EXIT_FAILURE, errno, "Unable to get raw sockets");
   }
 
   /*  Now drop to user permissions  */
   if (setgid(getgid()) || setuid(getuid())) {
-    fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "Unable to drop permissions");
   }
 
   /*  Double check, just in case  */
   if ((geteuid() != getuid()) || (getegid() != getgid())) {
-    fprintf (stderr, "mtr: Unable to drop permissions.\n");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "Unable to drop permissions");
   }
 
   /* reset the random seed */
@@ -750,13 +731,12 @@ int main(int argc, char **argv)
 
   while (optind < argc) {
     char* name = argv[optind++];
-    append_to_names(argv[0], name);
+    append_to_names(name);
   }
 
   /* Now that we know mtrtype we can select which socket to use */
   if (net_selectsocket() != 0) {
-    fprintf( stderr, "mtr: Couldn't determine raw socket type.\n" );
-    exit( EXIT_FAILURE );
+    error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
   }
 
   if (PrintVersion) {
@@ -770,7 +750,7 @@ int main(int argc, char **argv)
 
   time_t now = time(NULL);
 
-  if (!names) append_to_names (argv[0], "localhost"); // default: localhost. 
+  if (!names) append_to_names ("localhost"); // default: localhost. 
 
   names_t* head = names;
   while (names != NULL) {
@@ -782,7 +762,7 @@ int main(int argc, char **argv)
     }
 
     if (net_preopen_result != 0) {
-      fprintf(stderr, "mtr: Unable to get raw socket.  (Executable not suid?)\n");
+      error(0, 0, "Unable to get raw socket.  (Executable not suid?)");
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
         names = names->next;
@@ -794,12 +774,12 @@ int main(int argc, char **argv)
     memset( &hints, 0, sizeof hints );
     hints.ai_family = af;
     hints.ai_socktype = SOCK_DGRAM;
-    error = getaddrinfo( Hostname, NULL, &hints, &res );
-    if ( error ) {
-      if (error == EAI_SYSTEM)
-         perror ("Failed to resolve host");
+    gai_error = getaddrinfo( Hostname, NULL, &hints, &res );
+    if ( gai_error ) {
+      if (gai_error == EAI_SYSTEM)
+         error(0, 0, "Failed to resolve host: %s", Hostname);
       else
-         fprintf (stderr, "Failed to resolve host: %s\n", gai_strerror(error));
+         error(0, 0, "Failed to resolve host: %s: %s", Hostname, gai_strerror(gai_error));
 
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
@@ -828,7 +808,7 @@ int main(int argc, char **argv)
       break;
 #endif
     default:
-      fprintf( stderr, "mtr unknown address type\n" );
+      error(0, 0, "unknown address type");
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
         names = names->next;
@@ -838,7 +818,7 @@ int main(int argc, char **argv)
     alptr[1] = NULL;
 
     if (net_open(host) != 0) {
-      fprintf(stderr, "mtr: Unable to start net module.\n");
+      error(0, 0, "Unable to start net module");
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
         names = names->next;
@@ -847,7 +827,7 @@ int main(int argc, char **argv)
     }
 
     if (net_set_interfaceaddress (InterfaceAddress) != 0) {
-      fprintf( stderr, "mtr: Couldn't set interface address.\n" );
+      error(0, 0, "Couldn't set interface address: %s", InterfaceAddress);
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
         names = names->next;
@@ -856,7 +836,7 @@ int main(int argc, char **argv)
     }
 
 
-    lock(argv[0], stdout);
+    lock(stdout);
       display_open();
       dns_open();
 
@@ -864,7 +844,7 @@ int main(int argc, char **argv)
 
       net_end_transit();
       display_close(now);
-    unlock(argv[0], stdout);
+    unlock(stdout);
 
     if ( DisplayMode != DisplayCSV ) break;
     else names = names->next;

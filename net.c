@@ -38,6 +38,8 @@
 #include <math.h>
 #include <errno.h>
 #include <string.h>
+#include <error.h>
+
 
 #include "mtr.h"
 #include "net.h"
@@ -365,28 +367,24 @@ void net_send_tcp(int index)
 
   if (bind(s, (struct sockaddr *) &local, len)) {
     display_clear();
-    perror("bind()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "bind()");
   }
 
   if (getsockname(s, (struct sockaddr *) &local, &len)) {
     display_clear();
-    perror("getsockname()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "getsockname()");
   }
 
   //  opt = 1;
   flags = fcntl(s, F_GETFL, 0);
   if (flags < 0) {
     display_clear();
-    perror("ioctl FIONBIO");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "fcntl(F_GETFL)");
   }
 
   if (fcntl (s, F_SETFL, flags | O_NONBLOCK) < 0) {
     display_clear();
-    perror("ioctl FIONBIO");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "fcntl(F_SETFL, O_NONBLOCK)");
   }
 
 
@@ -394,21 +392,18 @@ void net_send_tcp(int index)
   case AF_INET:
     if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
       display_clear();
-      perror("setsockopt IP_TTL");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
     }
     if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof (tos))) {
       display_clear();
-      perror("setsockopt IP_TOS");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
     }
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
     if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
       display_clear();
-      perror("setsockopt IP_TTL");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
     }
     break;
 #endif
@@ -416,8 +411,7 @@ void net_send_tcp(int index)
 
 #ifdef SO_MARK
     if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
-      perror( "setsockopt SO_MARK" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
 
@@ -432,8 +426,7 @@ void net_send_tcp(int index)
 #endif
   default:
     display_clear();
-    perror("unknown AF?");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, 0, "unknown address family");
   }
 
   save_sequence(index, port);
@@ -465,8 +458,7 @@ void net_send_sctp(int index)
   s = socket(af, SOCK_STREAM, IPPROTO_SCTP);
   if (s < 0) {
     display_clear();
-    perror("socket()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "socket()");
   }
 
   memset(&local, 0, sizeof (local));
@@ -493,42 +485,36 @@ void net_send_sctp(int index)
 
   if (bind(s, (struct sockaddr *) &local, len)) {
     display_clear();
-    perror("bind()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "bind()");
   }
 
   if (getsockname(s, (struct sockaddr *) &local, &len)) {
     display_clear();
-    perror("getsockname()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "getsockname()");
   }
 
   opt = 1;
   if (ioctl(s, FIONBIO, &opt)) {
     display_clear();
-    perror("ioctl FIONBIO");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "ioctl FIONBIO");
   }
 
   switch (af) {
   case AF_INET:
     if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
       display_clear();
-      perror("setsockopt IP_TTL");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
     }
     if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof (tos))) {
       display_clear();
-      perror("setsockopt IP_TOS");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
     }
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
     if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
       display_clear();
-      perror("setsockopt IP_TTL");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
     }
     break;
 #endif
@@ -536,8 +522,7 @@ void net_send_sctp(int index)
 
 #ifdef SO_MARK
     if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
-      perror( "setsockopt SO_MARK" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
 
@@ -552,8 +537,7 @@ void net_send_sctp(int index)
 #endif
   default:
     display_clear();
-    perror("unknown AF?");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, 0, "unknown address family");
   }
 
   save_sequence(index, port);
@@ -612,12 +596,10 @@ void net_send_query(int index)
 #if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
     iphsize = 0;
     if ( setsockopt( sendsock, IPPROTO_IP, IP_TOS, &tos, sizeof tos ) ) {
-      perror( "setsockopt IP_TOS" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
     }    
     if ( setsockopt( sendsock, IPPROTO_IP, IP_TTL, &ttl, sizeof ttl ) ) {
-      perror( "setsockopt IP_TTL" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
     }    
 #else
     iphsize = sizeof (struct IPHeader);
@@ -643,8 +625,7 @@ void net_send_query(int index)
     iphsize = 0;
     if ( setsockopt( sendsock, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
                      &ttl, sizeof ttl ) ) {
-      perror( "setsockopt IPV6_UNICAST_HOPS" );
-      exit( EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "setsockopt IPV6_UNICAST_HOPS");
     }
     echotype = ICMP6_ECHO_REQUEST;
     salen = sizeof (struct sockaddr_in6);
@@ -654,8 +635,7 @@ void net_send_query(int index)
 
 #ifdef SO_MARK
     if (mark >= 0 && setsockopt( sendsock, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
-      perror( "setsockopt SO_MARK" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
 
@@ -733,8 +713,7 @@ void net_send_query(int index)
         offset = sizeof(struct UDPHeader);
       }
       if ( setsockopt(sendsock, IPPROTO_IPV6, IPV6_CHECKSUM, &offset, sizeof(offset)) ) {
-        perror( "setsockopt IPV6_CHECKSUM" );
-        exit( EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "setsockopt IPV6_CHECKSUM");
       }
       break;
     }
@@ -929,8 +908,7 @@ void net_process_return(void)
   num = recvfrom(recvsock, packet, MAXPACKET, 0, 
 		 fromsockaddr, &fromsockaddrsize);
   if(num < 0) {
-    perror("recvfrom failed");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "recvfrom failed");
   }
 
   switch ( af ) {
@@ -1353,11 +1331,11 @@ static void set_fd_flags(int fd)
 
   oldflags = fcntl(fd, F_GETFD);
   if (oldflags == -1) {
-    perror("Couldn't get fd's flags");
+    error(0, errno, "Couldn't get fd's flags");
     return;
   }
   if (fcntl(fd, F_SETFD, oldflags | FD_CLOEXEC))
-    perror("Couldn't set fd's flags");
+    error(0, errno, "Couldn't set fd's flags");
 #endif
 }
 
@@ -1382,7 +1360,7 @@ int net_preopen(void)
   /*  FreeBSD wants this to avoid sending out packets with protocol type RAW
       to the network.  */
   if (setsockopt(sendsock4, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt))) {
-    perror("setsockopt(IP_HDRINCL,1)");
+    error(0, errno, "setsockopt IP_HDRINCL");
     return -1;
   }
 #endif /* IP_HDRINCL */
@@ -1457,8 +1435,7 @@ int net_open(struct hostent * hostent)
 #ifdef ENABLE_IPV6
   case AF_INET6:
     if (sendsock6 < 0 || recvsock6 < 0) {
-      fprintf( stderr, "Could not open IPv6 socket\n" );
-      exit( EXIT_FAILURE );
+      error(EXIT_FAILURE, errno, "Could not open IPv6 socket");
     }
     sendsock = sendsock6;
     recvsock = recvsock6;
@@ -1468,8 +1445,7 @@ int net_open(struct hostent * hostent)
     break;
 #endif
   default:
-    fprintf( stderr, "net_open bad address type\n" );
-    exit( EXIT_FAILURE );
+    error(EXIT_FAILURE, 0, "net_open bad address type");
   }
 
   len = sizeof name_struct; 
@@ -1504,8 +1480,7 @@ void net_reopen(struct hostent * addr)
     break;
 #endif
   default:
-    fprintf( stderr, "net_reopen bad address type\n" );
-    exit( EXIT_FAILURE );
+    error(EXIT_FAILURE, 0, "net_reopen bad address type");
   }
 
   net_reset ();
@@ -1590,13 +1565,11 @@ int net_set_interfaceaddress_udp(void)
 
   s = socket (af, SOCK_DGRAM, 0);
   if (s < 0) {
-    perror("udp socket()");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "udp socket()");
   }
 
   if (connect(s, (struct sockaddr *) &remote, len)) {
-    perror("udp connect() failed");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "udp connect()");
   }
 
   getsockname(s, name, &len);
@@ -1639,7 +1612,7 @@ int net_set_interfaceaddress (char *InterfaceAddress)
   case AF_INET:
     ssa4->sin_port = 0;
     if ( inet_aton( InterfaceAddress, &(ssa4->sin_addr) ) < 1 ) {
-      fprintf( stderr, "mtr: bad interface address: %s\n", InterfaceAddress );
+      error(0, 0, "bad interface address: %s", InterfaceAddress);
       return( 1 );
   }
     len = sizeof (struct sockaddr);
@@ -1648,7 +1621,7 @@ int net_set_interfaceaddress (char *InterfaceAddress)
   case AF_INET6:
     ssa6->sin6_port = 0;
     if ( inet_pton( af, InterfaceAddress, &(ssa6->sin6_addr) ) < 1 ) {
-      fprintf( stderr, "mtr: bad interface address: %s\n", InterfaceAddress );
+      error(0, 0, "bad interface address: %s", InterfaceAddress);
       return( 1 );
     }
     len = sizeof (struct sockaddr_in6);
@@ -1657,7 +1630,7 @@ int net_set_interfaceaddress (char *InterfaceAddress)
   }
 
   if ( bind( sendsock, sourcesockaddr, len ) == -1 ) {
-    perror("mtr: failed to bind to interface");
+    error(0, 0, "failed to bind to interface: %s", InterfaceAddress);
       return( 1 );
   }
   getsockname (sendsock, name, &len);
@@ -1744,6 +1717,7 @@ void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
 #endif
   default:
     fprintf( stderr, "sockaddrtop unknown address type\n" );
+    error(0, 0, "sockaddrtop unknown address type");
     strptr[0] = '\0';
     return;
   }

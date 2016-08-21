@@ -28,6 +28,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <error.h>
 
 #include "mtr.h"
 #include "dns.h"
@@ -178,8 +179,7 @@ void select_loop(void) {
     } while ((rv < 0) && (errno == EINTR));
 
     if (rv < 0) {
-      perror ("Select failed");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "Select failed");
     }
     anyset = 0;
 
