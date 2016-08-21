@@ -86,6 +86,7 @@ void net_process_fds(fd_set *writefd);
 #define MinSequence 33000
 #define MaxSequence 65536
 #define MinPort 1024
+#define MaxPort 65535
 
 #define MAXPACKET 4470		/* largest test packet size */
 #define MINPACKET 28		/* 20 bytes IP header and 8 bytes ICMP or UDP */

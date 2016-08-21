@@ -597,13 +597,13 @@ void parse_arg (int argc, char **argv)
       break;
     case 'P':
       remoteport = strtoint_or_err(optarg, "invalid argument");
-      if (remoteport > 65535 || remoteport < 1) {
+      if (remoteport < 1 || MaxPort < remoteport) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
       }
       break;
     case 'L':
       localport = strtoint_or_err(optarg, "invalid argument");
-      if (localport > 65535 || localport < MinPort) {
+      if (localport < MinPort || MaxPort < localport) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", localport);
       }
       break;
