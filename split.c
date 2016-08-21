@@ -35,23 +35,20 @@
 #include "net.h"
 #include "split.h"
 
-#ifdef NO_CURSES
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#else
-/* Use the curses variant */
-
-#if defined(HAVE_NCURSES_H)
+#ifdef HAVE_NCURSES
+# if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
-#elif defined(HAVE_NCURSES_CURSES_H)
+# elif defined(HAVE_NCURSES_CURSES_H)
 #  include <ncurses/curses.h>
-#elif defined(HAVE_CURSES_H)
+# elif defined(HAVE_CURSES_H)
 #  include <curses.h>
-#else
+# else
 #  error No curses header file available
-#endif
-
+# endif
+#else
+# include <sys/time.h>
+# include <sys/types.h>
+# include <unistd.h>
 #endif
 
 
@@ -155,7 +152,9 @@ void split_close(void)
 
 int split_keyaction(void) 
 {
-#ifdef NO_CURSES
+#ifdef HAVE_NCURSES
+  char c = getch();
+#else
   fd_set readfds;
   struct timeval tv;
   char c;
@@ -169,8 +168,6 @@ int split_keyaction(void)
     read (0, &c, 1);
   } else 
     return 0;
-#else
-  char c = getch();
 #endif
 
 #if DEBUG

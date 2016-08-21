@@ -15,13 +15,17 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
-AC_SUBST([GTK_OBJ])
-AC_SUBST([CURSES_OBJ])
-
-GTK_OBJ=gtk.o
-CURSES_OBJ=curses.o
-
 AC_PROG_CC
+
+# Check pkg-config availability.
+m4_ifndef([PKG_PROG_PKG_CONFIG],
+  [m4_fatal(
+[Could not locate the pkg-config autoconf macros.  These are usually located
+in /usr/share/aclocal/pkg.m4.  If your macros are in a different location,
+try setting the environment variable ACLOCAL_OPTS="-I/other/macro/dir"
+before running ./bootstrap.sh again.])
+])
+PKG_PROG_PKG_CONFIG
 
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])
@@ -43,24 +47,8 @@ AC_CHECK_HEADERS([ \
   sys/xti.h \
 ])
 
-# Find ncursses.
-AC_SEARCH_LIBS([initscr],
-  [ncurses curses cursesX],
-  [],
-  [AC_MSG_WARN([Building without curses display support])
-  AC_DEFINE([NO_CURSES], [1], [Define if you don't have the curses libraries available.])
-  CURSES_OBJ=])
-
-AC_CHECK_LIB([ncurses],
-  [use_default_colors],
-  [AC_DEFINE([HAVE_USE_DEFAULT_COLORS],
-    [1],
-    [Define this if your curses library has the use_default_colors() command.])
-  ])
-
 # Check functions.
 AC_CHECK_FUNCS([ \
-  attron \
   fcntl \
 ])
 
@@ -68,42 +56,40 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([No math library found])])
 
 # Find GTK
 AC_ARG_WITH([gtk],
-  [AS_HELP_STRING([--without-gtk], [Do not try to use GTK+ at all])],
+  [AS_HELP_STRING([--without-gtk], [Build without the GTK+2.0 interface])],
   [], [with_gtk=yes])
-AS_IF([test "x$with_gtk" = "xyes"], [WANTS_GTK=yes], [WANTS_GTK=no])
-
-m4_ifndef([AM_PATH_GTK_2_0],
-  [m4_defun([AM_PATH_GTK_2_0], [
-    AC_MSG_ERROR([dnl
-Could not locate the gtk2 automake macros, these are usually located in
-  .../share/aclocal/gtk-2.0.m4
-Before running bootstrap try setting the environment variable
-  ACLOCAL_PATH="/own/dir"
-or configure --without-gtk.])
-  ])
+AS_IF([test "x$with_gtk" = "xyes"],
+  [PKG_CHECK_MODULES([GTK], [gtk+-2.0],
+    [AC_DEFINE([HAVE_GTK], [1], [Define if gtk+-2.0 library available])],
+    [with_gtk=no])
 ])
+AM_CONDITIONAL([WITH_GTK], [test "x$with_gtk" = xyes])
 
-AS_IF([test "x$WANTS_GTK" = "xyes"], [
-  AM_PATH_GTK_2_0([2.6.0], [
-    CFLAGS="$CFLAGS $GTK_CFLAGS"
-    LIBS="$LIBS $GTK_LIBS -lm"
-  ], [
-    AC_MSG_WARN([Building without GTK2 display support])
-    AC_DEFINE([NO_GTK], [1], [Define if you don't have the GTK+ libraries available.])
-    GTK_OBJ=""
-  ])
-], [
-  AC_DEFINE([NO_GTK], [1], [Define if you don't have the GTK+ libraries available.])
-  GTK_OBJ=""
+# Find ncurses
+AC_ARG_WITH([ncurses],
+  [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
+  [], [with_ncurses=yes])
+AS_IF([test "x$with_ncurses" = "xyes"],
+  [PKG_CHECK_MODULES([NCURSES], [ncurses], [
+      AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses library available])
+      AC_CHECK_LIB([ncurses],
+        [use_default_colors],
+        [AC_DEFINE([HAVE_USE_DEFAULT_COLORS], [1],
+          [Define this if your curses library has the use_default_colors() command.]
+        )
+      ])
+    ],
+    [with_ncurses=no])
 ])
+AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
   [AS_HELP_STRING([--without-ipinfo], [Do not try to use ipinfo lookup at all])],
   [], [with_ipinfo=yes])
-AM_CONDITIONAL([IPINFO], [test "x$with_ipinfo" = "xyes"])
-AS_IF([test "x$with_ipinfo" = "xno"], [
-  AC_DEFINE([NO_IPINFO], [1], [Define to disable ipinfo lookup])
+AM_CONDITIONAL([WITH_IPINFO], [test "x$with_ipinfo" = "xyes"])
+AS_IF([test "x$with_ipinfo" = "xyes"], [
+  AC_DEFINE([HAVE_IPINFO], [1], [Define when ipinfo lookups are in use])
 ])
 
 AC_ARG_ENABLE([ipv6],
@@ -124,69 +110,19 @@ AC_CHECK_FUNC([socket], [],
 AC_CHECK_FUNC([gethostbyname], [],
   [AC_CHECK_LIB([nsl], [gethostbyname], [], [AC_MSG_ERROR([No nameservice library found])])])
 
-dnl AC_CHECK_FUNC([res_init], [], [
-dnl   AC_CHECK_LIB([bind], [res_init], [], [
-dnl   AC_CHECK_LIB([resolv], [res_init], [], [AC_MSG_ERROR([No resolver library found])])])])
-
-AC_CHECK_FUNCS([seteuid])
-dnl  AC_CHECK_FUNC([setuid], [], [AC_MSG_ERROR([I Need either seteuid or setuid])])
-
-dnl AC_CHECK_FUNC([res_mkquery], [], [
-dnl   AC_CHECK_LIB([bind], [res_mkquery], , [
-dnl    AC_CHECK_LIB([resolv], [res_mkquery], [], [
-dnl      AC_CHECK_LIB([resolv], [__res_mkquery], [],
-dnl        [AC_MSG_ERROR([No resolver library found])
-dnl      ])
-dnl    ])
-dnl  ])
-dnl ])
-
-# See if a library is needed for res_mkquery and if so put it in RESOLV_LIBS
-RESOLV_LIBS=
-AC_SUBST([RESOLV_LIBS])
-AC_DEFUN([LIBRESOLVTEST_SRC], [
-AC_LANG_PROGRAM([[
-#include <netinet/in.h>
-#include <resolv.h>
-]], [[
-int (*res_mkquery_func)(int,...) = (int (*)(int,...))res_mkquery;
-(void)(*res_mkquery_func)(0);
-]])])
-AC_MSG_CHECKING([whether library required for res_mkquery])
-RESOLV_LIB_NONE=
-AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-  [AC_MSG_RESULT([no])
-  RESOLV_LIB_NONE=yes],
-  [AC_MSG_RESULT([yes])])
-
-AS_IF([test "x$RESOLV_LIB_NONE" = "x"], [
-  AC_MSG_CHECKING([for res_mkquery in -lbind])
-  STASH_LIBS="$LIBS"
-  LIBS="$STASH_LIBS -lbind"
-  AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-    [AC_MSG_RESULT([yes])
-    RESOLV_LIBS=-lbind],
-    [AC_MSG_RESULT([no])
-  ])
-  AS_IF([test "x$RESOLV_LIBS" = "x"], [
-    AC_MSG_CHECKING([for res_mkquery in -lresolv])
-    LIBS="$STASH_LIBS -lresolv"
-    AC_LINK_IFELSE([LIBRESOLVTEST_SRC],
-    [AC_MSG_RESULT([yes])
-    RESOLV_LIBS=-lresolv],
-    [AC_MSG_RESULT([no])
-      AC_MSG_ERROR([No resolver library found])
+# Find resolver library.
+AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
+  AC_CHECK_LIB([resolv], [__res_query], [RESOLV_LIBS="-lresolv"], [
+    AC_CHECK_LIB([resolv], [res_query], [RESOLV_LIBS="-lresolv"], [
+      AC_CHECK_LIB([bind], [res_query], [RESOLV_LIBS="-lbind"], [
+        AC_MSG_ERROR([No resolver library found])
+      ])
     ])
   ])
-  LIBS="$STASH_LIBS"
 ])
+AC_SUBST([RESOLV_LIBS])
 
-# Error printing functions.
-AC_CHECK_FUNC([herror], [],
-  [AC_DEFINE([NO_HERROR], [1], [Define if you don't have the herror() function available.])])
-AC_CHECK_FUNC([strerror], [],
-  [AC_DEFINE([NO_STRERROR], [1], [Define if you don't have the strerror() function available.])])
-
+# Check errno and socket data types.
 AC_CHECK_DECLS([errno], [], [], [[
 #include <errno.h>
 #include <sys/errno.h>
@@ -201,10 +137,6 @@ AC_CHECK_TYPE([socklen_t],
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif]])
-
-AC_CHECK_TYPE([struct in_addr],
-  [AC_DEFINE([HAVE_STRUCT_INADDR], [], [Define if you have struct in_addr])], [],
-  [[#include <netinet/in.h>]])
 
 # Add C flags to display more warnings
 AC_MSG_CHECKING([for C flags to get more warnings])

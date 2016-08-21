@@ -53,11 +53,6 @@
 #endif
 
 
-#ifdef NO_HERROR
-#define herror(str) fprintf(stderr, str ": error looking up \"%s\"\n", Hostname);
-#endif
-
-
 int   DisplayMode;
 int   display_mode;
 int   Interactive = 1;
@@ -160,14 +155,20 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -C, --csv                  output comma separated values\n", out);
   fputs(" -l, --raw                  output raw format\n", out);
   fputs(" -p, --split                split output\n", out);
+#ifdef HAVE_NCURSES
   fputs(" -t, --curses               use curses terminal interface\n", out);
+#endif
   fputs("     --displaymode MODE     select initial display mode\n", out);
+#ifdef HAVE_GTK
   fputs(" -g, --gtk                  use GTK+ xwindow interface\n", out);
+#endif
   fputs(" -n, --no-dns               do not resove host names\n", out);
   fputs(" -b, --show-ips             show IP numbers and host names\n", out);
   fputs(" -o, --order FIELDS         select output fields\n", out);
+#ifdef HAVE_IPINFO
   fputs(" -y, --ipinfo NUMBER        select ip information in output\n", out);
   fputs(" -z, --aslookup             display AS number\n", out);
+#endif
   fputs(" -h, --help                 display this help and exit\n", out);
   fputs(" -v, --version              output version information and exit\n", out);
   fputs("\n", out);
@@ -311,36 +312,43 @@ void parse_arg (int argc, char **argv)
   /* IMPORTANT: when adding or modifying an option:
        0/ try to find a somewhat logical order;
        1/ add the long option name in "long_options" below;
-       2/ add the short option name in the "getopt_long" call;
-       3/ update the man page (use the same order);
-       4/ update the help message (see PrintHelp).
+       2/ update the man page (use the same order);
+       3/ update the help message (see usage() function).
    */
+  enum {
+    OPT_DISPLAYMODE = CHAR_MAX + 1
+  };
   static struct option long_options[] = {
     /* option name, has argument, NULL, short name */
     { "help",           0, NULL, 'h' },
     { "version",        0, NULL, 'v' },
 
     { "inet",           0, NULL, '4' }, /* IPv4 only */
+#ifdef ENABLE_IPV6
     { "inet6",          0, NULL, '6' }, /* IPv6 only */
-
+#endif
     { "filename",       1, NULL, 'F' },
 
     { "report",         0, NULL, 'r' },
     { "report-wide",    0, NULL, 'w' },
     { "xml",            0, NULL, 'x' },
+#ifdef HAVE_NCURSES
     { "curses",         0, NULL, 't' },
+#endif
+#ifdef HAVE_GTK
     { "gtk",            0, NULL, 'g' },
+#endif
     { "raw",            0, NULL, 'l' },
     { "csv",            0, NULL, 'C' },
     { "json",           0, NULL, 'j' },
-    { "displaymode",    1, NULL, 'd' },
+    { "displaymode",    1, NULL, OPT_DISPLAYMODE },
     { "split",          0, NULL, 'p' }, /* BL */
                                         /* maybe above should change to -d 'x' */
 
     { "no-dns",         0, NULL, 'n' },
     { "show-ips",       0, NULL, 'b' },
     { "order",          1, NULL, 'o' }, /* fields to display & their order */
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     { "ipinfo",         1, NULL, 'y' }, /* IP info lookup */
     { "aslookup",       0, NULL, 'z' }, /* Do AS lookup (--ipinfo 0) */
 #endif
@@ -367,11 +375,26 @@ void parse_arg (int argc, char **argv)
 #endif
     { 0, 0, 0, 0 }
   };
+  static const size_t num_options = sizeof(long_options) / sizeof(struct option);
+  char short_options[num_options * 2];
+  size_t n, p;
+
+  for (n = p = 0; n < num_options; n++) {
+    if (CHAR_MAX < long_options[n].val) {
+      continue;
+    }
+    short_options[p] = long_options[n].val;
+    p++;
+    if (long_options[n].has_arg == 1) {
+      short_options[p] = ':';
+      p++;
+    }
+    /* optional options need two ':', but ignore them now as they are not in use */
+  }
 
   opt = 0;
   while(1) {
-    opt = getopt_long(argc, argv,
-		      "hv46F:rwxtglCjpnbo:y:zi:c:s:B:Q:ea:f:m:U:uTSP:L:Z:G:M:", long_options, NULL);
+    opt = getopt_long(argc, argv, short_options, long_options, NULL);
     if(opt == -1)
       break;
 
@@ -390,12 +413,16 @@ void parse_arg (int argc, char **argv)
       reportwide = 1;
       DisplayMode = DisplayReport;
       break;
+#ifdef HAVE_NCURSES
     case 't':
       DisplayMode = DisplayCurses;
       break;
+#endif
+#ifdef HAVE_GTK
     case 'g':
       DisplayMode = DisplayGTK;
       break;
+#endif
     case 'p':                 /* BL */
       DisplayMode = DisplaySplit;
       break;
@@ -412,7 +439,7 @@ void parse_arg (int argc, char **argv)
       DisplayMode = DisplayXML;
       break;
 
-    case 'd':
+    case OPT_DISPLAYMODE:
       display_mode = (atoi (optarg)) % 3;
       break;
     case 'c':
@@ -570,7 +597,7 @@ void parse_arg (int argc, char **argv)
       fprintf( stderr, "IPv6 not enabled.\n" );
       break;
 #endif
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
     case 'y':
       ipinfo_no = atoi (optarg);
       if (ipinfo_no < 0)
@@ -642,12 +669,12 @@ int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
   int               net_preopen_result;
-#ifdef ENABLE_IPV6
   struct addrinfo       hints, *res;
   int                   error;
   struct hostent        trhost;
   char *                alptr[2];
   struct sockaddr_in *  sa4;
+#ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
 
@@ -726,7 +753,6 @@ int main(int argc, char **argv)
       }
     }
 
-#ifdef ENABLE_IPV6
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset( &hints, 0, sizeof hints );
     hints.ai_family = af;
@@ -758,10 +784,12 @@ int main(int argc, char **argv)
       sa4 = (struct sockaddr_in *) res->ai_addr;
       alptr[0] = (void *) &(sa4->sin_addr);
       break;
+#ifdef ENABLE_IPV6
     case AF_INET6:
       sa6 = (struct sockaddr_in6 *) res->ai_addr;
       alptr[0] = (void *) &(sa6->sin6_addr);
       break;
+#endif
     default:
       fprintf( stderr, "mtr unknown address type\n" );
       if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
@@ -771,18 +799,6 @@ int main(int argc, char **argv)
       }
     }
     alptr[1] = NULL;
-#else
-      host = gethostbyname(Hostname);
-    if (host == NULL) {
-      herror("mtr gethostbyname");
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
-      else {
-        names = names->next;
-        continue;
-      }
-    }
-    af = host->h_addrtype;
-#endif
 
     if (net_open(host) != 0) {
       fprintf(stderr, "mtr: Unable to start net module.\n");

@@ -237,7 +237,7 @@ void select_loop(void) {
 	  display_clear();
 	}
 	break;
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
       case ActionII:
 	ipinfo_no++;
 	if (ipinfo_no > ipinfo_max)

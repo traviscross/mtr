@@ -22,12 +22,26 @@
    (notably the one on Irix 5.2) do not like that. */ 
 enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay, 
        ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS, 
-#ifdef IPINFO
+#ifdef HAVE_IPINFO
        ActionII, ActionAS,
 #endif
        ActionScrollDown, ActionScrollUp  };
-enum { DisplayReport, DisplayCurses, DisplayGTK, DisplaySplit, 
-       DisplayRaw,    DisplayXML,    DisplayCSV, DisplayTXT, DisplayJSON};
+
+enum {
+  DisplayReport,
+#ifdef HAVE_NCURSES
+  DisplayCurses,
+#endif
+#ifdef HAVE_GTK
+  DisplayGTK,
+#endif
+  DisplaySplit,
+  DisplayRaw,
+  DisplayXML,
+  DisplayCSV,
+  DisplayTXT,
+  DisplayJSON
+};
 
 /*  Prototypes for display.c  */
 void display_detect(int *argc, char ***argv);
