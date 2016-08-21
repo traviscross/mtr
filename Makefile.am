@@ -13,11 +13,17 @@ mtr_SOURCES = mtr.c mtr.h \
               split.c split.h \
               display.c display.h \
               report.c report.h \
-              getopt.c getopt1.c getopt.h \
               select.c select.h \
               mtr-curses.h \
               img/mtr_icon.xpm \
               mtr-gtk.h
+
+if WITH_GETOPT
+mtr_SOURCES += \
+	portability/getopt.h \
+	portability/getopt.c \
+	portability/getopt1.c
+endif
 
 if WITH_IPINFO
 mtr_SOURCES += asn.c asn.h

@@ -40,13 +40,17 @@
 
 #include "mtr.h"
 #include "mtr-curses.h"
-#include "getopt.h"
 #include "display.h"
 #include "dns.h"
 #include "report.h"
 #include "net.h"
 #include "asn.h"
 
+#ifdef HAVE_GETOPT
+#include <getopt.h>
+#else
+#include "portability/getopt.h"
+#endif
 
 #ifdef ENABLE_IPV6
 #define DEFAULT_AF AF_UNSPEC

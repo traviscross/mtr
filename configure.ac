@@ -52,6 +52,12 @@ AC_CHECK_FUNCS([ \
   fcntl \
 ])
 
+AC_CHECK_FUNC([getopt_long], [with_getopt=no], [with_getopt=yes])
+AS_IF([test "x$with_getopt" = "xno"], [
+  AC_DEFINE([HAVE_GETOPT], [1], [Define if libc has getopt_long])
+])
+AM_CONDITIONAL([WITH_GETOPT], [test "x$with_getopt" = "xyes"])
+
 AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([No math library found])])
 
 # Find GTK
