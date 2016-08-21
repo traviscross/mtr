@@ -36,33 +36,13 @@ extern int DisplayMode;
 
 #ifdef HAVE_NCURSES
 #include "mtr-curses.h"
-#else
-// No support for curses mode, allow the calls to remain in the code.
-#define mtr_curses_open()
-#define mtr_curses_close()
-#define mtr_curses_redraw()
-#define mtr_curses_keyaction() 0
-#define mtr_curses_clear()
 #endif
 
 #ifdef HAVE_GTK
 #include "mtr-gtk.h"
-#else
-// No support for gtk mode, allow the calls to remain in the code.
-#define gtk_open()
-#define gtk_close()
-#define gtk_redraw()
-#define gtk_keyaction() 0
-#define gtk_loop() {fprintf (stderr, "No GTK support. Sorry.\n"); exit(EXIT_FAILURE); }
 #endif
 
 #include "split.h"
-
-#ifndef HAVE_IPINFO
-// No support for IPINFO allow the calls to remain in the main code.
-#define asn_open()
-#define asn_close()
-#endif
 
 #ifdef HAVE_NCURSES
 #define DEFAULT_DISPLAY DisplayCurses
@@ -107,17 +87,25 @@ void display_open(void)
   case DisplayCSV:
     csv_open();
     break;
+#ifdef HAVE_NCURSES
   case DisplayCurses:
     mtr_curses_open();  
+#ifdef HAVE_IPINFO
     asn_open();
+#endif
     break;
+#endif
   case DisplaySplit:
     split_open();
     break;
+#ifdef HAVE_GTK
   case DisplayGTK:
     gtk_open();
+#ifdef HAVE_IPINFO
     asn_open();
+#endif
     break;
+#endif
   }
 }
 
@@ -140,16 +128,22 @@ void display_close(time_t now)
   case DisplayCSV:
     csv_close(now);
     break;
+#ifdef HAVE_NCURSES
   case DisplayCurses:
+#ifdef HAVE_IPINFO
     asn_close();
+#endif
     mtr_curses_close();
     break;
+#endif
   case DisplaySplit:
     split_close();
     break;
+#ifdef HAVE_GTK
   case DisplayGTK:
     gtk_close();
     break;
+#endif
   }
 }
 
@@ -158,17 +152,21 @@ void display_redraw(void)
 {
   switch(DisplayMode) {
 
+#ifdef HAVE_NCURSES
   case DisplayCurses:
     mtr_curses_redraw();
     break;
+#endif
 
   case DisplaySplit:
     split_redraw();
     break;
 
+#ifdef HAVE_GTK
   case DisplayGTK:
     gtk_redraw();
     break;
+#endif
   }
 }
 
@@ -176,14 +174,18 @@ void display_redraw(void)
 int display_keyaction(void)
 {
   switch(DisplayMode) {
+#ifdef HAVE_NCURSES
   case DisplayCurses:
     return mtr_curses_keyaction();
+#endif
 
   case DisplaySplit:
     return split_keyaction();
 
+#ifdef HAVE_GTK
   case DisplayGTK:
     return gtk_keyaction();
+#endif
   }
   return 0;
 }
@@ -208,8 +210,12 @@ void display_rawping(int host, int msec, int seq)
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
+#ifdef HAVE_NCURSES
   case DisplayCurses:
+#endif
+#ifdef HAVE_GTK
   case DisplayGTK:
+#endif
     break;
   case DisplayRaw:
     raw_rawping (host, msec, seq);
@@ -227,8 +233,12 @@ void display_rawhost(int host, ip_t *ip_addr)
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
+#ifdef HAVE_NCURSES
   case DisplayCurses:
+#endif
+#ifdef HAVE_GTK
   case DisplayGTK:
+#endif
     break;
   case DisplayRaw:
     raw_rawhost (host, ip_addr);
@@ -246,13 +256,17 @@ void display_loop(void)
   case DisplayXML:
   case DisplayCSV:
   case DisplaySplit:
+#ifdef HAVE_NCURSES
   case DisplayCurses:
+#endif
   case DisplayRaw:
     select_loop();
     break;
+#ifdef HAVE_GTK
   case DisplayGTK:
     gtk_loop();
     break;
+#endif
   }
 }
 
@@ -260,9 +274,11 @@ void display_loop(void)
 void display_clear(void)
 {
   switch(DisplayMode) {
+#ifdef HAVE_NCURSES
   case DisplayCurses:
     mtr_curses_clear();
     break;
+#endif
   case DisplayReport:
   case DisplayTXT:
   case DisplayJSON:
@@ -272,7 +288,9 @@ void display_clear(void)
   case DisplayRaw:
     break;
 
+#ifdef HAVE_GTK
   case DisplayGTK:
     break;
+#endif
   }
 }
