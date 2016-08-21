@@ -19,6 +19,6 @@
 */
 
 /*  Prototypes for raw.c  */
-void raw_rawxmit(int host, int seq);
-void raw_rawping(int host, int msec, int seq);
-void raw_rawhost(int host, ip_t * addr);
+extern void raw_rawxmit(int host, int seq);
+extern void raw_rawping(int host, int msec, int seq);
+extern void raw_rawhost(int host, ip_t * addr);

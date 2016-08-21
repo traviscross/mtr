@@ -74,7 +74,7 @@ char txtrec[NAMELEN + 1];	// without hash: txtrec
 items_t* items = &items_a;
 
 
-char *ipinfo_lookup(const char *domain) {
+static char *ipinfo_lookup(const char *domain) {
     unsigned char answer[PACKETSZ],  *pt;
     char host[128];
     char *txt;
@@ -147,7 +147,7 @@ char *ipinfo_lookup(const char *domain) {
     return txt;
 }
 
-char* trimsep(char *s) {
+static char* trimsep(char *s) {
     int l;
     char *p = s;
     while (*p == ' ' || *p == ITEMSEP)
@@ -158,7 +158,7 @@ char* trimsep(char *s) {
 }
 
 // originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
-char* split_txtrec(char *txt_rec) {
+static char* split_txtrec(char *txt_rec) {
     if (!txt_rec)
 	return NULL;
     if (iihash) {
@@ -200,7 +200,7 @@ char* split_txtrec(char *txt_rec) {
 
 #ifdef ENABLE_IPV6
 // from dns.c:addr2ip6arpa()
-void reverse_host6(struct in6_addr *addr, char *buff) {
+static void reverse_host6(struct in6_addr *addr, char *buff) {
     int i;
     char *b = buff;
     for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) // 64b portion
@@ -209,7 +209,7 @@ void reverse_host6(struct in6_addr *addr, char *buff) {
 }
 #endif
 
-char *get_ipinfo(ip_t *addr) {
+static char *get_ipinfo(ip_t *addr) {
     if (!addr)
         return NULL;
 
@@ -263,11 +263,11 @@ char *get_ipinfo(ip_t *addr) {
     return val;
 }
 
-int get_iiwidth(void) {
+extern int get_iiwidth(void) {
     return (ipinfo_no < iiwidth_len) ? iiwidth[ipinfo_no] : iiwidth[ipinfo_no % iiwidth_len];
 }
 
-char *fmt_ipinfo(ip_t *addr) {
+extern char *fmt_ipinfo(ip_t *addr) {
     char *ipinfo = get_ipinfo(addr);
     char fmt[8];
     snprintf(fmt, sizeof(fmt), "%s%%-%ds", ipinfo_no?"":"AS", get_iiwidth());
@@ -275,11 +275,11 @@ char *fmt_ipinfo(ip_t *addr) {
     return fmtinfo;
 }
 
-int is_printii(void) {
+extern int is_printii(void) {
     return ((ipinfo_no >= 0) && (ipinfo_no != ipinfo_max));
 }
 
-void asn_open(void) {
+extern void asn_open(void) {
     if (ipinfo_no >= 0) {
         DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
@@ -287,7 +287,7 @@ void asn_open(void) {
     }
 }
 
-void asn_close(void) {
+extern void asn_close(void) {
     if ((ipinfo_no >= 0) && iihash) {
         DEB_syslog(LOG_INFO, "hdestroy()");
         hdestroy();

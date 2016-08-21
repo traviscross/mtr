@@ -218,7 +218,7 @@ strtofloat_or_err (const char *str, const char *errmesg)
 }
 
 
-char *
+extern char *
 trim(char * s) {
 
   char * p = s;
@@ -327,7 +327,7 @@ unlock(FILE *f) {
 }
 
 
-void init_fld_options (void)
+static void init_fld_options (void)
 {
   int i;
 
@@ -342,7 +342,7 @@ void init_fld_options (void)
 }
 
 
-void parse_arg (int argc, char **argv)
+static void parse_arg (int argc, char **argv)
 {
   int opt;
   int i;
@@ -667,7 +667,7 @@ void parse_arg (int argc, char **argv)
 }
 
 
-void parse_mtr_options (char *string)
+static void parse_mtr_options (char *string)
 {
   int argc;
   char *argv[128], *p;
@@ -690,7 +690,7 @@ void parse_mtr_options (char *string)
 }
 
 
-int main(int argc, char **argv)
+extern int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
   int               net_preopen_result;

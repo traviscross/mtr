@@ -67,7 +67,7 @@ int  LineCount;
 #define DEBUG 0
 
 
-void split_redraw(void) 
+extern void split_redraw(void) 
 {
   int   max;
   int   at;
@@ -129,7 +129,7 @@ void split_redraw(void)
 }
 
 
-void split_open(void)
+extern void split_open(void)
 {
   int i;
 #if DEBUG
@@ -142,7 +142,7 @@ void split_open(void)
 }
 
 
-void split_close(void)
+extern void split_close(void)
 {
 #if DEBUG
   printf("split_close()\n");
@@ -150,7 +150,7 @@ void split_close(void)
 }
 
 
-int split_keyaction(void) 
+extern int split_keyaction(void) 
 {
 #ifdef HAVE_NCURSES
   char c = getch();

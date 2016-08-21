@@ -49,7 +49,7 @@ int display_offset = 0;
 
 #define GRACETIME (GraceTime * 1000*1000)
 
-void select_loop(void) {
+extern void select_loop(void) {
   fd_set readfd;
   fd_set writefd;
   int anyset = 0;

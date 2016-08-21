@@ -26,60 +26,58 @@
 #include <netinet/icmp6.h>
 #endif
 
-int net_preopen(void);
-int net_selectsocket(void);
-int net_open(struct hostent *host);
-void net_reopen(struct hostent *address);
-int net_set_interfaceaddress (char *InterfaceAddress); 
-void net_reset(void);
-void net_close(void);
-int net_waitfd(void);
-void net_process_return(void);
-void net_harvest_fds(void);
+extern int net_preopen(void);
+extern int net_selectsocket(void);
+extern int net_open(struct hostent *host);
+extern void net_reopen(struct hostent *address);
+extern int net_set_interfaceaddress (char *InterfaceAddress); 
+extern void net_reset(void);
+extern void net_close(void);
+extern int net_waitfd(void);
+extern void net_process_return(void);
+extern void net_harvest_fds(void);
 
-int net_max(void);
-int net_min(void);
-int net_last(int at);
-ip_t * net_addr(int at);
-void * net_mpls(int at);
-void * net_mplss(int, int);
-int net_loss(int at);
-int net_drop(int at);
-int net_last(int at);
-int net_best(int at);
-int net_worst(int at);
-int net_avg(int at);
-int net_gmean(int at);
-int net_stdev(int at);
-int net_jitter(int at);
-int net_jworst(int at);
-int net_javg(int at);
-int net_jinta(int at);
-ip_t * net_addrs(int at, int i);
-char *net_localaddr(void); 
+extern int net_max(void);
+extern int net_min(void);
+extern int net_last(int at);
+extern ip_t * net_addr(int at);
+extern void * net_mpls(int at);
+extern void * net_mplss(int, int);
+extern int net_loss(int at);
+extern int net_drop(int at);
+extern int net_last(int at);
+extern int net_best(int at);
+extern int net_worst(int at);
+extern int net_avg(int at);
+extern int net_gmean(int at);
+extern int net_stdev(int at);
+extern int net_jitter(int at);
+extern int net_jworst(int at);
+extern int net_javg(int at);
+extern int net_jinta(int at);
+extern ip_t * net_addrs(int at, int i);
+extern char *net_localaddr(void); 
 
-int net_send_batch(void);
-void net_end_transit(void);
+extern int net_send_batch(void);
+extern void net_end_transit(void);
 
-int calc_deltatime (float WaitTime);
+extern int calc_deltatime (float WaitTime);
 
-int net_returned(int at);
-int net_xmit(int at);
+extern int net_returned(int at);
+extern int net_xmit(int at);
 
-int net_up(int at);
+extern int net_up(int at);
 
 #define SAVED_PINGS 200
-int* net_saved_pings(int at);
-void net_save_xmit(int at);
-void net_save_return(int at, int seq, int ms);
-int net_duplicate(int at, int seq);
+extern int* net_saved_pings(int at);
+extern void net_save_xmit(int at);
+extern void net_save_return(int at, int seq, int ms);
 
-void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len );
-int addrcmp( char * a, char * b, int af );
-void addrcpy( char * a, char * b, int af );
+extern int addrcmp( char * a, char * b, int af );
+extern void addrcpy( char * a, char * b, int af );
 
-void net_add_fds(fd_set *writefd, int *maxfd);
-void net_process_fds(fd_set *writefd);
+extern void net_add_fds(fd_set *writefd, int *maxfd);
+extern void net_process_fds(fd_set *writefd);
 
 #define MAXPATH 8
 #define MaxHost 256
@@ -133,8 +131,6 @@ struct mplslen {
   char s[MAXLABELS]; /* bottom of stack */
   char labels; /* how many labels did we get? */
 };
-
-void decodempls(int, char *, struct mplslen *, int);
 
 #ifdef IPPROTO_SCTP
     #define HAS_SCTP

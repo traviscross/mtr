@@ -56,7 +56,7 @@ extern int DisplayMode;
 #define UNUSED_IF_NO_GTK UNUSED
 #endif
 
-void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
+extern void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
 {
   DisplayMode = DEFAULT_DISPLAY;
 
@@ -68,7 +68,7 @@ void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
 }
 
 
-void display_open(void)
+extern void display_open(void)
 {
   switch(DisplayMode) {
 
@@ -110,7 +110,7 @@ void display_open(void)
 }
 
 
-void display_close(time_t now)
+extern void display_close(time_t now)
 {
   switch(DisplayMode) {
   case DisplayReport:
@@ -148,7 +148,7 @@ void display_close(time_t now)
 }
 
 
-void display_redraw(void)
+extern void display_redraw(void)
 {
   switch(DisplayMode) {
 
@@ -171,7 +171,7 @@ void display_redraw(void)
 }
 
 
-int display_keyaction(void)
+extern int display_keyaction(void)
 {
   switch(DisplayMode) {
 #ifdef HAVE_NCURSES
@@ -191,7 +191,7 @@ int display_keyaction(void)
 }
 
 
-void display_rawxmit(int host, int seq)
+extern void display_rawxmit(int host, int seq)
 {
   switch(DisplayMode) {
   case DisplayRaw:
@@ -201,7 +201,7 @@ void display_rawxmit(int host, int seq)
 }
 
 
-void display_rawping(int host, int msec, int seq)
+extern void display_rawping(int host, int msec, int seq)
 {
   switch(DisplayMode) {
   case DisplayReport:
@@ -224,7 +224,7 @@ void display_rawping(int host, int msec, int seq)
 }
 
 
-void display_rawhost(int host, ip_t *ip_addr) 
+extern void display_rawhost(int host, ip_t *ip_addr) 
 {
   switch(DisplayMode) {
   case DisplayReport:
@@ -247,7 +247,7 @@ void display_rawhost(int host, ip_t *ip_addr)
 }
 
 
-void display_loop(void)
+extern void display_loop(void)
 {
   switch(DisplayMode) {
   case DisplayReport:
@@ -271,7 +271,7 @@ void display_loop(void)
 }
 
 
-void display_clear(void)
+extern void display_clear(void)
 {
   switch(DisplayMode) {
 #ifdef HAVE_NCURSES

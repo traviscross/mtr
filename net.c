@@ -46,6 +46,9 @@
 #include "display.h"
 #include "dns.h"
 
+static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len );
+static void decodempls(int, char *, struct mplslen *, int);
+
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
     Solaris  */
@@ -234,7 +237,7 @@ int calc_deltatime (float waittime)
 }
 
 
-int checksum(void *data, int sz) 
+static int checksum(void *data, int sz) 
 {
   uint16 *ch;
   uint32 sum;
@@ -259,7 +262,7 @@ int checksum(void *data, int sz)
 
 
 /* Prepend pseudoheader to the udp datagram and calculate checksum */
-int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_checksum)
+static int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_checksum)
 {
   unsigned int tsize = psize + dsize;
   char csumpacket[tsize];
@@ -288,7 +291,7 @@ int udp_checksum(void *pheader, void *udata, int psize, int dsize, int alt_check
 }
 
 
-void save_sequence(int index, int seq)
+static void save_sequence(int index, int seq)
 {
   display_rawxmit(index, seq);
 
@@ -304,7 +307,7 @@ void save_sequence(int index, int seq)
   net_save_xmit(index);
 }
 
-int new_sequence(int index)
+static int new_sequence(int index)
 {
   static int next_sequence = MinSequence;
   int seq;
@@ -319,7 +322,7 @@ int new_sequence(int index)
 }
 
 /*  Attempt to connect to a TCP port with a TTL */
-void net_send_tcp(int index)
+static void net_send_tcp(int index)
 {
   int ttl, s;
   int port;
@@ -438,7 +441,7 @@ void net_send_tcp(int index)
 
 #ifdef HAS_SCTP
 /*  Attempt to connect to a SCTP port with a TTL */
-void net_send_sctp(int index)
+static void net_send_sctp(int index)
 {
   int ttl, s;
   int opt = 1;
@@ -549,7 +552,7 @@ void net_send_sctp(int index)
 #endif
 
 /*  Attempt to find the host at a particular number of hops away  */
-void net_send_query(int index) 
+static void net_send_query(int index) 
 {
   if (mtrtype == IPPROTO_TCP) {
     net_send_tcp(index);
@@ -744,7 +747,7 @@ void net_send_query(int index)
 
 /*   We got a return on something we sent out.  Record the address and
      time.  */
-void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval now) 
+static void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval now) 
 {
   int index;
   int totusec;
@@ -857,7 +860,7 @@ void net_process_ping(int seq, struct mplslen mpls, void * addr, struct timeval 
 /*  We know a packet has come in, because the main select loop has called us,
     now we just need to read it, see if it is for us, and if it is a reply 
     to something we sent, then call net_process_ping()  */
-void net_process_return(void) 
+extern void net_process_return(void) 
 {
   char packet[MAXPACKET];
 #ifdef ENABLE_IPV6
@@ -1099,28 +1102,28 @@ void net_process_return(void)
 }
 
 
-ip_t *net_addr(int at) 
+extern ip_t *net_addr(int at) 
 {
   return (ip_t *)&(host[at].addr);
 }
 
 
-ip_t *net_addrs(int at, int i) 
+extern ip_t *net_addrs(int at, int i) 
 {
   return (ip_t *)&(host[at].addrs[i]);
 }
 
-void *net_mpls(int at)
+extern void *net_mpls(int at)
 {
   return (struct mplslen *)&(host[at].mplss);
 }
 
-void *net_mplss(int at, int i)
+extern void *net_mplss(int at, int i)
 {
   return (struct mplslen *)&(host[at].mplss[i]);
 }
 
-int net_loss(int at) 
+extern int net_loss(int at) 
 {
   if ((host[at].xmit - host[at].transit) == 0) 
     return 0;
@@ -1129,43 +1132,43 @@ int net_loss(int at)
 }
 
 
-int net_drop(int at) 
+extern int net_drop(int at) 
 {
   return (host[at].xmit - host[at].transit) - host[at].returned;
 }
 
 
-int net_last(int at) 
+extern int net_last(int at) 
 {
   return (host[at].last);
 }
 
 
-int net_best(int at) 
+extern int net_best(int at) 
 {
   return (host[at].best);
 }
 
 
-int net_worst(int at) 
+extern int net_worst(int at) 
 {
   return (host[at].worst);
 }
 
 
-int net_avg(int at) 
+extern int net_avg(int at) 
 {
   return (host[at].avg);
 }
 
 
-int net_gmean(int at) 
+extern int net_gmean(int at) 
 {
   return (host[at].gmean);
 }
 
 
-int net_stdev(int at) 
+extern int net_stdev(int at) 
 {
   if( host[at].returned > 1 ) {
     return ( sqrt( host[at].ssd/(host[at].returned -1.0) ) );
@@ -1175,31 +1178,31 @@ int net_stdev(int at)
 }
 
 
-int net_jitter(int at) 
+extern int net_jitter(int at) 
 { 
   return (host[at].jitter); 
 }
 
 
-int net_jworst(int at) 
+extern int net_jworst(int at) 
 { 
   return (host[at].jworst); 
 }
 
 
-int net_javg(int at) 
+extern int net_javg(int at) 
 { 
   return (host[at].javg); 
 }
 
 
-int net_jinta(int at) 
+extern int net_jinta(int at) 
 { 
   return (host[at].jinta); 
 }
 
 
-int net_max(void) 
+extern int net_max(void) 
 {
   int at;
   int max;
@@ -1220,37 +1223,37 @@ int net_max(void)
 }
 
 
-int net_min (void) 
+extern int net_min (void) 
 {
   return ( fstTTL - 1 );
 }
 
 
-int net_returned(int at) 
+extern int net_returned(int at) 
 { 
   return host[at].returned;
 }
 
 
-int net_xmit(int at) 
+extern int net_xmit(int at) 
 { 
   return host[at].xmit;
 }
 
 
-int net_up(int at) 
+extern int net_up(int at) 
 {
    return host[at].up;
 }
 
 
-char * net_localaddr (void)
+extern char * net_localaddr (void)
 {
   return localaddr;
 }
 
 
-void net_end_transit(void) 
+extern void net_end_transit(void) 
 {
   int at;
   
@@ -1259,7 +1262,7 @@ void net_end_transit(void)
   }
 }
 
-int net_send_batch(void) 
+extern int net_send_batch(void) 
 {
   int n_unknown=0, i;
 
@@ -1339,7 +1342,7 @@ static void set_fd_flags(int fd)
 #endif
 }
 
-int net_preopen(void) 
+extern int net_preopen(void) 
 {
   int trueopt = 1;
 
@@ -1379,7 +1382,7 @@ int net_preopen(void)
 }
 
 
-int net_selectsocket(void)
+extern int net_selectsocket(void)
 {
 #if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
   switch ( mtrtype ) {
@@ -1410,7 +1413,7 @@ int net_selectsocket(void)
 }
 
 
-int net_open(struct hostent * hostent) 
+extern int net_open(struct hostent * hostent) 
 {
 #ifdef ENABLE_IPV6
   struct sockaddr_storage name_struct;
@@ -1459,7 +1462,7 @@ int net_open(struct hostent * hostent)
 }
 
 
-void net_reopen(struct hostent * addr) 
+extern void net_reopen(struct hostent * addr) 
 {
   int at;
 
@@ -1488,7 +1491,7 @@ void net_reopen(struct hostent * addr)
 }
 
 
-void net_reset(void) 
+extern void net_reset(void) 
 {
   int at;
   int i;
@@ -1529,7 +1532,7 @@ void net_reset(void)
   gettimeofday(&reset, NULL);
 }
 
-int net_set_interfaceaddress_udp(void)
+static int net_set_interfaceaddress_udp(void)
 {
   struct sockaddr_in *  sa4;
   struct sockaddr_storage remote;
@@ -1592,7 +1595,7 @@ int net_set_interfaceaddress_udp(void)
 }
 
 
-int net_set_interfaceaddress (char *InterfaceAddress)
+extern int net_set_interfaceaddress (char *InterfaceAddress)
 {
 #ifdef ENABLE_IPV6
   struct sockaddr_storage name_struct;
@@ -1640,7 +1643,7 @@ int net_set_interfaceaddress (char *InterfaceAddress)
 
 
 
-void net_close(void)
+extern void net_close(void)
 {
   if (sendsock4 >= 0) {
     close(sendsock4_icmp);
@@ -1655,19 +1658,19 @@ void net_close(void)
 }
 
 
-int net_waitfd(void)
+extern int net_waitfd(void)
 {
   return recvsock;
 }
 
 
-int* net_saved_pings(int at)
+extern int* net_saved_pings(int at)
 {
   return host[at].saved;
 }
 
 
-void net_save_increment(void)
+static void net_save_increment(void)
 {
   int at;
   for (at = 0; at < MaxHost; at++) {
@@ -1678,7 +1681,7 @@ void net_save_increment(void)
 }
 
 
-void net_save_xmit(int at)
+extern void net_save_xmit(int at)
 {
   if (host[at].saved[SAVED_PINGS-1] != -2) 
     net_save_increment();
@@ -1686,7 +1689,7 @@ void net_save_xmit(int at)
 }
 
 
-void net_save_return(int at, int seq, int ms)
+extern void net_save_return(int at, int seq, int ms)
 {
   int idx;
   idx = seq - host[at].saved_seq_offset;
@@ -1697,7 +1700,7 @@ void net_save_return(int at, int seq, int ms)
 }
 
 /* Similar to inet_ntop but uses a sockaddr as it's argument. */
-void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
+static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
   struct sockaddr_in *  sa4;
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
@@ -1724,7 +1727,7 @@ void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
 }
 
 /* Address comparison. */
-int addrcmp( char * a, char * b, int family ) {
+extern int addrcmp( char * a, char * b, int family ) {
   int rc = -1;
 
   switch ( family ) {
@@ -1742,7 +1745,7 @@ int addrcmp( char * a, char * b, int family ) {
 }
 
 /* Address copy. */
-void addrcpy( char * a, char * b, int family ) {
+extern void addrcpy( char * a, char * b, int family ) {
 
   switch ( family ) {
   case AF_INET:
@@ -1757,7 +1760,7 @@ void addrcpy( char * a, char * b, int family ) {
 }
 
 /* Decode MPLS */
-void decodempls(int num, char *packet, struct mplslen *mpls, int offset) {
+static void decodempls(int num, char *packet, struct mplslen *mpls, int offset) {
 
   int i;
   unsigned int ext_ver, ext_res, ext_chk, obj_hdr_len;
@@ -1796,7 +1799,7 @@ void decodempls(int num, char *packet, struct mplslen *mpls, int offset) {
 }
 
 /* Add open sockets to select() */
-void net_add_fds(fd_set *writefd, int *maxfd)
+extern void net_add_fds(fd_set *writefd, int *maxfd)
 {
   int at, fd;
   for (at = 0; at < MaxSequence; at++) {
@@ -1810,7 +1813,7 @@ void net_add_fds(fd_set *writefd, int *maxfd)
 }
 
 /* check if we got connection or error on any fds */
-void net_process_fds(fd_set *writefd)
+extern void net_process_fds(fd_set *writefd)
 {
   int at, fd, r;
   struct timeval now;
@@ -1847,7 +1850,7 @@ void net_process_fds(fd_set *writefd)
 }
 
 /* for GTK frontend */
-void net_harvest_fds(void)
+extern void net_harvest_fds(void)
 {
   fd_set writefd;
   int maxfd = 0;

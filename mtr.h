@@ -73,5 +73,5 @@ extern int use_dns;
 typedef int socklen_t; 
 #endif
 
-char *
+extern char *
 trim(char * s);

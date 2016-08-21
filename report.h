@@ -18,13 +18,13 @@
 
 /*  Prototypes for report.h  */
 
-void report_open(void);
-void report_close(void);
-void txt_open(void);
-void txt_close(void);
-void json_open(void);
-void json_close(void);
-void xml_open(void);
-void xml_close(void);
-void csv_open(void);
-void csv_close(time_t now);
+extern void report_open(void);
+extern void report_close(void);
+extern void txt_open(void);
+extern void txt_close(void);
+extern void json_open(void);
+extern void json_close(void);
+extern void xml_open(void);
+extern void xml_close(void);
+extern void csv_open(void);
+extern void csv_close(time_t now);

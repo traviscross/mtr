@@ -48,14 +48,14 @@ static char *addr_to_str(ip_t addr)
 #endif
 
 // Log an echo request, or a "ping"
-void raw_rawxmit (int host, int seq)
+extern void raw_rawxmit (int host, int seq)
 {
   printf ("x %d %d\n", host, seq);
   fflush (stdout);
 }
 
 // Log an echo reply, or a "pong"
-void raw_rawping (int host, int msec, int seq)
+extern void raw_rawping (int host, int msec, int seq)
 {
   char *name;
 
@@ -71,7 +71,7 @@ void raw_rawping (int host, int msec, int seq)
 }
 
 
-void raw_rawhost (int host, ip_t * ip_addr)
+extern void raw_rawhost (int host, ip_t * ip_addr)
 {
   printf ("h %d %s\n", host, strlongip( ip_addr ));
   fflush (stdout); 

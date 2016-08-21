@@ -50,16 +50,16 @@ enum {
 };
 
 /*  Prototypes for display.c  */
-void display_detect(int *argc, char ***argv);
-void display_open(void);
-void display_close(time_t now);
-void display_redraw(void);
-void display_rawxmit(int hostnum, int seq);
-void display_rawping(int hostnum, int msec, int seq);
-void display_rawhost(int hostnum, ip_t *ip_addr);
-int display_keyaction(void);
-void display_loop(void);
-void display_clear(void);
+extern void display_detect(int *argc, char ***argv);
+extern void display_open(void);
+extern void display_close(time_t now);
+extern void display_redraw(void);
+extern void display_rawxmit(int hostnum, int seq);
+extern void display_rawping(int hostnum, int msec, int seq);
+extern void display_rawhost(int hostnum, ip_t *ip_addr);
+extern int display_keyaction(void);
+extern void display_loop(void);
+extern void display_clear(void);
 
 extern int display_mode;
 extern int display_offset; /* only used in text mode */

@@ -19,7 +19,7 @@
 */
 
 /*  Prototypes for split.c  */
-void split_open(void);
-void split_close(void);
-void split_redraw(void);
-int split_keyaction(void);
+extern void split_open(void);
+extern void split_close(void);
+extern void split_redraw(void);
+extern int split_keyaction(void);
