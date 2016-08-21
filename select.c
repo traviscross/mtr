@@ -36,6 +36,7 @@
 #include "display.h"
 
 extern int Interactive;
+extern int UserInput;
 extern int MaxPing;
 extern int ForceMaxPing;
 extern float WaitTime;
@@ -79,7 +80,7 @@ void select_loop(void) {
 
     maxfd = 0;
 
-    if(Interactive) {
+    if(UserInput) {
       FD_SET(0, &readfd);
       maxfd = 1;
     }

@@ -61,6 +61,7 @@
 int   DisplayMode;
 int   display_mode;
 int   Interactive = 1;
+int   UserInput = 1;
 int   PrintVersion = 0;
 int   PrintHelp = 0;
 int   MaxPing = 10;
@@ -602,6 +603,14 @@ void parse_arg (int argc, char **argv)
       DisplayMode == DisplayRaw ||
       DisplayMode == DisplayCSV)
     Interactive = 0;
+
+  if (DisplayMode == DisplayReport ||
+      DisplayMode == DisplayTXT ||
+      DisplayMode == DisplayXML ||
+      DisplayMode == DisplayRaw ||
+      DisplayMode == DisplayCSV ||
+      DisplayMode == DisplaySplit)
+    UserInput = 0;
 
   if (optind > argc - 1)
     return;

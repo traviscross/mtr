@@ -151,37 +151,3 @@ void split_close(void)
   printf("split_close()\n");
 #endif
 }
-
-
-int split_keyaction(void) 
-{
-#ifdef NO_CURSES
-  fd_set readfds;
-  struct timeval tv;
-  char c;
-
-  FD_ZERO (&readfds);
-  FD_SET (0, &readfds);
-  tv.tv_sec = 0;
-  tv.tv_usec = 0;
-
-  if (select (1, &readfds, NULL, NULL, &tv) > 0) {
-    read (0, &c, 1);
-  } else 
-    return 0;
-#else
-  char c = getch();
-#endif
-
-#if DEBUG
-  printf("split_keyaction()\n");
-#endif
-  if(tolower(c) == 'q')
-    return ActionQuit;
-  if(c==3)
-    return ActionQuit;
-  if(tolower(c) == 'r')
-    return ActionReset;
-  
-  return 0;
-}
