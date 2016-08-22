@@ -125,7 +125,7 @@ static gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 
 static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
-  gchar *authors[] = {
+  static const gchar *authors[] = {
         "Matt Kimball <mkimball@xmission.com>",
         "Roger Wolff <R.E.Wolff@BitWizard.nl>",
         "Bohdan Vlasyuk <bohdan@cec.vstu.vinnica.ua>",
