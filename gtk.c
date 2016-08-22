@@ -39,11 +39,11 @@
 #include "img/mtr_icon.xpm"
 #endif
 
-gint gtk_ping(gpointer data);
-gint Copy_activate(GtkWidget *widget, gpointer data);
-gint NewDestination_activate(GtkWidget *widget, gpointer data);
-gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event);
-gchar* getSelectedHost(GtkTreePath *path);
+static gint gtk_ping(gpointer data);
+static gint Copy_activate(GtkWidget *widget, gpointer data);
+static gint NewDestination_activate(GtkWidget *widget, gpointer data);
+static gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event);
+static gchar* getSelectedHost(GtkTreePath *path);
 
 
 
@@ -55,7 +55,7 @@ static GtkWidget *Pause_Button;
 static GtkWidget *Entry;
 static GtkWidget *main_window;
 
-void gtk_add_ping_timeout (void)
+static void gtk_add_ping_timeout (void)
 {
   if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
     return;
@@ -66,7 +66,7 @@ void gtk_add_ping_timeout (void)
 }
 
 
-void gtk_do_init(int *argc, char ***argv) 
+static void gtk_do_init(int *argc, char ***argv) 
 {
   static int done = 0;
 
@@ -78,7 +78,7 @@ void gtk_do_init(int *argc, char ***argv)
 }
 
 
-int gtk_detect(UNUSED int *argc, UNUSED char ***argv) 
+extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv) 
 {
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
@@ -91,7 +91,7 @@ int gtk_detect(UNUSED int *argc, UNUSED char ***argv)
 }
 
 
-gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data) 
+static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data) 
 {
   gtk_main_quit();
 
@@ -99,7 +99,7 @@ gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data)
 }
 
 
-gint Restart_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint Restart_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   net_reset();
   gtk_redraw();
@@ -108,7 +108,7 @@ gint Restart_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 }
 
 
-gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   static int paused = 0;
 
@@ -123,7 +123,7 @@ gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
   return FALSE;
 }
 
-gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
 {
   gchar *authors[] = {
         "Matt Kimball <mkimball@xmission.com>",
@@ -198,7 +198,7 @@ gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
  * What's the problem with this? (-> "I don't think so)
  */
 
-gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
+static gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
 {
   WaitTime = gtk_spin_button_get_value(GTK_SPIN_BUTTON(Button));
   g_source_remove (ping_timeout_timer);
@@ -209,7 +209,7 @@ gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button)
 }
 
 
-gint Host_activate(GtkWidget *entry, UNUSED gpointer data) 
+static gint Host_activate(GtkWidget *entry, UNUSED gpointer data) 
 {
   struct hostent * addr;
 
@@ -230,7 +230,7 @@ gint Host_activate(GtkWidget *entry, UNUSED gpointer data)
 
 
 
-void Toolbar_fill(GtkWidget *Toolbar) 
+static void Toolbar_fill(GtkWidget *Toolbar) 
 {
   GtkWidget *Button;
   GtkWidget *Label;
@@ -311,7 +311,7 @@ enum {
 // earlier, so it is ok. Nothing to worry about....
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
-void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
+static void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -324,7 +324,7 @@ void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
   g_object_set(cell, "text", text, NULL);
 }
 
-void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
+static void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -337,7 +337,7 @@ void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
   g_object_set(cell, "text", text, NULL);
 }
 
-void TreeViewCreate(void)
+static void TreeViewCreate(void)
 {
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
@@ -460,7 +460,7 @@ void TreeViewCreate(void)
 
 }
 
-void update_tree_row(int row, GtkTreeIter *iter)
+static void update_tree_row(int row, GtkTreeIter *iter)
 {
   ip_t *addr;
   char str[256]="???", *name=str;
@@ -497,7 +497,7 @@ void update_tree_row(int row, GtkTreeIter *iter)
 #endif
 }
 
-void gtk_redraw(void)
+extern void gtk_redraw(void)
 {
   int max = net_max();
   
@@ -522,7 +522,7 @@ void gtk_redraw(void)
 }
 
 
-void Window_fill(GtkWidget *Window) 
+static void Window_fill(GtkWidget *Window) 
 {
   GtkWidget *VBox;
   GtkWidget *Toolbar;
@@ -548,7 +548,7 @@ void Window_fill(GtkWidget *Window)
 }
 
 
-void gtk_open(void)
+extern void gtk_open(void)
 {
   GdkPixbuf *icon;
 
@@ -579,18 +579,18 @@ void gtk_open(void)
 }
 
 
-void gtk_close(void)
+extern void gtk_close(void)
 {
 }
 
 
-int gtk_keyaction(void)
+extern int gtk_keyaction(void)
 {
   return 0;
 }
 
 
-gint gtk_ping(UNUSED gpointer data) 
+static gint gtk_ping(UNUSED gpointer data) 
 {
   gtk_redraw();
   net_send_batch();
@@ -601,21 +601,21 @@ gint gtk_ping(UNUSED gpointer data)
 }
 
 
-gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data) 
+static gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data) 
 {
   net_process_return();
   return TRUE;
 }
 
 
-gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
+static gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
 {
   dns_ack();
   gtk_redraw();
   return TRUE;
 }
 #ifdef ENABLE_IPV6
-gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
+static gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
 {
   dns_ack6();
   gtk_redraw();
@@ -624,7 +624,7 @@ gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNU
 #endif
 
 
-void gtk_loop(void) 
+extern void gtk_loop(void) 
 {
   GIOChannel *net_iochannel, *dns_iochannel;
 
@@ -644,7 +644,7 @@ void gtk_loop(void)
   gtk_main();
 }
 
-gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
+static gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -659,7 +659,7 @@ gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 }
 
 
-gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
+static gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -680,7 +680,7 @@ gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
   return TRUE;
 }
 
-gchar *getSelectedHost(GtkTreePath *path)
+static gchar *getSelectedHost(GtkTreePath *path)
 {
   GtkTreeIter iter;
   gchar *name = NULL;
@@ -693,7 +693,7 @@ gchar *getSelectedHost(GtkTreePath *path)
 }
 
 
-gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event)
+static gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event)
 {
   GtkWidget* popup_menu; 
   GtkWidget* copy_item; 

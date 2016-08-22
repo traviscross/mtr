@@ -17,9 +17,9 @@
 */
 
 /*  Prototypes for gtk.c  */
-int gtk_detect(int *argc, char ***argv);
-void gtk_open(void);
-void gtk_close(void);
-void gtk_redraw(void);
-int gtk_keyaction(void);
-void gtk_loop(void);
+extern int gtk_detect(int *argc, char ***argv);
+extern void gtk_open(void);
+extern void gtk_close(void);
+extern void gtk_redraw(void);
+extern int gtk_keyaction(void);
+extern void gtk_loop(void);

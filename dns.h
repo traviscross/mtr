@@ -22,12 +22,12 @@
 
 /*  Prototypes for dns.c  */
 
-void dns_open(void);
-int dns_waitfd(void);
-void dns_ack(void);
+extern void dns_open(void);
+extern int dns_waitfd(void);
+extern void dns_ack(void);
 #ifdef ENABLE_IPV6
-int dns_waitfd6(void);
-void dns_ack6(void);
+extern int dns_waitfd6(void);
+extern void dns_ack6(void);
 #ifdef NEED_RES_STATE_EXT
 /* __res_state_ext is missing on many (most?) BSD systems */
 struct __res_state_ext {
@@ -45,10 +45,10 @@ struct __res_state_ext {
 #endif
 #endif
 
-char *dns_lookup(ip_t * address);
-char *dns_lookup2(ip_t * address);
-struct hostent * dns_forward(const char *name);
-char *strlongip(ip_t * ip);
+extern char *dns_lookup(ip_t * address);
+extern char *dns_lookup2(ip_t * address);
+extern struct hostent * dns_forward(const char *name);
+extern char *strlongip(ip_t * ip);
 
-void addr2ip6arpa( ip_t * ip, char * buf );
-struct hostent *addr2host( const char *addr, int type );
+extern void addr2ip6arpa( ip_t * ip, char * buf );
+extern struct hostent *addr2host( const char *addr, int type );

@@ -28,6 +28,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <error.h>
 
 #include "mtr.h"
 #include "dns.h"
@@ -48,7 +49,7 @@ int display_offset = 0;
 
 #define GRACETIME (GraceTime * 1000*1000)
 
-void select_loop(void) {
+extern void select_loop(void) {
   fd_set readfd;
   fd_set writefd;
   int anyset = 0;
@@ -178,8 +179,7 @@ void select_loop(void) {
     } while ((rv < 0) && (errno == EINTR));
 
     if (rv < 0) {
-      perror ("Select failed");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "Select failed");
     }
     anyset = 0;
 
@@ -216,7 +216,7 @@ void select_loop(void) {
 	net_reset();
 	break;
       case ActionDisplay:
-        display_mode = (display_mode+1) % 3;
+        display_mode = (display_mode + 1) % DisplayModeMAX;
 	break;
       case ActionClear:
 	display_clear();

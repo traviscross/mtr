@@ -77,7 +77,7 @@ extern int mtrtype;
 
 static int __unused_int;
 
-void pwcenter(char *str) 
+static void pwcenter(char *str) 
 {
   int maxx;
   int cx;
@@ -90,7 +90,7 @@ void pwcenter(char *str)
 }
 
 
-char *format_number (int n, int w, char *buf)
+static char *format_number (int n, int w, char *buf)
 {
    // XXX todo: implement w != 5.. 
    if (w != 5) return ("unimpl");
@@ -124,8 +124,7 @@ char *format_number (int n, int w, char *buf)
 }
 
 
-
-int mtr_curses_keyaction(void)
+extern int mtr_curses_keyaction(void)
 {
   int c = getch();
   int i=0;
@@ -349,7 +348,7 @@ int mtr_curses_keyaction(void)
 }
 
 
-void format_field (char *dst, const char *format, int n)
+static void format_field (char *dst, const char *format, int n)
 {
   if (index (format, 'N' ) ) {
     *dst++ = ' ';
@@ -364,7 +363,7 @@ void format_field (char *dst, const char *format, int n)
   } 
 } 
 
-void mtr_curses_hosts(int startstat) 
+static void mtr_curses_hosts(int startstat) 
 {
   int max;
   int at;
@@ -467,7 +466,7 @@ static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static int low_ms, high_ms;
 
-void mtr_gen_scale(void) 
+static void mtr_gen_scale(void) 
 {
 	int *saved, i, max, at;
 	int range;
@@ -500,7 +499,7 @@ void mtr_gen_scale(void)
 
 static char block_map[NUM_FACTORS];
 
-void mtr_curses_init(void) {
+static void mtr_curses_init(void) {
 	int i;
 	int block_split;
 
@@ -536,7 +535,7 @@ static int block_col[NUM_FACTORS+1] =
 	COLOR_PAIR(2)|A_BOLD
 };
 
-void mtr_print_scaled(int ms) 
+static void mtr_print_scaled(int ms) 
 {
 	int i;
 
@@ -552,7 +551,7 @@ void mtr_print_scaled(int ms)
 }
 
 
-void mtr_fill_graph(int at, int cols) 
+static void mtr_fill_graph(int at, int cols) 
 {
 	int* saved;
 	int i;
@@ -566,7 +565,7 @@ void mtr_fill_graph(int at, int cols)
 			printw("%c", '?');
 			attrset(A_NORMAL);
 		} else {
-			if (display_mode == 1) {
+			if (display_mode == DisplayModeBlockmap) {
 				if (saved[i] > scale[6]) {
 					printw("%c", block_map[NUM_FACTORS-1]);
 				} else {
@@ -580,7 +579,7 @@ void mtr_fill_graph(int at, int cols)
 }
 
 
-void mtr_curses_graph(int startstat, int cols) 
+static void mtr_curses_graph(int startstat, int cols) 
 {
 	int max, at, y;
 	ip_t * addr;
@@ -620,7 +619,7 @@ void mtr_curses_graph(int startstat, int cols)
 }
 
 
-void mtr_curses_redraw(void)
+extern void mtr_curses_redraw(void)
 {
   int maxx;
   int startstat;
@@ -669,7 +668,7 @@ void mtr_curses_redraw(void)
   attron(A_BOLD); printw("O"); attroff(A_BOLD); printw("rder of fields   ");
   attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
-  if (display_mode == 0) {
+  if (display_mode == DisplayModeDefalt) {
     for (i=0; i < MAXFLD; i++ ) {
 	j = fld_index[fld_active[i]];
 	if (j < 0) continue;
@@ -728,7 +727,7 @@ void mtr_curses_redraw(void)
 }
 
 
-void mtr_curses_open(void)
+extern void mtr_curses_open(void)
 {
   initscr();
   raw();
@@ -748,14 +747,14 @@ void mtr_curses_open(void)
 }
 
 
-void mtr_curses_close(void)
+extern void mtr_curses_close(void)
 {  
   printw("\n");
   endwin();
 }
 
 
-void mtr_curses_clear(void)
+extern void mtr_curses_clear(void)
 {
   mtr_curses_close();
   mtr_curses_open();

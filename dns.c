@@ -46,6 +46,8 @@
 //#endif
 //#include <netdb.h>
 //#include <resolv.h>
+#include <error.h>
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 //#include <ctype.h>
@@ -74,7 +76,7 @@ struct dns_results {
 
 struct dns_results *results;
 
-char *strlongip(ip_t * ip)
+extern char *strlongip(ip_t * ip)
 {
 #ifdef ENABLE_IPV6
   static char addrstr[INET6_ADDRSTRLEN];
@@ -92,7 +94,7 @@ char *strlongip(ip_t * ip)
 #define UNUSED_IF_NO_IPV6 UNUSED
 #endif
 
-int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
+static int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
 {
 #ifdef ENABLE_IPV6
   return inet_pton( family, s, dst );
@@ -102,7 +104,7 @@ int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
 }
 
 
-struct hostent * dns_forward(const char *name)
+extern struct hostent * dns_forward(const char *name)
 {
   struct hostent *host;
 
@@ -113,7 +115,7 @@ struct hostent * dns_forward(const char *name)
 }
 
 
-struct dns_results *findip (ip_t *ip)
+static struct dns_results *findip (ip_t *ip)
 {
   struct dns_results *t;
   
@@ -127,7 +129,7 @@ struct dns_results *findip (ip_t *ip)
   return NULL;
 }
 
-void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
+static void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
 {
   struct sockaddr_in *sa_in;
   struct sockaddr_in6 *sa_in6;
@@ -152,30 +154,27 @@ static int todns[2], fromdns[2];
 FILE *fromdnsfp;
 
 #if 0
-void handle_sigchld(int sig) {
+static void handle_sigchld(int sig) {
   while (waitpid((pid_t)(-1), 0, WNOHANG) > 0) {}
 }
 #endif
 
-void dns_open(void)
+extern void dns_open(void)
 {
   int pid; 
  
   if (pipe (todns) < 0) {
-    perror ("can't make a pipe for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't make a pipe for DNS process");
   }
 
   if (pipe (fromdns) < 0) {
-    perror ("can't make a pipe for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't make a pipe for DNS process");
   }
   fflush (stdout);
   pid = fork ();
   //pid = 1;
   if (pid < 0) {
-    perror ("can't fork for DNS process");
-    exit(EXIT_FAILURE);
+    error(EXIT_FAILURE, errno, "can't fork for DNS process");
   }
   if (pid == 0) {
     char buf[2048];
@@ -184,8 +183,7 @@ void dns_open(void)
 
     // Automatically reap children. 
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-      perror("signal");
-      exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "signal");
     }
 
 #if 0
@@ -228,7 +226,8 @@ void dns_open(void)
           sprintf (result, "%s %s\n", strlongip (&host), hostname);
           //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
           rv = write (fromdns[1], result, strlen (result));
-          if (rv < 0) perror ("write DNS lookup result");
+          if (rv < 0)
+            error (0, errno, "write DNS lookup result");
         }
 
         exit(EXIT_SUCCESS);
@@ -248,14 +247,13 @@ void dns_open(void)
   }
 }
 
-int dns_waitfd (void)
+extern int dns_waitfd (void)
 {
   return fromdns[0];
 }
 
 
-
-void dns_ack(void)
+extern void dns_ack(void)
 {
   char buf[2048], host[NI_MAXHOST], name[NI_MAXHOST];  
   ip_t hostip; 
@@ -269,7 +267,7 @@ void dns_ack(void)
     if (r)  
       r->name = strdup (name);
     else 
-      fprintf (stderr, "dns_ack: Couldn't find host %s\n", host);
+      error (0, 0, "dns_ack: Couldn't find host %s", host);
   }
 }
 
@@ -277,12 +275,12 @@ void dns_ack(void)
 
 #ifdef ENABLE_IPV6
 
-int dns_waitfd6 (void)
+extern int dns_waitfd6 (void)
 {
   return  -1;
 }
 
-void dns_ack6(void)
+extern void dns_ack6(void)
 {
   return;
 }
@@ -290,7 +288,7 @@ void dns_ack6(void)
 #endif
 
 
-char *dns_lookup2(ip_t * ip)
+extern char *dns_lookup2(ip_t * ip)
 {
   struct dns_results *r;
   char buf[INET6_ADDRSTRLEN + 1];
@@ -315,13 +313,14 @@ char *dns_lookup2(ip_t * ip)
 
      sprintf (buf, "%s\n", strlongip (ip));
      rv = write  (todns[1], buf, strlen (buf));
-     if (rv < 0) perror ("couldn't write to resolver process");
+     if (rv < 0)
+       error (0, errno, "couldn't write to resolver process");
   }
   return strlongip (ip);
 }
 
 
-char *dns_lookup(ip_t * ip)
+extern char *dns_lookup(ip_t * ip)
 {
   char *t;
 
@@ -332,7 +331,7 @@ char *dns_lookup(ip_t * ip)
 
 
 #if 0
-char *strlongip(ip_t * ip)
+extern char *strlongip(ip_t * ip)
 {
 #ifdef ENABLE_IPV6
   static char addrstr[INET6_ADDRSTRLEN];
@@ -348,7 +347,7 @@ char *strlongip(ip_t * ip)
 // XXX check if necessary/exported. 
 
 /* Resolve an IP address to a hostname. */ 
-struct hostent *addr2host( const char *addr, int family ) {
+extern struct hostent *addr2host( const char *addr, int family ) {
   int len = 0;
   switch ( family ) {
   case AF_INET:

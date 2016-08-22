@@ -48,7 +48,7 @@ extern int af;
 extern int reportwide;
 
 
-void report_open(void)
+extern void report_open(void)
 {
   const time_t now = time(NULL);
   char *t = ctime (&now);
@@ -72,14 +72,14 @@ static size_t snprint_addr(char *dst, size_t dst_len, ip_t *addr)
 
 
 #ifdef HAVE_IPINFO
-void print_mpls(struct mplslen *mpls) {
+static void print_mpls(struct mplslen *mpls) {
   int k;
   for (k=0; k < mpls->labels; k++)
     printf("       [MPLS: Lbl %lu Exp %u S %cu TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
 }
 #endif
 
-void report_close(void) 
+extern void report_close(void) 
 {
   int i, j, at, max, z, w;
   struct mplslen *mpls, *mplss;
@@ -242,23 +242,23 @@ void report_close(void)
 }
 
 
-void txt_open(void)
+extern void txt_open(void)
 {
 }
 
 
-void txt_close(void)
+extern void txt_close(void)
 {
   report_close();
 }
 
 
-void json_open(void)
+extern void json_open(void)
 {
 }
 
 
-void json_close(void)
+extern void json_close(void)
 {
   int i, j, at, first, max;
   ip_t *addr;
@@ -347,12 +347,12 @@ void json_close(void)
 
 
 
-void xml_open(void)
+extern void xml_open(void)
 {
 }
 
 
-void xml_close(void)
+extern void xml_close(void)
 {
   int i, j, at, max;
   ip_t *addr;
@@ -414,11 +414,11 @@ void xml_close(void)
 }
 
 
-void csv_open(void)
+extern void csv_open(void)
 {
 }
 
-void csv_close(time_t now)
+extern void csv_close(time_t now)
 {
   int i, j, at, max;
   ip_t *addr;
