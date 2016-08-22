@@ -44,7 +44,7 @@ enum {
 };
 
 enum {
-  DisplayModeDefalt,
+  DisplayModeDefault,
   DisplayModeBlockmap,
   DisplayModeMAX	/* this must be the last DisplayMode entry */
 };

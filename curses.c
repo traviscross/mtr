@@ -668,7 +668,7 @@ extern void mtr_curses_redraw(void)
   attron(A_BOLD); printw("O"); attroff(A_BOLD); printw("rder of fields   ");
   attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
-  if (display_mode == DisplayModeDefalt) {
+  if (display_mode == DisplayModeDefault) {
     for (i=0; i < MAXFLD; i++ ) {
 	j = fld_index[fld_active[i]];
 	if (j < 0) continue;

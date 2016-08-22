@@ -480,7 +480,7 @@ static void parse_arg (int argc, char **argv)
       display_mode = strtoint_or_err(optarg, "invalid argument");
       if ((DisplayModeMAX - 1) < display_mode)
         error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
-              DisplayModeDefalt, (DisplayModeMAX - 1), optarg);
+              DisplayModeDefault, (DisplayModeMAX - 1), optarg);
       break;
     case 'c':
       MaxPing = strtoint_or_err(optarg, "invalid argument");
@@ -723,7 +723,7 @@ extern int main(int argc, char **argv)
   srand (getpid());
 
   display_detect(&argc, &argv);
-  display_mode = DisplayModeDefalt;
+  display_mode = DisplayModeDefault;
 
   /* The field options are now in a static array all together,
      but that requires a run-time initialization. */
