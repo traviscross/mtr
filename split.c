@@ -60,8 +60,8 @@ extern int af;
 #define MAX_LINE_COUNT 256
 #define MAX_LINE_SIZE  256
 
-char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
-int  LineCount;
+static char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
+static int  LineCount;
 
 
 #define DEBUG 0

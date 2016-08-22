@@ -45,9 +45,9 @@ extern int MaxPing;
 extern int ForceMaxPing;
 extern float WaitTime;
 extern float GraceTime;
-double dnsinterval;
 extern int mtrtype;
 
+static double dnsinterval;
 static struct timeval intervaltime;
 int display_offset = 0;
 

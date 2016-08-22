@@ -172,45 +172,44 @@ static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 static struct timeval reset = { 0, 0 };
 
-int    timestamp;
-int    sendsock4;
-int    sendsock4_icmp;
-int    sendsock4_udp;
-int    recvsock4;
-int    sendsock6;
-int    sendsock6_icmp;
-int    sendsock6_udp;
-int    recvsock6;
-int    sendsock;
-int    recvsock;
+static int    sendsock4;
+static int    sendsock4_icmp;
+static int    sendsock4_udp;
+static int    recvsock4;
+static int    sendsock6;
+static int    sendsock6_icmp;
+static int    sendsock6_udp;
+static int    recvsock6;
+static int    sendsock;
+static int    recvsock;
 ip_t   unspec_addr;
 
 #ifdef ENABLE_IPV6
-struct sockaddr_storage sourcesockaddr_struct;
-struct sockaddr_storage remotesockaddr_struct;
-struct sockaddr_in6 * ssa6 = (struct sockaddr_in6 *) &sourcesockaddr_struct;
-struct sockaddr_in6 * rsa6 = (struct sockaddr_in6 *) &remotesockaddr_struct;
+static struct sockaddr_storage sourcesockaddr_struct;
+static struct sockaddr_storage remotesockaddr_struct;
+static struct sockaddr_in6 * ssa6 = (struct sockaddr_in6 *) &sourcesockaddr_struct;
+static struct sockaddr_in6 * rsa6 = (struct sockaddr_in6 *) &remotesockaddr_struct;
 #else
-struct sockaddr_in sourcesockaddr_struct;
-struct sockaddr_in remotesockaddr_struct;
+static struct sockaddr_in sourcesockaddr_struct;
+static struct sockaddr_in remotesockaddr_struct;
 #endif
 
-struct sockaddr * sourcesockaddr = (struct sockaddr *) &sourcesockaddr_struct;
-struct sockaddr * remotesockaddr = (struct sockaddr *) &remotesockaddr_struct;
-struct sockaddr_in * ssa4 = (struct sockaddr_in *) &sourcesockaddr_struct;
-struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
+static struct sockaddr * sourcesockaddr = (struct sockaddr *) &sourcesockaddr_struct;
+static struct sockaddr * remotesockaddr = (struct sockaddr *) &remotesockaddr_struct;
+static struct sockaddr_in * ssa4 = (struct sockaddr_in *) &sourcesockaddr_struct;
+static struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
 
-ip_t * sourceaddress;
-ip_t * remoteaddress;
+static ip_t * sourceaddress;
+static ip_t * remoteaddress;
 
 /* XXX How do I code this to be IPV6 compatible??? */
 #ifdef ENABLE_IPV6
-char localaddr[INET6_ADDRSTRLEN];
+static char localaddr[INET6_ADDRSTRLEN];
 #else
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-char localaddr[INET_ADDRSTRLEN];
+static char localaddr[INET_ADDRSTRLEN];
 #endif
 
 static int batch_at = 0;
@@ -235,7 +234,7 @@ extern int mark;		/* SO_MARK to set for ping packet*/
 
 /* return the number of microseconds to wait before sending the next
    ping */
-int calc_deltatime (float waittime)
+extern int calc_deltatime (float waittime)
 {
   waittime /= numhosts;
   return 1000000 * waittime;
