@@ -120,7 +120,7 @@ extern int fld_index[];
 extern unsigned char fld_active[];
 extern char available_options[];
 
-ip_t unspec_addr;
+extern ip_t unspec_addr;
 
 /* MPLS label object */
 struct mplslen {

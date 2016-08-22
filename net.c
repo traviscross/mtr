@@ -183,6 +183,7 @@ int    sendsock6_udp;
 int    recvsock6;
 int    sendsock;
 int    recvsock;
+ip_t   unspec_addr;
 
 #ifdef ENABLE_IPV6
 struct sockaddr_storage sourcesockaddr_struct;
