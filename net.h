@@ -45,7 +45,6 @@ extern void * net_mpls(int at);
 extern void * net_mplss(int, int);
 extern int net_loss(int at);
 extern int net_drop(int at);
-extern int net_last(int at);
 extern int net_best(int at);
 extern int net_worst(int at);
 extern int net_avg(int at);
