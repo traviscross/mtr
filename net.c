@@ -329,7 +329,7 @@ static int new_sequence(int index)
 static void net_send_tcp(int index)
 {
   int ttl, s;
-  int port;
+  int port = 0;
   int flags;
   struct sockaddr_storage local;
   struct sockaddr_storage remote;
@@ -449,7 +449,7 @@ static void net_send_sctp(int index)
 {
   int ttl, s;
   int opt = 1;
-  int port;
+  int port = 0;
   struct sockaddr_storage local;
   struct sockaddr_storage remote;
   struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
