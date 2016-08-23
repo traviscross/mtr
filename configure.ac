@@ -8,6 +8,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([
   1.7.9
   foreign
+  subdir-objects
 ])
 
 # --enable-silent-rules
@@ -38,6 +39,7 @@ AC_CHECK_HEADERS([ \
   arpa/nameser_compat.h \
   curses.h \
   cursesX.h \
+  error.h \
   fcntl.h \
   ncurses.h \
   ncurses/curses.h \
@@ -52,6 +54,13 @@ AC_CHECK_HEADERS([ \
 AC_CHECK_FUNCS([ \
   fcntl \
 ])
+
+AC_CHECK_FUNC([error], [with_error=no],
+  [AC_CHECK_FUNCS([verr verrx vwarn vwarnx], [with_error=yes],
+    [AC_MSG_ERROR([cannot find working error printing function])
+  ])
+])
+AM_CONDITIONAL([WITH_ERROR], [test "x$with_error" = "xyes"])
 
 AC_CHECK_FUNC([getopt_long], [with_getopt=no], [with_getopt=yes])
 AS_IF([test "x$with_getopt" = "xno"], [

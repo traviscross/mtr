@@ -18,6 +18,12 @@ mtr_SOURCES = mtr.c mtr.h \
               img/mtr_icon.xpm \
               mtr-gtk.h
 
+if WITH_ERROR
+mtr_SOURCES += \
+	portability/error.h \
+	portability/error.c
+endif
+
 if WITH_GETOPT
 mtr_SOURCES += \
 	portability/getopt.h \

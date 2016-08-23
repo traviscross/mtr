@@ -26,7 +26,11 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#ifdef HAVE_ERROR_H
 #include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #ifdef HAVE_VALUES_H
 #include <values.h>
 #endif

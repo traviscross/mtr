@@ -46,7 +46,11 @@
 //#endif
 //#include <netdb.h>
 //#include <resolv.h>
+#ifdef HAVE_ERROR_H
 #include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>

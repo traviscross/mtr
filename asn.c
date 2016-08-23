@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#ifdef HAVE_ERROR_H
 #include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <errno.h>
 
 #ifdef __APPLE__

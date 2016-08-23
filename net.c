@@ -38,7 +38,11 @@
 #include <math.h>
 #include <errno.h>
 #include <string.h>
+#ifdef HAVE_ERROR_H
 #include <error.h>
+#else
+#include "portability/error.h"
+#endif
 
 
 #include "mtr.h"
