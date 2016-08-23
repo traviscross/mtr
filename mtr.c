@@ -26,8 +26,14 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#ifdef HAVE_ERROR_H
 #include <error.h>
+#else
+#include "portability/error.h"
+#endif
+#ifdef HAVE_VALUES_H
 #include <values.h>
+#endif
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -209,8 +215,11 @@ strtofloat_or_err (const char *str, const char *errmesg)
   if (str != NULL && *str != '\0') {
       errno = 0;
       num = strtod (str, &end);
-      if (errno == 0 && str != end && end != NULL && *end == '\0' &&
-          num < FLT_MAX)
+      if (errno == 0 && str != end && end != NULL && *end == '\0'
+#ifdef FLT_MAX
+         && num < FLT_MAX
+#endif
+         )
 	return num;
     }
   error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
