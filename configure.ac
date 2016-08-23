@@ -136,6 +136,10 @@ AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
     ])
   ])
 ])
+dnl MacOS has res_query in libc, but needs libresolv for dn_expand().
+AS_IF([test "x" = "x$RESOLV_LIBS"], [
+  AC_CHECK_LIB([resolv], [dn_expand], [RESOLV_LIBS="-lresolv"])
+])
 AC_SUBST([RESOLV_LIBS])
 
 # Check errno and socket data types.
