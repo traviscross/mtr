@@ -45,6 +45,7 @@ AC_CHECK_HEADERS([ \
   sys/socket.h \
   sys/types.h \
   sys/xti.h \
+  values.h \
 ])
 
 # Check functions.
