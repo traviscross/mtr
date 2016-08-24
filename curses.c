@@ -292,6 +292,7 @@ extern int mtr_curses_keyaction(void)
     switch ( mtrtype ) {
     case IPPROTO_ICMP:
     case IPPROTO_TCP:
+    case IPPROTO_SCTP:
       mtrtype = IPPROTO_UDP;
       break;
     case IPPROTO_UDP:
@@ -304,9 +305,22 @@ extern int mtr_curses_keyaction(void)
     switch ( mtrtype ) {
     case IPPROTO_ICMP:
     case IPPROTO_UDP:
+    case IPPROTO_SCTP:
       mtrtype = IPPROTO_TCP;
       break;
     case IPPROTO_TCP:
+      mtrtype = IPPROTO_ICMP;
+      break;
+    }
+  }
+  if (tolower(c) == 's') {
+    switch ( mtrtype ) {
+    case IPPROTO_ICMP:
+    case IPPROTO_UDP:
+    case IPPROTO_TCP:
+      mtrtype = IPPROTO_SCTP;
+      break;
+    case IPPROTO_SCTP:
       mtrtype = IPPROTO_ICMP;
       break;
     }
