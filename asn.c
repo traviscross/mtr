@@ -64,7 +64,7 @@
 
 int  ipinfo_no = -1;
 int  ipinfo_max = -1;
-int  iihash = 0;
+static int  iihash = 0;
 char fmtinfo[32];
 extern int af;                  /* address family of remote target */
 
@@ -73,9 +73,9 @@ int iiwidth[] = { 7, 19, 4, 8, 11};	// item len + space
 int iiwidth_len = sizeof(iiwidth)/sizeof((iiwidth)[0]);
 
 typedef char* items_t[ITEMSMAX + 1];
-items_t items_a;		// without hash: items
-char txtrec[NAMELEN + 1];	// without hash: txtrec
-items_t* items = &items_a;
+static items_t items_a;		// without hash: items
+static char txtrec[NAMELEN + 1];	// without hash: txtrec
+static items_t* items = &items_a;
 
 
 static char *ipinfo_lookup(const char *domain) {

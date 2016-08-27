@@ -75,12 +75,12 @@ extern float WaitTime;
 extern int af;
 extern int mtrtype;
 
-static int __unused_int;
 
 static void pwcenter(char *str) 
 {
   int maxx;
   int cx;
+  int __unused_int UNUSED;
 
   getmaxyx(stdscr, __unused_int, maxx);
   cx = (signed)(maxx - strlen(str)) / 2;
@@ -375,6 +375,7 @@ static void mtr_curses_hosts(int startstat)
   int i, j, k;
   int hd_len;
   char buf[1024];
+  int __unused_int UNUSED;
 
   max = net_max();
 
@@ -464,12 +465,12 @@ static void mtr_curses_hosts(int startstat)
 #define NUM_FACTORS 8
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
-static int low_ms, high_ms;
 
 static void mtr_gen_scale(void) 
 {
 	int *saved, i, max, at;
 	int range;
+	static int low_ms, high_ms;
 
 	low_ms = 1000000;
 	high_ms = -1;
@@ -584,6 +585,7 @@ static void mtr_curses_graph(int startstat, int cols)
 	int max, at, y;
 	ip_t * addr;
 	char* name;
+	int __unused_int UNUSED;
 
 	max = net_max();
 
@@ -625,6 +627,7 @@ extern void mtr_curses_redraw(void)
   int startstat;
   int rowstat;
   time_t t;
+  int __unused_int UNUSED;
 
   int i, j;
   int  hd_len = 0;

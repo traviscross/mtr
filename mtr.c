@@ -68,8 +68,6 @@
 int   DisplayMode;
 int   display_mode;
 int   Interactive = 1;
-int   PrintVersion = 0;
-int   PrintHelp = 0;
 int   MaxPing = 10;
 int   ForceMaxPing = 0;
 float WaitTime = 1.0;
@@ -446,10 +444,11 @@ static void parse_arg (int argc, char **argv)
 
     switch(opt) {
     case 'v':
-      PrintVersion = 1;
+      printf ("mtr " PACKAGE_VERSION "\n");
+      exit(EXIT_SUCCESS);
       break;
     case 'h':
-      PrintHelp = 1;
+      usage(stdout);
       break;
 
     case 'r':
@@ -750,15 +749,6 @@ extern int main(int argc, char **argv)
   /* Now that we know mtrtype we can select which socket to use */
   if (net_selectsocket() != 0) {
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
-  }
-
-  if (PrintVersion) {
-    printf ("mtr " PACKAGE_VERSION "\n");
-    exit(EXIT_SUCCESS);
-  }
-
-  if (PrintHelp) {
-    usage(stdout);
   }
 
   time_t now = time(NULL);

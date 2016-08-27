@@ -33,9 +33,6 @@
 #include "net.h"
 #include "dns.h"
 
-static int havename[MaxHost];
-
-extern int af;
 
 #if 0
 static char *addr_to_str(ip_t addr)
@@ -57,6 +54,7 @@ extern void raw_rawxmit (int host, int seq)
 // Log an echo reply, or a "pong"
 extern void raw_rawping (int host, int msec, int seq)
 {
+  static int havename[MaxHost];
   char *name;
 
   if (dns && !havename[host]) {

@@ -19,7 +19,6 @@
 extern int ipinfo_no;
 extern int ipinfo_max;
 extern int iiwidth_len;
-extern int iihash;
 extern void asn_open();
 extern void asn_close();
 extern char *fmt_ipinfo(ip_t *addr);
