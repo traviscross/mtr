@@ -82,7 +82,7 @@ int   cpacketsize = 64;          /* default packet size */
 int   bitpattern = 0;
 int   tos = 0;
 #ifdef SO_MARK
-int   mark = -1;
+uint32_t mark = 0;
 #endif
 int   reportwide = 0;
 int af = DEFAULT_AF;
@@ -156,7 +156,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
   fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
-  fputs(" -M, --mark MARK            MARK text to use in missing hop\n", out);
+  fputs(" -M, --mark MARK            mark each sent packet\n", out);
   fputs(" -r, --report               output using report mode\n", out);
   fputs(" -w, --report-wide          output wide report\n", out);
   fputs(" -c, --report-cycles COUNT  set the number of pings sent\n", out);
@@ -186,9 +186,14 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+enum {
+  STRTO_INT,
+  STRTO_U32INT
+};
+
 /* Parse string, and return positive signed int. */
 static int
-strtoint_or_err (const char *str, const char *errmesg)
+strtonum_or_err (const char *str, const char *errmesg, const int type)
 {
   unsigned long int num;
   char *end = NULL;
@@ -196,9 +201,18 @@ strtoint_or_err (const char *str, const char *errmesg)
   if (str != NULL && *str != '\0') {
       errno = 0;
       num = strtoul (str, &end, 10);
-      if (errno == 0 && str != end && end != NULL && *end == '\0' &&
-          num < INT_MAX)
-	return num;
+      if (errno == 0 && str != end && end != NULL && *end == '\0') {
+        switch (type) {
+          case STRTO_INT:
+            if (num < INT_MAX)
+	      return num;
+            break;
+          case STRTO_U32INT:
+            if (num < UINT32_MAX)
+              return num;
+            break;
+	}
+      }
     }
   error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
   return 0;
@@ -485,17 +499,17 @@ static void parse_arg (int argc, char **argv)
       break;
 
     case OPT_DISPLAYMODE:
-      display_mode = strtoint_or_err(optarg, "invalid argument");
+      display_mode = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if ((DisplayModeMAX - 1) < display_mode)
         error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
               DisplayModeDefault, (DisplayModeMAX - 1), optarg);
       break;
     case 'c':
-      MaxPing = strtoint_or_err(optarg, "invalid argument");
+      MaxPing = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       ForceMaxPing = 1;
       break;
     case 's':
-      cpacketsize = strtoint_or_err(optarg, "invalid argument");
+      cpacketsize = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       break;
     case 'a':
       InterfaceAddress = optarg;
@@ -516,7 +530,7 @@ static void parse_arg (int argc, char **argv)
       }
       break;
     case 'f':
-      fstTTL = strtoint_or_err(optarg, "invalid argument");
+      fstTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (fstTTL > maxTTL) {
 	fstTTL = maxTTL;
       }
@@ -528,7 +542,7 @@ static void parse_arg (int argc, char **argv)
       read_from_file(optarg);
       break;
     case 'm':
-      maxTTL = strtoint_or_err(optarg, "invalid argument");
+      maxTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (maxTTL > (MaxHost - 1)) {
 	maxTTL = MaxHost-1;
       }
@@ -540,7 +554,7 @@ static void parse_arg (int argc, char **argv)
       }
       break;
 	case 'U':
-                maxUnknown = strtoint_or_err(optarg, "invalid argument");
+                maxUnknown = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
 		if (maxUnknown < 1) {
 			maxUnknown = 1;
 		}
@@ -558,7 +572,7 @@ static void parse_arg (int argc, char **argv)
       strcpy ((char*)fld_active, optarg);
       break;
     case 'B':
-      bitpattern = strtoint_or_err(optarg, "invalid argument");
+      bitpattern = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (bitpattern > 255)
 	bitpattern = -1;
       break;
@@ -569,7 +583,7 @@ static void parse_arg (int argc, char **argv)
       }
       break;
     case 'Q':
-      tos = strtoint_or_err(optarg, "invalid argument");
+      tos = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (tos > 255 || tos < 0) {
 	/* error message, should do more checking for valid values,
 	 * details in rfc2474 */
@@ -608,19 +622,19 @@ static void parse_arg (int argc, char **argv)
       show_ips = 1;
       break;
     case 'P':
-      remoteport = strtoint_or_err(optarg, "invalid argument");
+      remoteport = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (remoteport < 1 || MaxPort < remoteport) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
       }
       break;
     case 'L':
-      localport = strtoint_or_err(optarg, "invalid argument");
+      localport = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (localport < MinPort || MaxPort < localport) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", localport);
       }
       break;
     case 'Z':
-      tcp_timeout = strtoint_or_err(optarg, "invalid argument");
+      tcp_timeout = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       tcp_timeout *= 1000000;
       break;
     case '4':
@@ -636,7 +650,7 @@ static void parse_arg (int argc, char **argv)
 #endif
 #ifdef HAVE_IPINFO
     case 'y':
-      ipinfo_no = strtoint_or_err(optarg, "invalid argument");
+      ipinfo_no = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       if (ipinfo_no < 0)
         ipinfo_no = 0;
       break;
@@ -651,7 +665,7 @@ static void parse_arg (int argc, char **argv)
 #endif
 #ifdef SO_MARK
     case 'M':
-      mark = strtoint_or_err(optarg, "invalid argument");
+      mark = strtonum_or_err(optarg, "invalid argument", STRTO_U32INT);
       break;
 #else
     case 'M':

@@ -229,7 +229,7 @@ extern int remoteport;          /* target port for TCP tracing */
 extern int localport;		/* source port for UDP tracing */
 extern int tcp_timeout;         /* timeout for TCP connections */
 #ifdef SO_MARK
-extern int mark;		/* SO_MARK to set for ping packet*/
+extern uint32_t mark;		/* SO_MARK to set for ping packet*/
 #endif
 
 /* return the number of microseconds to wait before sending the next
@@ -417,7 +417,7 @@ static void net_send_tcp(int index)
   }
 
 #ifdef SO_MARK
-    if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+    if (mark && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
       error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
@@ -528,7 +528,7 @@ static void net_send_sctp(int index)
   }
 
 #ifdef SO_MARK
-    if (mark >= 0 && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+    if (mark && setsockopt( s, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
       error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
@@ -641,7 +641,7 @@ static void net_send_query(int index)
   }
 
 #ifdef SO_MARK
-    if (mark >= 0 && setsockopt( sendsock, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
+    if (mark && setsockopt( sendsock, SOL_SOCKET, SO_MARK, &mark, sizeof mark ) ) {
       error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
 #endif
