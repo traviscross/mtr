@@ -1,4 +1,4 @@
-.TH MTR 8 "July 12, 2014" "mtr" "mtr"
+.TH MTR 8 "@VERSION@" "mtr" "System Administration"
 .SH NAME
 mtr \- a network diagnostic tool
 .SH SYNOPSIS

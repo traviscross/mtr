@@ -1,7 +1,24 @@
 EXTRA_DIST = SECURITY img/mtr_icon.xpm
 
 sbin_PROGRAMS = mtr
+
+PATHFILES =
+CLEANFILES = $(PATHFILES)
+EXTRA_DIST += $(PATHFILES:=.in)
+edit_cmd = sed \
+	-e 's|@VERSION[@]|$(VERSION)|g'
+
+$(PATHFILES): Makefile
+	@ rm -f $@ $@.tmp
+	$(AM_V_at) $(MKDIR_P) $$(dirname $@)
+	$(AM_V_GEN) srcdir=''; \
+		test -f ./$@.in || srcdir=$(srcdir)/; \
+		$(edit_cmd) $${srcdir}$@.in >$@.tmp
+	@ mv $@.tmp $@
+
 dist_man_MANS = mtr.8
+PATHFILES += mtr.8
+
 install-exec-hook: 
 	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr` \
 	|| chmod u+s $(DESTDIR)$(sbindir)/mtr

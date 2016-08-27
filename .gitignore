@@ -22,5 +22,6 @@ stamp-h1*
 /ChangeLog
 /INSTALL
 /mtr
+/mtr.8
 
 /mtr-*.tar.gz
