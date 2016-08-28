@@ -81,28 +81,19 @@ extern char *
 trim(char * s);
 
 struct mtr_ctl {
-  int DisplayMode;
-  int display_mode;
-  int Interactive;
   int MaxPing;
-  int ForceMaxPing;
   float WaitTime;
   float GraceTime;
   char *Hostname;
   char *InterfaceAddress;
   char LocalHostname[128];
-  int dns;
-  int use_dns;
-  int show_ips;
   int ipinfo_no;
-  int enablempls;
   int cpacketsize;		/* packet size used by ping */
   int bitpattern;		/* packet bit pattern used by ping */
   int tos;			/* type of service set in ping packet*/
 #ifdef SO_MARK
   uint32_t mark;
 #endif
-  int reportwide;
   int af;			/* address family of remote target */
   int mtrtype;			/* type of query packet used */
   int fstTTL;			/* initial hub(ttl) to ping byMin */
@@ -115,6 +106,16 @@ struct mtr_ctl {
   int fld_index[256];		/* default display field (defined by key in net.h) and order */
   char available_options[MAXFLD];
   void *gtk_data;		/* pointer to hold arbitrary gtk data */
+  unsigned int			/* bit field to hold named booleans */
+    ForceMaxPing:1,
+    use_dns:1,
+    show_ips:1,
+    enablempls:1,
+    dns:1,
+    reportwide:1,
+    Interactive:1,
+    display_mode:2,
+    DisplayMode:5;
 };
 
 #endif /* MTR_MTR_H */
