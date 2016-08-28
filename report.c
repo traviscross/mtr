@@ -97,7 +97,7 @@ extern void report_close(struct mtr_ctl *ctl)
   
 #ifdef HAVE_IPINFO
   int len_tmp = len_hosts;
-  if (ctl->ipinfo_no >= 0) {
+  if (ctl->ipinfo_no >= 0 && ctl->iiwidth_len) {
     ctl->ipinfo_no %= ctl->iiwidth_len;
     if (ctl->reportwide) {
       len_hosts++;    // space
