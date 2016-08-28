@@ -90,7 +90,7 @@ extern void display_open(struct mtr_ctl *ctl)
   case DisplayCurses:
     mtr_curses_open(ctl);
 #ifdef HAVE_IPINFO
-    asn_open();
+    asn_open(ctl);
 #endif
     break;
 #endif
@@ -101,7 +101,7 @@ extern void display_open(struct mtr_ctl *ctl)
   case DisplayGTK:
     gtk_open(ctl);
 #ifdef HAVE_IPINFO
-    asn_open();
+    asn_open(ctl);
 #endif
     break;
 #endif
@@ -130,7 +130,7 @@ extern void display_close(struct mtr_ctl *ctl, time_t now)
 #ifdef HAVE_NCURSES
   case DisplayCurses:
 #ifdef HAVE_IPINFO
-    asn_close();
+    asn_close(ctl);
 #endif
     mtr_curses_close();
     break;

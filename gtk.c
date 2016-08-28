@@ -370,7 +370,7 @@ static void TreeViewCreate(struct mtr_ctl *ctl)
   		    G_CALLBACK(ReportTreeView_clicked), ctl);
 
 #ifdef HAVE_IPINFO
-  if (is_printii()) {
+  if (is_printii(ctl)) {
     renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("ASN",
       renderer,
@@ -472,7 +472,7 @@ static void update_tree_row(struct mtr_ctl *ctl, int row, GtkTreeIter *iter)
   char str[256]="???", *name=str;
 
   addr = net_addr(row);
-  if (addrcmp( (void *) addr, (void *) &unspec_addr, ctl->af)) {
+  if (addrcmp( (void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
     if ((name = dns_lookup(ctl, addr))) {
       if (ctl->show_ips) {
         snprintf(str, sizeof(str), "%s (%s)", name, strlongip(ctl, addr));
@@ -498,7 +498,7 @@ static void update_tree_row(struct mtr_ctl *ctl, int row, GtkTreeIter *iter)
 
     -1);
 #ifdef HAVE_IPINFO
-  if (is_printii())
+  if (is_printii(ctl))
     gtk_list_store_set(ReportStore, iter, COL_ASN, fmt_ipinfo(ctl, addr), -1);
 #endif
 }

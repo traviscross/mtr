@@ -50,7 +50,7 @@ extern void report_open(void)
 
 static size_t snprint_addr(struct mtr_ctl *ctl, char *dst, size_t dst_len, ip_t *addr)
 {
-  if(addrcmp((void *) addr, (void *) &unspec_addr, ctl->af)) {
+  if(addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
     struct hostent *host = ctl->dns ? addr2host((void *) addr, ctl->af) : NULL;
     if (!host) return snprintf(dst, dst_len, "%s", strlongip(ctl, addr));
     else if (ctl->dns && ctl->show_ips)
@@ -97,12 +97,12 @@ extern void report_close(struct mtr_ctl *ctl)
   
 #ifdef HAVE_IPINFO
   int len_tmp = len_hosts;
-  if (ipinfo_no >= 0) {
-    ipinfo_no %= iiwidth_len;
+  if (ctl->ipinfo_no >= 0) {
+    ctl->ipinfo_no %= ctl->iiwidth_len;
     if (ctl->reportwide) {
       len_hosts++;    // space
-      len_tmp   += get_iiwidth();
-      if (!ipinfo_no)
+      len_tmp   += get_iiwidth(ctl);
+      if (!ctl->ipinfo_no)
         len_tmp += 2; // align header: AS
     }
   }
@@ -130,7 +130,7 @@ extern void report_close(struct mtr_ctl *ctl)
     snprint_addr(ctl, name, sizeof(name), addr);
 
 #ifdef HAVE_IPINFO
-    if (is_printii()) {
+    if (is_printii(ctl)) {
       snprintf(fmt, sizeof(fmt), " %%2d. %%s%%-%zus", len_hosts);
       snprintf(buf, sizeof(buf), fmt, at+1, fmt_ipinfo(ctl, addr), name);
     } else {
@@ -164,7 +164,7 @@ extern void report_close(struct mtr_ctl *ctl)
       addr2 = net_addrs(at, z);
       mplss = net_mplss(at, z);
       int found = 0;
-      if ((addrcmp ((void *) &unspec_addr, (void *) addr2, ctl->af)) == 0)
+      if ((addrcmp ((void *) &ctl->unspec_addr, (void *) addr2, ctl->af)) == 0)
         break;
       for (w = 0; w < z; w++)
         /* Ok... checking if there are ips repeated on same hop */
@@ -176,7 +176,7 @@ extern void report_close(struct mtr_ctl *ctl)
       if (!found) {
   
 #ifdef HAVE_IPINFO
-        if (is_printii()) {
+        if (is_printii(ctl)) {
           if (mpls->labels && z == 1 && ctl->enablempls)
             print_mpls(mpls);
           snprint_addr(ctl, name, sizeof(name), addr2);
@@ -212,7 +212,7 @@ extern void report_close(struct mtr_ctl *ctl)
 
     /* No multipath */
 #ifdef HAVE_IPINFO
-    if (is_printii()) {
+    if (is_printii(ctl)) {
       if (mpls->labels && z == 1 && ctl->enablempls)
         print_mpls(mpls);
     } else {
@@ -427,7 +427,7 @@ extern void csv_close(struct mtr_ctl *ctl, time_t now)
     if (at == net_min(ctl)) {
       printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
 #ifdef HAVE_IPINFO
-      if(!ipinfo_no) {
+      if(!ctl->ipinfo_no) {
 	printf("Asn,");
       }
 #endif
@@ -440,7 +440,7 @@ extern void csv_close(struct mtr_ctl *ctl, time_t now)
     }
 
 #ifdef HAVE_IPINFO
-    if(!ipinfo_no) {
+    if(!ctl->ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(ctl, addr);
       fmtinfo = trim(fmtinfo);
       printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION, (long long)now, "OK", ctl->Hostname,

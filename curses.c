@@ -371,17 +371,17 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
 
   max = net_max(ctl);
 
-  for(at = net_min(ctl) + display_offset; at < max; at++) {
+  for(at = net_min(ctl) + ctl->display_offset; at < max; at++) {
     printw("%2d. ", at + 1);
     addr = net_addr(at);
     mpls = net_mpls(at);
 
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, ctl->af ) != 0 ) {
+    if( addrcmp( (void *) addr, (void *) &ctl->unspec_addr, ctl->af ) != 0 ) {
       name = dns_lookup(ctl, addr);
       if (! net_up(at))
 	attron(A_BOLD);
 #ifdef HAVE_IPINFO
-      if (is_printii())
+      if (is_printii(ctl))
         printw(fmt_ipinfo(ctl, addr));
 #endif
       if(name != NULL) {
@@ -424,13 +424,13 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
         addrs = net_addrs(at, i);
         mplss = net_mplss(at, i);
 	if ( addrcmp( (void *) addrs, (void *) addr, ctl->af ) == 0 ) continue;
-	if ( addrcmp( (void *) addrs, (void *) &unspec_addr, ctl->af ) == 0 ) break;
+	if ( addrcmp( (void *) addrs, (void *) &ctl->unspec_addr, ctl->af ) == 0 ) break;
 
         name = dns_lookup(ctl, addrs);
         if (! net_up(at)) attron(A_BOLD);
         printw("\n    ");
 #ifdef HAVE_IPINFO
-        if (is_printii())
+        if (is_printii(ctl))
           printw(fmt_ipinfo(ctl, addrs));
 #endif
         if (name != NULL) {
@@ -471,7 +471,7 @@ static void mtr_gen_scale(struct mtr_ctl *ctl)
 		scale[i] = 0;
 	}
 	max = net_max(ctl);
-	for (at = display_offset; at < max; at++) {
+	for (at = ctl->display_offset; at < max; at++) {
 		saved = net_saved_pings(at);
 		for (i = 0; i < SAVED_PINGS; i++) {
 			if (saved[i] < 0) continue;
@@ -581,7 +581,7 @@ static void mtr_curses_graph(struct mtr_ctl *ctl, int startstat, int cols)
 
 	max = net_max(ctl);
 
-	for (at = display_offset; at < max; at++) {
+	for (at = ctl->display_offset; at < max; at++) {
 		printw("%2d. ", at+1);
 
 		addr = net_addr(at);
@@ -592,9 +592,9 @@ static void mtr_curses_graph(struct mtr_ctl *ctl, int startstat, int cols)
 
 		if (! net_up(at))
 			attron(A_BOLD);
-		if (addrcmp((void *) addr, (void *) &unspec_addr, ctl->af)) {
+		if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
 #ifdef HAVE_IPINFO
-			if (is_printii())
+			if (is_printii(ctl))
 				printw(fmt_ipinfo(ctl, addr));
 #endif
 			name = dns_lookup(ctl, addr);
@@ -685,8 +685,8 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
     char msg[80];
     int padding = 30;
 #ifdef HAVE_IPINFO
-    if (is_printii())
-      padding += get_iiwidth();
+    if (is_printii(ctl))
+      padding += get_iiwidth(ctl);
 #endif
     int max_cols = maxx<=SAVED_PINGS+padding ? maxx-padding : SAVED_PINGS;
     startstat = padding - 2;

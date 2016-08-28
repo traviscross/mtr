@@ -62,14 +62,11 @@
 #define NAMELEN	127
 #define UNKN	"???"
 
-int  ipinfo_no = -1;
-int  ipinfo_max = -1;
 static int  iihash = 0;
-char fmtinfo[32];
+static char fmtinfo[32];
 
 // items width: ASN, Route, Country, Registry, Allocated 
-int iiwidth[] = { 7, 19, 4, 8, 11};	// item len + space
-int iiwidth_len = sizeof(iiwidth)/sizeof((iiwidth)[0]);
+static const int iiwidth[] = { 7, 19, 4, 8, 11 };    // item len + space
 
 typedef char* items_t[ITEMSMAX + 1];
 static items_t items_a;		// without hash: items
@@ -161,7 +158,7 @@ static char* trimsep(char *s) {
 }
 
 // originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
-static char* split_txtrec(char *txt_rec) {
+static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
     if (!txt_rec)
 	return NULL;
     if (iihash) {
@@ -191,14 +188,14 @@ static char* split_txtrec(char *txt_rec) {
     for (j = i;  j <= ITEMSMAX; j++)
         (*items)[j] = NULL;
 
-    if (i > ipinfo_max)
-        ipinfo_max = i;
-    if (ipinfo_no >= i) {
-        if (ipinfo_no >= ipinfo_max)
-            ipinfo_no = 0;
+    if (i > ctl->ipinfo_max)
+        ctl->ipinfo_max = i;
+    if (ctl->ipinfo_no >= i) {
+        if (ctl->ipinfo_no >= ctl->ipinfo_max)
+            ctl->ipinfo_no = 0;
 	return (*items)[0];
     } else
-	return (*items)[ipinfo_no];
+	return (*items)[ctl->ipinfo_no];
 }
 
 #ifdef ENABLE_IPV6
@@ -244,7 +241,7 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
         item.key = key;;
         ENTRY *found_item;
         if ((found_item = hsearch(item, FIND))) {
-            if (!(val = (*((items_t*)found_item->data))[ipinfo_no]))
+            if (!(val = (*((items_t*)found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t*)found_item->data))[0];
         DEB_syslog(LOG_INFO, "Found (hashed): %s", val);
         }
@@ -252,7 +249,7 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
 
     if (!val) {
         DEB_syslog(LOG_INFO, "Lookup: %s", key);
-        if ((val = split_txtrec(ipinfo_lookup(lookup_key)))) {
+        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
             DEB_syslog(LOG_INFO, "Looked up: %s", key);
             if (iihash)
                 if ((item.key = strdup(key))) {
@@ -266,32 +263,34 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     return val;
 }
 
-extern int get_iiwidth(void) {
-    return (ipinfo_no < iiwidth_len) ? iiwidth[ipinfo_no] : iiwidth[ipinfo_no % iiwidth_len];
+extern int get_iiwidth (struct mtr_ctl *ctl) {
+  return (ctl->ipinfo_no <
+	  ctl->iiwidth_len) ? iiwidth[ctl->ipinfo_no] :
+	                      iiwidth[ctl->ipinfo_no % ctl->iiwidth_len];
 }
 
 extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     char *ipinfo = get_ipinfo(ctl, addr);
     char fmt[8];
-    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ipinfo_no?"":"AS", get_iiwidth());
+    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no?"":"AS", get_iiwidth(ctl));
     snprintf(fmtinfo, sizeof(fmtinfo), fmt, ipinfo?ipinfo:UNKN);
     return fmtinfo;
 }
 
-extern int is_printii(void) {
-    return ((ipinfo_no >= 0) && (ipinfo_no != ipinfo_max));
+extern int is_printii(struct mtr_ctl *ctl) {
+    return ((ctl->ipinfo_no >= 0) && (ctl->ipinfo_no != ctl->ipinfo_max));
 }
 
-extern void asn_open(void) {
-    if (ipinfo_no >= 0) {
+extern void asn_open(struct mtr_ctl *ctl) {
+    if (ctl->ipinfo_no >= 0) {
         DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
             error(0, errno, "ipinfo hash");
     }
 }
 
-extern void asn_close(void) {
-    if ((ipinfo_no >= 0) && iihash) {
+extern void asn_close(struct mtr_ctl *ctl) {
+    if ((ctl->ipinfo_no >= 0) && iihash) {
         DEB_syslog(LOG_INFO, "hdestroy()");
         hdestroy();
         iihash = 0;

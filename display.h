@@ -60,5 +60,3 @@ extern void display_rawhost(struct mtr_ctl *ctl, int hostnum, ip_t *ip_addr);
 extern int display_keyaction(struct mtr_ctl *ctl);
 extern void display_loop(struct mtr_ctl *ctl);
 extern void display_clear(struct mtr_ctl *ctl);
-
-extern int display_offset; /* only used in text mode */

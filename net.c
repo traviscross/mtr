@@ -185,7 +185,6 @@ static int    sendsock6_udp;
 static int    recvsock6;
 static int    sendsock;
 static int    recvsock;
-ip_t   unspec_addr;
 
 #ifdef ENABLE_IPV6
 static struct sockaddr_storage sourcesockaddr_struct;
@@ -774,7 +773,7 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
   /* impossible? if( totusec < 0 ) totusec = 0 */;
 
   if ( addrcmp( (void *) &(host[index].addr),
-		(void *) &unspec_addr, ctl->af ) == 0 ) {
+		(void *) &ctl->unspec_addr, ctl->af ) == 0 ) {
     /* should be out of if as addr can change */
     addrcpy( (void *) &(host[index].addr), addrcopy, ctl->af );
     host[index].mpls = mpls;
@@ -788,7 +787,7 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
       if( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addrcopy,
                    ctl->af ) == 0 ||
           addrcmp( (void *) &(host[index].addrs[i]),
-		   (void *) &unspec_addr, ctl->af ) == 0 ) break;
+		   (void *) &ctl->unspec_addr, ctl->af ) == 0 ) break;
       i++;
     }
     if( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, ctl->af ) != 0 && 
@@ -1206,7 +1205,7 @@ extern int net_max(struct mtr_ctl *ctl)
                   (void *) remoteaddress, ctl->af ) == 0 ) {
       return at + 1;
     } else if ( addrcmp( (void *) &(host[at].addr),
-			 (void *) &unspec_addr, ctl->af ) != 0 ) {
+			 (void *) &ctl->unspec_addr, ctl->af ) != 0 ) {
       max = at + 2;
     }
   }
@@ -1286,7 +1285,7 @@ extern int net_send_batch(struct mtr_ctl *ctl)
   net_send_query(ctl, batch_at);
 
   for (i=ctl->fstTTL-1;i<batch_at;i++) {
-    if ( addrcmp( (void *) &(host[i].addr), (void *) &unspec_addr, ctl->af ) == 0 )
+    if ( addrcmp( (void *) &(host[i].addr), (void *) &ctl->unspec_addr, ctl->af ) == 0 )
       n_unknown++;
 
     /* The second condition in the next "if" statement was added in mtr-0.56, 

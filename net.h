@@ -113,9 +113,6 @@ struct fields {
 
 extern struct fields data_fields[MAXFLD];
 
-/* keys: the value in the array is the index number in data_fields[] */
-extern ip_t unspec_addr;
-
 /* MPLS label object */
 struct mplslen {
   unsigned long label[MAXLABELS]; /* label value */

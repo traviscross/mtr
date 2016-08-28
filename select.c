@@ -236,12 +236,12 @@ extern void select_loop(struct mtr_ctl *ctl){
 	break;
 #ifdef HAVE_IPINFO
       case ActionII:
-	ipinfo_no++;
-	if (ipinfo_no > ipinfo_max)
-	  ipinfo_no = 0;
+	ctl->ipinfo_no++;
+	if (ctl->ipinfo_no > ctl->ipinfo_max)
+	  ctl->ipinfo_no = 0;
 	break;
       case ActionAS:
-	ipinfo_no = ipinfo_no?0:ipinfo_max;
+	ctl->ipinfo_no = ctl->ipinfo_no ? 0 : ctl->ipinfo_max;
 	break;
 #endif
 

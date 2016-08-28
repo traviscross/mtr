@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 /* Typedefs */
 
@@ -74,7 +75,7 @@ typedef struct in_addr ip_t;
 #define MAXFLD 20		/* max stats fields to display */
 
 #ifndef HAVE_SOCKLEN_T
-typedef int socklen_t; 
+typedef int socklen_t;
 #endif
 
 extern char *
@@ -88,12 +89,15 @@ struct mtr_ctl {
   char *InterfaceAddress;
   char LocalHostname[128];
   int ipinfo_no;
+  int ipinfo_max;
+  int iiwidth_len;
   int cpacketsize;		/* packet size used by ping */
   int bitpattern;		/* packet bit pattern used by ping */
   int tos;			/* type of service set in ping packet*/
 #ifdef SO_MARK
   uint32_t mark;
 #endif
+  ip_t unspec_addr;
   int af;			/* address family of remote target */
   int mtrtype;			/* type of query packet used */
   int fstTTL;			/* initial hub(ttl) to ping byMin */
@@ -105,6 +109,7 @@ struct mtr_ctl {
   unsigned char fld_active[2 * MAXFLD];	/* SO_MARK to set for ping packet*/
   int fld_index[256];		/* default display field (defined by key in net.h) and order */
   char available_options[MAXFLD];
+  int display_offset;		/* only used in text mode */
   void *gtk_data;		/* pointer to hold arbitrary gtk data */
   unsigned int			/* bit field to hold named booleans */
     ForceMaxPing:1,
