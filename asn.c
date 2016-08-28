@@ -66,7 +66,6 @@ int  ipinfo_no = -1;
 int  ipinfo_max = -1;
 static int  iihash = 0;
 char fmtinfo[32];
-extern int af;                  /* address family of remote target */
 
 // items width: ASN, Route, Country, Registry, Allocated 
 int iiwidth[] = { 7, 19, 4, 8, 11};	// item len + space
@@ -213,14 +212,14 @@ static void reverse_host6(struct in6_addr *addr, char *buff) {
 }
 #endif
 
-static char *get_ipinfo(ip_t *addr) {
+static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     if (!addr)
         return NULL;
 
     char key[NAMELEN];
     char lookup_key[NAMELEN];
 
-    if (af == AF_INET6) {
+    if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
         reverse_host6(addr, key);
         if (snprintf(lookup_key, NAMELEN, "%s.origin6.asn.cymru.com", key) >= NAMELEN)
@@ -271,8 +270,8 @@ extern int get_iiwidth(void) {
     return (ipinfo_no < iiwidth_len) ? iiwidth[ipinfo_no] : iiwidth[ipinfo_no % iiwidth_len];
 }
 
-extern char *fmt_ipinfo(ip_t *addr) {
-    char *ipinfo = get_ipinfo(addr);
+extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
+    char *ipinfo = get_ipinfo(ctl, addr);
     char fmt[8];
     snprintf(fmt, sizeof(fmt), "%s%%-%ds", ipinfo_no?"":"AS", get_iiwidth());
     snprintf(fmtinfo, sizeof(fmtinfo), fmt, ipinfo?ipinfo:UNKN);

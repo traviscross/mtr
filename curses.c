@@ -65,16 +65,6 @@
 
 #include <time.h>
 
-extern char LocalHostname[];
-extern int fstTTL;
-extern int maxTTL;
-extern int cpacketsize;
-extern int bitpattern;
-extern int tos;
-extern float WaitTime;
-extern int af;
-extern int mtrtype;
-
 
 static void pwcenter(char *str) 
 {
@@ -124,7 +114,7 @@ static char *format_number (int n, int w, char *buf)
 }
 
 
-extern int mtr_curses_keyaction(void)
+extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
 {
   int c = getch();
   int i=0;
@@ -161,7 +151,7 @@ extern int mtr_curses_keyaction(void)
     return ActionScrollUp;
 
   if (tolower(c) == 's') {
-    mvprintw(2, 0, "Change Packet Size: %d\n", cpacketsize );
+    mvprintw(2, 0, "Change Packet Size: %d\n", ctl->cpacketsize);
     mvprintw(3, 0, "Size Range: %d-%d, < 0:random.\n", MINPACKET, MAXPACKET);
     move(2,20);
     refresh();
@@ -170,11 +160,11 @@ extern int mtr_curses_keyaction(void)
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    cpacketsize = atoi ( buf );
+    ctl->cpacketsize = atoi ( buf );
     return ActionNone;
   }
   if (tolower(c) == 'b') {
-    mvprintw(2, 0, "Ping Bit Pattern: %d\n", bitpattern );
+    mvprintw(2, 0, "Ping Bit Pattern: %d\n", ctl->bitpattern );
     mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
     move(2,18);
     refresh();
@@ -183,12 +173,12 @@ extern int mtr_curses_keyaction(void)
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    bitpattern = atoi ( buf );
-    if( bitpattern > 255 ) { bitpattern = -1; }
+    ctl->bitpattern = atoi ( buf );
+    if( ctl->bitpattern > 255 ) { ctl->bitpattern = -1; }
     return ActionNone;
   }
   if ( c == 'Q') {    /* can not be tolower(c) */
-    mvprintw(2, 0, "Type of Service(tos): %d\n", tos );
+    mvprintw(2, 0, "Type of Service(tos): %d\n", ctl->tos);
     mvprintw(3, 0, "default 0x00, min cost 0x02, rel 0x04,, thr 0x08, low del 0x10...\n");
     move(2,22);
     refresh();
@@ -197,14 +187,14 @@ extern int mtr_curses_keyaction(void)
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    tos = atoi ( buf );
-    if( tos > 255 || tos <0 ) {
-      tos = 0;
+    ctl->tos = atoi ( buf );
+    if (ctl->tos > 255 || ctl->tos < 0) {
+      ctl->tos = 0;
     }
     return ActionNone;
   }
   if (tolower(c) == 'i') {
-    mvprintw(2, 0, "Interval : %0.0f\n\n", WaitTime );
+    mvprintw(2, 0, "Interval : %0.0f\n\n", ctl->WaitTime);
     move(2,11);
     refresh();
     while ( (c=getch ()) != '\n' && i < MAXFLD ) {
@@ -218,12 +208,12 @@ extern int mtr_curses_keyaction(void)
     if (f <= 0.0) return ActionNone;
     if (getuid() != 0 && f < 1.0)
       return ActionNone;
-    WaitTime = f;
+    ctl->WaitTime = f;
 
     return ActionNone;
   }
   if (tolower(c) == 'f') {
-    mvprintw(2, 0, "First TTL: %d\n\n", fstTTL );
+    mvprintw(2, 0, "First TTL: %d\n\n", ctl->fstTTL);
     move(2,11);
     refresh();
     while ( (c=getch ()) != '\n' && i < MAXFLD ) {
@@ -233,13 +223,14 @@ extern int mtr_curses_keyaction(void)
     buf[i] = '\0';
     i = atoi( buf );
 
-    if ( i < 1 || i> maxTTL ) return ActionNone;
-    fstTTL = i;
+    if (i < 1 || i > ctl->maxTTL)
+      return ActionNone;
+    ctl->fstTTL = i;
 
     return ActionNone;
   }
   if (tolower(c) == 'm') {
-    mvprintw(2, 0, "Max TTL: %d\n\n", maxTTL );
+    mvprintw(2, 0, "Max TTL: %d\n\n", ctl->maxTTL);
     move(2,9);
     refresh();
     while ( (c=getch ()) != '\n' && i < MAXFLD ) {
@@ -249,14 +240,15 @@ extern int mtr_curses_keyaction(void)
     buf[i] = '\0';
     i = atoi( buf );
 
-    if ( i < fstTTL || i>(MaxHost-1) ) return ActionNone;
-    maxTTL = i;
+    if (i < ctl->fstTTL || i > (MaxHost - 1))
+      return ActionNone;
+    ctl->maxTTL = i;
 
     return ActionNone;
   }
   /* fields to display & their ordering */
   if (tolower(c) == 'o') {
-    mvprintw(2, 0, "Fields: %s\n\n", fld_active );
+    mvprintw(2, 0, "Fields: %s\n\n", ctl->fld_active );
 
     for( i=0; i<MAXFLD; i++ ){
       if( data_fields[i].descr != NULL )
@@ -268,7 +260,7 @@ extern int mtr_curses_keyaction(void)
 
     i = 0;
     while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      if( strchr(available_options, c) ) {
+      if( strchr(ctl->available_options, c) ) {
         attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
         buf[i++] = c; /* Only permit values in "available_options" be entered */
       } else {
@@ -276,38 +268,38 @@ extern int mtr_curses_keyaction(void)
       }
     }
     buf[i] = '\0';
-    if ( strlen( buf ) > 0 ) strcpy( fld_active, buf );
+    if ( strlen( buf ) > 0 ) strcpy( ctl->fld_active, buf );
 
     return ActionNone;
   }
   if (tolower(c) == 'j') {
-    if( strchr(fld_active, 'N') ) {
-      strcpy(fld_active, "DR AGJMXI");        /* GeoMean and jitter */
+    if( strchr(ctl->fld_active, 'N') ) {
+      strcpy(ctl->fld_active, "DR AGJMXI");        /* GeoMean and jitter */
     } else {
-      strcpy(fld_active, "LS NABWV");         /* default */
+      strcpy(ctl->fld_active, "LS NABWV");         /* default */
     }
     return ActionNone;
   }
   if (tolower(c) == 'u') {
-    switch ( mtrtype ) {
+    switch (ctl->mtrtype) {
     case IPPROTO_ICMP:
     case IPPROTO_TCP:
-      mtrtype = IPPROTO_UDP;
+      ctl->mtrtype = IPPROTO_UDP;
       break;
     case IPPROTO_UDP:
-      mtrtype = IPPROTO_ICMP;
+      ctl->mtrtype = IPPROTO_ICMP;
       break;
     }
     return ActionNone;
   }
   if (tolower(c) == 't') {
-    switch ( mtrtype ) {
+    switch (ctl->mtrtype) {
     case IPPROTO_ICMP:
     case IPPROTO_UDP:
-      mtrtype = IPPROTO_TCP;
+      ctl->mtrtype = IPPROTO_TCP;
       break;
     case IPPROTO_TCP:
-      mtrtype = IPPROTO_ICMP;
+      ctl->mtrtype = IPPROTO_ICMP;
       break;
     }
     return ActionNone;
@@ -363,7 +355,7 @@ static void format_field (char *dst, const char *format, int n)
   } 
 } 
 
-static void mtr_curses_hosts(int startstat) 
+static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
 {
   int max;
   int at;
@@ -377,26 +369,26 @@ static void mtr_curses_hosts(int startstat)
   char buf[1024];
   int __unused_int UNUSED;
 
-  max = net_max();
+  max = net_max(ctl);
 
-  for(at = net_min () + display_offset; at < max; at++) {
+  for(at = net_min(ctl) + display_offset; at < max; at++) {
     printw("%2d. ", at + 1);
     addr = net_addr(at);
     mpls = net_mpls(at);
 
-    if( addrcmp( (void *) addr, (void *) &unspec_addr, af ) != 0 ) {
-      name = dns_lookup(addr);
+    if( addrcmp( (void *) addr, (void *) &unspec_addr, ctl->af ) != 0 ) {
+      name = dns_lookup(ctl, addr);
       if (! net_up(at))
 	attron(A_BOLD);
 #ifdef HAVE_IPINFO
       if (is_printii())
-        printw(fmt_ipinfo(addr));
+        printw(fmt_ipinfo(ctl, addr));
 #endif
       if(name != NULL) {
-        if (show_ips) printw("%s (%s)", name, strlongip(addr));
+        if (ctl->show_ips) printw("%s (%s)", name, strlongip(ctl, addr));
         else printw("%s", name);
       } else {
-	printw("%s", strlongip( addr ) );
+	printw("%s", strlongip(ctl,  addr ) );
       }
       attroff(A_BOLD);
 
@@ -409,7 +401,7 @@ static void mtr_curses_hosts(int startstat)
 	/* Ignore options that don't exist */
 	/* On the other hand, we now check the input side. Shouldn't happen, 
 	   can't be careful enough. */
-	j = fld_index[fld_active[i]];
+	j = ctl->fld_index[ctl->fld_active[i]];
 	if (j == -1) continue; 
         format_field (buf+hd_len, data_fields[j].format, data_fields[j].net_xxx(at));
 	hd_len +=  data_fields[j].length;
@@ -417,7 +409,7 @@ static void mtr_curses_hosts(int startstat)
       buf[hd_len] = 0;
       printw("%s", buf);
 
-      for (k=0; k < mpls->labels && enablempls; k++) {
+      for (k=0; k < mpls->labels && ctl->enablempls; k++) {
         if((k+1 < mpls->labels) || (mpls->labels == 1)) {
            /* if we have more labels */
            printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
@@ -431,23 +423,23 @@ static void mtr_curses_hosts(int startstat)
       for (i=0; i < MAXPATH; i++ ) {
         addrs = net_addrs(at, i);
         mplss = net_mplss(at, i);
-	if ( addrcmp( (void *) addrs, (void *) addr, af ) == 0 ) continue;
-	if ( addrcmp( (void *) addrs, (void *) &unspec_addr, af ) == 0 ) break;
+	if ( addrcmp( (void *) addrs, (void *) addr, ctl->af ) == 0 ) continue;
+	if ( addrcmp( (void *) addrs, (void *) &unspec_addr, ctl->af ) == 0 ) break;
 
-        name = dns_lookup(addrs);
+        name = dns_lookup(ctl, addrs);
         if (! net_up(at)) attron(A_BOLD);
         printw("\n    ");
 #ifdef HAVE_IPINFO
         if (is_printii())
-          printw(fmt_ipinfo(addrs));
+          printw(fmt_ipinfo(ctl, addrs));
 #endif
         if (name != NULL) {
-	  if (show_ips) printw("%s (%s)", name, strlongip(addrs));
+	  if (ctl->show_ips) printw("%s (%s)", name, strlongip(ctl, addrs));
 	  else printw("%s", name);
         } else {
-	  printw("%s", strlongip( addrs ) );
+	  printw("%s", strlongip(ctl,  addrs ) );
         }
-        for (k=0; k < mplss->labels && enablempls; k++) {
+        for (k=0; k < mplss->labels && ctl->enablempls; k++) {
           printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mplss->label[k], mplss->exp[k], mplss->s[k], mplss->ttl[k]);
         }
         attroff(A_BOLD);
@@ -466,7 +458,7 @@ static void mtr_curses_hosts(int startstat)
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 
-static void mtr_gen_scale(void) 
+static void mtr_gen_scale(struct mtr_ctl *ctl)
 {
 	int *saved, i, max, at;
 	int range;
@@ -478,7 +470,7 @@ static void mtr_gen_scale(void)
 	for (i = 0; i < NUM_FACTORS; i++) {
 		scale[i] = 0;
 	}
-	max = net_max();
+	max = net_max(ctl);
 	for (at = display_offset; at < max; at++) {
 		saved = net_saved_pings(at);
 		for (i = 0; i < SAVED_PINGS; i++) {
@@ -552,7 +544,7 @@ static void mtr_print_scaled(int ms)
 }
 
 
-static void mtr_fill_graph(int at, int cols) 
+static void mtr_fill_graph(struct mtr_ctl *ctl, int at, int cols)
 {
 	int* saved;
 	int i;
@@ -566,7 +558,7 @@ static void mtr_fill_graph(int at, int cols)
 			printw("%c", '?');
 			attrset(A_NORMAL);
 		} else {
-			if (display_mode == DisplayModeBlockmap) {
+			if (ctl->display_mode == DisplayModeBlockmap) {
 				if (saved[i] > scale[6]) {
 					printw("%c", block_map[NUM_FACTORS-1]);
 				} else {
@@ -580,14 +572,14 @@ static void mtr_fill_graph(int at, int cols)
 }
 
 
-static void mtr_curses_graph(int startstat, int cols) 
+static void mtr_curses_graph(struct mtr_ctl *ctl, int startstat, int cols)
 {
 	int max, at, y;
 	ip_t * addr;
 	char* name;
 	int __unused_int UNUSED;
 
-	max = net_max();
+	max = net_max(ctl);
 
 	for (at = display_offset; at < max; at++) {
 		printw("%2d. ", at+1);
@@ -600,13 +592,13 @@ static void mtr_curses_graph(int startstat, int cols)
 
 		if (! net_up(at))
 			attron(A_BOLD);
-		if (addrcmp((void *) addr, (void *) &unspec_addr, af)) {
+		if (addrcmp((void *) addr, (void *) &unspec_addr, ctl->af)) {
 #ifdef HAVE_IPINFO
 			if (is_printii())
-				printw(fmt_ipinfo(addr));
+				printw(fmt_ipinfo(ctl, addr));
 #endif
-			name = dns_lookup(addr);
-			printw("%s", name?name:strlongip(addr));
+			name = dns_lookup(ctl, addr);
+			printw("%s", name?name:strlongip(ctl, addr));
 		} else
 			printw("???");
 		attroff(A_BOLD);
@@ -615,13 +607,13 @@ static void mtr_curses_graph(int startstat, int cols)
 		move(y, startstat);
 
 		printw(" ");
-		mtr_fill_graph(at, cols);
+		mtr_fill_graph(ctl, at, cols);
 		printw("\n");
 	}
 }
 
 
-extern void mtr_curses_redraw(void)
+extern void mtr_curses_redraw(struct mtr_ctl *ctl)
 {
   int maxx;
   int startstat;
@@ -645,18 +637,18 @@ extern void mtr_curses_redraw(void)
   pwcenter("My traceroute  [v" PACKAGE_VERSION "]");
   attroff(A_BOLD);
 
-  mvprintw(1, 0, "%s (%s)", LocalHostname, net_localaddr());
+  mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
   /*
   printw("(tos=0x%X ", tos);
   printw("psize=%d ", packetsize );
-  printw("bitpattern=0x%02X)", (unsigned char)(abs(bitpattern)));
+  printw("bitpattern=0x%02X)", (unsigned char)(abs(ctl->bitpattern)));
   if( cpacketsize > 0 ){
     printw("psize=%d ", cpacketsize);
   } else {
     printw("psize=rand(%d,%d) ",MINPACKET, -cpacketsize);
   }
-  if( bitpattern>=0 ){
-    printw("bitpattern=0x%02X)", (unsigned char)(bitpattern));
+  if( ctl->bitpattern>=0 ){
+    printw("bitpattern=0x%02X)", (unsigned char)(ctl->bitpattern));
   } else {
     printw("bitpattern=rand(0x00-FF))");
   }
@@ -671,9 +663,9 @@ extern void mtr_curses_redraw(void)
   attron(A_BOLD); printw("O"); attroff(A_BOLD); printw("rder of fields   ");
   attron(A_BOLD); printw("q"); attroff(A_BOLD); printw("uit\n");
   
-  if (display_mode == DisplayModeDefault) {
+  if (ctl->display_mode == DisplayModeDefault) {
     for (i=0; i < MAXFLD; i++ ) {
-	j = fld_index[fld_active[i]];
+	j = ctl->fld_index[ctl->fld_active[i]];
 	if (j < 0) continue;
 
 	sprintf( fmt, "%%%ds", data_fields[j].length );
@@ -687,7 +679,7 @@ extern void mtr_curses_redraw(void)
     attroff(A_BOLD);
 
     move(rowstat, 0);
-    mtr_curses_hosts(maxx-hd_len-1);
+    mtr_curses_hosts(ctl, maxx-hd_len-1);
 
   } else {
     char msg[80];
@@ -705,8 +697,8 @@ extern void mtr_curses_redraw(void)
     attroff(A_BOLD);
     move(rowstat, 0);
 
-    mtr_gen_scale();
-    mtr_curses_graph(startstat, max_cols);
+    mtr_gen_scale(ctl);
+    mtr_curses_graph(ctl, startstat, max_cols);
 
     printw("\n");
     attron(A_BOLD);
@@ -730,7 +722,7 @@ extern void mtr_curses_redraw(void)
 }
 
 
-extern void mtr_curses_open(void)
+extern void mtr_curses_open(struct mtr_ctl *ctl)
 {
   initscr();
   raw();
@@ -746,7 +738,7 @@ extern void mtr_curses_open(void)
       init_pair(i+1, i, bg_col);
 
   mtr_curses_init();
-  mtr_curses_redraw();
+  mtr_curses_redraw(ctl);
 }
 
 
@@ -757,8 +749,8 @@ extern void mtr_curses_close(void)
 }
 
 
-extern void mtr_curses_clear(void)
+extern void mtr_curses_clear(struct mtr_ctl *ctl)
 {
   mtr_curses_close();
-  mtr_curses_open();
+  mtr_curses_open(ctl);
 }

@@ -66,12 +66,6 @@
 #include "dns.h"
 #include "net.h"
 
-extern int af;
-
-
-int use_dns = 1;
-
-
 struct dns_results {
   ip_t ip; 
   char *name;
@@ -80,12 +74,12 @@ struct dns_results {
 
 struct dns_results *results;
 
-extern char *strlongip(ip_t * ip)
+extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
 {
 #ifdef ENABLE_IPV6
   static char addrstr[INET6_ADDRSTRLEN];
 
-  return (char *) inet_ntop( af, ip, addrstr, sizeof addrstr );
+  return (char *) inet_ntop( ctl->af, ip, addrstr, sizeof addrstr );
 #else
   return inet_ntoa( *ip );
 #endif
@@ -119,36 +113,36 @@ extern struct hostent * dns_forward(const char *name)
 }
 
 
-static struct dns_results *findip (ip_t *ip)
+static struct dns_results *findip (struct mtr_ctl *ctl, ip_t *ip)
 {
   struct dns_results *t;
   
-  //printf ("Looking for: %s\n",  strlongip (ip));
+  //printf ("Looking for: %s\n",  strlongip (ctl, ip));
   for (t=results;t;t=t->next) {
-    //printf ("comparing: %s\n",  strlongip (&t->ip));
-    if (addrcmp ( (void *)ip, (void*) &t->ip, af) == 0)
+    //printf ("comparing: %s\n",  strlongip (ctl, &t->ip));
+    if (addrcmp ( (void *)ip, (void*) &t->ip, ctl->af) == 0)
       return t;
   }
 
   return NULL;
 }
 
-static void set_sockaddr_ip (struct sockaddr_storage *sa, ip_t *ip)
+static void set_sockaddr_ip (struct mtr_ctl *ctl, struct sockaddr_storage *sa, ip_t *ip)
 {
   struct sockaddr_in *sa_in;
   struct sockaddr_in6 *sa_in6;
 
   memset (sa, 0, sizeof (struct sockaddr_storage));
-  switch (af) {
+  switch (ctl->af) {
   case AF_INET:
     sa_in = (struct sockaddr_in *) sa;
-    sa_in->sin_family = af;
-    addrcpy ((void *) &sa_in->sin_addr, (void*) ip, af);
+    sa_in->sin_family = ctl->af;
+    addrcpy ((void *) &sa_in->sin_addr, (void*) ip, ctl->af);
     break;
   case AF_INET6:
     sa_in6 = (struct sockaddr_in6 *) sa;
-    sa_in6->sin6_family = af;
-    addrcpy ((void *) &sa_in6->sin6_addr,  (void*)ip, af);
+    sa_in6->sin6_family = ctl->af;
+    addrcpy ((void *) &sa_in6->sin6_addr,  (void*)ip, ctl->af);
     break;
   }
 }
@@ -163,7 +157,7 @@ static void handle_sigchld(int sig) {
 }
 #endif
 
-extern void dns_open(void)
+extern void dns_open(struct mtr_ctl *ctl)
 {
   int pid; 
  
@@ -218,17 +212,17 @@ extern void dns_open(void)
 
         buf[strlen(buf)-1] = 0; // chomp newline.
 
-        longipstr (buf, &host, af);
-        //printf ("resolving %s (%d)\n", strlongip (&host), af);
-        set_sockaddr_ip (&sa, &host);
-        salen = (af == AF_INET)?sizeof(struct sockaddr_in):
+        longipstr (buf, &host, ctl->af);
+        //printf ("resolving %s (%d)\n", strlongip (ctl, &host), ctl->af);
+        set_sockaddr_ip (ctl, &sa, &host);
+        salen = (ctl->af == AF_INET)?sizeof(struct sockaddr_in):
                                 sizeof(struct sockaddr_in6);
 
         rv = getnameinfo  ((struct sockaddr *) &sa, salen, 
 			       hostname, sizeof (hostname), NULL, 0, 0);
         if (rv == 0) {
-          sprintf (result, "%s %s\n", strlongip (&host), hostname);
-          //printf ("resolved: %s -> %s (%d)\n", strlongip (&host), hostname, rv);
+          sprintf (result, "%s %s\n", strlongip (ctl, &host), hostname);
+          //printf ("resolved: %s -> %s (%d)\n", strlongip (ctl, &host), hostname, rv);
           rv = write (fromdns[1], result, strlen (result));
           if (rv < 0)
             error (0, errno, "write DNS lookup result");
@@ -257,7 +251,7 @@ extern int dns_waitfd (void)
 }
 
 
-extern void dns_ack(void)
+extern void dns_ack(struct mtr_ctl *ctl)
 {
   char buf[2048], host[NI_MAXHOST], name[NI_MAXHOST];  
   ip_t hostip; 
@@ -266,8 +260,8 @@ extern void dns_ack(void)
   while ( fgets (buf, sizeof (buf),  fromdnsfp )) {
     sscanf (buf, "%s %s", host, name);
 
-    longipstr (host, &hostip, af);
-    r = findip (&hostip);
+    longipstr (host, &hostip, ctl->af);
+    r = findip (ctl, &hostip);
     if (r)  
       r->name = strdup (name);
     else 
@@ -292,19 +286,19 @@ extern void dns_ack6(void)
 #endif
 
 
-extern char *dns_lookup2(ip_t * ip)
+extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
 {
   struct dns_results *r;
   char buf[INET6_ADDRSTRLEN + 1];
   int rv;
    
-  r = findip (ip);
+  r = findip (ctl, ip);
   if (r) {
      // we've got a result. 
      if (r->name) 
         return r->name;
      else
-        return strlongip (ip);
+        return strlongip (ctl, ip);
   } else {
      r = malloc (sizeof (struct dns_results));
      //r->ip = *ip;
@@ -313,34 +307,35 @@ extern char *dns_lookup2(ip_t * ip)
      r->next = results;
      results = r;
 
-     //printf ("lookup: %s\n", strlongip (ip));
+     //printf ("lookup: %s\n", strlongip (ctl, ip));
 
-     sprintf (buf, "%s\n", strlongip (ip));
+     sprintf (buf, "%s\n", strlongip (ctl, ip));
      rv = write  (todns[1], buf, strlen (buf));
      if (rv < 0)
        error (0, errno, "couldn't write to resolver process");
   }
-  return strlongip (ip);
+  return strlongip (ctl, ip);
 }
 
 
-extern char *dns_lookup(ip_t * ip)
+extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
 {
   char *t;
 
-  if (!dns) return NULL;
-  t = dns_lookup2(ip);
-  return (t && use_dns) ? t : NULL;
+  if (!ctl->dns)
+    return NULL;
+  t = dns_lookup2(ctl, ip);
+  return t;
 }
 
 
 #if 0
-extern char *strlongip(ip_t * ip)
+extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
 {
 #ifdef ENABLE_IPV6
   static char addrstr[INET6_ADDRSTRLEN];
 
-  return (char *) inet_ntop( af, ip, addrstr, sizeof addrstr );
+  return (char *) inet_ntop( ctl->af, ip, addrstr, sizeof addrstr );
 #else
   return inet_ntoa( *ip );
 #endif

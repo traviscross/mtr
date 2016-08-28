@@ -18,8 +18,8 @@
 
 /*  Prototypes for gtk.c  */
 extern int gtk_detect(int *argc, char ***argv);
-extern void gtk_open(void);
+extern void gtk_open(struct mtr_ctl *ctl);
 extern void gtk_close(void);
-extern void gtk_redraw(void);
+extern void gtk_redraw(struct mtr_ctl *ctl);
 extern int gtk_keyaction(void);
-extern void gtk_loop(void);
+extern void gtk_loop(struct mtr_ctl *ctl);

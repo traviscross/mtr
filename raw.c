@@ -35,11 +35,11 @@
 
 
 #if 0
-static char *addr_to_str(ip_t addr)
+static char *addr_to_str(struct mtr_ctl *ctl, ip_t addr)
 {
   static char buf[20];
 
-  sprintf (buf, "%s", strlongip( &addr ));
+  sprintf (buf, "%s", strlongip(ctl, &addr ));
   return buf;
 }
 #endif
@@ -52,13 +52,13 @@ extern void raw_rawxmit (int host, int seq)
 }
 
 // Log an echo reply, or a "pong"
-extern void raw_rawping (int host, int msec, int seq)
+extern void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
 {
   static int havename[MaxHost];
   char *name;
 
-  if (dns && !havename[host]) {
-    name = dns_lookup2(net_addr(host));
+  if (ctl->dns && !havename[host]) {
+    name = dns_lookup2(ctl, net_addr(host));
     if (name) {
       havename[host]++;
       printf ("d %d %s\n", host, name);
@@ -69,8 +69,8 @@ extern void raw_rawping (int host, int msec, int seq)
 }
 
 
-extern void raw_rawhost (int host, ip_t * ip_addr)
+extern void raw_rawhost (struct mtr_ctl *ctl, int host, ip_t * ip_addr)
 {
-  printf ("h %d %s\n", host, strlongip( ip_addr ));
+  printf ("h %d %s\n", host, strlongip(ctl, ip_addr));
   fflush (stdout); 
 }

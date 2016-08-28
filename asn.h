@@ -21,6 +21,6 @@ extern int ipinfo_max;
 extern int iiwidth_len;
 extern void asn_open();
 extern void asn_close();
-extern char *fmt_ipinfo(ip_t *addr);
+extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr);
 extern int get_iiwidth(void);
 extern int is_printii(void);

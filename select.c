@@ -40,20 +40,13 @@
 #include "asn.h"
 #include "display.h"
 
-extern int Interactive;
-extern int MaxPing;
-extern int ForceMaxPing;
-extern float WaitTime;
-extern float GraceTime;
-extern int mtrtype;
-
 static double dnsinterval;
 static struct timeval intervaltime;
 int display_offset = 0;
 
-#define GRACETIME (GraceTime * 1000*1000)
+#define GRACETIME (ctl->GraceTime * 1000*1000)
 
-extern void select_loop(void) {
+extern void select_loop(struct mtr_ctl *ctl){
   fd_set readfd;
   fd_set writefd;
   int anyset = 0;
@@ -75,7 +68,7 @@ extern void select_loop(void) {
   gettimeofday(&lasttime, NULL);
 
   while(1) {
-    dt = calc_deltatime (WaitTime);
+    dt = calc_deltatime (ctl->WaitTime);
     intervaltime.tv_sec  = dt / 1000000;
     intervaltime.tv_usec = dt % 1000000;
 
@@ -84,13 +77,13 @@ extern void select_loop(void) {
 
     maxfd = 0;
 
-    if(Interactive) {
+    if(ctl->Interactive) {
       FD_SET(0, &readfd);
       maxfd = 1;
     }
 
 #ifdef ENABLE_IPV6
-    if (dns) {
+    if (ctl->dns) {
       dnsfd6 = dns_waitfd6();
       if (dnsfd6 >= 0) {
         FD_SET(dnsfd6, &readfd);
@@ -101,7 +94,7 @@ extern void select_loop(void) {
     } else
       dnsfd6 = 0;
 #endif
-    if (dns) {
+    if (ctl->dns) {
       dnsfd = dns_waitfd();
       FD_SET(dnsfd, &readfd);
       if(dnsfd >= maxfd) maxfd = dnsfd + 1;
@@ -112,7 +105,7 @@ extern void select_loop(void) {
     FD_SET(netfd, &readfd);
     if(netfd >= maxfd) maxfd = netfd + 1;
 
-    if (mtrtype == IPPROTO_TCP)
+    if (ctl->mtrtype == IPPROTO_TCP)
       net_add_fds(&writefd, &maxfd);
 
     do {
@@ -128,7 +121,7 @@ extern void select_loop(void) {
 	rv = select(maxfd, (void *)&readfd, &writefd, NULL, &selecttime);
 
       } else {
-	if(Interactive) display_redraw();
+	if(ctl->Interactive) display_redraw(ctl);
 
 	gettimeofday(&thistime, NULL);
 
@@ -138,13 +131,13 @@ extern void select_loop(void) {
 	  lasttime = thistime;
 
 	  if (!graceperiod) {
-	    if (NumPing >= MaxPing && (!Interactive || ForceMaxPing)) {
+	    if (NumPing >= ctl->MaxPing && (!ctl->Interactive || ctl->ForceMaxPing)) {
 	      graceperiod = 1;
 	      startgrace = thistime;
 	    }
 
 	    /* do not send out batch when we've already initiated grace period */
-	    if (!graceperiod && net_send_batch())
+	    if (!graceperiod && net_send_batch(ctl))
 	      NumPing++;
 	  }
 	}
@@ -169,7 +162,7 @@ extern void select_loop(void) {
 	  selecttime.tv_usec += 1000000;
 	}
 
-	if (dns) {
+	if (ctl->dns) {
 	  if ((selecttime.tv_sec > (time_t)dnsinterval) ||
 	      ((selecttime.tv_sec == (time_t)dnsinterval) &&
 	       (selecttime.tv_usec > ((time_t)(dnsinterval * 1000000) % 1000000)))) {
@@ -189,41 +182,41 @@ extern void select_loop(void) {
 
     /*  Have we got new packets back?  */
     if(FD_ISSET(netfd, &readfd)) {
-      net_process_return();
+      net_process_return(ctl);
       anyset = 1;
     }
 
-    if (dns) {
+    if (ctl->dns) {
       /* Handle any pending resolver events */
-      dnsinterval = WaitTime;
+      dnsinterval = ctl->WaitTime;
     }
 
     /*  Have we finished a nameservice lookup?  */
 #ifdef ENABLE_IPV6
-    if(dns && dnsfd6 && FD_ISSET(dnsfd6, &readfd)) {
+    if(ctl->dns && dnsfd6 && FD_ISSET(dnsfd6, &readfd)) {
       dns_ack6();
       anyset = 1;
     }
 #endif
-    if(dns && dnsfd && FD_ISSET(dnsfd, &readfd)) {
-      dns_ack();
+    if(ctl->dns && dnsfd && FD_ISSET(dnsfd, &readfd)) {
+      dns_ack(ctl);
       anyset = 1;
     }
 
     /*  Has a key been pressed?  */
     if(FD_ISSET(0, &readfd)) {
-      switch (display_keyaction()) {
+      switch (display_keyaction(ctl)) {
       case ActionQuit: 
 	return;
 	break;
       case ActionReset:
-	net_reset();
+	net_reset(ctl);
 	break;
       case ActionDisplay:
-        display_mode = (display_mode + 1) % DisplayModeMAX;
+        ctl->display_mode = (ctl->display_mode + 1) % DisplayModeMAX;
 	break;
       case ActionClear:
-	display_clear();
+	display_clear(ctl);
 	break;
       case ActionPause:
 	paused=1;
@@ -232,13 +225,13 @@ extern void select_loop(void) {
 	paused=0;
 	break;
       case ActionMPLS:
-	   enablempls = !enablempls;
-	   display_clear();
+	   ctl->enablempls = !ctl->enablempls;
+	   display_clear(ctl);
 	break;
       case ActionDNS:
-	if (dns) {
-	  use_dns = !use_dns;
-	  display_clear();
+	if (ctl->dns) {
+	  ctl->use_dns = !ctl->use_dns;
+	  display_clear(ctl);
 	}
 	break;
 #ifdef HAVE_IPINFO
@@ -266,8 +259,8 @@ extern void select_loop(void) {
     }
 
     /* Check for activity on open sockets */
-    if (mtrtype == IPPROTO_TCP)
-      net_process_fds(&writefd);
+    if (ctl->mtrtype == IPPROTO_TCP)
+      net_process_fds(ctl, &writefd);
   }
   return;
 }
