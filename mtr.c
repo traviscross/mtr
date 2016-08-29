@@ -631,6 +631,8 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
       error(EXIT_FAILURE, 0, "SO_MARK not enabled");
       break;
 #endif
+    default:
+      usage(stderr);
     }
   }
 
