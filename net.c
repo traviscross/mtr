@@ -35,6 +35,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <errno.h>
 #include <string.h>
@@ -60,26 +61,26 @@ static void decodempls(int, char *, struct mplslen *, int);
     the fields have different names between, for instance, Linux and 
     Solaris  */
 struct ICMPHeader {
-  uint8 type;
-  uint8 code;
-  uint16 checksum;
-  uint16 id;
-  uint16 sequence;
+  uint8_t type;
+  uint8_t code;
+  uint16_t checksum;
+  uint16_t id;
+  uint16_t sequence;
 };
 
 /* Structure of an UDP header.  */
 struct UDPHeader {
-  uint16 srcport;
-  uint16 dstport;
-  uint16 length;
-  uint16 checksum;
+  uint16_t srcport;
+  uint16_t dstport;
+  uint16_t length;
+  uint16_t checksum;
 };
 
 /* Structure of an TCP header, as far as we need it.  */
 struct TCPHeader {
-  uint16 srcport;
-  uint16 dstport;
-  uint32 seq;
+  uint16_t srcport;
+  uint16_t dstport;
+  uint32_t seq;
 };
 
 // This ifdef is unnecessary. But it should trigger errors if I forget
@@ -88,33 +89,33 @@ struct TCPHeader {
 #ifdef HAS_SCTP 
 /* Structure of an SCTP header */
 struct SCTPHeader {
-  uint16 srcport;
-  uint16 dstport;
-  uint32 veri_tag;
+  uint16_t srcport;
+  uint16_t dstport;
+  uint32_t veri_tag;
 };
 #endif
 
 /* Structure of an IPv4 UDP pseudoheader.  */
 struct UDPv4PHeader {
-  uint32 saddr;
-  uint32 daddr;
-  uint8 zero;
-  uint8 protocol;
-  uint16 len;
+  uint32_t saddr;
+  uint32_t daddr;
+  uint8_t zero;
+  uint8_t protocol;
+  uint16_t len;
 };
 
 /*  Structure of an IP header.  */
 struct IPHeader {
-  uint8 version;
-  uint8 tos;
-  uint16 len;
-  uint16 id;
-  uint16 frag;
-  uint8 ttl;
-  uint8 protocol;
-  uint16 check;
-  uint32 saddr;
-  uint32 daddr;
+  uint8_t version;
+  uint8_t tos;
+  uint16_t len;
+  uint16_t id;
+  uint16_t frag;
+  uint8_t ttl;
+  uint8_t protocol;
+  uint16_t check;
+  uint32_t saddr;
+  uint32_t daddr;
 };
   
 
@@ -228,9 +229,9 @@ extern int calc_deltatime (float waittime)
 
 static int checksum(void *data, int sz) 
 {
-  uint16 *ch;
-  uint32 sum;
-  uint16 odd;
+  uint16_t *ch;
+  uint32_t sum;
+  uint16_t odd;
 
   sum = 0;
   ch = data;
@@ -569,7 +570,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   struct ICMPHeader *icmp = NULL;
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
-  uint16 checksum_result;
+  uint16_t checksum_result;
 
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
@@ -656,7 +657,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
     udp = (struct UDPHeader *)(packet + iphsize);
     udp->checksum  = 0;
     if (!ctl->localport) {
-      ctl->localport = (uint16)getpid();
+      ctl->localport = (uint16_t)getpid();
       if (ctl->localport < MinPort)
         ctl->localport += MinPort;
     }
@@ -931,7 +932,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
   switch ( ctl->mtrtype ) {
   case IPPROTO_ICMP:
     if (header->type == echoreplytype) {
-      if(header->id != (uint16)getpid())
+      if(header->id != (uint16_t)getpid())
         return;
 
       seq_num = header->sequence;
@@ -968,7 +969,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
 #endif
       }
   
-      if (header->id != (uint16)getpid())
+      if (header->id != (uint16_t)getpid())
         return;
   
       seq_num = header->sequence;
@@ -1008,7 +1009,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
         break;
 #endif
       }
-      if (ntohs(udpheader->srcport) != (uint16)ctl->localport)
+      if (ntohs(udpheader->srcport) != (uint16_t)ctl->localport)
         return;
 
       if (ctl->remoteport && ctl->remoteport == ntohs(udpheader->dstport)) {

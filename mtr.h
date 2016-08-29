@@ -25,40 +25,6 @@
 #include <arpa/inet.h>
 
 /* Typedefs */
-
-/*  Find the proper type for 8 bits  */
-#if SIZEOF_UNSIGNED_CHAR == 1
-typedef unsigned char uint8;
-#else
-#error No 8 bit type
-#endif
-
-/*  Find the proper type for 16 bits  */
-#if SIZEOF_UNSIGNED_SHORT == 2
-typedef unsigned short uint16;
-#elif SIZEOF_UNSIGNED_INT == 2
-typedef unsigned int uint16;
-#elif SIZEOF_UNSIGNED_LONG == 2
-typedef unsigned long uint16;
-#else
-#error No 16 bit type
-#endif
-
-/*  Find the proper type for 32 bits  */
-#if SIZEOF_UNSIGNED_SHORT == 4
-typedef unsigned short uint32;
-#elif SIZEOF_UNSIGNED_INT == 4
-typedef unsigned int uint32;
-#elif SIZEOF_UNSIGNED_LONG == 4
-typedef unsigned long uint32;
-#else
-#error No 32 bit type
-#endif
-
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned long dword;
-
 #ifdef ENABLE_IPV6
 typedef struct in6_addr ip_t;
 #else
