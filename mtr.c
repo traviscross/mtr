@@ -390,7 +390,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
 #ifdef SO_MARK
     { "mark",           1, NULL, 'M' }, /* use SO_MARK */
 #endif
-    { 0, 0, 0, 0 }
+    { NULL, 0, NULL, 0 }
   };
   static const size_t num_options = sizeof(long_options) / sizeof(struct option);
   char short_options[num_options * 2];
