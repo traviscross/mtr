@@ -73,6 +73,7 @@ typedef struct in_addr ip_t;
 
 /* stuff used by display such as report, curses... */
 #define MAXFLD 20		/* max stats fields to display */
+#define FLD_INDEX_SZ 256
 
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
@@ -107,7 +108,7 @@ struct mtr_ctl {
   int localport;		/* source port for UDP tracing */
   int tcp_timeout;		/* timeout for TCP connections */
   unsigned char fld_active[2 * MAXFLD];	/* SO_MARK to set for ping packet*/
-  int fld_index[256];		/* default display field (defined by key in net.h) and order */
+  int fld_index[FLD_INDEX_SZ];	/* default display field (defined by key in net.h) and order */
   char available_options[MAXFLD];
   int display_offset;		/* only used in text mode */
   void *gtk_data;		/* pointer to hold arbitrary gtk data */

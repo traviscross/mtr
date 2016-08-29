@@ -311,8 +311,7 @@ static void init_fld_options (struct mtr_ctl *ctl)
 {
   int i;
 
-  for (i=0;i < 256;i++)
-    ctl->fld_index[i] = -1;
+  memset(ctl->fld_index, -1, FLD_INDEX_SZ);
 
   for (i=0;data_fields[i].key != 0;i++) {
     ctl->available_options[i] = data_fields[i].key;
