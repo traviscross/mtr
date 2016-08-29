@@ -154,7 +154,7 @@ append_to_names(const char* item) {
   if (name == NULL) {
     error(EXIT_FAILURE, errno, "memory allocation failure");
   }
-  name->name = strdup(item);
+  name->name = xstrdup(item);
   name->next = names;
   names = name;
 }

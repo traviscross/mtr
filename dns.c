@@ -239,7 +239,7 @@ extern void dns_ack(struct mtr_ctl *ctl)
     longipstr (host, &hostip, ctl->af);
     r = findip (ctl, &hostip);
     if (r)  
-      r->name = strdup (name);
+      r->name = xstrdup (name);
     else 
       error (0, 0, "dns_ack: Couldn't find host %s", host);
   }

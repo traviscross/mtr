@@ -90,7 +90,7 @@ static char *ipinfo_lookup(const char *domain) {
     if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
         if (iihash)
             DEB_syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
-        return (iihash)?strdup(UNKN):UNKN;
+        return (iihash) ? xstrdup(UNKN) : UNKN;
     }
 
     pt = answer + sizeof(HEADER);
@@ -251,7 +251,7 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
         if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
             DEB_syslog(LOG_INFO, "Looked up: %s", key);
             if (iihash)
-                if ((item.key = strdup(key))) {
+                if ((item.key = xstrdup(key))) {
                     item.data = items;
                     hsearch(item, ENTER);
                     DEB_syslog(LOG_INFO, "Insert into hash: %s", key);

@@ -97,3 +97,15 @@ extern void *xmalloc(const size_t size)
     error(EXIT_FAILURE, errno, "cannot allocate %zu bytes", size);
   return ret;
 }
+
+extern char *xstrdup(const char *str)
+{
+  char *ret;
+
+  if (!str)
+    return NULL;
+  ret = strdup(str);
+  if (!ret)
+    error(EXIT_FAILURE, errno, "cannot duplicate string: %s", str);
+  return ret;
+}

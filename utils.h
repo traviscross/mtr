@@ -34,3 +34,4 @@ static inline void xstrncpy(char *dest, const char *src, size_t n)
 }
 
 extern void *xmalloc(const size_t size);
+extern char *xstrdup(const char *str);
