@@ -22,9 +22,9 @@
 
 /*  Prototypes for dns.c  */
 
-extern void dns_open(void);
+extern void dns_open(struct mtr_ctl *ctl);
 extern int dns_waitfd(void);
-extern void dns_ack(void);
+extern void dns_ack(struct mtr_ctl *ctl);
 #ifdef ENABLE_IPV6
 extern int dns_waitfd6(void);
 extern void dns_ack6(void);
@@ -45,10 +45,10 @@ struct __res_state_ext {
 #endif
 #endif
 
-extern char *dns_lookup(ip_t * address);
-extern char *dns_lookup2(ip_t * address);
+extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * address);
+extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * address);
 extern struct hostent * dns_forward(const char *name);
-extern char *strlongip(ip_t * ip);
+extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip);
 
 extern void addr2ip6arpa( ip_t * ip, char * buf );
 extern struct hostent *addr2host( const char *addr, int type );

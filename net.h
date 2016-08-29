@@ -26,26 +26,27 @@
 #include <netinet/icmp6.h>
 #endif
 
+#include "mtr.h"
+
 extern int net_preopen(void);
-extern int net_selectsocket(void);
-extern int net_open(struct hostent *host);
-extern void net_reopen(struct hostent *address);
-extern int net_set_interfaceaddress (char *InterfaceAddress); 
-extern void net_reset(void);
+extern int net_selectsocket(struct mtr_ctl *ctl);
+extern int net_open(struct mtr_ctl *ctl, struct hostent *host);
+extern void net_reopen(struct mtr_ctl *ctl, struct hostent *address);
+extern int net_set_interfaceaddress (struct mtr_ctl *ctl);
+extern void net_reset(struct mtr_ctl *ctl);
 extern void net_close(void);
 extern int net_waitfd(void);
-extern void net_process_return(void);
-extern void net_harvest_fds(void);
+extern void net_process_return(struct mtr_ctl *ctl);
+extern void net_harvest_fds(struct mtr_ctl *ctl);
 
-extern int net_max(void);
-extern int net_min(void);
+extern int net_max(struct mtr_ctl *ctl);
+extern int net_min(struct mtr_ctl *ctl);
 extern int net_last(int at);
 extern ip_t * net_addr(int at);
 extern void * net_mpls(int at);
 extern void * net_mplss(int, int);
 extern int net_loss(int at);
 extern int net_drop(int at);
-extern int net_last(int at);
 extern int net_best(int at);
 extern int net_worst(int at);
 extern int net_avg(int at);
@@ -58,7 +59,7 @@ extern int net_jinta(int at);
 extern ip_t * net_addrs(int at, int i);
 extern char *net_localaddr(void); 
 
-extern int net_send_batch(void);
+extern int net_send_batch(struct mtr_ctl *ctl);
 extern void net_end_transit(void);
 
 extern int calc_deltatime (float WaitTime);
@@ -77,7 +78,7 @@ extern int addrcmp( char * a, char * b, int af );
 extern void addrcpy( char * a, char * b, int af );
 
 extern void net_add_fds(fd_set *writefd, int *maxfd);
-extern void net_process_fds(fd_set *writefd);
+extern void net_process_fds(struct mtr_ctl *ctl, fd_set *writefd);
 
 #define MAXPATH 8
 #define MaxHost 256
@@ -89,9 +90,6 @@ extern void net_process_fds(fd_set *writefd);
 #define MAXPACKET 4470		/* largest test packet size */
 #define MINPACKET 28		/* 20 bytes IP header and 8 bytes ICMP or UDP */
 #define MAXLABELS 8 		/* http://kb.juniper.net/KB2190 (+ 3 just in case) */
-
-/* stuff used by display such as report, curses... */
-#define MAXFLD 20		/* max stats fields to display */
 
 #if defined (__STDC__) && __STDC__
 #define CONST const
@@ -114,14 +112,6 @@ struct fields {
 };
 
 extern struct fields data_fields[MAXFLD];
-
-
-/* keys: the value in the array is the index number in data_fields[] */
-extern int fld_index[];
-extern unsigned char fld_active[];
-extern char available_options[];
-
-ip_t unspec_addr;
 
 /* MPLS label object */
 struct mplslen {

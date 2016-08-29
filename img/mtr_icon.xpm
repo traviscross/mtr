@@ -1,5 +1,5 @@
 /* XPM */
-static char * mtr_icon[] = {
+static const char * mtr_icon[] = {
 "48 48 131 2",
 "  	c #000000",
 ". 	c #020204",

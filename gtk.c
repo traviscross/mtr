@@ -42,31 +42,27 @@
 static gint gtk_ping(gpointer data);
 static gint Copy_activate(GtkWidget *widget, gpointer data);
 static gint NewDestination_activate(GtkWidget *widget, gpointer data);
-static gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event);
+static gboolean ReportTreeView_clicked(GtkWidget *Tree, GdkEventButton *event, gpointer data);
 static gchar* getSelectedHost(GtkTreePath *path);
 
-
-
-extern char *Hostname;
-extern float WaitTime;
-extern int af;
 static int ping_timeout_timer;
 static GtkWidget *Pause_Button;
 static GtkWidget *Entry;
 static GtkWidget *main_window;
 
-static void gtk_add_ping_timeout (void)
+static void gtk_add_ping_timeout (struct mtr_ctl *ctl)
 {
   if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
     return;
   }
   int dt;
-  dt = calc_deltatime (WaitTime);
-  ping_timeout_timer = g_timeout_add(dt / 1000, gtk_ping, NULL);
+  dt = calc_deltatime (ctl->WaitTime);
+  gtk_redraw(ctl);
+  ping_timeout_timer = g_timeout_add(dt / 1000, gtk_ping, ctl);
 }
 
 
-static void gtk_do_init(int *argc, char ***argv) 
+static void gtk_do_init(int *argc, char ***argv)
 {
   static int done = 0;
 
@@ -78,7 +74,7 @@ static void gtk_do_init(int *argc, char ***argv)
 }
 
 
-extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv) 
+extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv)
 {
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
@@ -91,7 +87,7 @@ extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv)
 }
 
 
-static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data) 
+static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data)
 {
   gtk_main_quit();
 
@@ -99,33 +95,37 @@ static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data)
 }
 
 
-static gint Restart_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint Restart_clicked(UNUSED GtkWidget *Button, gpointer data)
 {
-  net_reset();
-  gtk_redraw();
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
+  net_reset(ctl);
+  gtk_redraw(ctl);
 
   return FALSE;
 }
 
 
-static gint Pause_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint Pause_clicked(UNUSED GtkWidget *Button, gpointer data)
 {
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
   static int paused = 0;
 
   if (paused) {
-    gtk_add_ping_timeout ();
+    gtk_add_ping_timeout (ctl);
   } else {
     g_source_remove (ping_timeout_timer);
   }
   paused = ! paused;
-  gtk_redraw();
+  gtk_redraw(ctl);
 
   return FALSE;
 }
 
-static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data) 
+static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
 {
-  gchar *authors[] = {
+  static const gchar *authors[] = {
         "Matt Kimball <mkimball@xmission.com>",
         "Roger Wolff <R.E.Wolff@BitWizard.nl>",
         "Bohdan Vlasyuk <bohdan@cec.vstu.vinnica.ua>",
@@ -198,24 +198,29 @@ static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
  * What's the problem with this? (-> "I don't think so)
  */
 
-static gint WaitTime_changed(UNUSED GtkAdjustment *Adj, UNUSED GtkWidget *Button) 
+static gint WaitTime_changed(UNUSED GtkAdjustment *Adj,
+			     GtkWidget *data)
 {
-  WaitTime = gtk_spin_button_get_value(GTK_SPIN_BUTTON(Button));
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+  GtkWidget *Button = (GtkWidget *)ctl->gtk_data;
+
+  ctl->WaitTime = gtk_spin_button_get_value(GTK_SPIN_BUTTON(Button));
   g_source_remove (ping_timeout_timer);
-  gtk_add_ping_timeout ();
-  gtk_redraw();
+  gtk_add_ping_timeout (ctl);
+  gtk_redraw(ctl);
 
   return FALSE;
 }
 
 
-static gint Host_activate(GtkWidget *entry, UNUSED gpointer data) 
+static gint Host_activate(GtkWidget *entry, gpointer data)
 {
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
   struct hostent * addr;
 
   addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
   if(addr) {
-    net_reopen(addr);
+    net_reopen(ctl, addr);
     /* If we are "Paused" at this point it is usually because someone
        entered a non-existing host. Therefore do the go-ahead... */
     gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( Pause_Button ) , 0);
@@ -230,7 +235,7 @@ static gint Host_activate(GtkWidget *entry, UNUSED gpointer data)
 
 
 
-static void Toolbar_fill(GtkWidget *Toolbar) 
+static void Toolbar_fill(struct mtr_ctl *ctl, GtkWidget *Toolbar)
 {
   GtkWidget *Button;
   GtkWidget *Label;
@@ -249,7 +254,7 @@ static void Toolbar_fill(GtkWidget *Toolbar)
   Button = gtk_button_new_with_mnemonic("_Restart");
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
   g_signal_connect(GTK_OBJECT(Button), "clicked",
-		     GTK_SIGNAL_FUNC(Restart_clicked), NULL);
+		     GTK_SIGNAL_FUNC(Restart_clicked), ctl);
 
   Pause_Button = gtk_toggle_button_new_with_mnemonic("_Pause");
   gtk_box_pack_end(GTK_BOX(Toolbar), Pause_Button, FALSE, FALSE, 0);
@@ -257,7 +262,7 @@ static void Toolbar_fill(GtkWidget *Toolbar)
                     GTK_SIGNAL_FUNC(Pause_clicked), NULL);
 
   /* allow root only to set zero delay */
-  Adjustment = (GtkAdjustment *)gtk_adjustment_new(WaitTime,
+  Adjustment = (GtkAdjustment *)gtk_adjustment_new(ctl->WaitTime,
                                                   getuid()==0 ? 0.01:1.00,
                                                  999.99,
                                                   1.0, 10.0,
@@ -268,16 +273,17 @@ static void Toolbar_fill(GtkWidget *Toolbar)
   /* gtk_spin_button_set_set_update_policy(GTK_SPIN_BUTTON(Button),
      GTK_UPDATE_IF_VALID); */
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
+  ctl->gtk_data = Button;
   g_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
-                    GTK_SIGNAL_FUNC(WaitTime_changed), Button);
+                    GTK_SIGNAL_FUNC(WaitTime_changed), ctl);
  
   Label = gtk_label_new_with_mnemonic("_Hostname:");
   gtk_box_pack_start(GTK_BOX(Toolbar), Label, FALSE, FALSE, 0);
 
   Entry = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(Entry), Hostname);
+  gtk_entry_set_text(GTK_ENTRY(Entry), ctl->Hostname);
   g_signal_connect(GTK_OBJECT(Entry), "activate",
-		     GTK_SIGNAL_FUNC(Host_activate), NULL);
+		     GTK_SIGNAL_FUNC(Host_activate), ctl);
   gtk_box_pack_start(GTK_BOX(Toolbar), Entry, TRUE, TRUE, 0);
   
   gtk_label_set_mnemonic_widget(GTK_LABEL(Label), Entry);
@@ -337,7 +343,7 @@ static void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
   g_object_set(cell, "text", text, NULL);
 }
 
-static void TreeViewCreate(void)
+static void TreeViewCreate(struct mtr_ctl *ctl)
 {
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
@@ -361,10 +367,10 @@ static void TreeViewCreate(void)
   ReportTreeView = gtk_tree_view_new_with_model(GTK_TREE_MODEL(ReportStore));
   
   g_signal_connect(GTK_OBJECT(ReportTreeView), "button_press_event", 
-  		    G_CALLBACK(ReportTreeView_clicked),NULL);
+  		    G_CALLBACK(ReportTreeView_clicked), ctl);
 
 #ifdef HAVE_IPINFO
-  if (is_printii()) {
+  if (is_printii(ctl)) {
     renderer = gtk_cell_renderer_text_new ();
     column = gtk_tree_view_column_new_with_attributes ("ASN",
       renderer,
@@ -460,19 +466,19 @@ static void TreeViewCreate(void)
 
 }
 
-static void update_tree_row(int row, GtkTreeIter *iter)
+static void update_tree_row(struct mtr_ctl *ctl, int row, GtkTreeIter *iter)
 {
   ip_t *addr;
   char str[256]="???", *name=str;
 
   addr = net_addr(row);
-  if (addrcmp( (void *) addr, (void *) &unspec_addr, af)) {
-    if ((name = dns_lookup(addr))) {
-      if (show_ips) {
-        snprintf(str, sizeof(str), "%s (%s)", name, strlongip(addr));
+  if (addrcmp( (void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+    if ((name = dns_lookup(ctl, addr))) {
+      if (ctl->show_ips) {
+        snprintf(str, sizeof(str), "%s (%s)", name, strlongip(ctl, addr));
         name = str;
       }
-    } else name = strlongip(addr);
+    } else name = strlongip(ctl, addr);
   }
 
   gtk_list_store_set(ReportStore, iter,
@@ -492,24 +498,24 @@ static void update_tree_row(int row, GtkTreeIter *iter)
 
     -1);
 #ifdef HAVE_IPINFO
-  if (is_printii())
-    gtk_list_store_set(ReportStore, iter, COL_ASN, fmt_ipinfo(addr), -1);
+  if (is_printii(ctl))
+    gtk_list_store_set(ReportStore, iter, COL_ASN, fmt_ipinfo(ctl, addr), -1);
 #endif
 }
 
-extern void gtk_redraw(void)
+extern void gtk_redraw(struct mtr_ctl *ctl)
 {
-  int max = net_max();
+  int max = net_max(ctl);
   
   GtkTreeIter iter;
-  int row = net_min();
+  int row = net_min(ctl);
   gboolean valid;
 
   valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(ReportStore), &iter);
 
   while(valid) {
     if(row < max) {
-      update_tree_row(row++, &iter);
+      update_tree_row(ctl, row++, &iter);
       valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(ReportStore), &iter);
     } else {
       valid = gtk_list_store_remove(ReportStore, &iter);
@@ -517,12 +523,12 @@ extern void gtk_redraw(void)
   }
   while(row < max) {
     gtk_list_store_append(ReportStore, &iter);
-    update_tree_row(row++, &iter);
+    update_tree_row(ctl, row++, &iter);
   }
 }
 
 
-static void Window_fill(GtkWidget *Window) 
+static void Window_fill(struct mtr_ctl *ctl, GtkWidget *Window)
 {
   GtkWidget *VBox;
   GtkWidget *Toolbar;
@@ -534,10 +540,10 @@ static void Window_fill(GtkWidget *Window)
   VBox = gtk_vbox_new(FALSE, 10);
 
   Toolbar = gtk_hbox_new(FALSE, 10);
-  Toolbar_fill(Toolbar);
+  Toolbar_fill(ctl, Toolbar);
   gtk_box_pack_start(GTK_BOX(VBox), Toolbar, FALSE, FALSE, 0);
   
-  TreeViewCreate();
+  TreeViewCreate(ctl);
   scroll = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll), GTK_SHADOW_IN);
@@ -548,7 +554,7 @@ static void Window_fill(GtkWidget *Window)
 }
 
 
-extern void gtk_open(void)
+extern void gtk_open(struct mtr_ctl *ctl)
 {
   GdkPixbuf *icon;
 
@@ -568,7 +574,7 @@ extern void gtk_open(void)
   
   g_set_application_name("My traceroute");
 
-  Window_fill(main_window);
+  Window_fill(ctl, main_window);
 
   g_signal_connect(GTK_OBJECT(main_window), "delete_event",
                      GTK_SIGNAL_FUNC(Window_destroy), NULL);
@@ -590,56 +596,64 @@ extern int gtk_keyaction(void)
 }
 
 
-static gint gtk_ping(UNUSED gpointer data) 
+static gint gtk_ping(gpointer data)
 {
-  gtk_redraw();
-  net_send_batch();
-  net_harvest_fds();
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
+  gtk_redraw(ctl);
+  net_send_batch(ctl);
+  net_harvest_fds(ctl);
   g_source_remove (ping_timeout_timer);
-  gtk_add_ping_timeout ();
+  gtk_add_ping_timeout (ctl);
   return TRUE;
 }
 
 
-static gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data) 
+static gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
 {
-  net_process_return();
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
+  net_process_return(ctl);
   return TRUE;
 }
 
 
-static gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
+static gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
 {
-  dns_ack();
-  gtk_redraw();
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
+  dns_ack(ctl);
+  gtk_redraw(ctl);
   return TRUE;
 }
 #ifdef ENABLE_IPV6
-static gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, UNUSED gpointer data)
+static gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
 {
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+
   dns_ack6();
-  gtk_redraw();
+  gtk_redraw(ctl);
   return TRUE;
 }
 #endif
 
 
-extern void gtk_loop(void) 
+extern void gtk_loop(struct mtr_ctl *ctl)
 {
   GIOChannel *net_iochannel, *dns_iochannel;
 
-  gtk_add_ping_timeout ();
+  gtk_add_ping_timeout (ctl);
   
   net_iochannel = g_io_channel_unix_new(net_waitfd());
-  g_io_add_watch(net_iochannel, G_IO_IN, gtk_net_data, NULL);
+  g_io_add_watch(net_iochannel, G_IO_IN, gtk_net_data, ctl);
 #ifdef ENABLE_IPV6
   if (dns_waitfd6() > 0) {
     dns_iochannel = g_io_channel_unix_new(dns_waitfd6());
-    g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data6, NULL);
+    g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data6, ctl);
   }
 #endif
   dns_iochannel = g_io_channel_unix_new(dns_waitfd());
-  g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, NULL);
+  g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, ctl);
 
   gtk_main();
 }
@@ -647,12 +661,14 @@ extern void gtk_loop(void)
 static gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 {
   gchar *hostname;
-  GtkTreePath *path = (GtkTreePath*)data;
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
+  GtkTreePath *path = (GtkTreePath *)ctl->gtk_data;
 	
   hostname = getSelectedHost(path);
   if (hostname) {
+    ctl->gtk_data = hostname;
     gtk_entry_set_text (GTK_ENTRY(Entry), hostname);
-    Host_activate(Entry, NULL);
+    Host_activate(Entry, ctl);
     g_free(hostname);
   }
   return TRUE;
@@ -693,12 +709,13 @@ static gchar *getSelectedHost(GtkTreePath *path)
 }
 
 
-static gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event)
+static gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event, gpointer data)
 {
   GtkWidget* popup_menu; 
   GtkWidget* copy_item; 
   GtkWidget* newdestination_item;
   GtkTreePath *path;
+  struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
   if (event->type != GDK_BUTTON_PRESS  || event->button != 3)
     return FALSE;
@@ -721,8 +738,9 @@ static gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *e
   g_signal_connect(GTK_OBJECT(copy_item),"activate",
                    GTK_SIGNAL_FUNC(Copy_activate), path);
 
+  ctl->gtk_data = path;
   g_signal_connect(GTK_OBJECT(newdestination_item),"activate",
-                   GTK_SIGNAL_FUNC(NewDestination_activate), path);
+                   GTK_SIGNAL_FUNC(NewDestination_activate), ctl);
               
   gtk_widget_show (copy_item); 
   gtk_widget_show (newdestination_item); 

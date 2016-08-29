@@ -1,4 +1,4 @@
-.TH MTR 8 "July 12, 2014" "mtr" "mtr"
+.TH MTR 8 "@VERSION@" "mtr" "System Administration"
 .SH NAME
 mtr \- a network diagnostic tool
 .SH SYNOPSIS
@@ -403,7 +403,12 @@ for this, especially combined with a short interval, will use up a lot
 of file descriptors.
 .TP
 .B \-M \fIMARK\fR, \fB\-\-mark \fIMARK
-MISSING
+Set the mark for each packet sent through this socket similar to the
+netfilter MARK target but socket-based.
+.I MARK
+is 32 unsigned integer.  See
+.BR socket (7)
+for full description of this socket option.
 .SH ENVIRONMENT
 .B mtr
 recognizes a few environment variables.
@@ -457,4 +462,5 @@ GitHub at:
 .SH "SEE ALSO"
 .BR traceroute (8),
 .BR ping (8),
+.BR socket (7),
 TCP/IP Illustrated (Stevens, ISBN 0201633469).

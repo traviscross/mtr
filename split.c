@@ -52,22 +52,18 @@
 #endif
 
 
-extern char *Hostname;
-extern int WaitTime;
-extern int af;
-
 /* There is 256 hops max in the IP header (coded with a byte) */
 #define MAX_LINE_COUNT 256
 #define MAX_LINE_SIZE  256
 
-char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
-int  LineCount;
+static char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
+static int  LineCount;
 
 
 #define DEBUG 0
 
 
-extern void split_redraw(void) 
+extern void split_redraw(struct mtr_ctl *ctl)
 {
   int   max;
   int   at;
@@ -83,7 +79,7 @@ extern void split_redraw(void)
    * If there is less lines than last time, we delete them
    * TEST THIS PLEASE
    */
-  max = net_max();
+  max = net_max(ctl);
   for (i=LineCount; i>max; i--) {
     printf("-%d\n", i);
     LineCount--;
@@ -94,12 +90,12 @@ extern void split_redraw(void)
    */
   for(at = 0; at < max; at++) {
     addr = net_addr(at);
-    if(addrcmp((void*)addr, (void*)&unspec_addr, af)) {
+    if(addrcmp((void*)addr, (void*)&ctl->unspec_addr, ctl->af)) {
       char str[256], *name;
-      if (!(name = dns_lookup(addr)))
-        name = strlongip(addr);
-      if (show_ips) {
-        snprintf(str, sizeof(str), "%s %s", name, strlongip(addr));
+      if (!(name = dns_lookup(ctl, addr)))
+        name = strlongip(ctl, addr);
+      if (ctl->show_ips) {
+        snprintf(str, sizeof(str), "%s %s", name, strlongip(ctl, addr));
         name = str;
       }
       /* May be we should test name's length */

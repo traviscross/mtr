@@ -65,56 +65,13 @@
 #endif
 
 
-int   DisplayMode;
-int   display_mode;
-int   Interactive = 1;
-int   PrintVersion = 0;
-int   PrintHelp = 0;
-int   MaxPing = 10;
-int   ForceMaxPing = 0;
-float WaitTime = 1.0;
-float GraceTime = 5.0;
-char *Hostname = NULL;
-char *InterfaceAddress = NULL;
-char  LocalHostname[128];
-int   dns = 1;
-int   show_ips = 0;
-int   enablempls = 0;
-int   cpacketsize = 64;          /* default packet size */
-int   bitpattern = 0;
-int   tos = 0;
-#ifdef SO_MARK
-int   mark = -1;
-#endif
-int   reportwide = 0;
-int af = DEFAULT_AF;
-int mtrtype = IPPROTO_ICMP;     /* Use ICMP as default packet type */
-
-                                /* begin ttl windows addByMin */
-int  fstTTL = 1;                /* default start at first hop */
-/*int maxTTL = MaxHost-1;  */     /* max you can go is 255 hops */
-int   maxTTL = 30;              /* inline with traceroute */
-                                /* end ttl window stuff. */
-int maxUnknown = 12;		/* stop send package */
-                                /*when larger than this count */
-int remoteport = 0;            /* for TCP tracing */
-int localport = 0;             /* for UDP tracing */
-int tcp_timeout = 10 * 1000000;     /* for TCP tracing */
-
-
-/* default display field(defined by key in net.h) and order */
-unsigned char fld_active[2*MAXFLD] = "LS NABWV";
-int           fld_index[256];
-char          available_options[MAXFLD];
-
-
 struct fields data_fields[MAXFLD] = {
   /* key, Remark, Header, Format, Width, CallBackFunc */
   {' ', "<sp>: Space between fields", " ",  " ",        1, &net_drop  },
   {'L', "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },
   {'D', "D: Dropped Packets",     "Drop",   " %4d",     5, &net_drop  },
-  {'R', "R: Received Packets",    "Rcv",    " %5N",     6, &net_returned},
-  {'S', "S: Sent Packets",        "Snt",    " %5N",     6, &net_xmit  },
+  {'R', "R: Received Packets",    "Rcv",    " %5d",     6, &net_returned},
+  {'S', "S: Sent Packets",        "Snt",    " %5d",     6, &net_xmit  },
   {'N', "N: Newest RTT(ms)",      "Last",   " %5.1f",   6, &net_last  },
   {'B', "B: Min/Best RTT(ms)",    "Best",   " %5.1f",   6, &net_best  },
   {'A', "A: Average RTT(ms)",     "Avg",    " %5.1f",   6, &net_avg   },
@@ -158,7 +115,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
   fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
-  fputs(" -M, --mark MARK            MARK text to use in missing hop\n", out);
+  fputs(" -M, --mark MARK            mark each sent packet\n", out);
   fputs(" -r, --report               output using report mode\n", out);
   fputs(" -w, --report-wide          output wide report\n", out);
   fputs(" -c, --report-cycles COUNT  set the number of pings sent\n", out);
@@ -188,9 +145,14 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+enum {
+  STRTO_INT,
+  STRTO_U32INT
+};
+
 /* Parse string, and return positive signed int. */
 static int
-strtoint_or_err (const char *str, const char *errmesg)
+strtonum_or_err (const char *str, const char *errmesg, const int type)
 {
   unsigned long int num;
   char *end = NULL;
@@ -198,9 +160,18 @@ strtoint_or_err (const char *str, const char *errmesg)
   if (str != NULL && *str != '\0') {
       errno = 0;
       num = strtoul (str, &end, 10);
-      if (errno == 0 && str != end && end != NULL && *end == '\0' &&
-          num < INT_MAX)
-	return num;
+      if (errno == 0 && str != end && end != NULL && *end == '\0') {
+        switch (type) {
+          case STRTO_INT:
+            if (num < INT_MAX)
+	      return num;
+            break;
+          case STRTO_U32INT:
+            if (num < UINT32_MAX)
+              return num;
+            break;
+	}
+      }
     }
   error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
   return 0;
@@ -336,22 +307,22 @@ unlock(FILE *f) {
 }
 
 
-static void init_fld_options (void)
+static void init_fld_options (struct mtr_ctl *ctl)
 {
   int i;
 
   for (i=0;i < 256;i++)
-    fld_index[i] = -1;
+    ctl->fld_index[i] = -1;
 
   for (i=0;data_fields[i].key != 0;i++) {
-    available_options[i] = data_fields[i].key;
-    fld_index[data_fields[i].key] = i;
+    ctl->available_options[i] = data_fields[i].key;
+    ctl->fld_index[data_fields[i].key] = i;
   }
-  available_options[i] = 0;
+  ctl->available_options[i] = 0;
 }
 
 
-static void parse_arg (int argc, char **argv)
+static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
 {
   int opt;
   int i;
@@ -446,104 +417,105 @@ static void parse_arg (int argc, char **argv)
 
     switch(opt) {
     case 'v':
-      PrintVersion = 1;
+      printf ("mtr " PACKAGE_VERSION "\n");
+      exit(EXIT_SUCCESS);
       break;
     case 'h':
-      PrintHelp = 1;
+      usage(stdout);
       break;
 
     case 'r':
-      DisplayMode = DisplayReport;
+      ctl->DisplayMode = DisplayReport;
       break;
     case 'w':
-      reportwide = 1;
-      DisplayMode = DisplayReport;
+      ctl->reportwide = 1;
+      ctl->DisplayMode = DisplayReport;
       break;
 #ifdef HAVE_NCURSES
     case 't':
-      DisplayMode = DisplayCurses;
+      ctl->DisplayMode = DisplayCurses;
       break;
 #endif
 #ifdef HAVE_GTK
     case 'g':
-      DisplayMode = DisplayGTK;
+      ctl->DisplayMode = DisplayGTK;
       break;
 #endif
     case 'p':                 /* BL */
-      DisplayMode = DisplaySplit;
+      ctl->DisplayMode = DisplaySplit;
       break;
     case 'l':
-      DisplayMode = DisplayRaw;
+      ctl->DisplayMode = DisplayRaw;
       break;
     case 'C':
-      DisplayMode = DisplayCSV;
+      ctl->DisplayMode = DisplayCSV;
       break;
     case 'j':
-      DisplayMode = DisplayJSON;
+      ctl->DisplayMode = DisplayJSON;
       break;
     case 'x':
-      DisplayMode = DisplayXML;
+      ctl->DisplayMode = DisplayXML;
       break;
 
     case OPT_DISPLAYMODE:
-      display_mode = strtoint_or_err(optarg, "invalid argument");
-      if ((DisplayModeMAX - 1) < display_mode)
+      ctl->display_mode = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if ((DisplayModeMAX - 1) < ctl->display_mode)
         error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
               DisplayModeDefault, (DisplayModeMAX - 1), optarg);
       break;
     case 'c':
-      MaxPing = strtoint_or_err(optarg, "invalid argument");
-      ForceMaxPing = 1;
+      ctl->MaxPing = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      ctl->ForceMaxPing = 1;
       break;
     case 's':
-      cpacketsize = strtoint_or_err(optarg, "invalid argument");
+      ctl->cpacketsize = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
       break;
     case 'a':
-      InterfaceAddress = optarg;
+      ctl->InterfaceAddress = optarg;
       break;
     case 'e':
-      enablempls = 1;
+      ctl->enablempls = 1;
       break;
     case 'n':
-      dns = 0;
+      ctl->dns = 0;
       break;
     case 'i':
-      WaitTime = strtofloat_or_err(optarg, "invalid argument");
-      if (WaitTime <= 0.0) {
+      ctl->WaitTime = strtofloat_or_err(optarg, "invalid argument");
+      if (ctl->WaitTime <= 0.0) {
         error(EXIT_FAILURE, 0, "wait time must be positive");
       }
-      if (getuid() != 0 && WaitTime < 1.0) {
+      if (getuid() != 0 && ctl->WaitTime < 1.0) {
         error(EXIT_FAILURE, 0, "non-root users cannot request an interval < 1.0 seconds");
       }
       break;
     case 'f':
-      fstTTL = strtoint_or_err(optarg, "invalid argument");
-      if (fstTTL > maxTTL) {
-	fstTTL = maxTTL;
+      ctl->fstTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->fstTTL > ctl->maxTTL) {
+	ctl->fstTTL = ctl->maxTTL;
       }
-      if (fstTTL < 1) {                       /* prevent 0 hop */
-	fstTTL = 1;
+      if (ctl->fstTTL < 1) {                       /* prevent 0 hop */
+	ctl->fstTTL = 1;
       }
       break;
     case 'F':
       read_from_file(optarg);
       break;
     case 'm':
-      maxTTL = strtoint_or_err(optarg, "invalid argument");
-      if (maxTTL > (MaxHost - 1)) {
-	maxTTL = MaxHost-1;
+      ctl->maxTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->maxTTL > (MaxHost - 1)) {
+	ctl->maxTTL = MaxHost - 1;
       }
-      if (maxTTL < 1) {                       /* prevent 0 hop */
-	maxTTL = 1;
+      if (ctl->maxTTL < 1) {                       /* prevent 0 hop */
+	ctl->maxTTL = 1;
       }
-      if (fstTTL > maxTTL) {         /* don't know the pos of -m or -f */
-	fstTTL = maxTTL;
+      if (ctl->fstTTL > ctl->maxTTL) {         /* don't know the pos of -m or -f */
+	ctl->fstTTL = ctl->maxTTL;
       }
       break;
 	case 'U':
-                maxUnknown = strtoint_or_err(optarg, "invalid argument");
-		if (maxUnknown < 1) {
-			maxUnknown = 1;
+                ctl->maxUnknown = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+		if (ctl->maxUnknown < 1) {
+			ctl->maxUnknown = 1;
 		}
 		break;
     case 'o':
@@ -552,84 +524,84 @@ static void parse_arg (int argc, char **argv)
 	error(EXIT_FAILURE, 0, "Too many fields: %s", optarg);
       }
       for (i=0; optarg[i]; i++) {
-        if(!strchr (available_options, optarg[i])) {
+        if(!strchr (ctl->available_options, optarg[i])) {
           error(EXIT_FAILURE, 0, "Unknown field identifier: %c", optarg[i]);
         }
       }
-      strcpy ((char*)fld_active, optarg);
+      strcpy ((char*)ctl->fld_active, optarg);
       break;
     case 'B':
-      bitpattern = strtoint_or_err(optarg, "invalid argument");
-      if (bitpattern > 255)
-	bitpattern = -1;
+      ctl->bitpattern = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->bitpattern > 255)
+	ctl->bitpattern = -1;
       break;
     case 'G':
-      GraceTime = strtofloat_or_err(optarg, "invalid argument");
-      if (GraceTime <= 0.0) {
+      ctl->GraceTime = strtofloat_or_err(optarg, "invalid argument");
+      if (ctl->GraceTime <= 0.0) {
         error(EXIT_FAILURE, 0, "wait time must be positive");
       }
       break;
     case 'Q':
-      tos = strtoint_or_err(optarg, "invalid argument");
-      if (tos > 255 || tos < 0) {
+      ctl->tos = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->tos > 255 || ctl->tos < 0) {
 	/* error message, should do more checking for valid values,
 	 * details in rfc2474 */
-	tos = 0;
+	ctl->tos = 0;
       }
       break;
     case 'u':
-      if (mtrtype != IPPROTO_ICMP) {
+      if (ctl->mtrtype != IPPROTO_ICMP) {
         error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
-      mtrtype = IPPROTO_UDP;
+      ctl->mtrtype = IPPROTO_UDP;
       break;
     case 'T':
-      if (mtrtype != IPPROTO_ICMP) {
+      if (ctl->mtrtype != IPPROTO_ICMP) {
         error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
-      if (!remoteport) {
-        remoteport = 80;
+      if (!ctl->remoteport) {
+        ctl->remoteport = 80;
       }
-      mtrtype = IPPROTO_TCP;
+      ctl->mtrtype = IPPROTO_TCP;
       break;
     case 'S':
 #ifdef HAS_SCTP
-      if (mtrtype != IPPROTO_ICMP) {
+      if (ctl->mtrtype != IPPROTO_ICMP) {
         error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
-      if (!remoteport) {
-        remoteport = 80;
+      if (!ctl->remoteport) {
+        ctl->remoteport = 80;
       }
-      mtrtype = IPPROTO_SCTP;
+      ctl->mtrtype = IPPROTO_SCTP;
 #else
       error(EXIT_FAILURE, 0, "No SCTP support found at compiletime");
 #endif
       break;
     case 'b':
-      show_ips = 1;
+      ctl->show_ips = 1;
       break;
     case 'P':
-      remoteport = strtoint_or_err(optarg, "invalid argument");
-      if (remoteport < 1 || MaxPort < remoteport) {
-        error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
+      ctl->remoteport = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->remoteport < 1 || MaxPort < ctl->remoteport) {
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", ctl->remoteport);
       }
       break;
     case 'L':
-      localport = strtoint_or_err(optarg, "invalid argument");
-      if (localport < MinPort || MaxPort < localport) {
-        error(EXIT_FAILURE, 0, "Illegal port number: %d", localport);
+      ctl->localport = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->localport < MinPort || MaxPort < ctl->localport) {
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", ctl->localport);
       }
       break;
     case 'Z':
-      tcp_timeout = strtoint_or_err(optarg, "invalid argument");
-      tcp_timeout *= 1000000;
+      ctl->tcp_timeout = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      ctl->tcp_timeout *= 1000000;
       break;
     case '4':
-      af = AF_INET;
+      ctl->af = AF_INET;
       break;
     case '6':
 #ifdef ENABLE_IPV6
-      af = AF_INET6;
+      ctl->af = AF_INET6;
       break;
 #else
       error(EXIT_FAILURE, 0, "IPv6 not enabled");
@@ -637,12 +609,12 @@ static void parse_arg (int argc, char **argv)
 #endif
 #ifdef HAVE_IPINFO
     case 'y':
-      ipinfo_no = strtoint_or_err(optarg, "invalid argument");
-      if (ipinfo_no < 0)
-        ipinfo_no = 0;
+      ctl->ipinfo_no = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      if (ctl->ipinfo_no < 0)
+        ctl->ipinfo_no = 0;
       break;
     case 'z':
-      ipinfo_no = 0;
+      ctl->ipinfo_no = 0;
       break;
 #else
     case 'y':
@@ -652,7 +624,7 @@ static void parse_arg (int argc, char **argv)
 #endif
 #ifdef SO_MARK
     case 'M':
-      mark = strtoint_or_err(optarg, "invalid argument");
+      ctl->mark = strtonum_or_err(optarg, "invalid argument", STRTO_U32INT);
       break;
 #else
     case 'M':
@@ -662,13 +634,13 @@ static void parse_arg (int argc, char **argv)
     }
   }
 
-  if (DisplayMode == DisplayReport ||
-      DisplayMode == DisplayTXT ||
-      DisplayMode == DisplayJSON ||
-      DisplayMode == DisplayXML ||
-      DisplayMode == DisplayRaw ||
-      DisplayMode == DisplayCSV)
-    Interactive = 0;
+  if (ctl->DisplayMode == DisplayReport ||
+      ctl->DisplayMode == DisplayTXT ||
+      ctl->DisplayMode == DisplayJSON ||
+      ctl->DisplayMode == DisplayXML ||
+      ctl->DisplayMode == DisplayRaw ||
+      ctl->DisplayMode == DisplayCSV)
+    ctl->Interactive = 0;
 
   if (optind > argc - 1)
     return;
@@ -676,7 +648,7 @@ static void parse_arg (int argc, char **argv)
 }
 
 
-static void parse_mtr_options (char *string)
+static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
 {
   int argc;
   char *argv[128], *p;
@@ -694,7 +666,7 @@ static void parse_mtr_options (char *string)
     error(0, 0, "Warning: extra arguments ignored: %s", p);
   }
 
-  parse_arg (argc, argv);
+  parse_arg (ctl, argc, argv);
   optind = 0;
 }
 
@@ -711,6 +683,23 @@ extern int main(int argc, char **argv)
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
+  struct mtr_ctl ctl;
+  memset(&ctl, 0, sizeof(ctl));
+  /* initialize non-null values */
+  ctl.Interactive = 1;
+  ctl.MaxPing = 10;
+  ctl.WaitTime = 1.0;
+  ctl.GraceTime = 5.0;
+  ctl.dns = 1;
+  ctl.use_dns = 1;
+  ctl.cpacketsize = 64;
+  ctl.af = DEFAULT_AF;
+  ctl.mtrtype = IPPROTO_ICMP;
+  ctl.fstTTL = 1;
+  ctl.maxTTL = 30;
+  ctl.maxUnknown = 12;
+  ctl.tcp_timeout = 10 * 1000000;
+  strcpy(ctl.fld_active, "LS NABWV");
 
   /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
 
@@ -731,16 +720,16 @@ extern int main(int argc, char **argv)
   /* reset the random seed */
   srand (getpid());
 
-  display_detect(&argc, &argv);
-  display_mode = DisplayModeDefault;
+  display_detect(&ctl, &argc, &argv);
+  ctl.display_mode = DisplayModeDefault;
 
   /* The field options are now in a static array all together,
      but that requires a run-time initialization. */
-  init_fld_options ();
+  init_fld_options (&ctl);
 
-  parse_mtr_options (getenv ("MTR_OPTIONS"));
+  parse_mtr_options (&ctl, getenv ("MTR_OPTIONS"));
 
-  parse_arg (argc, argv);
+  parse_arg (&ctl, argc, argv);
 
   while (optind < argc) {
     char* name = argv[optind++];
@@ -748,17 +737,8 @@ extern int main(int argc, char **argv)
   }
 
   /* Now that we know mtrtype we can select which socket to use */
-  if (net_selectsocket() != 0) {
+  if (net_selectsocket(&ctl) != 0) {
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
-  }
-
-  if (PrintVersion) {
-    printf ("mtr " PACKAGE_VERSION "\n");
-    exit(EXIT_SUCCESS);
-  }
-
-  if (PrintHelp) {
-    usage(stdout);
   }
 
   time_t now = time(NULL);
@@ -768,15 +748,16 @@ extern int main(int argc, char **argv)
   names_t* head = names;
   while (names != NULL) {
 
-    Hostname = names->name;
+    ctl.Hostname = names->name;
     //  if (Hostname == NULL) Hostname = "localhost"; // no longer necessary.
-    if (gethostname(LocalHostname, sizeof(LocalHostname))) {
-      strcpy(LocalHostname, "UNKNOWNHOST");
+    if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
+      strcpy(ctl.LocalHostname, "UNKNOWNHOST");
     }
 
     if (net_preopen_result != 0) {
       error(0, 0, "Unable to get raw socket.  (Executable not suid?)");
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if (ctl.DisplayMode != DisplayCSV)
+        exit(EXIT_FAILURE);
       else {
         names = names->next;
         continue;
@@ -785,16 +766,16 @@ extern int main(int argc, char **argv)
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset( &hints, 0, sizeof hints );
-    hints.ai_family = af;
+    hints.ai_family = ctl.af;
     hints.ai_socktype = SOCK_DGRAM;
-    gai_error = getaddrinfo( Hostname, NULL, &hints, &res );
+    gai_error = getaddrinfo( ctl.Hostname, NULL, &hints, &res );
     if ( gai_error ) {
       if (gai_error == EAI_SYSTEM)
-         error(0, 0, "Failed to resolve host: %s", Hostname);
+         error(0, 0, "Failed to resolve host: %s", ctl.Hostname);
       else
-         error(0, 0, "Failed to resolve host: %s: %s", Hostname, gai_strerror(gai_error));
+         error(0, 0, "Failed to resolve host: %s: %s", ctl.Hostname, gai_strerror(gai_error));
 
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if ( ctl.DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
         names = names->next;
         continue;
@@ -806,10 +787,10 @@ extern int main(int argc, char **argv)
     host->h_name = res->ai_canonname;
     host->h_aliases = NULL;
     host->h_addrtype = res->ai_family;
-    af = res->ai_family;
+    ctl.af = res->ai_family;
     host->h_length = res->ai_addrlen;
     host->h_addr_list = alptr;
-    switch ( af ) {
+    switch (ctl.af) {
     case AF_INET:
       sa4 = (struct sockaddr_in *) res->ai_addr;
       alptr[0] = (void *) &(sa4->sin_addr);
@@ -822,7 +803,8 @@ extern int main(int argc, char **argv)
 #endif
     default:
       error(0, 0, "unknown address type");
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if (ctl.DisplayMode != DisplayCSV )
+        exit(EXIT_FAILURE);
       else {
         names = names->next;
         continue;
@@ -830,18 +812,20 @@ extern int main(int argc, char **argv)
     }
     alptr[1] = NULL;
 
-    if (net_open(host) != 0) {
+    if (net_open(&ctl, host) != 0) {
       error(0, 0, "Unable to start net module");
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if (ctl.DisplayMode != DisplayCSV)
+        exit(EXIT_FAILURE);
       else {
         names = names->next;
         continue;
       }
     }
 
-    if (net_set_interfaceaddress (InterfaceAddress) != 0) {
-      error(0, 0, "Couldn't set interface address: %s", InterfaceAddress);
-      if ( DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+    if (net_set_interfaceaddress (&ctl) != 0) {
+      error(0, 0, "Couldn't set interface address: %s", ctl.InterfaceAddress);
+      if (ctl.DisplayMode != DisplayCSV)
+        exit(EXIT_FAILURE);
       else {
         names = names->next;
         continue;
@@ -850,17 +834,19 @@ extern int main(int argc, char **argv)
 
 
     lock(stdout);
-      display_open();
-      dns_open();
+      display_open(&ctl);
+      dns_open(&ctl);
 
-      display_loop();
+      display_loop(&ctl);
 
       net_end_transit();
-      display_close(now);
+      display_close(&ctl, now);
     unlock(stdout);
 
-    if ( DisplayMode != DisplayCSV ) break;
-    else names = names->next;
+    if (ctl.DisplayMode != DisplayCSV)
+      break;
+    else
+      names = names->next;
 
   }
 
