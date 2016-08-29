@@ -132,8 +132,7 @@ static char *ipinfo_lookup(const char *domain) {
         txtlen = NAMELEN;
 
     if (iihash) {
-        if (!(txt = malloc(txtlen + 1)))
-            return NULL;
+        txt = xmalloc(txtlen + 1);
     } else
         txt = (char*)txtrec;
 

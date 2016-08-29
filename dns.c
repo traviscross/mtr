@@ -40,6 +40,7 @@
 #include "mtr.h"
 #include "dns.h"
 #include "net.h"
+#include "utils.h"
 
 struct dns_results {
   ip_t ip; 
@@ -275,7 +276,7 @@ extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
      else
         return strlongip (ctl, ip);
   } else {
-     r = malloc (sizeof (struct dns_results));
+     r = xmalloc (sizeof (struct dns_results));
      //r->ip = *ip;
      memcpy (&r->ip, ip, sizeof (r->ip));
      r->name = NULL;

@@ -259,9 +259,7 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
   char *csumpacket;
   int ret;
 
-  csumpacket = malloc(tsize);
-  if (!csumpacket)
-    error(EXIT_FAILURE, errno, "cannot allocate %zu bytes", tsize);
+  csumpacket = xmalloc(tsize);
   memset(csumpacket, (unsigned char) abs(ctl->bitpattern), tsize);
   if (alt_checksum && dsize >= 2) {
     csumpacket[psize + sizeof(struct UDPHeader)] = 0;
@@ -684,7 +682,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
     case IPPROTO_UDP:
       /* checksum is not mandatory. only calculate if we know ip->saddr */
       if (udp->checksum) {
-        udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
+        udpp = (struct UDPv4PHeader *)(xmalloc(sizeof(struct UDPv4PHeader)));
         udpp->saddr = ip->saddr;
         udpp->daddr = ip->daddr;
         udpp->protocol = ip->protocol;
@@ -693,7 +691,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
         packet[iphsize + sizeof(struct UDPHeader)] = ((char *)&checksum_result)[0];
         packet[iphsize + sizeof(struct UDPHeader) + 1] = ((char *)&checksum_result)[1];
       } else if (ip->saddr) {
-        udpp = (struct UDPv4PHeader *)(malloc(sizeof(struct UDPv4PHeader)));
+        udpp = (struct UDPv4PHeader *)(xmalloc(sizeof(struct UDPv4PHeader)));
         udpp->saddr = ip->saddr;
         udpp->daddr = ip->daddr;
         udpp->protocol = ip->protocol;

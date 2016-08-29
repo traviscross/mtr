@@ -88,3 +88,12 @@ extern float strtofloat_or_err(const char *str, const char *errmesg)
   error(EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
   return 0;
 }
+
+extern void *xmalloc(const size_t size)
+{
+  void *ret = malloc(size);
+
+  if (!ret && size)
+    error(EXIT_FAILURE, errno, "cannot allocate %zu bytes", size);
+  return ret;
+}
