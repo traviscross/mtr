@@ -34,7 +34,7 @@
 #include "asn.h"
 
 #define MAXLOADBAL 5
-
+#define MAX_FORMAT_STR 81
 
 
 extern void report_open(void)
@@ -74,7 +74,7 @@ extern void report_close(struct mtr_ctl *ctl)
   struct mplslen *mpls, *mplss;
   ip_t *addr;
   ip_t *addr2 = NULL;  
-  char name[81];
+  char name[MAX_FORMAT_STR];
   char buf[1024];
   char fmt[16];
   size_t len=0;
@@ -251,7 +251,7 @@ extern void json_close(struct mtr_ctl *ctl)
 {
   int i, j, at, first, max;
   ip_t *addr;
-  char name[81];
+  char name[MAX_FORMAT_STR];
 
   printf("{\n");
   printf("  \"report\": {\n");
@@ -309,8 +309,7 @@ extern void json_close(struct mtr_ctl *ctl)
       }
 
       /* Format json line */
-      strcpy(name, "      \"%s\": ");
-      strcat(name, format);
+      snprintf(name, sizeof(name), "%s%s", "      \"%s\": ", format);
 
       /* Output json line */
       if(strchr(data_fields[j].format, 'f')) {
@@ -345,7 +344,7 @@ extern void xml_close(struct mtr_ctl *ctl)
 {
   int i, j, at, max;
   ip_t *addr;
-  char name[81];
+  char name[MAX_FORMAT_STR];
 
   printf("<?xml version=\"1.0\"?>\n");
   printf("<MTR SRC=\"%s\" DST=\"%s\"", ctl->LocalHostname, ctl->Hostname);
@@ -373,9 +372,7 @@ extern void xml_close(struct mtr_ctl *ctl)
       j = ctl->fld_index[ctl->fld_active[i]];
       if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method. 
 
-      strcpy(name, "        <%s>");
-      strcat(name, data_fields[j].format);
-      strcat(name, "</%s>\n");
+      snprintf(name, sizeof(name), "%s%s%s", "        <%s>", data_fields[j].format, "</%s>\n");
 
       /* XML doesn't allow "%" in tag names, rename Loss% to just Loss */
       const char *title;
@@ -411,7 +408,7 @@ extern void csv_close(struct mtr_ctl *ctl, time_t now)
 {
   int i, j, at, max;
   ip_t *addr;
-  char name[81];
+  char name[MAX_FORMAT_STR];
 
   for( i=0; i<MAXFLD; i++ ) {
       j = ctl->fld_index[ctl->fld_active[i]];
