@@ -108,7 +108,7 @@ struct fields {
   CONST char *title;
   CONST char *format;
   int length;
-  int (*net_xxx)();
+  int (*net_xxx)(int);
 };
 
 extern struct fields data_fields[MAXFLD];
