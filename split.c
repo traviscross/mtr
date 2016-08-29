@@ -34,6 +34,7 @@
 
 #include "net.h"
 #include "split.h"
+#include "utils.h"
 
 #ifdef HAVE_NCURSES
 # if defined(HAVE_NCURSES_H)
@@ -116,7 +117,7 @@ extern void split_redraw(struct mtr_ctl *ctl)
     } else {
       printf("%d %s\n", at+1, newLine);
       fflush(stdout);
-      strcpy(Lines[at], newLine);
+      xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
       if (LineCount < (at+1)) {
 	LineCount = at+1;
       }
@@ -133,7 +134,7 @@ extern void split_open(void)
 #endif
   LineCount = -1;
   for (i=0; i<MAX_LINE_COUNT; i++) {
-    strcpy(Lines[i], "???");
+    xstrncpy(Lines[i], "???", MAX_LINE_SIZE);
   }
 }
 

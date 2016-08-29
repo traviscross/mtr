@@ -25,3 +25,10 @@ enum {
 extern char *trim(char *s);
 extern int strtonum_or_err(const char *str, const char *errmesg, const int type);
 extern float strtofloat_or_err(const char *str, const char *errmesg);
+
+/* Like strncpy(3) but ensure null termination. */
+static inline void xstrncpy(char *dest, const char *src, size_t n)
+{
+  strncpy(dest, src, n - 1);
+  dest[n - 1] = 0;
+}

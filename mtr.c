@@ -464,7 +464,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
           error(EXIT_FAILURE, 0, "Unknown field identifier: %c", optarg[i]);
         }
       }
-      strcpy ((char*)ctl->fld_active, optarg);
+      xstrncpy(ctl->fld_active, optarg, 2 * MAXFLD);
       break;
     case 'B':
       ctl->bitpattern = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
@@ -637,7 +637,7 @@ extern int main(int argc, char **argv)
   ctl.maxTTL = 30;
   ctl.maxUnknown = 12;
   ctl.tcp_timeout = 10 * 1000000;
-  strcpy(ctl.fld_active, "LS NABWV");
+  xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
   /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
 
@@ -689,7 +689,7 @@ extern int main(int argc, char **argv)
     ctl.Hostname = names->name;
     //  if (Hostname == NULL) Hostname = "localhost"; // no longer necessary.
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
-      strcpy(ctl.LocalHostname, "UNKNOWNHOST");
+      xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
     }
 
     if (net_preopen_result != 0) {

@@ -52,6 +52,7 @@
 #include "net.h"
 #include "display.h"
 #include "dns.h"
+#include "utils.h"
 
 static int packetsize;         /* packet size used by ping */
 static int spacketsize;                /* packet size used by sendto */
@@ -1707,7 +1708,7 @@ static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
   switch ( saddr->sa_family ) {
   case AF_INET:
     sa4 = (struct sockaddr_in *) saddr;
-    strncpy( strptr, inet_ntoa( sa4->sin_addr ), len - 1 );
+    xstrncpy( strptr, inet_ntoa( sa4->sin_addr ), len - 1 );
     strptr[ len - 1 ] = '\0';
     return;
 #ifdef ENABLE_IPV6

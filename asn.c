@@ -45,7 +45,7 @@
 
 #include "mtr.h"
 #include "asn.h"
-
+#include "utils.h"
 //#define IIDEBUG
 
 #ifdef IIDEBUG
@@ -138,7 +138,7 @@ static char *ipinfo_lookup(const char *domain) {
         txt = (char*)txtrec;
 
     pt++;
-    strncpy(txt, (char*) pt, txtlen);
+    xstrncpy(txt, (char*) pt, txtlen);
     txt[txtlen] = 0;
 
     if (iihash)

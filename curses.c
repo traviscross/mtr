@@ -60,6 +60,7 @@
 #include "dns.h"
 #include "asn.h"
 #include "display.h"
+#include "utils.h"
 
 #endif
 
@@ -268,15 +269,16 @@ extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
       }
     }
     buf[i] = '\0';
-    if ( strlen( buf ) > 0 ) strcpy( ctl->fld_active, buf );
+    if ( strlen( buf ) > 0 )
+      xstrncpy(ctl->fld_active, buf, 2 * MAXFLD);
 
     return ActionNone;
   }
   if (tolower(c) == 'j') {
     if( strchr(ctl->fld_active, 'N') ) {
-      strcpy(ctl->fld_active, "DR AGJMXI");        /* GeoMean and jitter */
+      xstrncpy(ctl->fld_active, "DR AGJMXI", 2 * MAXFLD);	/* GeoMean and jitter */
     } else {
-      strcpy(ctl->fld_active, "LS NABWV");         /* default */
+      xstrncpy(ctl->fld_active, "LS NABWV", 2 * MAXFLD);	/* default */
     }
     return ActionNone;
   }
