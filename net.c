@@ -254,8 +254,13 @@ static int checksum(void *data, int sz)
 static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
 			int psize, int dsize, int alt_checksum)
 {
-  unsigned int tsize = psize + dsize;
-  char csumpacket[tsize];
+  size_t tsize = psize + dsize;
+  char *csumpacket;
+  int ret;
+
+  csumpacket = malloc(tsize);
+  if (!csumpacket)
+    error(EXIT_FAILURE, errno, "cannot allocate %zu bytes", tsize);
   memset(csumpacket, (unsigned char) abs(ctl->bitpattern), tsize);
   if (alt_checksum && dsize >= 2) {
     csumpacket[psize + sizeof(struct UDPHeader)] = 0;
@@ -277,7 +282,9 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
   content->length = udpdata->length;
   content->checksum = udpdata->checksum;
 
-  return checksum(csumpacket,tsize);
+  ret = checksum(csumpacket, tsize);
+  free(csumpacket);
+  return ret;
 }
 
 
