@@ -44,7 +44,9 @@
 #else
 #include "portability/error.h"
 #endif
-
+#ifdef HAVE_LINUX_ICMP_H
+#include <linux/icmp.h>
+#endif
 
 #include "mtr.h"
 #include "net.h"
@@ -118,15 +120,12 @@ struct IPHeader {
   uint32_t daddr;
 };
   
-
-#define ICMP_ECHO		8
+#ifndef ICMP_ECHOREPLY
 #define ICMP_ECHOREPLY		0
-
-#define ICMP_TSTAMP		13
-#define ICMP_TSTAMPREPLY	14
-
+#define ICMP_DEST_UNREACH	3
+#define ICMP_ECHO		8
 #define ICMP_TIME_EXCEEDED	11
-#define ICMP_UNREACHABLE        3
+#endif
 
 #ifndef SOL_IP
 #define SOL_IP 0
@@ -894,7 +893,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
     fromaddress = (ip_t *) &(fsa4->sin_addr);
     echoreplytype = ICMP_ECHOREPLY;
     timeexceededtype = ICMP_TIME_EXCEEDED;
-    unreachabletype = ICMP_UNREACHABLE;
+    unreachabletype = ICMP_DEST_UNREACH;
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:

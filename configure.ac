@@ -41,6 +41,7 @@ AC_CHECK_HEADERS([ \
   cursesX.h \
   error.h \
   fcntl.h \
+  linux/icmp.h \
   ncurses.h \
   ncurses/curses.h \
   socket.h \
