@@ -31,6 +31,7 @@ mtr_SOURCES = mtr.c mtr.h \
               display.c display.h \
               report.c report.h \
               select.c select.h \
+              utils.c utils.h \
               mtr-curses.h \
               img/mtr_icon.xpm \
               mtr-gtk.h

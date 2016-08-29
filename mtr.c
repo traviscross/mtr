@@ -51,6 +51,7 @@
 #include "report.h"
 #include "net.h"
 #include "asn.h"
+#include "utils.h"
 
 #ifdef HAVE_GETOPT
 #include <getopt.h>
@@ -145,70 +146,6 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
-enum {
-  STRTO_INT,
-  STRTO_U32INT
-};
-
-/* Parse string, and return positive signed int. */
-static int
-strtonum_or_err (const char *str, const char *errmesg, const int type)
-{
-  unsigned long int num;
-  char *end = NULL;
-
-  if (str != NULL && *str != '\0') {
-      errno = 0;
-      num = strtoul (str, &end, 10);
-      if (errno == 0 && str != end && end != NULL && *end == '\0') {
-        switch (type) {
-          case STRTO_INT:
-            if (num < INT_MAX)
-	      return num;
-            break;
-          case STRTO_U32INT:
-            if (num < UINT32_MAX)
-              return num;
-            break;
-	}
-      }
-    }
-  error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
-  return 0;
-}
-
-static float
-strtofloat_or_err (const char *str, const char *errmesg)
-{
-  double num;
-  char *end = NULL;
-
-  if (str != NULL && *str != '\0') {
-      errno = 0;
-      num = strtod (str, &end);
-      if (errno == 0 && str != end && end != NULL && *end == '\0'
-#ifdef FLT_MAX
-         && num < FLT_MAX
-#endif
-         )
-	return num;
-    }
-  error (EXIT_FAILURE, errno, "%s: '%s'", errmesg, str);
-  return 0;
-}
-
-
-extern char *
-trim(char * s) {
-
-  char * p = s;
-  int l = strlen(p);
-
-  while(isspace(p[l-1]) && l) p[--l] = 0;
-  while(*p && isspace(*p) && l) ++p, --l;
-
-  return p;
-}
 
 static void
 append_to_names(const char* item) {
