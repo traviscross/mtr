@@ -46,6 +46,7 @@ AC_CHECK_HEADERS([ \
   ncurses/curses.h \
   socket.h \
   sys/socket.h \
+  stdio_ext.h \
   sys/types.h \
   sys/xti.h \
   values.h \
@@ -53,6 +54,7 @@ AC_CHECK_HEADERS([ \
 
 # Check functions.
 AC_CHECK_FUNCS([ \
+  __fpending \
   fcntl \
 ])
 

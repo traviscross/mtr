@@ -16,17 +16,25 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "config.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef HAVE_ERROR_H
 # include <error.h>
 #else
 # include "portability/error.h"
+#endif
+
+#ifdef HAVE_STDIO_EXT_H
+# include <stdio_ext.h>
 #endif
 
 #include "utils.h"
@@ -108,4 +116,34 @@ extern char *xstrdup(const char *str)
   if (!ret)
     error(EXIT_FAILURE, errno, "cannot duplicate string: %s", str);
   return ret;
+}
+
+#ifndef HAVE___FPENDING
+static inline int __fpending(FILE *stream __attribute__((__unused__)))
+{
+  return 0;
+}
+#endif
+static inline int close_stream(FILE *stream)
+{
+  const int some_pending = (__fpending(stream) != 0);
+  const int prev_fail = (ferror(stream) != 0);
+  const int fclose_fail = (fclose(stream) != 0);
+
+  if (prev_fail || (fclose_fail && (some_pending || errno != EBADF))) {
+    if (!fclose_fail && !(errno == EPIPE))
+      errno = 0;
+    return EOF;
+  }
+  return 0;
+}
+/* Meant to be used atexit(close_stdout); */
+extern void close_stdout(void)
+{
+  if (close_stream(stdout) != 0 && !(errno == EPIPE)) {
+    error(0, errno, "write error");
+    _exit(EXIT_FAILURE);
+  }
+  if (close_stream(stderr) != 0)
+    _exit(EXIT_FAILURE);
 }

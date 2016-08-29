@@ -655,6 +655,9 @@ extern int main(int argc, char **argv)
     error(EXIT_FAILURE, errno, "Unable to drop permissions");
   }
 
+  /* This will check if stdout/stderr writing is successful */
+  atexit(close_stdout);
+
   /* reset the random seed */
   srand (getpid());
 
