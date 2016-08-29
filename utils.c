@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef HAVE_ERROR_H
@@ -146,4 +147,16 @@ extern void close_stdout(void)
   }
   if (close_stream(stderr) != 0)
     _exit(EXIT_FAILURE);
+}
+
+/* ctime() replacement that will reteturn ISO-8601 timestamp string such as:
+ * 2016-08-29T19:25:02+01:00 */
+extern const char *iso_time(const time_t *t)
+{
+  static char s[32];
+  struct tm *tm;
+
+  tm = localtime(t);
+  strftime(s, sizeof(s), "%Y-%m-%dT%H:%M:%S%z", tm);
+  return s;
 }

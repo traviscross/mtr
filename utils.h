@@ -37,3 +37,5 @@ extern void *xmalloc(const size_t size);
 extern char *xstrdup(const char *str);
 
 extern void close_stdout(void);
+
+extern const char *iso_time(const time_t *t);

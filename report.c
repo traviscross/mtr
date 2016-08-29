@@ -32,6 +32,7 @@
 #include "net.h"
 #include "dns.h"
 #include "asn.h"
+#include "utils.h"
 
 #define MAXLOADBAL 5
 #define MAX_FORMAT_STR 81
@@ -40,11 +41,8 @@
 extern void report_open(void)
 {
   const time_t now = time(NULL);
-  char *t = ctime (&now);
-  const size_t len = strlen(t);
+  const char *t = iso_time (&now);
 
-  if (t[len - 1] == '\n')
-    t[len - 1] = '\0';
   printf ("Start: %s\n", t);
 }
 

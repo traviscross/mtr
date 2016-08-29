@@ -656,7 +656,8 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
   }
   */
   time(&t);
-  mvprintw(1, maxx-25, ctime(&t));
+  mvprintw(1, maxx-25, iso_time(&t));
+  printw("\n");
 
   printw("Keys:  ");
   attron(A_BOLD); printw("H"); attroff(A_BOLD); printw("elp   ");
