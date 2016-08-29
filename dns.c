@@ -24,28 +24,6 @@
 
 #include "config.h"
 
-// This was a big "include everything" section. I've now commented out
-// most includes and we'll get complaints if we need something. Compiles
-// cleanly like this on Unbuntu 14.04 -- REW
-// AQ: Added signal.h for RedHat derivatives. 
-//#include <sys/types.h>
-//#include <sys/time.h>
-//#include <sys/select.h>
-//#include <sys/stat.h>
-//#include <sys/errno.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <arpa/inet.h>
-
-//#ifndef __APPLE__
-//#define BIND_8_COMPAT
-//#endif
-//#include <arpa/nameser.h>
-//#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-//#include <arpa/nameser_compat.h>
-//#endif
-//#include <netdb.h>
-//#include <resolv.h>
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #else
@@ -54,13 +32,10 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-//#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-//#include <errno.h>
-//#include <time.h>
 
 #include "mtr.h"
 #include "dns.h"
