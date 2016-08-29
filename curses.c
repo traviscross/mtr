@@ -655,7 +655,7 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
     printw("bitpattern=rand(0x00-FF))");
   }
   */
-  time(&t);
+  t = time(NULL);
   mvprintw(1, maxx-25, iso_time(&t));
   printw("\n");
 
