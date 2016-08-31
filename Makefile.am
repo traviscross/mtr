@@ -64,3 +64,7 @@ endif
 mtr_INCLUDES = $(GLIB_CFLAGS) -I$(top_builddir) -I$(top_srcdir)
 mtr_CFLAGS = $(GTK_CFLAGS) $(NCURSES_CFLAGS)
 mtr_LDADD = $(GTK_LIBS) $(NCURSES_LIBS) $(RESOLV_LIBS)
+
+if BUILD_BASH_COMPLETION
+dist_bashcompletion_DATA = bash-completion/mtr
+endif

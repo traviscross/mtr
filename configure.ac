@@ -214,6 +214,23 @@ AS_IF([test "$warning_CFLAGS" = "none"], [
   AC_MSG_RESULT([$warning_CFLAGS])
 ])
 
+# bash-completion
+AC_ARG_WITH([bashcompletiondir],
+  AS_HELP_STRING([--with-bashcompletiondir=DIR], [Bash completions directory]),
+  [],
+  [AS_IF([`$PKG_CONFIG --exists bash-completion`], [
+    with_bashcompletiondir=`$PKG_CONFIG --variable=completionsdir bash-completion`
+  ], [
+    with_bashcompletiondir=${datadir}/bash-completion/completions
+  ])
+])
+AC_SUBST([bashcompletiondir], [$with_bashcompletiondir])
+AC_ARG_ENABLE([bash-completion],
+  AS_HELP_STRING([--disable-bash-completion], [do not install bash completion files]),
+  [], [enable_bash_completion=yes]
+)
+AM_CONDITIONAL([BUILD_BASH_COMPLETION], [test "x$enable_bash_completion" = xyes])
+
 # Prepare config.h, Makefile, and output them.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
