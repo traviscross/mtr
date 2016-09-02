@@ -70,14 +70,12 @@
 static void pwcenter(char *str) 
 {
   int maxx;
-  int cx;
+  size_t cx;
   int __unused_int UNUSED;
 
   getmaxyx(stdscr, __unused_int, maxx);
-  cx = (signed)(maxx - strlen(str)) / 2;
-  while(cx-- > 0)
-    printw(" ");
-  printw(str);
+  cx = (size_t)(maxx - strlen(str)) / 2;
+  printw("%*s%s", cx, "", str);
 }
 
 
