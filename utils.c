@@ -40,17 +40,31 @@
 
 #include "utils.h"
 
-extern char *trim(char *s)
+extern char *trim(char *str, const char c)
 {
-  char *p = s;
-  int l = strlen(p);
+  char *p = str;
+  size_t len;
 
-  while (isspace(p[l - 1]) && l)
-    p[--l] = 0;
-  while (*p && isspace(*p) && l)
-    ++p, --l;
+  /* left trim */
+  while (*p && (isspace(*p) || (c && *p == c)))
+    p++;
+  if (str < p) {
+    len = strlen(str);
+    memmove(str, p, len + 1);
+  }
 
-  return p;
+  /* right trim */
+  len = strlen(str);
+  while (len) {
+    len--;
+    if (isspace(str[len]) || (c && str[len] == c)) {
+      continue;
+    }
+    len++;
+    break;
+  }
+  str[len] = '\0';
+  return str;
 }
 
 /* Parse string, and return positive signed int. */

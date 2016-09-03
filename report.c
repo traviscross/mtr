@@ -437,7 +437,7 @@ extern void csv_close(struct mtr_ctl *ctl, time_t now)
 #ifdef HAVE_IPINFO
     if(!ctl->ipinfo_no) {
       char* fmtinfo = fmt_ipinfo(ctl, addr);
-      fmtinfo = trim(fmtinfo);
+      fmtinfo = trim(fmtinfo, '\0');
       printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION, (long long)now, "OK", ctl->Hostname,
              at+1, name, fmtinfo);
     } else

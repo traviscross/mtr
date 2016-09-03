@@ -146,16 +146,6 @@ static char *ipinfo_lookup(const char *domain) {
     return txt;
 }
 
-static char* trimsep(char *s) {
-    int l;
-    char *p = s;
-    while (*p == ' ' || *p == ITEMSEP)
-        *p++ = '\0';
-    for (l = strlen(p)-1; p[l] == ' ' || p[l] == ITEMSEP; l--)
-        p[l] = '\0';
-    return p;
-}
-
 // originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
 static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
     if (!txt_rec)
@@ -176,11 +166,11 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
     while ((next = strchr(prev, ITEMSEP)) && (i < ITEMSMAX)) {
         *next = '\0';
         next++;
-        (*items)[i] = trimsep(prev);
+        (*items)[i] = trim(prev, ITEMSEP);
         prev = next;
         i++;
     }
-    (*items)[i] = trimsep(prev);
+    (*items)[i] = trim(prev, ITEMSEP);
 
     if (i < ITEMSMAX)
         i++;

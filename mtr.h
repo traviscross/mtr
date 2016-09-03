@@ -45,9 +45,6 @@ typedef struct in_addr ip_t;
 typedef int socklen_t;
 #endif
 
-extern char *
-trim(char * s);
-
 struct mtr_ctl {
   int MaxPing;
   float WaitTime;

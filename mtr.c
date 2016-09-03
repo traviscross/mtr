@@ -176,7 +176,7 @@ read_from_file(const char *filename) {
   }
 
   while (fgets(line, sizeof(line), in)) {
-    char* name = trim(line);
+    char* name = trim(line, '\0');
     append_to_names(name);
   }
 
