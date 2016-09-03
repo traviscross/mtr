@@ -259,7 +259,7 @@ static void Toolbar_fill(struct mtr_ctl *ctl, GtkWidget *Toolbar)
   Pause_Button = gtk_toggle_button_new_with_mnemonic("_Pause");
   gtk_box_pack_end(GTK_BOX(Toolbar), Pause_Button, FALSE, FALSE, 0);
   g_signal_connect(GTK_OBJECT(Pause_Button), "clicked",
-                    GTK_SIGNAL_FUNC(Pause_clicked), NULL);
+                    GTK_SIGNAL_FUNC(Pause_clicked), ctl);
 
   /* allow root only to set zero delay */
   Adjustment = (GtkAdjustment *)gtk_adjustment_new(ctl->WaitTime,
