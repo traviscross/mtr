@@ -90,7 +90,7 @@ static char *ipinfo_lookup(const char *domain) {
     if((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
         if (iihash)
             DEB_syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
-        return (iihash) ? xstrdup(UNKN) : UNKN;
+        return xstrdup(UNKN);
     }
 
     pt = answer + sizeof(HEADER);
