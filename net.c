@@ -1341,7 +1341,9 @@ static void set_fd_flags(int fd)
 
 extern int net_preopen(void) 
 {
+#ifdef IP_HDRINCL
   int trueopt = 1;
+#endif
 
 #if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
   sendsock4_icmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
