@@ -42,7 +42,6 @@
 
 static double dnsinterval;
 static struct timeval intervaltime;
-int display_offset = 0;
 
 #define GRACETIME (ctl->GraceTime * 1000*1000)
 
@@ -246,12 +245,12 @@ extern void select_loop(struct mtr_ctl *ctl){
 #endif
 
       case ActionScrollDown:
-        display_offset += 5;
+        ctl->display_offset += 5;
 	break;
       case ActionScrollUp:
-        display_offset -= 5;
-	if (display_offset < 0) {
-	  display_offset = 0;
+        ctl->display_offset -= 5;
+	if (ctl->display_offset < 0) {
+	  ctl->display_offset = 0;
 	}
 	break;
       }
