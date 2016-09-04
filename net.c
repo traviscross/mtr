@@ -1718,7 +1718,6 @@ static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
     return;
 #endif
   default:
-    fprintf( stderr, "sockaddrtop unknown address type\n" );
     error(0, 0, "sockaddrtop unknown address type");
     strptr[0] = '\0';
     return;
