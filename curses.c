@@ -410,13 +410,7 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
       printw("%s", buf);
 
       for (k=0; k < mpls->labels && ctl->enablempls; k++) {
-        if((k+1 < mpls->labels) || (mpls->labels == 1)) {
-           /* if we have more labels */
-           printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
-        } else {
-           /* bottom label */
-           printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
-        }
+        printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
       }
 
       /* Multi path */
