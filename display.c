@@ -49,9 +49,9 @@
 #endif
 
 #ifdef HAVE_GTK
-#define UNUSED_IF_NO_GTK
+# define UNUSED_IF_NO_GTK /* empty */
 #else
-#define UNUSED_IF_NO_GTK UNUSED
+# define UNUSED_IF_NO_GTK ATTRIBUTE_UNUSED
 #endif
 
 extern void display_detect(struct mtr_ctl *ctl, int *argc UNUSED_IF_NO_GTK,

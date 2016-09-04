@@ -31,10 +31,11 @@ typedef struct in6_addr ip_t;
 typedef struct in_addr ip_t;
 #endif
 
-#ifdef __GNUC__
-#define UNUSED __attribute__((__unused__))
+/* The __unused__ attribute was added in gcc 3.2.7.  */
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+# define ATTRIBUTE_UNUSED __attribute__((__unused__))
 #else
-#define UNUSED
+# define ATTRIBUTE_UNUSED /* empty */
 #endif
 
 /* The __const__ attribute was added in gcc 2.95.  */

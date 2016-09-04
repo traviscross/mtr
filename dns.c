@@ -63,9 +63,9 @@ extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
 
 
 #ifdef ENABLE_IPV6
-#define UNUSED_IF_NO_IPV6
+# define UNUSED_IF_NO_IPV6 /* empty */
 #else
-#define UNUSED_IF_NO_IPV6 UNUSED
+# define UNUSED_IF_NO_IPV6 ATTRIBUTE_UNUSED
 #endif
 
 static int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)

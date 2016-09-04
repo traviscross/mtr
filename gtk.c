@@ -74,7 +74,7 @@ static void gtk_do_init(int *argc, char ***argv)
 }
 
 
-extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv)
+extern int gtk_detect(ATTRIBUTE_UNUSED int *argc, ATTRIBUTE_UNUSED char ***argv)
 {
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
@@ -87,7 +87,8 @@ extern int gtk_detect(UNUSED int *argc, UNUSED char ***argv)
 }
 
 
-static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data)
+static gint Window_destroy(ATTRIBUTE_UNUSED GtkWidget *Window,
+			   ATTRIBUTE_UNUSED gpointer data)
 {
   gtk_main_quit();
 
@@ -95,7 +96,7 @@ static gint Window_destroy(UNUSED GtkWidget *Window, UNUSED gpointer data)
 }
 
 
-static gint Restart_clicked(UNUSED GtkWidget *Button, gpointer data)
+static gint Restart_clicked(ATTRIBUTE_UNUSED GtkWidget *Button, gpointer data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
@@ -106,7 +107,7 @@ static gint Restart_clicked(UNUSED GtkWidget *Button, gpointer data)
 }
 
 
-static gint Pause_clicked(UNUSED GtkWidget *Button, gpointer data)
+static gint Pause_clicked(ATTRIBUTE_UNUSED GtkWidget *Button, gpointer data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
@@ -123,7 +124,8 @@ static gint Pause_clicked(UNUSED GtkWidget *Button, gpointer data)
   return FALSE;
 }
 
-static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
+static gint About_clicked(ATTRIBUTE_UNUSED GtkWidget *Button,
+			  ATTRIBUTE_UNUSED gpointer data)
 {
   static const gchar *authors[] = {
         "Matt Kimball <mkimball@xmission.com>",
@@ -198,7 +200,7 @@ static gint About_clicked(UNUSED GtkWidget *Button, UNUSED gpointer data)
  * What's the problem with this? (-> "I don't think so)
  */
 
-static gint WaitTime_changed(UNUSED GtkAdjustment *Adj,
+static gint WaitTime_changed(ATTRIBUTE_UNUSED GtkAdjustment *Adj,
 			     GtkWidget *data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
@@ -317,7 +319,7 @@ enum {
 // earlier, so it is ok. Nothing to worry about....
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
-static void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
+static void  float_formatter(GtkTreeViewColumn *tree_column ATTRIBUTE_UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -330,7 +332,7 @@ static void  float_formatter(GtkTreeViewColumn *tree_column UNUSED,
   g_object_set(cell, "text", text, NULL);
 }
 
-static void  percent_formatter(GtkTreeViewColumn *tree_column UNUSED,
+static void  percent_formatter(GtkTreeViewColumn *tree_column ATTRIBUTE_UNUSED,
   GtkCellRenderer   *cell, 
   GtkTreeModel      *tree_model,
   GtkTreeIter       *iter, 
@@ -609,7 +611,8 @@ static gint gtk_ping(gpointer data)
 }
 
 
-static gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
+static gboolean gtk_net_data(ATTRIBUTE_UNUSED GIOChannel *channel,
+			     ATTRIBUTE_UNUSED GIOCondition cond, gpointer data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
@@ -618,7 +621,8 @@ static gboolean gtk_net_data(UNUSED GIOChannel *channel, UNUSED GIOCondition con
 }
 
 
-static gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
+static gboolean gtk_dns_data(ATTRIBUTE_UNUSED GIOChannel *channel,
+			     ATTRIBUTE_UNUSED GIOCondition cond, gpointer data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
@@ -627,7 +631,8 @@ static gboolean gtk_dns_data(UNUSED GIOChannel *channel, UNUSED GIOCondition con
   return TRUE;
 }
 #ifdef ENABLE_IPV6
-static gboolean gtk_dns_data6(UNUSED GIOChannel *channel, UNUSED GIOCondition cond, gpointer data)
+static gboolean gtk_dns_data6(ATTRIBUTE_UNUSED GIOChannel *channel,
+			      ATTRIBUTE_UNUSED GIOCondition cond, gpointer data)
 {
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
 
@@ -658,7 +663,8 @@ extern void gtk_loop(struct mtr_ctl *ctl)
   gtk_main();
 }
 
-static gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
+static gboolean NewDestination_activate(GtkWidget *widget ATTRIBUTE_UNUSED,
+					gpointer data)
 {
   gchar *hostname;
   struct mtr_ctl *ctl = (struct mtr_ctl *)data;
@@ -675,7 +681,7 @@ static gboolean NewDestination_activate(GtkWidget *widget UNUSED, gpointer data)
 }
 
 
-static gboolean Copy_activate(GtkWidget *widget UNUSED, gpointer data)
+static gboolean Copy_activate(GtkWidget *widget ATTRIBUTE_UNUSED, gpointer data)
 {
   gchar *hostname;
   GtkTreePath *path = (GtkTreePath*)data;
@@ -709,7 +715,8 @@ static gchar *getSelectedHost(GtkTreePath *path)
 }
 
 
-static gboolean ReportTreeView_clicked(GtkWidget *Tree UNUSED, GdkEventButton *event, gpointer data)
+static gboolean ReportTreeView_clicked(GtkWidget *Tree ATTRIBUTE_UNUSED,
+				       GdkEventButton *event, gpointer data)
 {
   GtkWidget* popup_menu; 
   GtkWidget* copy_item; 

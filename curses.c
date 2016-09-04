@@ -71,7 +71,7 @@ static void pwcenter(char *str)
 {
   int maxx;
   size_t cx;
-  int __unused_int UNUSED;
+  int __unused_int ATTRIBUTE_UNUSED;
 
   getmaxyx(stdscr, __unused_int, maxx);
   cx = (size_t)(maxx - strlen(str)) / 2;
@@ -367,7 +367,7 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
   int i, j, k;
   int hd_len;
   char buf[1024];
-  int __unused_int UNUSED;
+  int __unused_int ATTRIBUTE_UNUSED;
 
   max = net_max(ctl);
 
@@ -577,7 +577,7 @@ static void mtr_curses_graph(struct mtr_ctl *ctl, int startstat, int cols)
 	int max, at, y;
 	ip_t * addr;
 	char* name;
-	int __unused_int UNUSED;
+	int __unused_int ATTRIBUTE_UNUSED;
 
 	max = net_max(ctl);
 
@@ -619,7 +619,7 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
   int startstat;
   int rowstat;
   time_t t;
-  int __unused_int UNUSED;
+  int __unused_int ATTRIBUTE_UNUSED;
 
   int i, j;
   int  hd_len = 0;
