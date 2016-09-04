@@ -112,7 +112,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -s, --psize PACKETSIZE     set the packet size used for probing\n", out);
   fputs(" -B, --bitpattern NUMBER    set bit pattern to use in payload\n", out);
   fputs(" -i, --interval SECONDS     icmp echo request interval\n", out);
-  fputs(" -G, --graceperiod SECONDS  number of seconds to wait for responses\n", out);
+  fputs(" -G, --gracetime SECONDS    number of seconds to wait for responses\n", out);
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
   fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
@@ -322,7 +322,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
     { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
     { "localport",      1, NULL, 'L' }, /* source port number for UDP */
     { "timeout",        1, NULL, 'Z' }, /* timeout for TCP sockets */
-    { "gracetime",      1, NULL, 'G' }, /* graceperiod for replies after last probe */
+    { "gracetime",      1, NULL, 'G' }, /* gracetime for replies after last probe */
 #ifdef SO_MARK
     { "mark",           1, NULL, 'M' }, /* use SO_MARK */
 #endif

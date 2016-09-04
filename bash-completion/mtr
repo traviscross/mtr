@@ -27,7 +27,7 @@ _mtr_module()
       COMPREPLY=( $(compgen -W "SIZE" -- $cur) )
       return 0
       ;;
-    '-i'|'--interval'|'-G'|'--graceperiod'|'-Z'|'--timeout')
+    '-i'|'--interval'|'-G'|'--gracetime'|'-Z'|'--timeout')
       COMPREPLY=( $(compgen -W "SECONDS" -- $cur) )
       return 0
       ;;
@@ -53,7 +53,7 @@ _mtr_module()
       OPTS='
         --filename --inet --inet6 --udp --tcp --address --first-ttl
         --max-ttl --max-unknown --port --localport --psize --bitpattern
-        --interval --graceperiod --tos --mpls --timeout --mark --report
+        --interval --gracetime --tos --mpls --timeout --mark --report
         --report-wide --report-cycles --json --xml --csv --raw --split
         --curses --displaymode --gtk --no-dns --show-ips --order --ipinfo
         --aslookup --help --version
