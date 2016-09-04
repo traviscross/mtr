@@ -66,7 +66,7 @@
 #endif
 
 
-struct fields data_fields[MAXFLD] = {
+const struct fields data_fields[MAXFLD] = {
   /* key, Remark, Header, Format, Width, CallBackFunc */
   {' ', "<sp>: Space between fields", " ",  " ",        1, &net_drop  },
   {'L', "L: Loss Ratio",          "Loss%",  " %4.1f%%", 6, &net_loss  },
@@ -271,7 +271,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
   enum {
     OPT_DISPLAYMODE = CHAR_MAX + 1
   };
-  static struct option long_options[] = {
+  static const struct option long_options[] = {
     /* option name, has argument, NULL, short name */
     { "help",           0, NULL, 'h' },
     { "version",        0, NULL, 'v' },

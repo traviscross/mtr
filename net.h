@@ -113,7 +113,7 @@ struct fields {
   int (*net_xxx)(int);
 };
 
-extern struct fields data_fields[MAXFLD];
+extern const struct fields data_fields[MAXFLD];
 
 /* MPLS label object */
 struct mplslen {
