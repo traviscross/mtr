@@ -256,18 +256,18 @@ extern ATTRIBUTE_CONST size_t get_iiwidth_len(void) {
     return (sizeof(iiwidth) / sizeof((iiwidth)[0]));
 }
 
-extern int get_iiwidth(struct mtr_ctl *ctl) {
+extern ATTRIBUTE_CONST int get_iiwidth(int ipinfo_no) {
     static const int len = (sizeof(iiwidth) / sizeof((iiwidth)[0]));
 
-    if (ctl->ipinfo_no < len)
-        return iiwidth[ctl->ipinfo_no];
-    return iiwidth[ctl->ipinfo_no % len];
+    if (ipinfo_no < len)
+        return iiwidth[ipinfo_no];
+    return iiwidth[ipinfo_no % len];
 }
 
 extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     char *ipinfo = get_ipinfo(ctl, addr);
     char fmt[8];
-    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no?"":"AS", get_iiwidth(ctl));
+    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no?"":"AS", get_iiwidth(ctl->ipinfo_no));
     snprintf(fmtinfo, sizeof(fmtinfo), fmt, ipinfo?ipinfo:UNKN);
     return fmtinfo;
 }

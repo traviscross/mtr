@@ -100,7 +100,7 @@ extern void report_close(struct mtr_ctl *ctl)
     ctl->ipinfo_no %= iiwidth_len;
     if (ctl->reportwide) {
       len_hosts++;    // space
-      len_tmp   += get_iiwidth(ctl);
+      len_tmp   += get_iiwidth(ctl->ipinfo_no);
       if (!ctl->ipinfo_no)
         len_tmp += 2; // align header: AS
     }

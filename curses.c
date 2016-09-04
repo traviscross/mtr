@@ -687,7 +687,7 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
     int padding = 30;
 #ifdef HAVE_IPINFO
     if (is_printii(ctl))
-      padding += get_iiwidth(ctl);
+      padding += get_iiwidth(ctl->ipinfo_no);
 #endif
     int max_cols = maxx<=SAVED_PINGS+padding ? maxx-padding : SAVED_PINGS;
     startstat = padding - 2;
