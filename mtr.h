@@ -37,6 +37,13 @@ typedef struct in_addr ip_t;
 #define UNUSED
 #endif
 
+/* The __const__ attribute was added in gcc 2.95.  */
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
+# define ATTRIBUTE_CONST __attribute__ ((__const__))
+#else
+# define ATTRIBUTE_CONST /* empty */
+#endif
+
 /* stuff used by display such as report, curses... */
 #define MAXFLD 20		/* max stats fields to display */
 #define FLD_INDEX_SZ 256
@@ -54,7 +61,6 @@ struct mtr_ctl {
   char LocalHostname[128];
   int ipinfo_no;
   int ipinfo_max;
-  int iiwidth_len;
   int cpacketsize;		/* packet size used by ping */
   int bitpattern;		/* packet bit pattern used by ping */
   int tos;			/* type of service set in ping packet*/

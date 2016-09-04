@@ -16,8 +16,11 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "mtr.h"
+
 extern void asn_open(struct mtr_ctl *ctl);
 extern void asn_close(struct mtr_ctl *ctl);
 extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr);
+extern ATTRIBUTE_CONST size_t get_iiwidth_len(void);
 extern int get_iiwidth(struct mtr_ctl *ctl);
 extern int is_printii(struct mtr_ctl *ctl);

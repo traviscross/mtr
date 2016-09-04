@@ -252,10 +252,16 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     return val;
 }
 
-extern int get_iiwidth (struct mtr_ctl *ctl) {
-  return (ctl->ipinfo_no <
-	  ctl->iiwidth_len) ? iiwidth[ctl->ipinfo_no] :
-	                      iiwidth[ctl->ipinfo_no % ctl->iiwidth_len];
+extern ATTRIBUTE_CONST size_t get_iiwidth_len(void) {
+    return (sizeof(iiwidth) / sizeof((iiwidth)[0]));
+}
+
+extern int get_iiwidth(struct mtr_ctl *ctl) {
+    static const int len = (sizeof(iiwidth) / sizeof((iiwidth)[0]));
+
+    if (ctl->ipinfo_no < len)
+        return iiwidth[ctl->ipinfo_no];
+    return iiwidth[ctl->ipinfo_no % len];
 }
 
 extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
