@@ -41,10 +41,12 @@ AC_CHECK_HEADERS([ \
   cursesX.h \
   error.h \
   fcntl.h \
+  linux/icmp.h \
   ncurses.h \
   ncurses/curses.h \
   socket.h \
   sys/socket.h \
+  stdio_ext.h \
   sys/types.h \
   sys/xti.h \
   values.h \
@@ -52,6 +54,7 @@ AC_CHECK_HEADERS([ \
 
 # Check functions.
 AC_CHECK_FUNCS([ \
+  __fpending \
   fcntl \
 ])
 
@@ -210,6 +213,23 @@ AS_IF([test "$warning_CFLAGS" = "none"], [
   CFLAGS="$CFLAGS $warning_CFLAGS"
   AC_MSG_RESULT([$warning_CFLAGS])
 ])
+
+# bash-completion
+AC_ARG_WITH([bashcompletiondir],
+  AS_HELP_STRING([--with-bashcompletiondir=DIR], [Bash completions directory]),
+  [],
+  [AS_IF([`$PKG_CONFIG --exists bash-completion`], [
+    with_bashcompletiondir=`$PKG_CONFIG --variable=completionsdir bash-completion`
+  ], [
+    with_bashcompletiondir=${datadir}/bash-completion/completions
+  ])
+])
+AC_SUBST([bashcompletiondir], [$with_bashcompletiondir])
+AC_ARG_ENABLE([bash-completion],
+  AS_HELP_STRING([--disable-bash-completion], [do not install bash completion files]),
+  [], [enable_bash_completion=yes]
+)
+AM_CONDITIONAL([BUILD_BASH_COMPLETION], [test "x$enable_bash_completion" = xyes])
 
 # Prepare config.h, Makefile, and output them.
 AC_CONFIG_HEADERS([config.h])

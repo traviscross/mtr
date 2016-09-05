@@ -32,8 +32,6 @@
 #include "dns.h"
 #include "asn.h"
 
-extern int DisplayMode;
-
 #ifdef HAVE_NCURSES
 #include "mtr-curses.h"
 #endif
@@ -51,26 +49,27 @@ extern int DisplayMode;
 #endif
 
 #ifdef HAVE_GTK
-#define UNUSED_IF_NO_GTK
+# define UNUSED_IF_NO_GTK /* empty */
 #else
-#define UNUSED_IF_NO_GTK UNUSED
+# define UNUSED_IF_NO_GTK ATTRIBUTE_UNUSED
 #endif
 
-extern void display_detect(int *argc UNUSED_IF_NO_GTK, char ***argv UNUSED_IF_NO_GTK)
+extern void display_detect(struct mtr_ctl *ctl, int *argc UNUSED_IF_NO_GTK,
+			   char ***argv UNUSED_IF_NO_GTK)
 {
-  DisplayMode = DEFAULT_DISPLAY;
+  ctl->DisplayMode = DEFAULT_DISPLAY;
 
 #ifdef HAVE_GTK
   if(gtk_detect(argc, argv)) {
-    DisplayMode = DisplayGTK;
+    ctl->DisplayMode = DisplayGTK;
   }
 #endif
 }
 
 
-extern void display_open(void)
+extern void display_open(struct mtr_ctl *ctl)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
 
   case DisplayReport:
     report_open();
@@ -89,9 +88,9 @@ extern void display_open(void)
     break;
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-    mtr_curses_open();  
+    mtr_curses_open(ctl);
 #ifdef HAVE_IPINFO
-    asn_open();
+    asn_open(ctl);
 #endif
     break;
 #endif
@@ -100,9 +99,9 @@ extern void display_open(void)
     break;
 #ifdef HAVE_GTK
   case DisplayGTK:
-    gtk_open();
+    gtk_open(ctl);
 #ifdef HAVE_IPINFO
-    asn_open();
+    asn_open(ctl);
 #endif
     break;
 #endif
@@ -110,28 +109,28 @@ extern void display_open(void)
 }
 
 
-extern void display_close(time_t now)
+extern void display_close(struct mtr_ctl *ctl, time_t now)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
   case DisplayReport:
-    report_close();
+    report_close(ctl);
     break;
   case DisplayTXT:
-    txt_close();
+    txt_close(ctl);
     break;
   case DisplayJSON:
-    json_close();
+    json_close(ctl);
     break;
   case DisplayXML:
-    xml_close();
+    xml_close(ctl);
     break;
   case DisplayCSV:
-    csv_close(now);
+    csv_close(ctl, now);
     break;
 #ifdef HAVE_NCURSES
   case DisplayCurses:
 #ifdef HAVE_IPINFO
-    asn_close();
+    asn_close(ctl);
 #endif
     mtr_curses_close();
     break;
@@ -148,35 +147,35 @@ extern void display_close(time_t now)
 }
 
 
-extern void display_redraw(void)
+extern void display_redraw(struct mtr_ctl *ctl)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
 
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-    mtr_curses_redraw();
+    mtr_curses_redraw(ctl);
     break;
 #endif
 
   case DisplaySplit:
-    split_redraw();
+    split_redraw(ctl);
     break;
 
 #ifdef HAVE_GTK
   case DisplayGTK:
-    gtk_redraw();
+    gtk_redraw(ctl);
     break;
 #endif
   }
 }
 
 
-extern int display_keyaction(void)
+extern int display_keyaction(struct mtr_ctl *ctl)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-    return mtr_curses_keyaction();
+    return mtr_curses_keyaction(ctl);
 #endif
 
   case DisplaySplit:
@@ -191,9 +190,9 @@ extern int display_keyaction(void)
 }
 
 
-extern void display_rawxmit(int host, int seq)
+extern void display_rawxmit(struct mtr_ctl *ctl, int host, int seq)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
   case DisplayRaw:
     raw_rawxmit (host, seq);
     break;
@@ -201,9 +200,9 @@ extern void display_rawxmit(int host, int seq)
 }
 
 
-extern void display_rawping(int host, int msec, int seq)
+extern void display_rawping(struct mtr_ctl *ctl, int host, int msec, int seq)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
   case DisplayJSON:
@@ -218,15 +217,15 @@ extern void display_rawping(int host, int msec, int seq)
 #endif
     break;
   case DisplayRaw:
-    raw_rawping (host, msec, seq);
+    raw_rawping (ctl, host, msec, seq);
     break;
   }
 }
 
 
-extern void display_rawhost(int host, ip_t *ip_addr) 
+extern void display_rawhost(struct mtr_ctl *ctl, int host, ip_t *ip_addr)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
   case DisplayJSON:
@@ -241,15 +240,15 @@ extern void display_rawhost(int host, ip_t *ip_addr)
 #endif
     break;
   case DisplayRaw:
-    raw_rawhost (host, ip_addr);
+    raw_rawhost (ctl, host, ip_addr);
     break;
   }
 }
 
 
-extern void display_loop(void)
+extern void display_loop(struct mtr_ctl *ctl)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
   case DisplayReport:
   case DisplayTXT:
   case DisplayJSON:
@@ -260,23 +259,23 @@ extern void display_loop(void)
   case DisplayCurses:
 #endif
   case DisplayRaw:
-    select_loop();
+    select_loop(ctl);
     break;
 #ifdef HAVE_GTK
   case DisplayGTK:
-    gtk_loop();
+    gtk_loop(ctl);
     break;
 #endif
   }
 }
 
 
-extern void display_clear(void)
+extern void display_clear(struct mtr_ctl *ctl)
 {
-  switch(DisplayMode) {
+  switch(ctl->DisplayMode) {
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-    mtr_curses_clear();
+    mtr_curses_clear(ctl);
     break;
 #endif
   case DisplayReport:

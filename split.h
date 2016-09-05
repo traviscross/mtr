@@ -21,5 +21,5 @@
 /*  Prototypes for split.c  */
 extern void split_open(void);
 extern void split_close(void);
-extern void split_redraw(void);
+extern void split_redraw(struct mtr_ctl *ctl);
 extern int split_keyaction(void);

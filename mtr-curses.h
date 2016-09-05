@@ -17,8 +17,8 @@
 */
 
 /*  Prototypes for curses.c  */
-extern void mtr_curses_open(void);
+extern void mtr_curses_open(struct mtr_ctl *ctl);
 extern void mtr_curses_close(void);
-extern void mtr_curses_redraw(void);
-extern int mtr_curses_keyaction(void);
-extern void mtr_curses_clear(void);
+extern void mtr_curses_redraw(struct mtr_ctl *ctl);
+extern int mtr_curses_keyaction(struct mtr_ctl *ctl);
+extern void mtr_curses_clear(struct mtr_ctl *ctl);
