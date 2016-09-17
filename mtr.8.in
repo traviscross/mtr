@@ -190,6 +190,16 @@ Use this option to force
 .B mtr 
 to use the curses based terminal
 interface (if available).
+In case the list of hops exceeds the 
+height of your terminal, you can use the 
+.B +
+and
+.B -
+keys to scroll up and down half a page.
+
+.B Ctrl\fR-\fPL
+clears spurious error messages that may overwrite other parts of the display.
+
 .TP
 .B -\-displaymode \fIMODE
 Use this option to select the initial display mode: 0 (default)
