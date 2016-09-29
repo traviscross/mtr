@@ -34,6 +34,9 @@
 #ifdef HAVE_VALUES_H
 #include <values.h>
 #endif
+#ifdef HAVE_SYS_LIMITS_H
+#include <sys/limits.h>
+#endif
 
 #include <netdb.h>
 #include <netinet/in.h>

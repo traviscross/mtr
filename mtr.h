@@ -24,6 +24,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 /* Typedefs */
 #ifdef ENABLE_IPV6
 typedef struct in6_addr ip_t;
