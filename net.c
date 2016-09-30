@@ -1495,7 +1495,6 @@ extern void net_reset(struct mtr_ctl *ctl)
   static const struct nethost template = {
     .saved = { -2 },
     .saved_seq_offset = 2 - SAVED_PINGS,
-    .xmit = 0
   };
 
   int at;
