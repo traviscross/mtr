@@ -34,6 +34,9 @@
 #ifdef HAVE_VALUES_H
 #include <values.h>
 #endif
+#ifdef HAVE_SYS_LIMITS_H
+#include <sys/limits.h>
+#endif
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -43,6 +46,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include "mtr.h"
 #include "mtr-curses.h"
@@ -608,6 +612,13 @@ static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
   optind = 0;
 }
 
+static void init_rand(void)
+{
+  struct timeval tv;
+
+  gettimeofday(&tv, 0);
+  srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
+}
 
 extern int main(int argc, char **argv)
 {
@@ -659,7 +670,7 @@ extern int main(int argc, char **argv)
   atexit(close_stdout);
 
   /* reset the random seed */
-  srand (getpid());
+  init_rand();
 
   display_detect(&ctl, &argc, &argv);
   ctl.display_mode = DisplayModeDefault;

@@ -1492,34 +1492,21 @@ extern void net_reopen(struct mtr_ctl *ctl, struct hostent * addr)
 
 extern void net_reset(struct mtr_ctl *ctl)
 {
+  static const struct nethost template = {
+    .saved = { -2 },
+    .saved_seq_offset = 2 - SAVED_PINGS,
+    .xmit = 0
+  };
+
   int at;
-  int i;
 
   batch_at = ctl->fstTTL - 1;	/* above replacedByMin */
   numhosts = 10;
 
   for (at = 0; at < MaxHost; at++) {
-    host[at].xmit = 0;
-    host[at].transit = 0;
-    host[at].returned = 0;
-    host[at].sent = 0;
-    host[at].up = 0;
-    host[at].last = 0;
-    host[at].avg  = 0;
-    host[at].best = 0;
-    host[at].worst = 0;
-    host[at].gmean = 0;
-    host[at].ssd = 0;
-    host[at].jitter = 0;
-    host[at].javg = 0;
-    host[at].jworst = 0;
-    host[at].jinta = 0;
-    for (i=0; i<SAVED_PINGS; i++) {
-      host[at].saved[i] = -2;	/* unsent */
-    }
-    host[at].saved_seq_offset = -SAVED_PINGS+2;
+    memcpy(&(host[at]), &template, sizeof(template));
   }
-  
+
   for (at = 0; at < MaxSequence; at++) {
     sequence[at].transit = 0;
     if (sequence[at].socket > 0) {

@@ -285,7 +285,7 @@ extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
 
      //printf ("lookup: %s\n", strlongip (ctl, ip));
 
-     sprintf (buf, "%s\n", strlongip (ctl, ip));
+     snprintf (buf, sizeof(buf), "%s\n", strlongip (ctl, ip));
      rv = write  (todns[1], buf, strlen (buf));
      if (rv < 0)
        error (0, errno, "couldn't write to resolver process");

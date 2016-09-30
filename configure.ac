@@ -44,7 +44,9 @@ AC_CHECK_HEADERS([ \
   linux/icmp.h \
   ncurses.h \
   ncurses/curses.h \
+  netinet/in.h \
   socket.h \
+  sys/limits.h \
   sys/socket.h \
   stdio_ext.h \
   sys/types.h \
