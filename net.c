@@ -1492,16 +1492,17 @@ extern void net_reopen(struct mtr_ctl *ctl, struct hostent * addr)
 
 extern void net_reset(struct mtr_ctl *ctl)
 {
-  static const struct nethost template = {
-    .saved = { -2 },
-    .saved_seq_offset = 2 - SAVED_PINGS,
-    .xmit = 0
+  static struct nethost template = {
+    .saved_seq_offset = 2 - SAVED_PINGS
   };
 
-  int at;
+  int at, i;
 
   batch_at = ctl->fstTTL - 1;	/* above replacedByMin */
   numhosts = 10;
+
+  for (i = 0; i < SAVED_PINGS; i++)
+    template.saved[i] = -2;
 
   for (at = 0; at < MaxHost; at++) {
     memcpy(&(host[at]), &template, sizeof(template));
