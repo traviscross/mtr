@@ -258,6 +258,10 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
   size_t tsize = psize + dsize;
   char *csumpacket;
   int ret;
+  struct UDPv4PHeader *prepend;
+  struct UDPv4PHeader *udppheader;
+  struct UDPHeader *content;
+  struct UDPHeader *udpdata;
 
   csumpacket = xmalloc(tsize);
   memset(csumpacket, (unsigned char) abs(ctl->bitpattern), tsize);
@@ -266,16 +270,16 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
     csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
   }
 
-  struct UDPv4PHeader *prepend = (struct UDPv4PHeader *) csumpacket;
-  struct UDPv4PHeader *udppheader = (struct UDPv4PHeader *) pheader;
+  prepend = (struct UDPv4PHeader *) csumpacket;
+  udppheader = (struct UDPv4PHeader *) pheader;
   prepend->saddr = udppheader->saddr;
   prepend->daddr = udppheader->daddr;
   prepend->zero = 0;
   prepend->protocol = udppheader->protocol;
   prepend->len = udppheader->len;
 
-  struct UDPHeader *content = (struct UDPHeader *)(csumpacket + psize);
-  struct UDPHeader *udpdata = (struct UDPHeader *) udata;
+  content = (struct UDPHeader *)(csumpacket + psize);
+  udpdata = (struct UDPHeader *) udata;
   content->srcport = udpdata->srcport;
   content->dstport = udpdata->dstport;
   content->length = udpdata->length;
@@ -550,18 +554,6 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
 /*  Attempt to find the host at a particular number of hops away  */
 static void net_send_query(struct mtr_ctl *ctl, int index)
 {
-  if (ctl->mtrtype == IPPROTO_TCP) {
-    net_send_tcp(ctl, index);
-    return;
-  }
-  
-#ifdef HAS_SCTP
-  if (ctl->mtrtype == IPPROTO_SCTP) {
-    net_send_sctp(ctl, index);
-    return;
-  }
-#endif
-
   /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
   char packet[MAXPACKET];
   struct IPHeader *ip = (struct IPHeader *) packet;
@@ -569,18 +561,28 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
   uint16_t checksum_result;
-
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
   int ttl, iphsize = 0, echotype = 0, salen = 0;
-
-  ttl = index + 1;
-
 #ifdef ENABLE_IPV6
   /* offset for ipv6 checksum calculation */
   int offset = 6;
 #endif
+
+  if (ctl->mtrtype == IPPROTO_TCP) {
+    net_send_tcp(ctl, index);
+    return;
+  }
+
+#ifdef HAS_SCTP
+  if (ctl->mtrtype == IPPROTO_SCTP) {
+    net_send_sctp(ctl, index);
+    return;
+  }
+#endif
+
+  ttl = index + 1;
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;

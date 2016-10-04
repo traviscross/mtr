@@ -148,6 +148,10 @@ static char *ipinfo_lookup(const char *domain) {
 
 // originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
 static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
+    char* prev;
+    char* next;
+    int i = 0, j;
+
     if (!txt_rec)
 	return NULL;
     if (iihash) {
@@ -159,9 +163,7 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
         }
     }
 
-    char* prev = txt_rec;
-    char* next;
-    int i = 0, j;
+    prev = txt_rec;
 
     while ((next = strchr(prev, ITEMSEP)) && (i < ITEMSMAX)) {
         *next = '\0';
@@ -199,11 +201,13 @@ static void reverse_host6(struct in6_addr *addr, char *buff) {
 #endif
 
 static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
-    if (!addr)
-        return NULL;
-
     char key[NAMELEN];
     char lookup_key[NAMELEN];
+    char *val = NULL;
+    ENTRY item;
+
+    if (!addr)
+        return NULL;
 
     if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
@@ -222,13 +226,11 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
             return NULL;
     }
 
-    char *val = NULL;
-    ENTRY item;
-
     if (iihash) {
+        ENTRY *found_item;
+
         DEB_syslog(LOG_INFO, ">> Search: %s", key);
         item.key = key;;
-        ENTRY *found_item;
         if ((found_item = hsearch(item, FIND))) {
             if (!(val = (*((items_t*)found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t*)found_item->data))[0];

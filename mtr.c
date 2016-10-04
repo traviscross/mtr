@@ -332,7 +332,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
 #endif
     { NULL, 0, NULL, 0 }
   };
-  static const size_t num_options = sizeof(long_options) / sizeof(struct option);
+  enum { num_options = sizeof(long_options) / sizeof(struct option) };
   char short_options[num_options * 2];
   size_t n, p;
 
@@ -592,12 +592,11 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
 
 static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
 {
-  int argc;
+  int argc = 1;
   char *argv[128], *p;
 
   if (!string) return;
-
-  argv[0] = "mtr";
+  argv[0] = xstrdup(PACKAGE_NAME);
   argc = 1;
   p = strtok (string, " \t");
   while (p != NULL && ((size_t) argc < (sizeof(argv)/sizeof(argv[0])))) {
@@ -609,6 +608,7 @@ static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
   }
 
   parse_arg (ctl, argc, argv);
+  free(argv[0]);
   optind = 0;
 }
 
@@ -632,6 +632,8 @@ extern int main(int argc, char **argv)
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
+  time_t now;
+  names_t *head;
   struct mtr_ctl ctl;
   memset(&ctl, 0, sizeof(ctl));
   /* initialize non-null values */
@@ -693,11 +695,9 @@ extern int main(int argc, char **argv)
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
   }
 
-  time_t now = time(NULL);
-
   if (!names) append_to_names ("localhost"); // default: localhost. 
 
-  names_t* head = names;
+  head = names;
   while (names != NULL) {
 
     ctl.Hostname = names->name;
@@ -792,6 +792,7 @@ extern int main(int argc, char **argv)
       display_loop(&ctl);
 
       net_end_transit();
+      now = time(NULL);
       display_close(&ctl, now);
     unlock(stdout);
 

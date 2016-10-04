@@ -35,6 +35,7 @@
 #include "dns.h"
 #include "asn.h"
 #include "mtr-gtk.h"
+#include "utils.h"
 
 #include "img/mtr_icon.xpm"
 #endif
@@ -52,10 +53,11 @@ static GtkWidget *main_window;
 
 static void gtk_add_ping_timeout (struct mtr_ctl *ctl)
 {
+  int dt;
+
   if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
     return;
   }
-  int dt;
   dt = calc_deltatime (ctl->WaitTime);
   gtk_redraw(ctl);
   ping_timeout_timer = g_timeout_add(dt / 1000, gtk_ping, ctl);
@@ -560,15 +562,15 @@ static void Window_fill(struct mtr_ctl *ctl, GtkWidget *Window)
 extern void gtk_open(struct mtr_ctl *ctl)
 {
   GdkPixbuf *icon;
-
-  int argc;
+  int argc = 1;
   char *args[2];
   char **argv;
-  argc = 1;
+
   argv = args;
-  argv[0] = "";
+  argv[0] = xstrdup("");
   argv[1] = NULL;
   gtk_do_init(&argc, &argv);
+  free(argv[0]);
 
   icon = gdk_pixbuf_new_from_xpm_data((const char**)mtr_icon);
   gtk_window_set_default_icon(icon);

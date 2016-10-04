@@ -82,10 +82,12 @@ static void pwcenter(char *str)
 static char *format_number (int n, int w, char *buf)
 {
    // XXX todo: implement w != 5.. 
-   if (w != 5) return ("unimpl");
+   if (w != 5) {
+     snprintf (buf, w+1, "%s", "unimpl");
+     return (buf);
+   }
 
    if (n < 100000) {
-     snprintf (buf, w+1, "%5d", n);
      return buf;
    }
    if (n < 1000000) {
@@ -628,7 +630,8 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
 
   move(0, 0);
   attron(A_BOLD);
-  pwcenter("My traceroute  [v" PACKAGE_VERSION "]");
+  snprintf(buf, sizeof(buf), "%s%s%s", "My traceroute  [v", PACKAGE_VERSION, "]");
+  pwcenter(buf);
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
@@ -679,11 +682,13 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
   } else {
     char msg[80];
     int padding = 30;
+    int max_cols;
+
 #ifdef HAVE_IPINFO
     if (is_printii(ctl))
       padding += get_iiwidth(ctl->ipinfo_no);
 #endif
-    int max_cols = maxx<=SAVED_PINGS+padding ? maxx-padding : SAVED_PINGS;
+    max_cols = maxx <= SAVED_PINGS + padding ? maxx-padding : SAVED_PINGS;
     startstat = padding - 2;
 
     sprintf(msg, " Last %3d pings", max_cols);
@@ -719,16 +724,17 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
 
 extern void mtr_curses_open(struct mtr_ctl *ctl)
 {
+  int bg_col = 0;
+  int i;
+
   initscr();
   raw();
   noecho(); 
-  int bg_col = 0;
   start_color();
 #ifdef HAVE_USE_DEFAULT_COLORS
   if (use_default_colors() == OK)
     bg_col = -1;
 #endif
-  int i;
   for (i = 0; i < 8; i++)
       init_pair(i+1, i, bg_col);
 

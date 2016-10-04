@@ -39,6 +39,7 @@
 #include "net.h"
 #include "asn.h"
 #include "display.h"
+#include "select.h"
 
 static double dnsinterval;
 static struct timeval intervaltime;

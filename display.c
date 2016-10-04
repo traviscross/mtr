@@ -24,8 +24,6 @@
 
 #include "mtr.h"
 #include "display.h"
-#include "mtr-curses.h"
-#include "mtr-gtk.h"
 #include "report.h"
 #include "select.h"
 #include "raw.h"
