@@ -81,37 +81,23 @@ static void pwcenter(char *str)
 
 static char *format_number (int n, int w, char *buf)
 {
-   // XXX todo: implement w != 5.. 
-   if (w != 5) {
-     snprintf (buf, w+1, "%s", "unimpl");
-     return (buf);
-   }
+  if (w != 5)
+    /* XXX todo: implement w != 5.. */
+    snprintf(buf, w + 1, "%s", "unimpl");
+  else if (n < 100000)
+    /* buf is good as-is */ ;
+  else if (n < 1000000)
+    snprintf(buf, w + 1, "%3dk%1d", n / 1000, (n % 1000) / 100);
+  else if (n < 10000000)
+    snprintf(buf, w + 1, "%1dM%03d", n / 1000000, (n % 1000000) / 1000);
+  else if (n < 100000000)
+    snprintf(buf, w + 1, "%2dM%02d", n / 1000000, (n % 1000000) / 10000);
+  else if (n < 1000000000)
+    snprintf(buf, w + 1, "%3dM%01d", n / 1000000, (n % 1000000) / 100000);
+  else /* if (n < 10000000000) */
+    snprintf(buf, w + 1, "%1dG%03d", n / 1000000000, (n % 1000000000) / 1000000);
 
-   if (n < 100000) {
-     return buf;
-   }
-   if (n < 1000000) {
-     snprintf (buf, w+1, "%3dk%1d", n/1000, (n%1000)/100);
-     return buf;
-   }
-   if (n < 10000000) {
-     snprintf (buf, w+1, "%1dM%03d", n/1000000, (n%1000000)/1000);
-     return buf;
-   }
-   if (n < 100000000) {
-     snprintf (buf, w+1, "%2dM%02d", n/1000000, (n%1000000)/10000);
-     return buf;
-   }
-   if (n < 1000000000) {
-     snprintf (buf, w+1, "%3dM%01d", n/1000000, (n%1000000)/100000);
-     return buf;
-   }
-   //if (n < 10000000000) {
-     snprintf (buf, w+1, "%1dG%03d", n/1000000000, (n%1000000000)/1000000);
-     return buf;
-   //}
-
-   //return ("big");
+  return buf;
 }
 
 
