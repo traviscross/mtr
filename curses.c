@@ -104,171 +104,191 @@ static char *format_number (int n, int w, char *buf)
 extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
 {
   int c = getch();
-  int i=0;
+  int i = 0;
   float f = 0.0;
-  char buf[MAXFLD+1];
+  char buf[MAXFLD + 1];
 
-  if(c == 'q')
-    return ActionQuit;
-  if(c==3)
-     return ActionQuit;
-  if (c==12)
-     return ActionClear;
-  if ((c==19) || (tolower (c) == 'p'))
-     return ActionPause;
-  if ((c==17) || (c == ' '))
-     return ActionResume;
-  if(tolower(c) == 'r')
-    return ActionReset;
-  if (tolower(c) == 'd')
-    return ActionDisplay;
-  if (tolower(c) == 'e')
-    return ActionMPLS;
-  if (tolower(c) == 'n')
-    return ActionDNS;
-#ifdef HAVE_IPINFO
-  if (tolower(c) == 'y')
-    return ActionII;
-  if (tolower(c) == 'z')
-    return ActionAS;
-#endif
-  if (c == '+')
-    return ActionScrollDown;
-  if (c == '-')
-    return ActionScrollUp;
-
-  if (tolower(c) == 's') {
-    mvprintw(2, 0, "Change Packet Size: %d\n", ctl->cpacketsize);
-    mvprintw(3, 0, "Size Range: %d-%d, < 0:random.\n", MINPACKET, MAXPACKET);
-    move(2,20);
-    refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh ();
-      buf[i++] = c;   /* need more checking on 'c' */
-    }
-    buf[i] = '\0';
-    ctl->cpacketsize = atoi ( buf );
-    return ActionNone;
-  }
-  if (tolower(c) == 'b') {
-    mvprintw(2, 0, "Ping Bit Pattern: %d\n", ctl->bitpattern );
-    mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
-    move(2,18);
-    refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh ();
-      buf[i++] = c;   /* need more checking on 'c' */
-    }
-    buf[i] = '\0';
-    ctl->bitpattern = atoi ( buf );
-    if( ctl->bitpattern > 255 ) { ctl->bitpattern = -1; }
-    return ActionNone;
-  }
-  if ( c == 'Q') {    /* can not be tolower(c) */
+  if (c == 'Q') {    /* must be checked before c = tolower(c) */
     mvprintw(2, 0, "Type of Service(tos): %d\n", ctl->tos);
     mvprintw(3, 0, "default 0x00, min cost 0x02, rel 0x04,, thr 0x08, low del 0x10...\n");
-    move(2,22);
+    move(2, 22);
     refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    ctl->tos = atoi ( buf );
-    if (ctl->tos > 255 || ctl->tos < 0) {
+    ctl->tos = atoi(buf);
+    if (ctl->tos > 255 || ctl->tos < 0)
       ctl->tos = 0;
-    }
     return ActionNone;
   }
-  if (tolower(c) == 'i') {
-    mvprintw(2, 0, "Interval : %0.0f\n\n", ctl->WaitTime);
-    move(2,11);
+
+  c = tolower(c);
+
+  switch (c) {
+  case 'q':
+  case 3:
+    return ActionQuit;
+  case 12:
+    return ActionClear;
+  case 19:
+  case 'p':
+    return ActionPause;
+  case 17:
+  case ' ':
+    return ActionResume;
+  case 'r':
+    return ActionReset;
+  case 'd':
+    return ActionDisplay;
+  case 'e':
+    return ActionMPLS;
+  case 'n':
+    return ActionDNS;
+#ifdef HAVE_IPINFO
+  case 'y':
+    return ActionII;
+  case 'z':
+    return ActionAS;
+#endif
+  case '+':
+    return ActionScrollDown;
+  case '-':
+    return ActionScrollUp;
+  case 's':
+    mvprintw(2, 0, "Change Packet Size: %d\n", ctl->cpacketsize);
+    mvprintw(3, 0, "Size Range: %d-%d, < 0:random.\n", MINPACKET, MAXPACKET);
+    move(2, 20);
     refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    ctl->cpacketsize = atoi(buf);
+    return ActionNone;
+  case 'b':
+    mvprintw(2, 0, "Ping Bit Pattern: %d\n", ctl->bitpattern);
+    mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
+    move(2, 18);
+    refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
+      buf[i++] = c;   /* need more checking on 'c' */
+    }
+    buf[i] = '\0';
+    ctl->bitpattern = atoi(buf);
+    if (ctl->bitpattern > 255)
+      ctl->bitpattern = -1;
+    return ActionNone;
+  case 'i':
+    mvprintw(2, 0, "Interval : %0.0f\n\n", ctl->WaitTime);
+    move(2, 11);
+    refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
 
-    f = atof( buf );
+    f = atof(buf);
 
-    if (f <= 0.0) return ActionNone;
+    if (f <= 0.0)
+      return ActionNone;
     if (getuid() != 0 && f < 1.0)
       return ActionNone;
     ctl->WaitTime = f;
 
     return ActionNone;
-  }
-  if (tolower(c) == 'f') {
+  case 'f':
     mvprintw(2, 0, "First TTL: %d\n\n", ctl->fstTTL);
-    move(2,11);
+    move(2, 11);
     refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    i = atoi( buf );
+    i = atoi(buf);
 
     if (i < 1 || i > ctl->maxTTL)
       return ActionNone;
     ctl->fstTTL = i;
 
     return ActionNone;
-  }
-  if (tolower(c) == 'm') {
+  case 'm':
     mvprintw(2, 0, "Max TTL: %d\n\n", ctl->maxTTL);
-    move(2,9);
+    move(2, 9);
     refresh();
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      attron(A_BOLD);
+      printw("%c", c);
+      attroff(A_BOLD);
+      refresh();
       buf[i++] = c;   /* need more checking on 'c' */
     }
     buf[i] = '\0';
-    i = atoi( buf );
+    i = atoi(buf);
 
     if (i < ctl->fstTTL || i > (MaxHost - 1))
       return ActionNone;
     ctl->maxTTL = i;
 
     return ActionNone;
-  }
   /* fields to display & their ordering */
-  if (tolower(c) == 'o') {
-    mvprintw(2, 0, "Fields: %s\n\n", ctl->fld_active );
+  case 'o':
+    mvprintw(2, 0, "Fields: %s\n\n", ctl->fld_active);
 
-    for( i=0; i<MAXFLD; i++ ){
-      if( data_fields[i].descr != NULL )
-          printw( "  %s\n", data_fields[i].descr);
+    for (i = 0; i < MAXFLD; i++) {
+      if (data_fields[i].descr != NULL)
+        printw("  %s\n", data_fields[i].descr);
     }
     printw("\n");
-    move(2,8);                /* length of "Fields: " */
+    move(2, 8);       /* length of "Fields: " */
     refresh();
 
     i = 0;
-    while ( (c=getch ()) != '\n' && i < MAXFLD ) {
-      if( strchr(ctl->available_options, c) ) {
-        attron(A_BOLD); printw("%c", c); attroff(A_BOLD); refresh();
-        buf[i++] = c; /* Only permit values in "available_options" be entered */
+    while ((c = getch()) != '\n' && i < MAXFLD) {
+      if (strchr(ctl->available_options, c)) {
+        attron(A_BOLD);
+        printw("%c", c);
+        attroff(A_BOLD);
+        refresh();
+        buf[i++] = c;  /* Only permit values in "available_options" be entered */
       } else {
-        printf("\a"); /* Illegal character. Beep, ring the bell. */
+        printf("\a");  /* Illegal character. Beep, ring the bell. */
       }
     }
     buf[i] = '\0';
-    if ( strlen( buf ) > 0 )
+    if (strlen(buf) > 0)
       xstrncpy(ctl->fld_active, buf, 2 * MAXFLD);
 
     return ActionNone;
-  }
-  if (tolower(c) == 'j') {
-    if( strchr(ctl->fld_active, 'N') ) {
-      xstrncpy(ctl->fld_active, "DR AGJMXI", 2 * MAXFLD);	/* GeoMean and jitter */
-    } else {
-      xstrncpy(ctl->fld_active, "LS NABWV", 2 * MAXFLD);	/* default */
-    }
+  case 'j':
+    if (strchr(ctl->fld_active, 'N'))
+      /* GeoMean and jitter */
+      xstrncpy(ctl->fld_active, "DR AGJMXI", 2 * MAXFLD);
+    else
+      /* default */
+      xstrncpy(ctl->fld_active, "LS NABWV", 2 * MAXFLD);
     return ActionNone;
-  }
-  if (tolower(c) == 'u') {
+  case 'u':
     switch (ctl->mtrtype) {
     case IPPROTO_ICMP:
     case IPPROTO_TCP:
@@ -279,8 +299,7 @@ extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
       break;
     }
     return ActionNone;
-  }
-  if (tolower(c) == 't') {
+  case 't':
     switch (ctl->mtrtype) {
     case IPPROTO_ICMP:
     case IPPROTO_UDP:
@@ -291,40 +310,37 @@ extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
       break;
     }
     return ActionNone;
-  }
   /* reserve to display help message -Min */
-  if (tolower(c) == '?'|| tolower(c) == 'h') {
-    int pressanykey_row = 20;
-    mvprintw(2, 0, "Command:\n" );
-    printw("  ?|h     help\n" );
-    printw("  p       pause (SPACE to resume)\n" );
-    printw("  d       switching display mode\n" );
-    printw("  e       toggle MPLS information on/off\n" );
-    printw("  n       toggle DNS on/off\n" );
-    printw("  r       reset all counters\n" );
-    printw("  o str   set the columns to display, default str='LRS N BAWV'\n" );
-    printw("  j       toggle latency(LS NABWV)/jitter(DR AGJMXI) stats\n" );
-    printw("  c <n>   report cycle n, default n=infinite\n" );
-    printw("  i <n>   set the ping interval to n seconds, default n=1\n" );
-    printw("  f <n>   set the initial time-to-live(ttl), default n=1\n" );
-    printw("  m <n>   set the max time-to-live, default n= # of hops\n" );
-    printw("  s <n>   set the packet size to n or random(n<0)\n" );
-    printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n" );
-    printw("  Q <t>   set ping packet's TOS to t\n" );
-    printw("  u       switch between ICMP ECHO and UDP datagrams\n" );
+  case '?':
+  case 'h':
+    mvprintw(2, 0, "Command:\n");
+    printw("  ?|h     help\n");
+    printw("  p       pause (SPACE to resume)\n");
+    printw("  d       switching display mode\n");
+    printw("  e       toggle MPLS information on/off\n");
+    printw("  n       toggle DNS on/off\n");
+    printw("  r       reset all counters\n");
+    printw("  o str   set the columns to display, default str='LRS N BAWV'\n");
+    printw("  j       toggle latency(LS NABWV)/jitter(DR AGJMXI) stats\n");
+    printw("  c <n>   report cycle n, default n=infinite\n");
+    printw("  i <n>   set the ping interval to n seconds, default n=1\n");
+    printw("  f <n>   set the initial time-to-live(ttl), default n=1\n");
+    printw("  m <n>   set the max time-to-live, default n= # of hops\n");
+    printw("  s <n>   set the packet size to n or random(n<0)\n");
+    printw("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n");
+    printw("  Q <t>   set ping packet's TOS to t\n");
+    printw("  u       switch between ICMP ECHO and UDP datagrams\n");
 #ifdef HAVE_IPINFO
     printw("  y       switching IP info\n");
     printw("  z       toggle ASN info on/off\n");
-    pressanykey_row += 2;
 #endif
     printw("\n");
-    mvprintw(pressanykey_row, 0, " press any key to go back..." );
-
-    getch();                  /* get any key */
+    printw(" press any key to go back...");
+    getch();          /* read and ignore 'any key' */
+    return ActionNone;
+  default:            /* ignore unknown input */
     return ActionNone;
   }
-
-  return ActionNone;          /* ignore unknown input */
 }
 
 
