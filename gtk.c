@@ -274,9 +274,6 @@ static void Toolbar_fill(struct mtr_ctl *ctl, GtkWidget *Toolbar)
                                                   0.0);
   Button = gtk_spin_button_new(Adjustment, 0.5, 2);
   gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(Button), TRUE);
-  /* gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(Button), FALSE); */
-  /* gtk_spin_button_set_set_update_policy(GTK_SPIN_BUTTON(Button),
-     GTK_UPDATE_IF_VALID); */
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
   ctl->gtk_data = Button;
   g_signal_connect(GTK_OBJECT(Adjustment), "value_changed",

@@ -21,7 +21,6 @@
 #include <strings.h>
 #include <unistd.h>
 
-#ifdef HAVE_NCURSES
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +49,9 @@
 #  error No curses header file available
 #endif
 
+/* This go-around is needed only when compiling with antique version of curses.
+   getmaxyx is part of Technical Standard X/Open Curses Issue 4, Version 2 (1996).
+   http://pubs.opengroup.org/onlinepubs/9693989999/toc.pdf see page 106 */
 #ifndef getmaxyx
 #  define getmaxyx(win,y,x)	((y) = (win)->_maxy + 1, (x) = (win)->_maxx + 1)
 #endif
@@ -61,8 +63,6 @@
 #include "asn.h"
 #include "display.h"
 #include "utils.h"
-
-#endif
 
 #include <time.h>
 
@@ -637,21 +637,6 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
   attroff(A_BOLD);
 
   mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
-  /*
-  printw("(tos=0x%X ", tos);
-  printw("psize=%d ", packetsize );
-  printw("bitpattern=0x%02X)", (unsigned char)(abs(ctl->bitpattern)));
-  if( cpacketsize > 0 ){
-    printw("psize=%d ", cpacketsize);
-  } else {
-    printw("psize=rand(%d,%d) ",MINPACKET, -cpacketsize);
-  }
-  if( ctl->bitpattern>=0 ){
-    printw("bitpattern=0x%02X)", (unsigned char)(ctl->bitpattern));
-  } else {
-    printw("bitpattern=rand(0x00-FF))");
-  }
-  */
   t = time(NULL);
   mvprintw(1, maxx-25, iso_time(&t));
   printw("\n");

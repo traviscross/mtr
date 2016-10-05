@@ -28,21 +28,6 @@ extern void dns_ack(struct mtr_ctl *ctl);
 #ifdef ENABLE_IPV6
 extern int dns_waitfd6(void);
 extern void dns_ack6(void);
-#ifdef NEED_RES_STATE_EXT
-/* __res_state_ext is missing on many (most?) BSD systems */
-struct __res_state_ext {
-	union res_sockaddr_union nsaddrs[MAXNS];
-	struct sort_list {
-		int     af;
-		union {
-			struct in_addr  ina;
-			struct in6_addr in6a;
-		} addr, mask;
-	} sort_list[MAXRESOLVSORT];
-	char nsuffix[64];
-	char nsuffix2[64];
-};
-#endif
 #endif
 
 extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * address);

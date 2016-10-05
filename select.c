@@ -44,8 +44,6 @@
 static double dnsinterval;
 static struct timeval intervaltime;
 
-#define GRACETIME (ctl->GraceTime * 1000*1000)
-
 extern void select_loop(struct mtr_ctl *ctl){
   fd_set readfd;
   fd_set writefd;
@@ -145,7 +143,7 @@ extern void select_loop(struct mtr_ctl *ctl){
 	if (graceperiod) {
 	  dt = (thistime.tv_usec - startgrace.tv_usec) +
 		    1000000 * (thistime.tv_sec - startgrace.tv_sec);
-	  if (dt > GRACETIME)
+	  if ((ctl->GraceTime * 1000 * 1000) < dt)
 	    return;
 	}
 

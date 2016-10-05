@@ -34,16 +34,6 @@
 #include "dns.h"
 
 
-#if 0
-static char *addr_to_str(struct mtr_ctl *ctl, ip_t addr)
-{
-  static char buf[20];
-
-  sprintf (buf, "%s", strlongip(ctl, &addr ));
-  return buf;
-}
-#endif
-
 // Log an echo request, or a "ping"
 extern void raw_rawxmit (int host, int seq)
 {

@@ -701,7 +701,6 @@ extern int main(int argc, char **argv)
   while (names != NULL) {
 
     ctl.Hostname = names->name;
-    //  if (Hostname == NULL) Hostname = "localhost"; // no longer necessary.
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
     }

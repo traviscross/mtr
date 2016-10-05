@@ -146,7 +146,6 @@ struct nethost {
   int avg;	/* average:  addByMin */
   int gmean;	/* geometric mean: addByMin */
   int jitter;	/* current jitter, defined as t1-t0 addByMin */
-/*int jbest;*/	/* min jitter, of cause it is 0, not needed */
   int javg;	/* avg jitter */
   int jworst;	/* max jitter */
   int jinta;	/* estimated variance,? rfc1889's "Interarrival Jitter" */
@@ -174,7 +173,6 @@ static int BSDfix = 0;
 
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
-static struct timeval reset = { 0, 0 };
 
 static int    sendsock4;
 static int    sendsock4_icmp;
@@ -378,7 +376,6 @@ static void net_send_tcp(struct mtr_ctl *ctl, int index)
     error(EXIT_FAILURE, errno, "getsockname()");
   }
 
-  //  opt = 1;
   flags = fcntl(s, F_GETFL, 0);
   if (flags < 0) {
     display_clear(ctl);
@@ -817,17 +814,6 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
     host[index].jitter = host[index].jworst = host[index].jinta= 0;
   }
 
-  /* some time best can be too good to be true, experienced 
-   * at least in linux 2.4.x.
-   *  safe guard 1) best[index]>=best[index-1] if index>0
-   *             2) best >= average-20,000 usec (good number?)
-  if (index > 0) {
-    if (totusec < host[index].best &&
-       totusec>= host[index-1].best) host[index].best  = totusec;
-  } else {
-    if(totusec < host[index].best) host[index].best  = totusec;
-  }
-   */
   if (totusec < host[index].best ) host[index].best  = totusec;
   if (totusec > host[index].worst) host[index].worst = totusec;
 
@@ -1207,7 +1193,6 @@ extern int net_max(struct mtr_ctl *ctl)
   int max;
 
   max = 0;
-  /* for(at = 0; at < MaxHost-2; at++) { */
   for(at = 0; at < ctl->maxTTL-1; at++) {
     if ( addrcmp( (void *) &(host[at].addr),
                   (void *) remoteaddress, ctl->af ) == 0 ) {
@@ -1288,8 +1273,6 @@ extern int net_send_batch(struct mtr_ctl *ctl)
     }
   }
 
-  /* printf ("cpacketsize = %d, packetsize = %d\n", cpacketsize, packetsize);  */
-
   net_send_query(ctl, batch_at);
 
   for (i=ctl->fstTTL-1;i<batch_at;i++) {
@@ -1302,8 +1285,7 @@ extern int net_send_batch(struct mtr_ctl *ctl)
 	If the line proves necessary, it should at least NOT trigger that line
 	when host[i].addr == 0 */
     if ( ( addrcmp( (void *) &(host[i].addr),
-                    (void *) remoteaddress, ctl->af ) == 0 )
-	/* || (host[i].addr == host[batch_at].addr)  */)
+                    (void *) remoteaddress, ctl->af ) == 0 ))
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
 
@@ -1455,9 +1437,6 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
   len = sizeof name_struct; 
   getsockname (recvsock, name, &len);
   sockaddrtop( name, localaddr, sizeof localaddr );
-#if 0
-  printf ("got localaddr: %s\n", localaddr); 
-#endif
 
   return 0;
 }
@@ -1518,7 +1497,6 @@ extern void net_reset(struct mtr_ctl *ctl)
     }
   }
 
-  gettimeofday(&reset, NULL);
 }
 
 static int net_set_interfaceaddress_udp(struct mtr_ctl *ctl)
