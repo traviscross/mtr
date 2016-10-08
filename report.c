@@ -84,7 +84,7 @@ extern void report_close(struct mtr_ctl *ctl)
 
   if (ctl->reportwide)
   {
-    // get the longest hostname
+    /* get the longest hostname */
     len_hosts = strlen(ctl->LocalHostname);
     max = net_max(ctl);
     at  = net_min(ctl);
@@ -101,10 +101,10 @@ extern void report_close(struct mtr_ctl *ctl)
   if (ctl->ipinfo_no >= 0 && iiwidth_len) {
     ctl->ipinfo_no %= iiwidth_len;
     if (ctl->reportwide) {
-      len_hosts++;    // space
+      len_hosts++;    /* space */
       len_tmp   += get_iiwidth(ctl->ipinfo_no);
       if (!ctl->ipinfo_no)
-        len_tmp += 2; // align header: AS
+        len_tmp += 2; /* align header: AS */
     }
   }
   snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
@@ -300,7 +300,7 @@ extern void json_close(struct mtr_ctl *ctl)
         printf(",\n");
       }
 
-      if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method.
+      if (j <= 0) continue; /* Field nr 0, " " shouldn't be printed in this method. */
 
       /* Format value */
       format = data_fields[j].format;
@@ -374,7 +374,7 @@ extern void xml_close(struct mtr_ctl *ctl)
       const char *title;
 
       j = ctl->fld_index[ctl->fld_active[i]];
-      if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method. 
+      if (j <= 0) continue; /* Field nr 0, " " shouldn't be printed in this method. */
 
       snprintf(name, sizeof(name), "%s%s%s", "        <%s>", data_fields[j].format, "</%s>\n");
 

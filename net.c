@@ -86,9 +86,9 @@ struct TCPHeader {
   uint32_t seq;
 };
 
-// This ifdef is unnecessary. But it should trigger errors if I forget
-// an ifdef HAS_SCTP further down.  (Success! I forgot one and the compiler
-// told me the line number!)
+/* This ifdef is unnecessary.  But it should trigger errors if I forget an
+   ifdef HAS_SCTP further down.  (Success!  I forgot one and the compiler
+   told me the line number!) */
 #ifdef HAS_SCTP 
 /* Structure of an SCTP header */
 struct SCTPHeader {
@@ -666,7 +666,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
       gettimeofday(&sequence[udp->dstport].time, NULL);
       udp->dstport = htons(udp->dstport);
     } else {
-      // keep dstport constant, stuff sequence into the checksum
+      /* keep dstport constant, stuff sequence into the checksum */
       udp->dstport = htons(ctl->remoteport);
       udp->checksum = new_sequence(ctl, index);
       gettimeofday(&sequence[udp->checksum].time, NULL);

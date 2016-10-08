@@ -350,10 +350,10 @@ static void format_field (char *dst, const char *format, int n)
     *dst++ = ' ';
     format_number (n, 5, dst);
   } else if (strchr( format, 'f' ) ) {
-    // this is for fields where we measure integer microseconds but
-    // display floating point miliseconds. Convert to float here.
+    /* this is for fields where we measure integer microseconds but
+       display floating point miliseconds. Convert to float here. */
     sprintf(dst, format, n / 1000.0 ); 
-    // this was marked as a temporary hack over 10 years ago. -- REW
+    /* this was marked as a temporary hack over 10 years ago. -- REW */
   } else {
     sprintf(dst, format, n);
   } 
@@ -514,7 +514,7 @@ static void mtr_curses_init(void) {
 
 
 static int block_col[NUM_FACTORS+1] =
-{	// 1:black 2:red 3:green 4:brown/yellow 5:blue 6:magenta 7:cyan 8:white
+{	/* 1:black 2:red 3:green 4:brown/yellow 5:blue 6:magenta 7:cyan 8:white */
         COLOR_PAIR(2)|A_BOLD,
 	A_NORMAL,
 	COLOR_PAIR(3),

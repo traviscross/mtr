@@ -311,12 +311,11 @@ enum {
   N_COLS
 };
 
-// Trick to cast a pointer to integer.....
-// We are mis-using a pointer as a single integer. On 64-bit
-// architectures, the pointer is 64 bits and the integer only 32. 
-// The compiler warns us of loss of precision. However we know we
-// casted a normal 32-bit integer into this pointer a few microseconds
-// earlier, so it is ok. Nothing to worry about....
+/* Trick to cast a pointer to integer.  We are mis-using a pointer as a
+   single integer.  On 64-bit architectures, the pointer is 64 bits and the
+   integer only 32.  The compiler warns us of loss of precision.  However we
+   know we casted a normal 32-bit integer into this pointer a few
+   microseconds earlier, so it is ok.  Nothing to worry about.  */
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
 static void  float_formatter(GtkTreeViewColumn *tree_column ATTRIBUTE_UNUSED,
@@ -733,7 +732,7 @@ static gboolean ReportTreeView_clicked(GtkWidget *Tree ATTRIBUTE_UNUSED,
   
   gtk_tree_view_set_cursor(GTK_TREE_VIEW(ReportTreeView), path, NULL, FALSE);
 
-  // Single right click: prepare and show the popup menu
+  /* Single right click: prepare and show the popup menu */
   popup_menu = gtk_menu_new ();
 
   copy_item = gtk_menu_item_new_with_label ("Copy to clipboard");

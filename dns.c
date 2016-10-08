@@ -146,13 +146,13 @@ extern void dns_open(struct mtr_ctl *ctl)
     int i;
     FILE *infp;
 
-    // Automatically reap children. 
+    /* Automatically reap children. */
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
       error(EXIT_FAILURE, errno, "signal");
     }
 
-    // Close all unneccessary FDs.
-    // for debugging and error reporting, keep std-in/out/err.
+    /* Close all unneccessary FDs.
+       for debugging and error reporting, keep std-in/out/err. */
     for (i=3;i<fromdns[1];i++) {
        if (i == todns[0]) continue;
        if (i == fromdns[1]) continue;
@@ -170,7 +170,7 @@ extern void dns_open(struct mtr_ctl *ctl)
       if (!fork ()) {
         int rv;
 
-        buf[strlen(buf)-1] = 0; // chomp newline.
+        buf[strlen(buf)-1] = 0; /* chomp newline. */
 
         longipstr (buf, &host, ctl->af);
         set_sockaddr_ip (ctl, &sa, &host);
@@ -193,8 +193,8 @@ extern void dns_open(struct mtr_ctl *ctl)
   } else {
      int flags;
 
-     // the parent. 
-     close (todns[0]); // close the pipe ends we don't need. 
+     /* the parent. */
+     close (todns[0]); /* close the pipe ends we don't need. */
      close (fromdns[1]);
      fromdnsfp = fdopen (fromdns[0],"r"); 
      flags = fcntl(fromdns[0], F_GETFL, 0);
@@ -252,7 +252,7 @@ extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
    
   r = findip (ctl, ip);
   if (r) {
-     // we've got a result. 
+     /* we've got a result. */
      if (r->name) 
         return r->name;
      else
@@ -282,7 +282,7 @@ extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
   return t;
 }
 
-// XXX check if necessary/exported. 
+/* XXX check if necessary/exported. */
 
 /* Resolve an IP address to a hostname. */ 
 extern struct hostent *addr2host( const char *addr, int family ) {

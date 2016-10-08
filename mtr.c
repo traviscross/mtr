@@ -695,7 +695,7 @@ extern int main(int argc, char **argv)
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
   }
 
-  if (!names) append_to_names ("localhost"); // default: localhost. 
+  if (!names) append_to_names ("localhost"); /* default: localhost. */
 
   head = names;
   while (names != NULL) {

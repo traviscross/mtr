@@ -46,8 +46,8 @@
 #include "mtr.h"
 #include "asn.h"
 #include "utils.h"
-//#define IIDEBUG
 
+/* #define IIDEBUG */
 #ifdef IIDEBUG
 #include <syslog.h>
 #define DEB_syslog syslog
@@ -65,12 +65,12 @@
 static int  iihash = 0;
 static char fmtinfo[32];
 
-// items width: ASN, Route, Country, Registry, Allocated 
-static const int iiwidth[] = { 7, 19, 4, 8, 11 };    // item len + space
+/* items width: ASN, Route, Country, Registry, Allocated */
+static const int iiwidth[] = { 7, 19, 4, 8, 11 };    /* item len + space */
 
 typedef char* items_t[ITEMSMAX + 1];
-static items_t items_a;		// without hash: items
-static char txtrec[NAMELEN + 1];	// without hash: txtrec
+static items_t items_a;		/* without hash: items */
+static char txtrec[NAMELEN + 1];	/* without hash: txtrec */
 static items_t* items = &items_a;
 
 
@@ -146,7 +146,7 @@ static char *ipinfo_lookup(const char *domain) {
     return txt;
 }
 
-// originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
+/* originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated */
 static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
     char* prev;
     char* next;
@@ -190,11 +190,11 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
 }
 
 #ifdef ENABLE_IPV6
-// from dns.c:addr2ip6arpa()
+/* from dns.c:addr2ip6arpa() */
 static void reverse_host6(struct in6_addr *addr, char *buff) {
     int i;
     char *b = buff;
-    for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) // 64b portion
+    for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) /* 64b portion */
         sprintf(b, "%x.%x.", addr->s6_addr[i] & 0xf, addr->s6_addr[i] >> 4);
     buff[strlen(buff) - 1] = '\0';
 }
