@@ -190,104 +190,40 @@ extern int display_keyaction(struct mtr_ctl *ctl)
 
 extern void display_rawxmit(struct mtr_ctl *ctl, int host, int seq)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawxmit (host, seq);
-    break;
-  }
 }
 
 
 extern void display_rawping(struct mtr_ctl *ctl, int host, int msec, int seq)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-#ifdef HAVE_GTK
-  case DisplayGTK:
-#endif
-    break;
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawping (ctl, host, msec, seq);
-    break;
-  }
 }
 
 
 extern void display_rawhost(struct mtr_ctl *ctl, int host, ip_t *ip_addr)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-#ifdef HAVE_GTK
-  case DisplayGTK:
-#endif
-    break;
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawhost (ctl, host, ip_addr);
-    break;
-  }
 }
 
 
 extern void display_loop(struct mtr_ctl *ctl)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-  case DisplayRaw:
-    select_loop(ctl);
-    break;
 #ifdef HAVE_GTK
-  case DisplayGTK:
+  if (ctl->DisplayMode == DisplayGTK)
     gtk_loop(ctl);
-    break;
+  else
 #endif
-  }
+    select_loop(ctl);
 }
 
 
 extern void display_clear(struct mtr_ctl *ctl)
 {
-  switch(ctl->DisplayMode) {
 #ifdef HAVE_NCURSES
-  case DisplayCurses:
+  if (ctl->DisplayMode == DisplayCurses)
     mtr_curses_clear(ctl);
-    break;
 #endif
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-  case DisplayRaw:
-    break;
-
-#ifdef HAVE_GTK
-  case DisplayGTK:
-    break;
-#endif
-  }
 }
