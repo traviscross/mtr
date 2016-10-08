@@ -512,18 +512,17 @@ static void mtr_curses_init(void) {
 	block_map[NUM_FACTORS-1] = '>';
 }
 
-
-static int block_col[NUM_FACTORS+1] =
-{	/* 1:black 2:red 3:green 4:brown/yellow 5:blue 6:magenta 7:cyan 8:white */
-        COLOR_PAIR(2)|A_BOLD,
+enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
+static const int block_col[NUM_FACTORS + 1] = {
+        COLOR_PAIR(red)|A_BOLD,
 	A_NORMAL,
-	COLOR_PAIR(3),
-	COLOR_PAIR(3)|A_BOLD,
-	COLOR_PAIR(4)|A_BOLD,
-	COLOR_PAIR(6)|A_BOLD,
-	COLOR_PAIR(6),
-	COLOR_PAIR(2),
-	COLOR_PAIR(2)|A_BOLD
+	COLOR_PAIR(green),
+	COLOR_PAIR(green)|A_BOLD,
+	COLOR_PAIR(yellow)|A_BOLD,
+	COLOR_PAIR(magenta)|A_BOLD,
+	COLOR_PAIR(magenta),
+	COLOR_PAIR(red),
+	COLOR_PAIR(red)|A_BOLD
 };
 
 static void mtr_print_scaled(int ms) 
