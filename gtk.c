@@ -26,18 +26,18 @@
 #include <sys/types.h>
 
 #ifdef HAVE_GTK
-#include <string.h>
-#include <sys/types.h>
-#include <gtk/gtk.h>
+# include <string.h>
+# include <sys/types.h>
+# include <gtk/gtk.h>
 
-#include "mtr.h"
-#include "net.h"
-#include "dns.h"
-#include "asn.h"
-#include "mtr-gtk.h"
-#include "utils.h"
+# include "mtr.h"
+# include "net.h"
+# include "dns.h"
+# include "asn.h"
+# include "mtr-gtk.h"
+# include "utils.h"
 
-#include "img/mtr_icon.xpm"
+# include "img/mtr_icon.xpm"
 #endif
 
 static gint gtk_ping(gpointer data);

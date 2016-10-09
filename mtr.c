@@ -27,15 +27,15 @@
 #include <string.h>
 #include <strings.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #ifdef HAVE_VALUES_H
-#include <values.h>
+# include <values.h>
 #endif
 #ifdef HAVE_SYS_LIMITS_H
-#include <sys/limits.h>
+# include <sys/limits.h>
 #endif
 
 #include <netdb.h>
@@ -58,15 +58,15 @@
 #include "utils.h"
 
 #ifdef HAVE_GETOPT
-#include <getopt.h>
+# include <getopt.h>
 #else
-#include "portability/getopt.h"
+# include "portability/getopt.h"
 #endif
 
 #ifdef ENABLE_IPV6
-#define DEFAULT_AF AF_UNSPEC
+# define DEFAULT_AF AF_UNSPEC
 #else
-#define DEFAULT_AF AF_INET
+# define DEFAULT_AF AF_INET
 #endif
 
 

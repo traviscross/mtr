@@ -23,18 +23,18 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #include <errno.h>
 
 #ifdef __APPLE__
-#define BIND_8_COMPAT
+# define BIND_8_COMPAT
 #endif
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
+# include <arpa/nameser_compat.h>
 #endif
 #include <netdb.h>
 #include <netinet/in.h>
@@ -49,12 +49,11 @@
 
 /* #define IIDEBUG */
 #ifdef IIDEBUG
-#include <syslog.h>
-#define DEB_syslog syslog
+# include <syslog.h>
+# define DEB_syslog syslog
 #else
-#define DEB_syslog(...) do {} while (0)
+# define DEB_syslog(...) do {} while (0)
 #endif
-
 
 #define IIHASH_HI	128
 #define ITEMSMAX	15

@@ -25,9 +25,9 @@
 #include "config.h"
 
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #include <errno.h>
 #include <unistd.h>

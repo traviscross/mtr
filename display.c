@@ -31,23 +31,23 @@
 #include "asn.h"
 
 #ifdef HAVE_NCURSES
-#include "mtr-curses.h"
+# include "mtr-curses.h"
 #endif
 
 #ifdef HAVE_GTK
-#include "mtr-gtk.h"
+# include "mtr-gtk.h"
 #endif
 
 #include "split.h"
 
 #ifdef HAVE_NCURSES
-#define DEFAULT_DISPLAY DisplayCurses
+# define DEFAULT_DISPLAY DisplayCurses
 #else
-#define DEFAULT_DISPLAY DisplayReport
+# define DEFAULT_DISPLAY DisplayReport
 #endif
 
 #ifdef HAVE_GTK
-# define UNUSED_IF_NO_GTK /* empty */
+# define UNUSED_IF_NO_GTK       /* empty */
 #else
 # define UNUSED_IF_NO_GTK ATTRIBUTE_UNUSED
 #endif
@@ -87,9 +87,9 @@ extern void display_open(struct mtr_ctl *ctl)
 #ifdef HAVE_NCURSES
   case DisplayCurses:
     mtr_curses_open(ctl);
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_open(ctl);
-#endif
+# endif
     break;
 #endif
   case DisplaySplit:
@@ -98,9 +98,9 @@ extern void display_open(struct mtr_ctl *ctl)
 #ifdef HAVE_GTK
   case DisplayGTK:
     gtk_open(ctl);
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_open(ctl);
-#endif
+# endif
     break;
 #endif
   }
@@ -127,9 +127,9 @@ extern void display_close(struct mtr_ctl *ctl, time_t now)
     break;
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_close(ctl);
-#endif
+# endif
     mtr_curses_close();
     break;
 #endif

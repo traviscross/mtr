@@ -27,10 +27,10 @@
 
 /* MacOSX may need this before socket.h...*/
 #if defined(HAVE_SYS_TYPES_H)
-#include <sys/types.h>
+# include <sys/types.h>
 #else
 /* If a system doesn't have sys/types.h, lets hope that time_t is an int */
-#define time_t int
+# define time_t int
 #endif
 
 #include <sys/socket.h>
@@ -38,22 +38,22 @@
 #include <arpa/inet.h>
 
 #if defined(HAVE_NCURSES_H)
-#  include <ncurses.h>
+# include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
-#  include <ncurses/curses.h>
+# include <ncurses/curses.h>
 #elif defined(HAVE_CURSES_H)
-#  include <curses.h>
+# include <curses.h>
 #elif defined(HAVE_CURSESX_H)
-#  include <cursesX.h>
+# include <cursesX.h>
 #else
-#  error No curses header file available
+# error No curses header file available
 #endif
 
 /* This go-around is needed only when compiling with antique version of curses.
    getmaxyx is part of Technical Standard X/Open Curses Issue 4, Version 2 (1996).
    http://pubs.opengroup.org/onlinepubs/9693989999/toc.pdf see page 106 */
 #ifndef getmaxyx
-#  define getmaxyx(win,y,x)	((y) = (win)->_maxy + 1, (x) = (win)->_maxx + 1)
+# define getmaxyx(win,y,x)	((y) = (win)->_maxy + 1, (x) = (win)->_maxx + 1)
 #endif
 
 #include "mtr.h"

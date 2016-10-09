@@ -19,7 +19,7 @@
 #include "config.h"
 
 #if defined(HAVE_SYS_XTI_H)
-#include <sys/xti.h>
+# include <sys/xti.h>
 #endif
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@
 #include <memory.h>
 #include <unistd.h>
 #ifdef HAVE_FCNTL_H
-#include <fcntl.h>
+# include <fcntl.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,12 +40,12 @@
 #include <errno.h>
 #include <string.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #ifdef HAVE_LINUX_ICMP_H
-#include <linux/icmp.h>
+# include <linux/icmp.h>
 #endif
 
 #include "mtr.h"
@@ -125,14 +125,14 @@ struct IPHeader {
 };
   
 #ifndef ICMP_ECHOREPLY
-#define ICMP_ECHOREPLY		0
-#define ICMP_DEST_UNREACH	3
-#define ICMP_ECHO		8
-#define ICMP_TIME_EXCEEDED	11
+# define ICMP_ECHOREPLY		0
+# define ICMP_DEST_UNREACH	3
+# define ICMP_ECHO		8
+# define ICMP_TIME_EXCEEDED	11
 #endif
 
 #ifndef SOL_IP
-#define SOL_IP 0
+# define SOL_IP 0
 #endif
 
 struct nethost {
@@ -205,9 +205,9 @@ static ip_t * remoteaddress;
 #ifdef ENABLE_IPV6
 static char localaddr[INET6_ADDRSTRLEN];
 #else
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 16
-#endif
+# ifndef INET_ADDRSTRLEN
+#  define INET_ADDRSTRLEN 16
+# endif
 static char localaddr[INET_ADDRSTRLEN];
 #endif
 
@@ -445,10 +445,10 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
   struct sockaddr_storage remote;
   struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
   struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
   struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
-#endif
+# endif
   socklen_t len;
 
   ttl = index + 1;
@@ -471,14 +471,14 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
     remote4->sin_port = htons(ctl->remoteport);
     len = sizeof (struct sockaddr_in);
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, ctl->af);
     addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, ctl->af);
     remote6->sin6_port = htons(ctl->remoteport);
     len = sizeof (struct sockaddr_in6);
     break;
-#endif
+# endif
   }
 
   if (bind(s, (struct sockaddr *) &local, len)) {
@@ -508,31 +508,31 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
       error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
     }
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
       display_clear(ctl);
       error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
     }
     break;
-#endif
+# endif
   }
 
-#ifdef SO_MARK
+# ifdef SO_MARK
     if (ctl->mark && setsockopt( s, SOL_SOCKET, SO_MARK, &ctl->mark, sizeof ctl->mark ) ) {
       error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
-#endif
+# endif
 
   switch (local.ss_family) {
   case AF_INET:
     port = ntohs(local4->sin_port);
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     port = ntohs(local6->sin6_port);
     break;
-#endif
+# endif
   default:
     display_clear(ctl);
     error(EXIT_FAILURE, 0, "unknown address family");
@@ -544,7 +544,7 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
 
   connect(s, (struct sockaddr *) &remote, len);
 }
-#endif
+#endif /* HAS_SCTP */
 
 /*  Attempt to find the host at a particular number of hops away  */
 static void net_send_query(struct mtr_ctl *ctl, int index)
@@ -1064,7 +1064,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
           decodempls(num, packet, &mpls, 156);
 
       break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
       case AF_INET6:
         if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
@@ -1077,12 +1077,12 @@ extern void net_process_return(struct mtr_ctl *ctl)
           decodempls(num, packet, &mpls, 136);
 
         break;
-#endif
+# endif
       }
       seq_num = ntohs(sctpheader->srcport);
     }
     break;
-#endif
+#endif /* HAS_SCTP */
   }
   if (seq_num)
     net_process_ping (ctl, seq_num, mpls, (void *) fromaddress, now);
