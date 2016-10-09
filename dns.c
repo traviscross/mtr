@@ -68,6 +68,9 @@ extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
 # define UNUSED_IF_NO_IPV6 ATTRIBUTE_UNUSED
 #endif
 
+static int todns[2], fromdns[2];
+static FILE *fromdnsfp;
+
 static int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
 {
 #ifdef ENABLE_IPV6
@@ -120,10 +123,6 @@ static void set_sockaddr_ip (struct mtr_ctl *ctl, struct sockaddr_storage *sa, i
     break;
   }
 }
-
-
-static int todns[2], fromdns[2];
-FILE *fromdnsfp;
 
 extern void dns_open(struct mtr_ctl *ctl)
 {

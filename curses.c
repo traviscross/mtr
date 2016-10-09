@@ -66,6 +66,23 @@
 
 #include <time.h>
 
+enum { NUM_FACTORS = 8 };
+static double factors[NUM_FACTORS];
+static int scale[NUM_FACTORS];
+static char block_map[NUM_FACTORS];
+
+enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
+static const int block_col[NUM_FACTORS + 1] = {
+  COLOR_PAIR(red) | A_BOLD,
+  A_NORMAL,
+  COLOR_PAIR(green),
+  COLOR_PAIR(green) | A_BOLD,
+  COLOR_PAIR(yellow) | A_BOLD,
+  COLOR_PAIR(magenta) | A_BOLD,
+  COLOR_PAIR(magenta),
+  COLOR_PAIR(red),
+  COLOR_PAIR(red) | A_BOLD
+};
 
 static void pwcenter(char *str) 
 {
@@ -452,10 +469,6 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
   move(2, 0);
 }
 
-#define NUM_FACTORS 8
-static double factors[NUM_FACTORS];
-static int scale[NUM_FACTORS];
-
 static void mtr_gen_scale(struct mtr_ctl *ctl)
 {
 	int *saved, i, max, at;
@@ -487,9 +500,6 @@ static void mtr_gen_scale(struct mtr_ctl *ctl)
 	}
 }
 
-
-static char block_map[NUM_FACTORS];
-
 static void mtr_curses_init(void) {
 	int i;
 	int block_split;
@@ -511,19 +521,6 @@ static void mtr_curses_init(void) {
 	block_map[0] = '.';
 	block_map[NUM_FACTORS-1] = '>';
 }
-
-enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
-static const int block_col[NUM_FACTORS + 1] = {
-        COLOR_PAIR(red)|A_BOLD,
-	A_NORMAL,
-	COLOR_PAIR(green),
-	COLOR_PAIR(green)|A_BOLD,
-	COLOR_PAIR(yellow)|A_BOLD,
-	COLOR_PAIR(magenta)|A_BOLD,
-	COLOR_PAIR(magenta),
-	COLOR_PAIR(red),
-	COLOR_PAIR(red)|A_BOLD
-};
 
 static void mtr_print_scaled(int ms) 
 {
@@ -721,7 +718,7 @@ extern void mtr_curses_open(struct mtr_ctl *ctl)
   if (use_default_colors() == OK)
     bg_col = -1;
 #endif
-  for (i = 0; i < 8; i++)
+  for (i = 0; i < NUM_FACTORS; i++)
       init_pair(i+1, i, bg_col);
 
   mtr_curses_init();
