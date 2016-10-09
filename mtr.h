@@ -53,6 +53,21 @@ typedef struct in_addr ip_t;
 #define MAXFLD 20		/* max stats fields to display */
 #define FLD_INDEX_SZ 256
 
+/* net related definitions */
+#define SAVED_PINGS 200
+#define MAXPATH 8
+#define MaxHost 256
+#define MinPort 1024
+#define MaxPort 65535
+#define MAXPACKET 4470          /* largest test packet size */
+#define MINPACKET 28            /* 20 bytes IP header and 8 bytes ICMP or UDP */
+#define MAXLABELS 8             /* http://kb.juniper.net/KB2190 (+ 3 just in case) */
+
+/* Stream Control Transmission Protocol is defined in netinet/in.h */
+#ifdef IPPROTO_SCTP
+# define HAS_SCTP 1
+#endif
+
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
@@ -96,6 +111,27 @@ struct mtr_ctl {
     Interactive:1,
     display_mode:2,
     DisplayMode:5;
+};
+
+/* dynamic field drawing */
+struct fields {
+  const unsigned char key;
+  const char *descr;
+  const char *title;
+  const char *format;
+  const int length;
+  int (*net_xxx)(int);
+};
+/* defined in mtr.c */
+extern const struct fields data_fields[MAXFLD];
+
+/* MPLS label object */
+struct mplslen {
+  unsigned long label[MAXLABELS]; /* label value */
+  uint8_t exp[MAXLABELS];         /* experimental bits */
+  uint8_t ttl[MAXLABELS];         /* MPLS TTL */
+  char s[MAXLABELS];              /* bottom of stack */
+  char labels;                    /* how many labels did we get? */
 };
 
 #endif /* MTR_MTR_H */

@@ -54,6 +54,9 @@
 #include "dns.h"
 #include "utils.h"
 
+#define MinSequence 33000
+#define MaxSequence 65536
+
 static int packetsize;         /* packet size used by ping */
 static int spacketsize;                /* packet size used by sendto */
 
