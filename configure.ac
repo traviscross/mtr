@@ -5,6 +5,7 @@ AC_INIT([mtr],
   [http://www.BitWizard.nl/mtr/])
 AC_CONFIG_SRCDIR([mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([
   1.7.9
   foreign
