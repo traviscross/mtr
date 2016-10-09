@@ -166,11 +166,6 @@ struct sequence {
 };
 
 
-/* BSD-derived kernels use host byte order for the IP length and 
-   offset fields when using raw sockets.  We detect this automatically at 
-   run-time and do the right thing. */
-static int BSDfix = 0;
-
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 
@@ -566,6 +561,10 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   /* offset for ipv6 checksum calculation */
   int offset = 6;
 #endif
+  /* BSD-derived kernels use host byte order for the IP length and offset
+     fields when using raw sockets.  We detect this automatically at
+     run-time and do the right thing.  */
+  static int BSDfix = 0;
 
   if (ctl->mtrtype == IPPROTO_TCP) {
     net_send_tcp(ctl, index);

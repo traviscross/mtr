@@ -41,9 +41,6 @@
 #include "display.h"
 #include "select.h"
 
-static double dnsinterval;
-static struct timeval intervaltime;
-
 extern void select_loop(struct mtr_ctl *ctl){
   fd_set readfd;
   fd_set writefd;
@@ -60,6 +57,8 @@ extern void select_loop(struct mtr_ctl *ctl){
   int dt;
   int rv; 
   int graceperiod = 0;
+  struct timeval intervaltime;
+  static double dnsinterval = 0;
 
   memset(&startgrace, 0, sizeof(startgrace));
 
