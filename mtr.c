@@ -91,11 +91,9 @@ const struct fields data_fields[MAXFLD] = {
 };
 
 typedef struct names {
-  char*                 name;
-  struct names*         next;
+  char         *name;
+  struct names *next;
 } names_t;
-static names_t *names = NULL;
-
 
 static void __attribute__((__noreturn__)) usage(FILE *out)
 {
@@ -152,19 +150,20 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
 
 
 static void
-append_to_names(const char* item) {
+append_to_names(names_t **names_head, const char *item) {
 
   names_t* name = calloc(1, sizeof(names_t));
   if (name == NULL) {
     error(EXIT_FAILURE, errno, "memory allocation failure");
   }
   name->name = xstrdup(item);
-  name->next = names;
-  names = name;
+  name->next = NULL;
+  *names_head = name;
+  names_head = &(name->next);
 }
 
 static void
-read_from_file(const char *filename) {
+read_from_file(names_t **names, const char *filename) {
 
   FILE *in;
   char line[512];
@@ -181,7 +180,7 @@ read_from_file(const char *filename) {
 
   while (fgets(line, sizeof(line), in)) {
     char* name = trim(line, '\0');
-    append_to_names(name);
+    append_to_names(names, name);
   }
 
   if (ferror(in)) {
@@ -262,7 +261,7 @@ static void init_fld_options (struct mtr_ctl *ctl)
 }
 
 
-static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
+static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **argv)
 {
   int opt;
   int i;
@@ -438,7 +437,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
       }
       break;
     case 'F':
-      read_from_file(optarg);
+      read_from_file(names, optarg);
       break;
     case 'm':
       ctl->maxTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
@@ -590,7 +589,7 @@ static void parse_arg (struct mtr_ctl *ctl, int argc, char **argv)
 }
 
 
-static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
+static void parse_mtr_options (struct mtr_ctl *ctl, names_t **names, char *string)
 {
   int argc = 1;
   char *argv[128], *p;
@@ -607,7 +606,7 @@ static void parse_mtr_options (struct mtr_ctl *ctl, char *string)
     error(0, 0, "Warning: extra arguments ignored: %s", p);
   }
 
-  parse_arg (ctl, argc, argv);
+  parse_arg (ctl, names, argc, argv);
   free(argv[0]);
   optind = 0;
 }
@@ -633,7 +632,9 @@ extern int main(int argc, char **argv)
   struct sockaddr_in6 * sa6;
 #endif
   time_t now;
-  names_t *head;
+  names_t *names_root = NULL;
+  names_t **names_head = &names_root;
+
   struct mtr_ctl ctl;
   memset(&ctl, 0, sizeof(ctl));
   /* initialize non-null values */
@@ -681,13 +682,13 @@ extern int main(int argc, char **argv)
      but that requires a run-time initialization. */
   init_fld_options (&ctl);
 
-  parse_mtr_options (&ctl, getenv ("MTR_OPTIONS"));
+  parse_mtr_options (&ctl, names_head, getenv ("MTR_OPTIONS"));
 
-  parse_arg (&ctl, argc, argv);
+  parse_arg (&ctl, names_head, argc, argv);
 
   while (optind < argc) {
     char* name = argv[optind++];
-    append_to_names(name);
+    append_to_names(names_head, name);
   }
 
   /* Now that we know mtrtype we can select which socket to use */
@@ -695,12 +696,12 @@ extern int main(int argc, char **argv)
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
   }
 
-  if (!names) append_to_names ("localhost"); /* default: localhost. */
+  if (!names_root) append_to_names (names_head, "localhost"); /* default: localhost. */
 
-  head = names;
-  while (names != NULL) {
+  names_head = &names_root;
+  while (*names_head != NULL) {
 
-    ctl.Hostname = names->name;
+    ctl.Hostname = names_root->name;
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
     }
@@ -710,7 +711,7 @@ extern int main(int argc, char **argv)
       if (ctl.DisplayMode != DisplayCSV)
         exit(EXIT_FAILURE);
       else {
-        names = names->next;
+        names_root = names_root->next;
         continue;
       }
     }
@@ -728,7 +729,7 @@ extern int main(int argc, char **argv)
 
       if ( ctl.DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
       else {
-        names = names->next;
+        names_root = names_root->next;
         continue;
       }
     }
@@ -757,7 +758,7 @@ extern int main(int argc, char **argv)
       if (ctl.DisplayMode != DisplayCSV )
         exit(EXIT_FAILURE);
       else {
-        names = names->next;
+        names_root = names_root->next;
         continue;
       }
     }
@@ -768,7 +769,7 @@ extern int main(int argc, char **argv)
       if (ctl.DisplayMode != DisplayCSV)
         exit(EXIT_FAILURE);
       else {
-        names = names->next;
+        names_root = names_root->next;
         continue;
       }
     }
@@ -778,7 +779,7 @@ extern int main(int argc, char **argv)
       if (ctl.DisplayMode != DisplayCSV)
         exit(EXIT_FAILURE);
       else {
-        names = names->next;
+        names_root = names_root->next;
         continue;
       }
     }
@@ -798,19 +799,19 @@ extern int main(int argc, char **argv)
     if (ctl.DisplayMode != DisplayCSV)
       break;
     else
-      names = names->next;
+      names_root = names_root->next;
 
   }
 
   net_close();
 
-  while (head != NULL) {
-    names_t* item = head;
+  while (*names_head != NULL) {
+    names_t* item = *names_head;
     free(item->name); item->name = NULL;
-    head = head->next;
+    *names_head = item->next;
     free(item); item = NULL;
   }
-  head=NULL;
+  names_head=NULL;
 
   return 0;
 }
