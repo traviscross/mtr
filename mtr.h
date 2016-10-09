@@ -20,6 +20,8 @@
 #ifndef MTR_MTR_H
 #define MTR_MTR_H
 
+#include "config.h"
+
 #include <stdint.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -33,6 +35,10 @@
 typedef struct in6_addr ip_t;
 #else
 typedef struct in_addr ip_t;
+#endif
+
+#ifndef HAVE_TIME_T
+typedef int time_t;
 #endif
 
 /* The __unused__ attribute was added in gcc 3.2.7.  */

@@ -18,19 +18,19 @@
 
 #include "config.h"
 
+#include "mtr.h"
+
 #include <strings.h>
 #include <unistd.h>
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* MacOSX may need this before socket.h...*/
 #if defined(HAVE_SYS_TYPES_H)
 # include <sys/types.h>
-#else
-/* If a system doesn't have sys/types.h, lets hope that time_t is an int */
-# define time_t int
 #endif
 
 #include <sys/socket.h>
@@ -64,7 +64,6 @@
 #include "display.h"
 #include "utils.h"
 
-#include <time.h>
 
 enum { NUM_FACTORS = 8 };
 static double factors[NUM_FACTORS];

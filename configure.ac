@@ -163,6 +163,10 @@ AC_CHECK_TYPE([socklen_t],
 #include <sys/socket.h>
 #endif]])
 
+AC_CHECK_TYPES([time_t], [], [], [[
+#include <time.h>
+]])
+
 # Add C flags to display more warnings
 AC_MSG_CHECKING([for C flags to get more warnings])
 ac_save_CFLAGS="$CFLAGS"
