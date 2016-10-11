@@ -24,8 +24,6 @@
 
 #include "mtr.h"
 #include "display.h"
-#include "mtr-curses.h"
-#include "mtr-gtk.h"
 #include "report.h"
 #include "select.h"
 #include "raw.h"
@@ -33,23 +31,23 @@
 #include "asn.h"
 
 #ifdef HAVE_NCURSES
-#include "mtr-curses.h"
+# include "mtr-curses.h"
 #endif
 
 #ifdef HAVE_GTK
-#include "mtr-gtk.h"
+# include "mtr-gtk.h"
 #endif
 
 #include "split.h"
 
 #ifdef HAVE_NCURSES
-#define DEFAULT_DISPLAY DisplayCurses
+# define DEFAULT_DISPLAY DisplayCurses
 #else
-#define DEFAULT_DISPLAY DisplayReport
+# define DEFAULT_DISPLAY DisplayReport
 #endif
 
 #ifdef HAVE_GTK
-# define UNUSED_IF_NO_GTK /* empty */
+# define UNUSED_IF_NO_GTK       /* empty */
 #else
 # define UNUSED_IF_NO_GTK ATTRIBUTE_UNUSED
 #endif
@@ -89,9 +87,9 @@ extern void display_open(struct mtr_ctl *ctl)
 #ifdef HAVE_NCURSES
   case DisplayCurses:
     mtr_curses_open(ctl);
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_open(ctl);
-#endif
+# endif
     break;
 #endif
   case DisplaySplit:
@@ -100,9 +98,9 @@ extern void display_open(struct mtr_ctl *ctl)
 #ifdef HAVE_GTK
   case DisplayGTK:
     gtk_open(ctl);
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_open(ctl);
-#endif
+# endif
     break;
 #endif
   }
@@ -129,9 +127,9 @@ extern void display_close(struct mtr_ctl *ctl, time_t now)
     break;
 #ifdef HAVE_NCURSES
   case DisplayCurses:
-#ifdef HAVE_IPINFO
+# ifdef HAVE_IPINFO
     asn_close(ctl);
-#endif
+# endif
     mtr_curses_close();
     break;
 #endif
@@ -192,104 +190,40 @@ extern int display_keyaction(struct mtr_ctl *ctl)
 
 extern void display_rawxmit(struct mtr_ctl *ctl, int host, int seq)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawxmit (host, seq);
-    break;
-  }
 }
 
 
 extern void display_rawping(struct mtr_ctl *ctl, int host, int msec, int seq)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-#ifdef HAVE_GTK
-  case DisplayGTK:
-#endif
-    break;
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawping (ctl, host, msec, seq);
-    break;
-  }
 }
 
 
 extern void display_rawhost(struct mtr_ctl *ctl, int host, ip_t *ip_addr)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-#ifdef HAVE_GTK
-  case DisplayGTK:
-#endif
-    break;
-  case DisplayRaw:
+  if (ctl->DisplayMode == DisplayRaw)
     raw_rawhost (ctl, host, ip_addr);
-    break;
-  }
 }
 
 
 extern void display_loop(struct mtr_ctl *ctl)
 {
-  switch(ctl->DisplayMode) {
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-#ifdef HAVE_NCURSES
-  case DisplayCurses:
-#endif
-  case DisplayRaw:
-    select_loop(ctl);
-    break;
 #ifdef HAVE_GTK
-  case DisplayGTK:
+  if (ctl->DisplayMode == DisplayGTK)
     gtk_loop(ctl);
-    break;
+  else
 #endif
-  }
+    select_loop(ctl);
 }
 
 
 extern void display_clear(struct mtr_ctl *ctl)
 {
-  switch(ctl->DisplayMode) {
 #ifdef HAVE_NCURSES
-  case DisplayCurses:
+  if (ctl->DisplayMode == DisplayCurses)
     mtr_curses_clear(ctl);
-    break;
 #endif
-  case DisplayReport:
-  case DisplayTXT:
-  case DisplayJSON:
-  case DisplayXML:
-  case DisplayCSV:
-  case DisplaySplit:
-  case DisplayRaw:
-    break;
-
-#ifdef HAVE_GTK
-  case DisplayGTK:
-    break;
-#endif
-  }
 }

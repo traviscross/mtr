@@ -71,7 +71,6 @@ extern int net_xmit(int at);
 
 extern int net_up(int at);
 
-#define SAVED_PINGS 200
 extern int* net_saved_pings(int at);
 extern void net_save_xmit(int at);
 extern void net_save_return(int at, int seq, int ms);
@@ -81,51 +80,3 @@ extern void addrcpy( char * a, char * b, int af );
 
 extern void net_add_fds(fd_set *writefd, int *maxfd);
 extern void net_process_fds(struct mtr_ctl *ctl, fd_set *writefd);
-
-#define MAXPATH 8
-#define MaxHost 256
-#define MinSequence 33000
-#define MaxSequence 65536
-#define MinPort 1024
-#define MaxPort 65535
-
-#define MAXPACKET 4470		/* largest test packet size */
-#define MINPACKET 28		/* 20 bytes IP header and 8 bytes ICMP or UDP */
-#define MAXLABELS 8 		/* http://kb.juniper.net/KB2190 (+ 3 just in case) */
-
-#if defined (__STDC__) && __STDC__
-#define CONST const
-#else
-#define CONST /* */
-#endif
-
-
-/* XXX This doesn't really belong in this header file, but as the
-   right c-files include it, it will have to do for now. */
-
-/* dynamic field drawing */
-struct fields {
-  CONST unsigned char key;
-  CONST char *descr;
-  CONST char *title;
-  CONST char *format;
-  int length;
-  int (*net_xxx)(int);
-};
-
-extern const struct fields data_fields[MAXFLD];
-
-/* MPLS label object */
-struct mplslen {
-  unsigned long label[MAXLABELS]; /* label value */
-  uint8_t exp[MAXLABELS]; /* experimental bits */
-  uint8_t ttl[MAXLABELS]; /* MPLS TTL */
-  char s[MAXLABELS]; /* bottom of stack */
-  char labels; /* how many labels did we get? */
-};
-
-#ifdef IPPROTO_SCTP
-    #define HAS_SCTP
-#endif
-
-

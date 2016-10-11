@@ -5,6 +5,7 @@ AC_INIT([mtr],
   [http://www.BitWizard.nl/mtr/])
 AC_CONFIG_SRCDIR([mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([
   1.7.9
   foreign
@@ -162,6 +163,10 @@ AC_CHECK_TYPE([socklen_t],
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif]])
+
+AC_CHECK_TYPES([time_t], [], [], [[
+#include <time.h>
+]])
 
 # Add C flags to display more warnings
 AC_MSG_CHECKING([for C flags to get more warnings])

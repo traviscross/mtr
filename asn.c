@@ -23,18 +23,18 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #include <errno.h>
 
 #ifdef __APPLE__
-#define BIND_8_COMPAT
+# define BIND_8_COMPAT
 #endif
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
+# include <arpa/nameser_compat.h>
 #endif
 #include <netdb.h>
 #include <netinet/in.h>
@@ -46,15 +46,14 @@
 #include "mtr.h"
 #include "asn.h"
 #include "utils.h"
-//#define IIDEBUG
 
+/* #define IIDEBUG */
 #ifdef IIDEBUG
-#include <syslog.h>
-#define DEB_syslog syslog
+# include <syslog.h>
+# define DEB_syslog syslog
 #else
-#define DEB_syslog(...) do {} while (0)
+# define DEB_syslog(...) do {} while (0)
 #endif
-
 
 #define IIHASH_HI	128
 #define ITEMSMAX	15
@@ -65,12 +64,12 @@
 static int  iihash = 0;
 static char fmtinfo[32];
 
-// items width: ASN, Route, Country, Registry, Allocated 
-static const int iiwidth[] = { 7, 19, 4, 8, 11 };    // item len + space
+/* items width: ASN, Route, Country, Registry, Allocated */
+static const int iiwidth[] = { 7, 19, 4, 8, 11 };    /* item len + space */
 
 typedef char* items_t[ITEMSMAX + 1];
-static items_t items_a;		// without hash: items
-static char txtrec[NAMELEN + 1];	// without hash: txtrec
+static items_t items_a;		/* without hash: items */
+static char txtrec[NAMELEN + 1];	/* without hash: txtrec */
 static items_t* items = &items_a;
 
 
@@ -146,8 +145,12 @@ static char *ipinfo_lookup(const char *domain) {
     return txt;
 }
 
-// originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated
+/* originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated */
 static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
+    char* prev;
+    char* next;
+    int i = 0, j;
+
     if (!txt_rec)
 	return NULL;
     if (iihash) {
@@ -159,9 +162,7 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
         }
     }
 
-    char* prev = txt_rec;
-    char* next;
-    int i = 0, j;
+    prev = txt_rec;
 
     while ((next = strchr(prev, ITEMSEP)) && (i < ITEMSMAX)) {
         *next = '\0';
@@ -188,22 +189,24 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
 }
 
 #ifdef ENABLE_IPV6
-// from dns.c:addr2ip6arpa()
+/* from dns.c:addr2ip6arpa() */
 static void reverse_host6(struct in6_addr *addr, char *buff) {
     int i;
     char *b = buff;
-    for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) // 64b portion
+    for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) /* 64b portion */
         sprintf(b, "%x.%x.", addr->s6_addr[i] & 0xf, addr->s6_addr[i] >> 4);
     buff[strlen(buff) - 1] = '\0';
 }
 #endif
 
 static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
-    if (!addr)
-        return NULL;
-
     char key[NAMELEN];
     char lookup_key[NAMELEN];
+    char *val = NULL;
+    ENTRY item;
+
+    if (!addr)
+        return NULL;
 
     if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
@@ -222,13 +225,11 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
             return NULL;
     }
 
-    char *val = NULL;
-    ENTRY item;
-
     if (iihash) {
+        ENTRY *found_item;
+
         DEB_syslog(LOG_INFO, ">> Search: %s", key);
         item.key = key;;
-        ENTRY *found_item;
         if ((found_item = hsearch(item, FIND))) {
             if (!(val = (*((items_t*)found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t*)found_item->data))[0];

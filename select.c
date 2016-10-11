@@ -29,9 +29,9 @@
 #include <math.h>
 #include <errno.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 
 #include "mtr.h"
@@ -39,11 +39,7 @@
 #include "net.h"
 #include "asn.h"
 #include "display.h"
-
-static double dnsinterval;
-static struct timeval intervaltime;
-
-#define GRACETIME (ctl->GraceTime * 1000*1000)
+#include "select.h"
 
 extern void select_loop(struct mtr_ctl *ctl){
   fd_set readfd;
@@ -61,6 +57,8 @@ extern void select_loop(struct mtr_ctl *ctl){
   int dt;
   int rv; 
   int graceperiod = 0;
+  struct timeval intervaltime;
+  static double dnsinterval = 0;
 
   memset(&startgrace, 0, sizeof(startgrace));
 
@@ -144,7 +142,7 @@ extern void select_loop(struct mtr_ctl *ctl){
 	if (graceperiod) {
 	  dt = (thistime.tv_usec - startgrace.tv_usec) +
 		    1000000 * (thistime.tv_sec - startgrace.tv_sec);
-	  if (dt > GRACETIME)
+	  if ((ctl->GraceTime * 1000 * 1000) < dt)
 	    return;
 	}
 
