@@ -786,8 +786,8 @@ extern int main(int argc, char **argv)
 
 
     lock(stdout);
-      display_open(&ctl);
       dns_open(&ctl);
+      display_open(&ctl);
 
       display_loop(&ctl);
 
