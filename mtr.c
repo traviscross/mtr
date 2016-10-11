@@ -549,8 +549,9 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
 #ifdef HAVE_IPINFO
     case 'y':
       ctl->ipinfo_no = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
-      if (ctl->ipinfo_no < 0)
-        ctl->ipinfo_no = 0;
+      if (ctl->ipinfo_no < 0 || 4 < ctl->ipinfo_no) {
+        error(EXIT_FAILURE, 0, "value %d out of range (0 - 4)", ctl->ipinfo_no);
+      }
       break;
     case 'z':
       ctl->ipinfo_no = 0;
