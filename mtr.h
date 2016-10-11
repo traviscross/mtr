@@ -103,6 +103,7 @@ struct mtr_ctl {
   int localport;		/* source port for UDP tracing */
   int tcp_timeout;		/* timeout for TCP connections */
   unsigned char fld_active[2 * MAXFLD];	/* SO_MARK to set for ping packet*/
+  int display_mode;		/* display mode selector */
   int fld_index[FLD_INDEX_SZ];	/* default display field (defined by key in net.h) and order */
   char available_options[MAXFLD];
   int display_offset;		/* only used in text mode */
@@ -115,7 +116,6 @@ struct mtr_ctl {
     dns:1,
     reportwide:1,
     Interactive:1,
-    display_mode:2,
     DisplayMode:5;
 };
 
