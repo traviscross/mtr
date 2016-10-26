@@ -648,6 +648,8 @@ extern int main(int argc, char **argv)
   ctl.maxTTL = 30;
   ctl.maxUnknown = 12;
   ctl.tcp_timeout = 10 * 1000000;
+  ctl.ipinfo_no = -1;
+  ctl.ipinfo_max = -1;
   xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
   /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
