@@ -275,7 +275,7 @@ extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
 {
   char *t;
 
-  if (!ctl->dns)
+  if (!ctl->dns || !ctl->use_dns)
     return NULL;
   t = dns_lookup2(ctl, ip);
   return t;
