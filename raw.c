@@ -34,24 +34,14 @@
 #include "dns.h"
 
 
-#if 0
-static char *addr_to_str(struct mtr_ctl *ctl, ip_t addr)
-{
-  static char buf[20];
-
-  sprintf (buf, "%s", strlongip(ctl, &addr ));
-  return buf;
-}
-#endif
-
-// Log an echo request, or a "ping"
+/* Log an echo request, or a "ping" */
 extern void raw_rawxmit (int host, int seq)
 {
   printf ("x %d %d\n", host, seq);
   fflush (stdout);
 }
 
-// Log an echo reply, or a "pong"
+/* Log an echo reply, or a "pong" */
 extern void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
 {
   static int havename[MaxHost];

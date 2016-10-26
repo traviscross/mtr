@@ -26,17 +26,18 @@
 #include <sys/types.h>
 
 #ifdef HAVE_GTK
-#include <string.h>
-#include <sys/types.h>
-#include <gtk/gtk.h>
+# include <string.h>
+# include <sys/types.h>
+# include <gtk/gtk.h>
 
-#include "mtr.h"
-#include "net.h"
-#include "dns.h"
-#include "asn.h"
-#include "mtr-gtk.h"
+# include "mtr.h"
+# include "net.h"
+# include "dns.h"
+# include "asn.h"
+# include "mtr-gtk.h"
+# include "utils.h"
 
-#include "img/mtr_icon.xpm"
+# include "img/mtr_icon.xpm"
 #endif
 
 static gint gtk_ping(gpointer data);
@@ -52,10 +53,11 @@ static GtkWidget *main_window;
 
 static void gtk_add_ping_timeout (struct mtr_ctl *ctl)
 {
+  int dt;
+
   if(gtk_toggle_button_get_active((GtkToggleButton *)Pause_Button)){
     return;
   }
-  int dt;
   dt = calc_deltatime (ctl->WaitTime);
   gtk_redraw(ctl);
   ping_timeout_timer = g_timeout_add(dt / 1000, gtk_ping, ctl);
@@ -272,9 +274,6 @@ static void Toolbar_fill(struct mtr_ctl *ctl, GtkWidget *Toolbar)
                                                   0.0);
   Button = gtk_spin_button_new(Adjustment, 0.5, 2);
   gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(Button), TRUE);
-  /* gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(Button), FALSE); */
-  /* gtk_spin_button_set_set_update_policy(GTK_SPIN_BUTTON(Button),
-     GTK_UPDATE_IF_VALID); */
   gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
   ctl->gtk_data = Button;
   g_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
@@ -312,12 +311,11 @@ enum {
   N_COLS
 };
 
-// Trick to cast a pointer to integer.....
-// We are mis-using a pointer as a single integer. On 64-bit
-// architectures, the pointer is 64 bits and the integer only 32. 
-// The compiler warns us of loss of precision. However we know we
-// casted a normal 32-bit integer into this pointer a few microseconds
-// earlier, so it is ok. Nothing to worry about....
+/* Trick to cast a pointer to integer.  We are mis-using a pointer as a
+   single integer.  On 64-bit architectures, the pointer is 64 bits and the
+   integer only 32.  The compiler warns us of loss of precision.  However we
+   know we casted a normal 32-bit integer into this pointer a few
+   microseconds earlier, so it is ok.  Nothing to worry about.  */
 #define POINTER_TO_INT(p) ((int)(long)(p))
 
 static void  float_formatter(GtkTreeViewColumn *tree_column ATTRIBUTE_UNUSED,
@@ -560,15 +558,15 @@ static void Window_fill(struct mtr_ctl *ctl, GtkWidget *Window)
 extern void gtk_open(struct mtr_ctl *ctl)
 {
   GdkPixbuf *icon;
-
-  int argc;
+  int argc = 1;
   char *args[2];
   char **argv;
-  argc = 1;
+
   argv = args;
-  argv[0] = "";
+  argv[0] = xstrdup("");
   argv[1] = NULL;
   gtk_do_init(&argc, &argv);
+  free(argv[0]);
 
   icon = gdk_pixbuf_new_from_xpm_data((const char**)mtr_icon);
   gtk_window_set_default_icon(icon);
@@ -734,7 +732,7 @@ static gboolean ReportTreeView_clicked(GtkWidget *Tree ATTRIBUTE_UNUSED,
   
   gtk_tree_view_set_cursor(GTK_TREE_VIEW(ReportTreeView), path, NULL, FALSE);
 
-  // Single right click: prepare and show the popup menu
+  /* Single right click: prepare and show the popup menu */
   popup_menu = gtk_menu_new ();
 
   copy_item = gtk_menu_item_new_with_label ("Copy to clipboard");

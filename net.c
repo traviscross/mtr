@@ -19,7 +19,7 @@
 #include "config.h"
 
 #if defined(HAVE_SYS_XTI_H)
-#include <sys/xti.h>
+# include <sys/xti.h>
 #endif
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@
 #include <memory.h>
 #include <unistd.h>
 #ifdef HAVE_FCNTL_H
-#include <fcntl.h>
+# include <fcntl.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,12 +40,12 @@
 #include <errno.h>
 #include <string.h>
 #ifdef HAVE_ERROR_H
-#include <error.h>
+# include <error.h>
 #else
-#include "portability/error.h"
+# include "portability/error.h"
 #endif
 #ifdef HAVE_LINUX_ICMP_H
-#include <linux/icmp.h>
+# include <linux/icmp.h>
 #endif
 
 #include "mtr.h"
@@ -53,6 +53,9 @@
 #include "display.h"
 #include "dns.h"
 #include "utils.h"
+
+#define MinSequence 33000
+#define MaxSequence 65536
 
 static int packetsize;         /* packet size used by ping */
 static int spacketsize;                /* packet size used by sendto */
@@ -86,9 +89,9 @@ struct TCPHeader {
   uint32_t seq;
 };
 
-// This ifdef is unnecessary. But it should trigger errors if I forget
-// an ifdef HAS_SCTP further down.  (Success! I forgot one and the compiler
-// told me the line number!)
+/* This ifdef is unnecessary.  But it should trigger errors if I forget an
+   ifdef HAS_SCTP further down.  (Success!  I forgot one and the compiler
+   told me the line number!) */
 #ifdef HAS_SCTP 
 /* Structure of an SCTP header */
 struct SCTPHeader {
@@ -122,14 +125,14 @@ struct IPHeader {
 };
   
 #ifndef ICMP_ECHOREPLY
-#define ICMP_ECHOREPLY		0
-#define ICMP_DEST_UNREACH	3
-#define ICMP_ECHO		8
-#define ICMP_TIME_EXCEEDED	11
+# define ICMP_ECHOREPLY		0
+# define ICMP_DEST_UNREACH	3
+# define ICMP_ECHO		8
+# define ICMP_TIME_EXCEEDED	11
 #endif
 
 #ifndef SOL_IP
-#define SOL_IP 0
+# define SOL_IP 0
 #endif
 
 struct nethost {
@@ -146,7 +149,6 @@ struct nethost {
   int avg;	/* average:  addByMin */
   int gmean;	/* geometric mean: addByMin */
   int jitter;	/* current jitter, defined as t1-t0 addByMin */
-/*int jbest;*/	/* min jitter, of cause it is 0, not needed */
   int javg;	/* avg jitter */
   int jworst;	/* max jitter */
   int jinta;	/* estimated variance,? rfc1889's "Interarrival Jitter" */
@@ -167,14 +169,8 @@ struct sequence {
 };
 
 
-/* BSD-derived kernels use host byte order for the IP length and 
-   offset fields when using raw sockets.  We detect this automatically at 
-   run-time and do the right thing. */
-static int BSDfix = 0;
-
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
-static struct timeval reset = { 0, 0 };
 
 static int    sendsock4;
 static int    sendsock4_icmp;
@@ -209,9 +205,9 @@ static ip_t * remoteaddress;
 #ifdef ENABLE_IPV6
 static char localaddr[INET6_ADDRSTRLEN];
 #else
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 16
-#endif
+# ifndef INET_ADDRSTRLEN
+#  define INET_ADDRSTRLEN 16
+# endif
 static char localaddr[INET_ADDRSTRLEN];
 #endif
 
@@ -258,6 +254,10 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
   size_t tsize = psize + dsize;
   char *csumpacket;
   int ret;
+  struct UDPv4PHeader *prepend;
+  struct UDPv4PHeader *udppheader;
+  struct UDPHeader *content;
+  struct UDPHeader *udpdata;
 
   csumpacket = xmalloc(tsize);
   memset(csumpacket, (unsigned char) abs(ctl->bitpattern), tsize);
@@ -266,16 +266,16 @@ static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
     csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
   }
 
-  struct UDPv4PHeader *prepend = (struct UDPv4PHeader *) csumpacket;
-  struct UDPv4PHeader *udppheader = (struct UDPv4PHeader *) pheader;
+  prepend = (struct UDPv4PHeader *) csumpacket;
+  udppheader = (struct UDPv4PHeader *) pheader;
   prepend->saddr = udppheader->saddr;
   prepend->daddr = udppheader->daddr;
   prepend->zero = 0;
   prepend->protocol = udppheader->protocol;
   prepend->len = udppheader->len;
 
-  struct UDPHeader *content = (struct UDPHeader *)(csumpacket + psize);
-  struct UDPHeader *udpdata = (struct UDPHeader *) udata;
+  content = (struct UDPHeader *)(csumpacket + psize);
+  udpdata = (struct UDPHeader *) udata;
   content->srcport = udpdata->srcport;
   content->dstport = udpdata->dstport;
   content->length = udpdata->length;
@@ -374,7 +374,6 @@ static void net_send_tcp(struct mtr_ctl *ctl, int index)
     error(EXIT_FAILURE, errno, "getsockname()");
   }
 
-  //  opt = 1;
   flags = fcntl(s, F_GETFL, 0);
   if (flags < 0) {
     display_clear(ctl);
@@ -446,10 +445,10 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
   struct sockaddr_storage remote;
   struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
   struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
   struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
-#endif
+# endif
   socklen_t len;
 
   ttl = index + 1;
@@ -472,14 +471,14 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
     remote4->sin_port = htons(ctl->remoteport);
     len = sizeof (struct sockaddr_in);
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, ctl->af);
     addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, ctl->af);
     remote6->sin6_port = htons(ctl->remoteport);
     len = sizeof (struct sockaddr_in6);
     break;
-#endif
+# endif
   }
 
   if (bind(s, (struct sockaddr *) &local, len)) {
@@ -509,31 +508,31 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
       error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
     }
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
       display_clear(ctl);
       error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
     }
     break;
-#endif
+# endif
   }
 
-#ifdef SO_MARK
+# ifdef SO_MARK
     if (ctl->mark && setsockopt( s, SOL_SOCKET, SO_MARK, &ctl->mark, sizeof ctl->mark ) ) {
       error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
     }
-#endif
+# endif
 
   switch (local.ss_family) {
   case AF_INET:
     port = ntohs(local4->sin_port);
     break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
   case AF_INET6:
     port = ntohs(local6->sin6_port);
     break;
-#endif
+# endif
   default:
     display_clear(ctl);
     error(EXIT_FAILURE, 0, "unknown address family");
@@ -545,23 +544,11 @@ static void net_send_sctp(struct mtr_ctl *ctl, int index)
 
   connect(s, (struct sockaddr *) &remote, len);
 }
-#endif
+#endif /* HAS_SCTP */
 
 /*  Attempt to find the host at a particular number of hops away  */
 static void net_send_query(struct mtr_ctl *ctl, int index)
 {
-  if (ctl->mtrtype == IPPROTO_TCP) {
-    net_send_tcp(ctl, index);
-    return;
-  }
-  
-#ifdef HAS_SCTP
-  if (ctl->mtrtype == IPPROTO_SCTP) {
-    net_send_sctp(ctl, index);
-    return;
-  }
-#endif
-
   /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
   char packet[MAXPACKET];
   struct IPHeader *ip = (struct IPHeader *) packet;
@@ -569,18 +556,32 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   struct UDPHeader *udp = NULL;
   struct UDPv4PHeader *udpp = NULL;
   uint16_t checksum_result;
-
   /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
   int rv;
   static int first=1;
   int ttl, iphsize = 0, echotype = 0, salen = 0;
-
-  ttl = index + 1;
-
 #ifdef ENABLE_IPV6
   /* offset for ipv6 checksum calculation */
   int offset = 6;
 #endif
+  /* BSD-derived kernels use host byte order for the IP length and offset
+     fields when using raw sockets.  We detect this automatically at
+     run-time and do the right thing.  */
+  static int BSDfix = 0;
+
+  if (ctl->mtrtype == IPPROTO_TCP) {
+    net_send_tcp(ctl, index);
+    return;
+  }
+
+#ifdef HAS_SCTP
+  if (ctl->mtrtype == IPPROTO_SCTP) {
+    net_send_sctp(ctl, index);
+    return;
+  }
+#endif
+
+  ttl = index + 1;
 
   if ( packetsize < MINPACKET ) packetsize = MINPACKET;
   if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
@@ -667,7 +668,7 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
       gettimeofday(&sequence[udp->dstport].time, NULL);
       udp->dstport = htons(udp->dstport);
     } else {
-      // keep dstport constant, stuff sequence into the checksum
+      /* keep dstport constant, stuff sequence into the checksum */
       udp->dstport = htons(ctl->remoteport);
       udp->checksum = new_sequence(ctl, index);
       gettimeofday(&sequence[udp->checksum].time, NULL);
@@ -815,17 +816,6 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
     host[index].jitter = host[index].jworst = host[index].jinta= 0;
   }
 
-  /* some time best can be too good to be true, experienced 
-   * at least in linux 2.4.x.
-   *  safe guard 1) best[index]>=best[index-1] if index>0
-   *             2) best >= average-20,000 usec (good number?)
-  if (index > 0) {
-    if (totusec < host[index].best &&
-       totusec>= host[index-1].best) host[index].best  = totusec;
-  } else {
-    if(totusec < host[index].best) host[index].best  = totusec;
-  }
-   */
   if (totusec < host[index].best ) host[index].best  = totusec;
   if (totusec > host[index].worst) host[index].worst = totusec;
 
@@ -1074,7 +1064,7 @@ extern void net_process_return(struct mtr_ctl *ctl)
           decodempls(num, packet, &mpls, 156);
 
       break;
-#ifdef ENABLE_IPV6
+# ifdef ENABLE_IPV6
       case AF_INET6:
         if ((size_t) num < sizeof (struct ICMPHeader) +
                    sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
@@ -1087,12 +1077,12 @@ extern void net_process_return(struct mtr_ctl *ctl)
           decodempls(num, packet, &mpls, 136);
 
         break;
-#endif
+# endif
       }
       seq_num = ntohs(sctpheader->srcport);
     }
     break;
-#endif
+#endif /* HAS_SCTP */
   }
   if (seq_num)
     net_process_ping (ctl, seq_num, mpls, (void *) fromaddress, now);
@@ -1205,7 +1195,6 @@ extern int net_max(struct mtr_ctl *ctl)
   int max;
 
   max = 0;
-  /* for(at = 0; at < MaxHost-2; at++) { */
   for(at = 0; at < ctl->maxTTL-1; at++) {
     if ( addrcmp( (void *) &(host[at].addr),
                   (void *) remoteaddress, ctl->af ) == 0 ) {
@@ -1286,8 +1275,6 @@ extern int net_send_batch(struct mtr_ctl *ctl)
     }
   }
 
-  /* printf ("cpacketsize = %d, packetsize = %d\n", cpacketsize, packetsize);  */
-
   net_send_query(ctl, batch_at);
 
   for (i=ctl->fstTTL-1;i<batch_at;i++) {
@@ -1300,8 +1287,7 @@ extern int net_send_batch(struct mtr_ctl *ctl)
 	If the line proves necessary, it should at least NOT trigger that line
 	when host[i].addr == 0 */
     if ( ( addrcmp( (void *) &(host[i].addr),
-                    (void *) remoteaddress, ctl->af ) == 0 )
-	/* || (host[i].addr == host[batch_at].addr)  */)
+                    (void *) remoteaddress, ctl->af ) == 0 ))
       n_unknown = MaxHost; /* Make sure we drop into "we should restart" */
   }
 
@@ -1453,9 +1439,6 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
   len = sizeof name_struct; 
   getsockname (recvsock, name, &len);
   sockaddrtop( name, localaddr, sizeof localaddr );
-#if 0
-  printf ("got localaddr: %s\n", localaddr); 
-#endif
 
   return 0;
 }
@@ -1516,7 +1499,6 @@ extern void net_reset(struct mtr_ctl *ctl)
     }
   }
 
-  gettimeofday(&reset, NULL);
 }
 
 static int net_set_interfaceaddress_udp(struct mtr_ctl *ctl)

@@ -77,10 +77,14 @@ extern void report_close(struct mtr_ctl *ctl)
   char fmt[16];
   size_t len=0;
   size_t len_hosts = 33;
+#ifdef HAVE_IPINFO
+  int len_tmp = len_hosts;
+  const size_t iiwidth_len = get_iiwidth_len();
+#endif
 
   if (ctl->reportwide)
   {
-    // get the longest hostname
+    /* get the longest hostname */
     len_hosts = strlen(ctl->LocalHostname);
     max = net_max(ctl);
     at  = net_min(ctl);
@@ -94,15 +98,13 @@ extern void report_close(struct mtr_ctl *ctl)
   }
   
 #ifdef HAVE_IPINFO
-  int len_tmp = len_hosts;
-  const size_t iiwidth_len = get_iiwidth_len();
   if (ctl->ipinfo_no >= 0 && iiwidth_len) {
     ctl->ipinfo_no %= iiwidth_len;
     if (ctl->reportwide) {
-      len_hosts++;    // space
+      len_hosts++;    /* space */
       len_tmp   += get_iiwidth(ctl->ipinfo_no);
       if (!ctl->ipinfo_no)
-        len_tmp += 2; // align header: AS
+        len_tmp += 2; /* align header: AS */
     }
   }
   snprintf( fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
@@ -160,9 +162,9 @@ extern void report_close(struct mtr_ctl *ctl)
 
     /* z is starting at 1 because addrs[0] is the same that addr */
     for (z = 1; z < MAXPATH ; z++) {
+      int found = 0;
       addr2 = net_addrs(at, z);
       mplss = net_mplss(at, z);
-      int found = 0;
       if ((addrcmp ((void *) &ctl->unspec_addr, (void *) addr2, ctl->af)) == 0)
         break;
       for (w = 0; w < z; w++)
@@ -287,6 +289,8 @@ extern void json_close(struct mtr_ctl *ctl)
     printf("      \"count\": \"%d\",\n", at+1);
     printf("      \"host\": \"%s\",\n", name);
     for( i=0; i<MAXFLD; i++ ) {
+      const char *format;
+
       j = ctl->fld_index[ctl->fld_active[i]];
 
       /* Commas */
@@ -296,10 +300,9 @@ extern void json_close(struct mtr_ctl *ctl)
         printf(",\n");
       }
 
-      if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method.
+      if (j <= 0) continue; /* Field nr 0, " " shouldn't be printed in this method. */
 
       /* Format value */
-      const char *format;
       format = data_fields[j].format;
       if( strchr(format, 'f') ) {
         format = "%.2f";
@@ -368,13 +371,14 @@ extern void xml_close(struct mtr_ctl *ctl)
 
     printf("    <HUB COUNT=\"%d\" HOST=\"%s\">\n", at+1, name);
     for( i=0; i<MAXFLD; i++ ) {
+      const char *title;
+
       j = ctl->fld_index[ctl->fld_active[i]];
-      if (j <= 0) continue; // Field nr 0, " " shouldn't be printed in this method. 
+      if (j <= 0) continue; /* Field nr 0, " " shouldn't be printed in this method. */
 
       snprintf(name, sizeof(name), "%s%s%s", "        <%s>", data_fields[j].format, "</%s>\n");
 
       /* XML doesn't allow "%" in tag names, rename Loss% to just Loss */
-      const char *title;
       title = data_fields[j].title;
       if( strcmp(data_fields[j].title, "Loss%") == 0 ) {
 		title = "Loss";
