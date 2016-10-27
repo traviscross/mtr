@@ -495,7 +495,7 @@ static void update_tree_row(struct mtr_ctl *ctl, int row, GtkTreeIter *iter)
     COL_WORST, net_worst(row)/1000,
     COL_STDEV, (float)(net_stdev(row)/1000.0),
     
-    COL_COLOR, net_up(row) ? "black" : "red",
+    COL_COLOR, net_up(row) ? NULL : "red",
 
     -1);
 #ifdef HAVE_IPINFO
