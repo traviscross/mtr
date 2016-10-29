@@ -78,7 +78,7 @@ extern void report_close(struct mtr_ctl *ctl)
   size_t len=0;
   size_t len_hosts = 33;
 #ifdef HAVE_IPINFO
-  int len_tmp = len_hosts;
+  int len_tmp;
   const size_t iiwidth_len = get_iiwidth_len();
 #endif
 
@@ -98,6 +98,7 @@ extern void report_close(struct mtr_ctl *ctl)
   }
   
 #ifdef HAVE_IPINFO
+  len_tmp = len_hosts;
   if (ctl->ipinfo_no >= 0 && iiwidth_len) {
     ctl->ipinfo_no %= iiwidth_len;
     if (ctl->reportwide) {
