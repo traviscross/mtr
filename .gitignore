@@ -19,9 +19,11 @@ stamp-h1*
 
 /autom4te.cache/
 /.deps/
+/packet/.deps/
 /ChangeLog
 /INSTALL
 /mtr
+/mtr-packet
 /mtr.8
 
 /mtr-*.tar.gz

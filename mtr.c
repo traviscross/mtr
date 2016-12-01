@@ -41,7 +41,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <time.h>
 #include <ctype.h>
 #include <assert.h>
 #include <fcntl.h>
@@ -623,7 +622,6 @@ static void init_rand(void)
 extern int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
-  int               net_preopen_result;
   struct addrinfo       hints, *res;
   int                   gai_error;
   struct hostent        trhost;
@@ -632,7 +630,6 @@ extern int main(int argc, char **argv)
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
-  time_t now;
   names_t *names_root = NULL;
   names_t **names_head = &names_root;
 
@@ -656,20 +653,13 @@ extern int main(int argc, char **argv)
   ctl.ipinfo_max = -1;
   xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
-  /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
-
-  if ( ( net_preopen_result = net_preopen () ) ) {
-    error(EXIT_FAILURE, errno, "Unable to get raw sockets");
-  }
-
-  /*  Now drop to user permissions  */
-  if (setgid(getgid()) || setuid(getuid())) {
-    error(EXIT_FAILURE, errno, "Unable to drop permissions");
-  }
-
-  /*  Double check, just in case  */
+  /*
+    mtr used to be suid root.  It should not be with this version.
+    We'll check so that we can notify people using installation
+    mechanisms with obsolete assumptions.
+  */
   if ((geteuid() != getuid()) || (getegid() != getgid())) {
-    error(EXIT_FAILURE, errno, "Unable to drop permissions");
+    error(EXIT_FAILURE, errno, "mtr should not run suid");
   }
 
   /* This will check if stdout/stderr writing is successful */
@@ -694,11 +684,6 @@ extern int main(int argc, char **argv)
     append_to_names(names_head, name);
   }
 
-  /* Now that we know mtrtype we can select which socket to use */
-  if (net_selectsocket(&ctl) != 0) {
-    error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
-  }
-
   if (!names_root) append_to_names (names_head, "localhost"); /* default: localhost. */
 
   names_head = &names_root;
@@ -707,16 +692,6 @@ extern int main(int argc, char **argv)
     ctl.Hostname = names_root->name;
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
-    }
-
-    if (net_preopen_result != 0) {
-      error(0, 0, "Unable to get raw socket.  (Executable not suid?)");
-      if (ctl.DisplayMode != DisplayCSV)
-        exit(EXIT_FAILURE);
-      else {
-        names_root = names_root->next;
-        continue;
-      }
     }
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
@@ -777,16 +752,6 @@ extern int main(int argc, char **argv)
       }
     }
 
-    if (net_set_interfaceaddress (&ctl) != 0) {
-      error(0, 0, "Couldn't set interface address: %s", ctl.InterfaceAddress);
-      if (ctl.DisplayMode != DisplayCSV)
-        exit(EXIT_FAILURE);
-      else {
-        names_root = names_root->next;
-        continue;
-      }
-    }
-
 
     lock(stdout);
       dns_open(&ctl);
@@ -795,8 +760,7 @@ extern int main(int argc, char **argv)
       display_loop(&ctl);
 
       net_end_transit();
-      now = time(NULL);
-      display_close(&ctl, now);
+      display_close(&ctl);
     unlock(stdout);
 
     if (ctl.DisplayMode != DisplayCSV)

@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "mtr.h"
 #include "display.h"
@@ -107,8 +108,12 @@ extern void display_open(struct mtr_ctl *ctl)
 }
 
 
-extern void display_close(struct mtr_ctl *ctl, time_t now)
+extern void display_close(struct mtr_ctl *ctl)
 {
+  time_t now;
+
+  now = time(NULL);
+
   switch(ctl->DisplayMode) {
   case DisplayReport:
     report_close(ctl);

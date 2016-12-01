@@ -27,12 +27,16 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
+#include <assert.h>
 #include <memory.h>
 #include <unistd.h>
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -53,87 +57,14 @@
 #include "display.h"
 #include "dns.h"
 #include "utils.h"
+#include "packet/cmdparse.h"
 
 #define MinSequence 33000
 #define MaxSequence 65536
 
+#define PACKET_REPLY_BUFFER_SIZE 4096
+
 static int packetsize;         /* packet size used by ping */
-static int spacketsize;                /* packet size used by sendto */
-
-static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len );
-static void decodempls(int, char *, struct mplslen *, int);
-
-/*  We can't rely on header files to provide this information, because
-    the fields have different names between, for instance, Linux and 
-    Solaris  */
-struct ICMPHeader {
-  uint8_t type;
-  uint8_t code;
-  uint16_t checksum;
-  uint16_t id;
-  uint16_t sequence;
-};
-
-/* Structure of an UDP header.  */
-struct UDPHeader {
-  uint16_t srcport;
-  uint16_t dstport;
-  uint16_t length;
-  uint16_t checksum;
-};
-
-/* Structure of an TCP header, as far as we need it.  */
-struct TCPHeader {
-  uint16_t srcport;
-  uint16_t dstport;
-  uint32_t seq;
-};
-
-/* This ifdef is unnecessary.  But it should trigger errors if I forget an
-   ifdef HAS_SCTP further down.  (Success!  I forgot one and the compiler
-   told me the line number!) */
-#ifdef HAS_SCTP 
-/* Structure of an SCTP header */
-struct SCTPHeader {
-  uint16_t srcport;
-  uint16_t dstport;
-  uint32_t veri_tag;
-};
-#endif
-
-/* Structure of an IPv4 UDP pseudoheader.  */
-struct UDPv4PHeader {
-  uint32_t saddr;
-  uint32_t daddr;
-  uint8_t zero;
-  uint8_t protocol;
-  uint16_t len;
-};
-
-/*  Structure of an IP header.  */
-struct IPHeader {
-  uint8_t version;
-  uint8_t tos;
-  uint16_t len;
-  uint16_t id;
-  uint16_t frag;
-  uint8_t ttl;
-  uint8_t protocol;
-  uint16_t check;
-  uint32_t saddr;
-  uint32_t daddr;
-};
-  
-#ifndef ICMP_ECHOREPLY
-# define ICMP_ECHOREPLY		0
-# define ICMP_DEST_UNREACH	3
-# define ICMP_ECHO		8
-# define ICMP_TIME_EXCEEDED	11
-#endif
-
-#ifndef SOL_IP
-# define SOL_IP 0
-#endif
 
 struct nethost {
   ip_t addr;
@@ -169,19 +100,28 @@ struct sequence {
 };
 
 
+/*  We use a pipe to the mtr-packet subprocess to generate probes  */
+struct packet_command_pipe_t {
+  /*  the process id of mtr-packet  */
+  pid_t pid;
+
+  /*  the end of the pipe we read for replies  */
+  int read_fd;
+
+  /*  the end of the pipe we write for commands  */
+  int write_fd;
+
+  /* storage for incoming replies */
+  char reply_buffer[PACKET_REPLY_BUFFER_SIZE];
+
+  /*  the number of bytes currently used in reply_buffer  */
+  size_t reply_buffer_used;
+};
+
+
 static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
-
-static int    sendsock4;
-static int    sendsock4_icmp;
-static int    sendsock4_udp;
-static int    recvsock4;
-static int    sendsock6;
-static int    sendsock6_icmp;
-static int    sendsock6_udp;
-static int    recvsock6;
-static int    sendsock;
-static int    recvsock;
+static struct packet_command_pipe_t packet_command_pipe;
 
 #ifdef ENABLE_IPV6
 static struct sockaddr_storage sourcesockaddr_struct;
@@ -193,7 +133,6 @@ static struct sockaddr_in sourcesockaddr_struct;
 static struct sockaddr_in remotesockaddr_struct;
 #endif
 
-static struct sockaddr * sourcesockaddr = (struct sockaddr *) &sourcesockaddr_struct;
 static struct sockaddr * remotesockaddr = (struct sockaddr *) &remotesockaddr_struct;
 static struct sockaddr_in * ssa4 = (struct sockaddr_in *) &sourcesockaddr_struct;
 static struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
@@ -220,70 +159,6 @@ extern int calc_deltatime (float waittime)
 {
   waittime /= numhosts;
   return 1000000 * waittime;
-}
-
-
-static int checksum(void *data, int sz) 
-{
-  uint16_t *ch;
-  uint32_t sum;
-  uint16_t odd;
-
-  sum = 0;
-  ch = data;
-  if (sz % 2) {
-    ((char *)&odd)[0] = ((char *)data)[sz - 1];
-    sum = odd;
-  }
-  sz = sz / 2;
-  while (sz--) {
-    sum += *(ch++);
-  }
-  while (sum >> 16) {
-    sum = (sum >> 16) + (sum & 0xffff);
-  }
-
-  return (~sum & 0xffff);  
-}
-
-
-/* Prepend pseudoheader to the udp datagram and calculate checksum */
-static int udp_checksum(struct mtr_ctl *ctl, void *pheader, void *udata,
-			int psize, int dsize, int alt_checksum)
-{
-  size_t tsize = psize + dsize;
-  char *csumpacket;
-  int ret;
-  struct UDPv4PHeader *prepend;
-  struct UDPv4PHeader *udppheader;
-  struct UDPHeader *content;
-  struct UDPHeader *udpdata;
-
-  csumpacket = xmalloc(tsize);
-  memset(csumpacket, (unsigned char) abs(ctl->bitpattern), tsize);
-  if (alt_checksum && dsize >= 2) {
-    csumpacket[psize + sizeof(struct UDPHeader)] = 0;
-    csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
-  }
-
-  prepend = (struct UDPv4PHeader *) csumpacket;
-  udppheader = (struct UDPv4PHeader *) pheader;
-  prepend->saddr = udppheader->saddr;
-  prepend->daddr = udppheader->daddr;
-  prepend->zero = 0;
-  prepend->protocol = udppheader->protocol;
-  prepend->len = udppheader->len;
-
-  content = (struct UDPHeader *)(csumpacket + psize);
-  udpdata = (struct UDPHeader *) udata;
-  content->srcport = udpdata->srcport;
-  content->dstport = udpdata->dstport;
-  content->length = udpdata->length;
-  content->checksum = udpdata->checksum;
-
-  ret = checksum(csumpacket, tsize);
-  free(csumpacket);
-  return ret;
 }
 
 
@@ -317,438 +192,37 @@ static int new_sequence(struct mtr_ctl *ctl, int index)
   return seq;
 }
 
-/*  Attempt to connect to a TCP port with a TTL */
-static void net_send_tcp(struct mtr_ctl *ctl, int index)
-{
-  int ttl, s;
-  int port = 0;
-  int flags;
-  struct sockaddr_storage local;
-  struct sockaddr_storage remote;
-  struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
-  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
-#ifdef ENABLE_IPV6
-  struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
-  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
-#endif
-  socklen_t len;
-
-  ttl = index + 1;
-
-  s = socket(ctl->af, SOCK_STREAM, 0);
-  if (s < 0) {
-    display_clear(ctl);
-    perror("socket()");
-    exit(EXIT_FAILURE);
-  }
-
-  memset(&local, 0, sizeof (local));
-  memset(&remote, 0, sizeof (remote));
-  local.ss_family = ctl->af;
-  remote.ss_family = ctl->af;
-
-  switch (ctl->af) {
-  case AF_INET:
-    addrcpy((void *) &local4->sin_addr, (void *) &ssa4->sin_addr, ctl->af);
-    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, ctl->af);
-    remote4->sin_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in);
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, ctl->af);
-    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, ctl->af);
-    remote6->sin6_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in6);
-    break;
-#endif
-  }
-
-  if (bind(s, (struct sockaddr *) &local, len)) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "bind()");
-  }
-
-  if (getsockname(s, (struct sockaddr *) &local, &len)) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "getsockname()");
-  }
-
-  flags = fcntl(s, F_GETFL, 0);
-  if (flags < 0) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "fcntl(F_GETFL)");
-  }
-
-  if (fcntl (s, F_SETFL, flags | O_NONBLOCK) < 0) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "fcntl(F_SETFL, O_NONBLOCK)");
-  }
-
-
-  switch (ctl->af) {
-  case AF_INET:
-    if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
-    }
-    if (setsockopt(s, IPPROTO_IP, IP_TOS, &ctl->tos, sizeof (ctl->tos))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
-    }
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
-    }
-    break;
-#endif
-  }
-
-#ifdef SO_MARK
-    if (ctl->mark && setsockopt( s, SOL_SOCKET, SO_MARK, &ctl->mark, sizeof ctl->mark ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
-    }
-#endif
-
-  switch (local.ss_family) {
-  case AF_INET:
-    port = ntohs(local4->sin_port);
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    port = ntohs(local6->sin6_port);
-    break;
-#endif
-  default:
-    display_clear(ctl);
-    error(EXIT_FAILURE, 0, "unknown address family");
-  }
-
-  save_sequence(ctl, index, port);
-  gettimeofday(&sequence[port].time, NULL);
-  sequence[port].socket = s;
-
-  connect(s, (struct sockaddr *) &remote, len);
-}
-
-#ifdef HAS_SCTP
-/*  Attempt to connect to a SCTP port with a TTL */
-static void net_send_sctp(struct mtr_ctl *ctl, int index)
-{
-  int ttl, s;
-  int opt = 1;
-  int port = 0;
-  struct sockaddr_storage local;
-  struct sockaddr_storage remote;
-  struct sockaddr_in *local4 = (struct sockaddr_in *) &local;
-  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
-# ifdef ENABLE_IPV6
-  struct sockaddr_in6 *local6 = (struct sockaddr_in6 *) &local;
-  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
-# endif
-  socklen_t len;
-
-  ttl = index + 1;
-
-  s = socket(ctl->af, SOCK_STREAM, IPPROTO_SCTP);
-  if (s < 0) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "socket()");
-  }
-
-  memset(&local, 0, sizeof (local));
-  memset(&remote, 0, sizeof (remote));
-  local.ss_family = ctl->af;
-  remote.ss_family = ctl->af;
-
-  switch (ctl->af) {
-  case AF_INET:
-    addrcpy((void *) &local4->sin_addr, (void *) &ssa4->sin_addr, ctl->af);
-    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, ctl->af);
-    remote4->sin_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in);
-    break;
-# ifdef ENABLE_IPV6
-  case AF_INET6:
-    addrcpy((void *) &local6->sin6_addr, (void *) &ssa6->sin6_addr, ctl->af);
-    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, ctl->af);
-    remote6->sin6_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in6);
-    break;
-# endif
-  }
-
-  if (bind(s, (struct sockaddr *) &local, len)) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "bind()");
-  }
-
-  if (getsockname(s, (struct sockaddr *) &local, &len)) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "getsockname()");
-  }
-
-  opt = 1;
-  if (ioctl(s, FIONBIO, &opt)) {
-    display_clear(ctl);
-    error(EXIT_FAILURE, errno, "ioctl FIONBIO");
-  }
-
-  switch (ctl->af) {
-  case AF_INET:
-    if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
-    }
-    if (setsockopt(s, IPPROTO_IP, IP_TOS, &ctl->tos, sizeof (ctl->tos))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
-    }
-    break;
-# ifdef ENABLE_IPV6
-  case AF_INET6:
-    if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof (ttl))) {
-      display_clear(ctl);
-      error(EXIT_FAILURE, errno, "setsockopt IPPROTO_IPV6 ttl");
-    }
-    break;
-# endif
-  }
-
-# ifdef SO_MARK
-    if (ctl->mark && setsockopt( s, SOL_SOCKET, SO_MARK, &ctl->mark, sizeof ctl->mark ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
-    }
-# endif
-
-  switch (local.ss_family) {
-  case AF_INET:
-    port = ntohs(local4->sin_port);
-    break;
-# ifdef ENABLE_IPV6
-  case AF_INET6:
-    port = ntohs(local6->sin6_port);
-    break;
-# endif
-  default:
-    display_clear(ctl);
-    error(EXIT_FAILURE, 0, "unknown address family");
-  }
-
-  save_sequence(ctl, index, port);
-  gettimeofday(&sequence[port].time, NULL);
-  sequence[port].socket = s;
-
-  connect(s, (struct sockaddr *) &remote, len);
-}
-#endif /* HAS_SCTP */
-
 /*  Attempt to find the host at a particular number of hops away  */
 static void net_send_query(struct mtr_ctl *ctl, int index)
 {
-  /*ok  char packet[sizeof(struct IPHeader) + sizeof(struct ICMPHeader)];*/
-  char packet[MAXPACKET];
-  struct IPHeader *ip = (struct IPHeader *) packet;
-  struct ICMPHeader *icmp = NULL;
-  struct UDPHeader *udp = NULL;
-  struct UDPv4PHeader *udpp = NULL;
-  uint16_t checksum_result;
-  /*ok  int packetsize = sizeof(struct IPHeader) + sizeof(struct ICMPHeader) + datasize;*/
-  int rv;
-  static int first=1;
-  int ttl, iphsize = 0, echotype = 0, salen = 0;
-#ifdef ENABLE_IPV6
-  /* offset for ipv6 checksum calculation */
-  int offset = 6;
-#endif
-  /* BSD-derived kernels use host byte order for the IP length and offset
-     fields when using raw sockets.  We detect this automatically at
-     run-time and do the right thing.  */
-  static int BSDfix = 0;
+  int seq = new_sequence(ctl, index);
+  int time_to_live = index + 1;
+  char ip_string[INET_ADDRSTRLEN];
 
-  if (ctl->mtrtype == IPPROTO_TCP) {
-    net_send_tcp(ctl, index);
-    return;
+  /*  Conver the remote IP address to a string  */
+  if (inet_ntop(AF_INET, remoteaddress, ip_string, INET_ADDRSTRLEN) == NULL) {
+    display_close(ctl);
+    error(EXIT_FAILURE, errno, "failure stringifying remote IP address");
   }
 
-#ifdef HAS_SCTP
-  if (ctl->mtrtype == IPPROTO_SCTP) {
-    net_send_sctp(ctl, index);
-    return;
+  /*  Send a probe using the mtr-packet subprocess  */
+  if (dprintf(
+    packet_command_pipe.write_fd,
+    "%d send-probe ip-4 %s ttl %d\n",
+    seq, ip_string, time_to_live) < 0) {
+
+    display_close(ctl);
+    error(EXIT_FAILURE, errno, "mtr-packet command pipe write failure");
   }
-#endif
-
-  ttl = index + 1;
-
-  if ( packetsize < MINPACKET ) packetsize = MINPACKET;
-  if ( packetsize > MAXPACKET ) packetsize = MAXPACKET;
-  if ( ctl->mtrtype == IPPROTO_UDP && ctl->remoteport && packetsize < (MINPACKET + 2)) {
-    packetsize = MINPACKET + 2;
-  }
-
-  memset(packet, (unsigned char) abs(ctl->bitpattern), abs(packetsize));
-
-  switch ( ctl->af ) {
-  case AF_INET:
-#if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
-    iphsize = 0;
-    if ( setsockopt( sendsock, IPPROTO_IP, IP_TOS, &ctl->tos, sizeof ctl->tos ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt IP_TOS");
-    }    
-    if ( setsockopt( sendsock, IPPROTO_IP, IP_TTL, &ttl, sizeof ttl ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt IP_TTL");
-    }    
-#else
-    iphsize = sizeof (struct IPHeader);
-
-  ip->version = 0x45;
-  ip->tos = ctl->tos;
-  ip->len = BSDfix ? abs(packetsize): htons (abs(packetsize));
-  ip->id = 0;
-  ip->frag = 0;    /* 1, if want to find mtu size? Min */
-    ip->ttl = ttl;
-  ip->protocol = ctl->mtrtype;
-  ip->check = 0;
-
-  /* BSD needs the source address here, Linux & others do not... */
-    addrcpy( (void *) &(ip->saddr), (void *) &(ssa4->sin_addr), AF_INET );
-    addrcpy( (void *) &(ip->daddr), (void *) remoteaddress, AF_INET );
-#endif
-    echotype = ICMP_ECHO;
-    salen = sizeof (struct sockaddr_in);
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    iphsize = 0;
-    if ( setsockopt( sendsock, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
-                     &ttl, sizeof ttl ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt IPV6_UNICAST_HOPS");
-    }
-    echotype = ICMP6_ECHO_REQUEST;
-    salen = sizeof (struct sockaddr_in6);
-    break;
-#endif
-  }
-
-#ifdef SO_MARK
-    if (ctl->mark && setsockopt( sendsock, SOL_SOCKET, SO_MARK, &ctl->mark, sizeof ctl->mark ) ) {
-      error(EXIT_FAILURE, errno, "setsockopt SO_MARK");
-    }
-#endif
-
-  switch ( ctl->mtrtype ) {
-  case IPPROTO_ICMP:
-    icmp = (struct ICMPHeader *)(packet + iphsize);
-    icmp->type     = echotype;
-    icmp->code     = 0;
-    icmp->checksum = 0;
-    icmp->id       = getpid();
-    icmp->sequence = new_sequence(ctl, index);
-    icmp->checksum = checksum(icmp, abs(packetsize) - iphsize);
-    
-    gettimeofday(&sequence[icmp->sequence].time, NULL);
-    break;
-
-  case IPPROTO_UDP:
-    udp = (struct UDPHeader *)(packet + iphsize);
-    udp->checksum  = 0;
-    if (!ctl->localport) {
-      ctl->localport = (uint16_t)getpid();
-      if (ctl->localport < MinPort)
-        ctl->localport += MinPort;
-    }
-    udp->srcport = htons(ctl->localport);
-    udp->length = htons(abs(packetsize) - iphsize);
-
-    if (!ctl->remoteport) {
-      udp->dstport = new_sequence(ctl, index);
-      gettimeofday(&sequence[udp->dstport].time, NULL);
-      udp->dstport = htons(udp->dstport);
-    } else {
-      /* keep dstport constant, stuff sequence into the checksum */
-      udp->dstport = htons(ctl->remoteport);
-      udp->checksum = new_sequence(ctl, index);
-      gettimeofday(&sequence[udp->checksum].time, NULL);
-      udp->checksum = htons(udp->checksum);
-    }
-    break;
-  }
-
-  switch ( ctl->af ) {
-  case AF_INET:
-    switch ( ctl->mtrtype ) {
-    case IPPROTO_UDP:
-      /* checksum is not mandatory. only calculate if we know ip->saddr */
-      if (udp->checksum) {
-        udpp = (struct UDPv4PHeader *)(xmalloc(sizeof(struct UDPv4PHeader)));
-        udpp->saddr = ip->saddr;
-        udpp->daddr = ip->daddr;
-        udpp->protocol = ip->protocol;
-        udpp->len = udp->length;
-        checksum_result = udp_checksum(ctl, udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize, 1);
-        packet[iphsize + sizeof(struct UDPHeader)] = ((char *)&checksum_result)[0];
-        packet[iphsize + sizeof(struct UDPHeader) + 1] = ((char *)&checksum_result)[1];
-      } else if (ip->saddr) {
-        udpp = (struct UDPv4PHeader *)(xmalloc(sizeof(struct UDPv4PHeader)));
-        udpp->saddr = ip->saddr;
-        udpp->daddr = ip->daddr;
-        udpp->protocol = ip->protocol;
-        udpp->len = udp->length;
-        udp->checksum = udp_checksum(ctl, udpp, udp, sizeof(struct UDPv4PHeader), abs(packetsize) - iphsize, 0);
-      }
-      break;
-    }
-
-    ip->check = checksum(packet, abs(packetsize));
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    switch ( ctl->mtrtype ) {
-    case IPPROTO_UDP:
-      /* kernel checksum calculation */
-      if (udp->checksum) {
-        offset = sizeof(struct UDPHeader);
-      }
-      if ( setsockopt(sendsock, IPPROTO_IPV6, IPV6_CHECKSUM, &offset, sizeof(offset)) ) {
-        error(EXIT_FAILURE, errno, "setsockopt IPV6_CHECKSUM");
-      }
-      break;
-    }
-    break;
-#endif
-  }
-
-  /* sendto() assumes packet length includes the IPv4 header but not the 
-     IPv6 header. */
-  spacketsize = abs(packetsize)
-#ifdef ENABLE_IPV6
-                - ( ( ctl->af == AF_INET ) ? 0 : sizeof (struct ip6_hdr) )
-#endif
-                ;
-
-  rv = sendto(sendsock, packet, spacketsize, 0, remotesockaddr, salen);
-  if (first && (rv < 0) && ((errno == EINVAL) || (errno == EMSGSIZE))) {
-    /* Try the first packet again using host byte order. */
-    ip->len = spacketsize;
-    rv = sendto(sendsock, packet, spacketsize, 0, remotesockaddr, salen);
-    if (rv >= 0) {
-      BSDfix = 1;
-    }
-  }
-  first = 0;
 }
 
 
 /*   We got a return on something we sent out.  Record the address and
      time.  */
 static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
-			     void *addr, struct timeval now)
+			     void *addr, int totusec)
 {
   int index;
-  int totusec;
   int oldavg;	/* usedByMin */
   int oldjavg;	/* usedByMin */
   int i;	/* usedByMin */
@@ -758,7 +232,6 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
   char addrcopy[sizeof(struct in_addr)];
 #endif
 
-  /* Copy the from address ASAP because it can be overwritten */
   addrcpy( (void *) &addrcopy, addr, ctl->af );
 
   if (seq < 0 || seq >= MaxSequence)
@@ -774,10 +247,6 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
   }
 
   index = sequence[seq].index;
-
-  totusec = (now.tv_sec  - sequence[seq].time.tv_sec ) * 1000000 +
-            (now.tv_usec - sequence[seq].time.tv_usec);
-  /* impossible? if( totusec < 0 ) totusec = 0 */;
 
   if ( addrcmp( (void *) &(host[index].addr),
 		(void *) &ctl->unspec_addr, ctl->af ) == 0 ) {
@@ -844,248 +313,200 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
 }
 
 
-/*  We know a packet has come in, because the main select loop has called us,
-    now we just need to read it, see if it is for us, and if it is a reply 
-    to something we sent, then call net_process_ping()  */
+/*
+    A complete mtr-packet reply line has arrived.  Parse it and record
+    the responding IP and round trip time, if it is a reply that we
+    understand.
+*/
+static void net_process_command_reply(
+  struct mtr_ctl *ctl, char *reply_str)
+{
+  struct command_t reply;
+  struct in_addr fromaddress;
+  int seq_num;
+  int i;
+  int round_trip_time = 0;
+  bool found_round_trip;
+  bool found_ip;
+  char *reply_name;
+  char *arg_name;
+  char *arg_value;
+  struct mplslen mpls;
+
+  /*  Parse the reply string  */
+  if (parse_command(&reply, reply_str)) {
+    /*
+        If the reply isn't well structured, something is fundamentally
+        wrong, as we might as well exit.  Even if the reply is of an
+        unknown type, it should still parse.
+    */
+    error(EXIT_FAILURE, errno, "reply parse failure");
+    return;
+  }
+
+  seq_num = reply.token;
+  reply_name = reply.command_name;
+
+  /*  If the reply type is unknown, ignore it for future compatibility  */
+  if (strcmp(reply_name, "reply") && strcmp(reply_name, "ttl-expired")) {
+    return;
+  }
+
+  found_ip = false;
+  found_round_trip = false;
+
+  /*  Examine the reply arguments for known values  */
+  for (i = 0; i < reply.argument_count; i++) {
+    arg_name = reply.argument_name[i];
+    arg_value = reply.argument_value[i];
+
+    /*  IPv4 address of the responding host  */
+    if (!strcmp(arg_name, "ip-4")) {
+      if (inet_pton(AF_INET, arg_value, &fromaddress)) {
+        found_ip = true;
+      }
+    }
+
+    /*  The round trip time in microseconds  */
+    if (!strcmp(arg_name, "round-trip-time")) {
+      errno = 0;
+      round_trip_time = strtol(arg_value, NULL, 10);
+      if (!errno) {
+        found_round_trip = true;
+      }
+    }
+  }
+
+  /*
+      If the reply had an IP address and a round trip time, we can
+      record the result.
+  */
+  if (found_ip && found_round_trip) {
+    /* MPLS decoding */
+    memset(&mpls, 0, sizeof(struct mplslen));
+    mpls.labels = 0;
+
+    net_process_ping(
+      ctl, seq_num, mpls, (void *) &fromaddress, round_trip_time);
+  }
+}
+
+
+/*
+  Check the command pipe for completed replies to commands
+  we have previously sent.  Record the results of those replies.
+*/
+static void net_process_pipe_buffer(struct mtr_ctl *ctl)
+{
+  char *reply_buffer;
+  char *reply_start;
+  char *end_of_reply;
+  int used_size;
+  int move_size;
+
+  reply_buffer = packet_command_pipe.reply_buffer;
+
+  /*  Terminate the string storing the replies  */
+  assert(packet_command_pipe.reply_buffer_used < PACKET_REPLY_BUFFER_SIZE);
+  reply_buffer[packet_command_pipe.reply_buffer_used] = 0;
+
+  reply_start = reply_buffer;
+
+  /*
+    We may have multiple completed replies.  Loop until we don't
+    have any more newlines termininating replies.
+  */
+  while (true) {
+    /*  If no newline is found, our reply isn't yet complete  */
+    end_of_reply = index(reply_start, '\n');
+    if (end_of_reply == NULL) {
+      /*  No complete replies remaining  */
+      break;
+    }
+
+    /*
+        Terminate the reply string at the newline, which
+        is necessary in the case where we are able to read
+        mulitple replies arriving simultaneously.
+    */
+    *end_of_reply = 0;
+
+    /*  Parse and record the reply results  */
+    net_process_command_reply(ctl, reply_start);
+
+    reply_start = end_of_reply + 1;
+  }
+
+  /*
+      After replies have been processed, free the space used
+      by the replies, and move any remaining partial reply text
+      to the start of the reply buffer.
+  */
+  used_size = reply_start - reply_buffer;
+  move_size = packet_command_pipe.reply_buffer_used - used_size;
+  memmove(reply_buffer, reply_start, move_size);
+  packet_command_pipe.reply_buffer_used -= used_size;
+
+  if (packet_command_pipe.reply_buffer_used >= 
+      PACKET_REPLY_BUFFER_SIZE - 1) {
+    /*
+      We've overflowed the reply buffer without a complete reply.
+      There's not much we can do about it but discard the data
+      we've got and hope new data coming in fits.
+    */
+    packet_command_pipe.reply_buffer_used = 0;
+  }
+}
+
+
+/*
+    Invoked when the read pipe from the mtr-packet subprocess is readable.
+    If we have received a complete reply, process it.
+*/
 extern void net_process_return(struct mtr_ctl *ctl)
 {
-  char packet[MAXPACKET];
-#ifdef ENABLE_IPV6
-  struct sockaddr_storage fromsockaddr_struct;
-  struct sockaddr_in6 * fsa6 = (struct sockaddr_in6 *) &fromsockaddr_struct;
-#else
-  struct sockaddr_in fromsockaddr_struct;
-#endif
-  struct sockaddr * fromsockaddr = (struct sockaddr *) &fromsockaddr_struct;
-  struct sockaddr_in * fsa4 = (struct sockaddr_in *) &fromsockaddr_struct;
-  socklen_t fromsockaddrsize;
-  ssize_t num;
-  struct ICMPHeader *header = NULL;
-  struct UDPHeader *udpheader = NULL;
-  struct TCPHeader *tcpheader = NULL;
-#ifdef HAS_SCTP
-  struct SCTPHeader *sctpheader = NULL;
-#endif
-  struct timeval now;
-  ip_t * fromaddress = NULL;
-  int echoreplytype = 0, timeexceededtype = 0, unreachabletype = 0;
-  int seq_num = 0;
+  int read_count;
+  int buffer_remaining;
+  char *reply_buffer;
+  char *read_buffer;
 
-  /* MPLS decoding */
-  struct mplslen mpls;
-  mpls.labels = 0;
+  reply_buffer = packet_command_pipe.reply_buffer;
 
-  gettimeofday(&now, NULL);
-  switch ( ctl->af ) {
-  case AF_INET:
-    fromsockaddrsize = sizeof (struct sockaddr_in);
-    fromaddress = (ip_t *) &(fsa4->sin_addr);
-    echoreplytype = ICMP_ECHOREPLY;
-    timeexceededtype = ICMP_TIME_EXCEEDED;
-    unreachabletype = ICMP_DEST_UNREACH;
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    fromsockaddrsize = sizeof (struct sockaddr_in6);
-    fromaddress = (ip_t *) &(fsa6->sin6_addr);
-    echoreplytype = ICMP6_ECHO_REPLY;
-    timeexceededtype = ICMP6_TIME_EXCEEDED;
-    unreachabletype = ICMP6_DST_UNREACH;
-    break;
-#endif
-  }
+  /*
+      Read the available reply text, up to the the remaining
+      buffer space.  (Minus one for the terminating NUL.)
+  */
+  read_buffer = &reply_buffer[packet_command_pipe.reply_buffer_used];
+  buffer_remaining =
+    PACKET_REPLY_BUFFER_SIZE - packet_command_pipe.reply_buffer_used;
+  read_count = read(
+    packet_command_pipe.read_fd, read_buffer, buffer_remaining - 1);
 
-  num = recvfrom(recvsock, packet, MAXPACKET, 0, 
-		 fromsockaddr, &fromsockaddrsize);
-  if(num < 0) {
-    error(EXIT_FAILURE, errno, "recvfrom failed");
-  }
-
-  switch ( ctl->af ) {
-  case AF_INET:
-    if((size_t) num < sizeof(struct IPHeader) + sizeof(struct ICMPHeader))
+  if (read_count < 0) {
+    /*
+        EAGAIN simply indicates that there is no data currently
+        available on our non-blocking pipe.
+    */
+    if (errno == EAGAIN) {
       return;
-    header = (struct ICMPHeader *)(packet + sizeof(struct IPHeader));
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    if((size_t) num < sizeof(struct ICMPHeader))
-      return;
+    }
 
-    header = (struct ICMPHeader *) packet;
-    break;
-#endif
+    display_close(ctl);
+    error(EXIT_FAILURE, errno, "command reply read failure");
+    return;
   }
 
-  switch ( ctl->mtrtype ) {
-  case IPPROTO_ICMP:
-    if (header->type == echoreplytype) {
-      if(header->id != (uint16_t)getpid())
-        return;
+  if (read_count == 0) {
+    display_close(ctl);
 
-      seq_num = header->sequence;
-    } else if (header->type == timeexceededtype) {
-      switch ( ctl->af ) {
-      case AF_INET:
-
-        if ((size_t) num < sizeof(struct IPHeader) + 
-                           sizeof(struct ICMPHeader) + 
-                           sizeof (struct IPHeader) + 
-                           sizeof (struct ICMPHeader))
-          return;
-        header = (struct ICMPHeader *)(packet + sizeof (struct IPHeader) + 
-                                                sizeof (struct ICMPHeader) + 
-                                                sizeof (struct IPHeader));
-
-        if(num > 160)
-          decodempls(num, packet, &mpls, 156);
-
-      break;
-#ifdef ENABLE_IPV6
-      case AF_INET6:
-        if ((size_t) num < sizeof (struct ICMPHeader) +
-                   sizeof (struct ip6_hdr) + sizeof (struct ICMPHeader) )
-          return;
-        header = (struct ICMPHeader *) ( packet + 
-                                         sizeof (struct ICMPHeader) +
-                                         sizeof (struct ip6_hdr) );
-
-        if(num > 140)
-          decodempls(num, packet, &mpls, 136);
-
-        break;
-#endif
-      }
-  
-      if (header->id != (uint16_t)getpid())
-        return;
-  
-      seq_num = header->sequence;
-    }
-    break;
-  
-  case IPPROTO_UDP:
-    if (header->type == timeexceededtype || header->type == unreachabletype) {
-      switch ( ctl->af ) {
-      case AF_INET:
-
-        if ((size_t) num < sizeof(struct IPHeader) +
-                           sizeof(struct ICMPHeader) +
-                           sizeof (struct IPHeader) +
-                           sizeof (struct UDPHeader))
-          return;
-        udpheader = (struct UDPHeader *)(packet + sizeof (struct IPHeader) +
-                                                  sizeof (struct ICMPHeader) +
-                                                  sizeof (struct IPHeader));
-
-        if(num > 160)
-          decodempls(num, packet, &mpls, 156);
-
-      break;
-#ifdef ENABLE_IPV6
-      case AF_INET6:
-        if ((size_t) num < sizeof (struct ICMPHeader) +
-                   sizeof (struct ip6_hdr) + sizeof (struct UDPHeader) )
-          return;
-        udpheader = (struct UDPHeader *) ( packet +
-                                           sizeof (struct ICMPHeader) +
-                                           sizeof (struct ip6_hdr) );
-
-        if(num > 140)
-          decodempls(num, packet, &mpls, 136);
-
-        break;
-#endif
-      }
-      if (ntohs(udpheader->srcport) != (uint16_t)ctl->localport)
-        return;
-
-      if (ctl->remoteport && ctl->remoteport == ntohs(udpheader->dstport)) {
-        seq_num = ntohs(udpheader->checksum);
-      } else if (!ctl->remoteport) {
-        seq_num = ntohs(udpheader->dstport);
-      }
-    }
-    break;
-
-  case IPPROTO_TCP:
-    if (header->type == timeexceededtype || header->type == unreachabletype) {
-      switch ( ctl->af ) {
-      case AF_INET:
-
-        if ((size_t) num < sizeof(struct IPHeader) +
-                           sizeof(struct ICMPHeader) +
-                           sizeof (struct IPHeader) +
-                           sizeof (struct TCPHeader))
-          return;
-        tcpheader = (struct TCPHeader *)(packet + sizeof (struct IPHeader) +
-                                                  sizeof (struct ICMPHeader) +
-                                                  sizeof (struct IPHeader));
-
-        if(num > 160)
-          decodempls(num, packet, &mpls, 156);
-
-      break;
-#ifdef ENABLE_IPV6
-      case AF_INET6:
-        if ((size_t) num < sizeof (struct ICMPHeader) +
-                   sizeof (struct ip6_hdr) + sizeof (struct TCPHeader) )
-          return;
-        tcpheader = (struct TCPHeader *) ( packet +
-                                           sizeof (struct ICMPHeader) +
-                                           sizeof (struct ip6_hdr) );
-
-        if(num > 140)
-          decodempls(num, packet, &mpls, 136);
-
-        break;
-#endif
-      }
-      seq_num = ntohs(tcpheader->srcport);
-    }
-    break;
-
-#ifdef HAS_SCTP
-  case IPPROTO_SCTP:
-    if (header->type == timeexceededtype || header->type == unreachabletype) {
-      switch ( ctl->af ) {
-      case AF_INET:
-
-        if ((size_t) num < sizeof(struct IPHeader) +
-                           sizeof(struct ICMPHeader) +
-                           sizeof (struct IPHeader) +
-                           sizeof (struct SCTPHeader))
-          return;
-        sctpheader = (struct SCTPHeader *)(packet + sizeof (struct IPHeader) +
-                                                  sizeof (struct ICMPHeader) +
-                                                  sizeof (struct IPHeader));
-
-        if(num > 160)
-          decodempls(num, packet, &mpls, 156);
-
-      break;
-# ifdef ENABLE_IPV6
-      case AF_INET6:
-        if ((size_t) num < sizeof (struct ICMPHeader) +
-                   sizeof (struct ip6_hdr) + sizeof (struct SCTPHeader) )
-          return;
-        sctpheader = (struct SCTPHeader *) ( packet +
-                                           sizeof (struct ICMPHeader) +
-                                           sizeof (struct ip6_hdr) );
-
-        if(num > 140)
-          decodempls(num, packet, &mpls, 136);
-
-        break;
-# endif
-      }
-      seq_num = ntohs(sctpheader->srcport);
-    }
-    break;
-#endif /* HAS_SCTP */
+    errno = EPIPE;
+    error(EXIT_FAILURE, EPIPE, "unexpected packet generator exit");
   }
-  if (seq_num)
-    net_process_ping (ctl, seq_num, mpls, (void *) fromaddress, now);
+
+  packet_command_pipe.reply_buffer_used += read_count;
+
+  /*  Handle any replies completed by this read  */
+  net_process_pipe_buffer(ctl);
 }
 
 
@@ -1308,105 +729,183 @@ extern int net_send_batch(struct mtr_ctl *ctl)
 }
 
 
-static void set_fd_flags(int fd)
+/*  Set a file descriptor to non-blocking  */
+static void set_fd_nonblock(int fd)
 {
-#if defined(HAVE_FCNTL) && defined(FD_CLOEXEC)
-  int oldflags;
+  int flags;
 
-  if (fd < 0) return; 
-
-  oldflags = fcntl(fd, F_GETFD);
-  if (oldflags == -1) {
-    error(0, errno, "Couldn't get fd's flags");
-    return;
+  /*  Get the current flags of the file descriptor  */
+  flags = fcntl(fd, F_GETFL, 0);
+  if (flags == -1) {
+    error(EXIT_FAILURE, errno, "F_GETFL failure");
+    exit(1);
   }
-  if (fcntl(fd, F_SETFD, oldflags | FD_CLOEXEC))
-    error(0, errno, "Couldn't set fd's flags");
-#endif
+
+  /*  Add the O_NONBLOCK bit to the current flags  */
+  if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    error(EXIT_FAILURE, errno, "Failure to set O_NONBLOCK");
+    exit(1);
+  }
 }
 
-extern int net_preopen(void) 
+
+/*  Ensure we can communicate with the mtr-packet subprocess  */
+static int net_command_pipe_check(struct mtr_ctl *ctl)
 {
-#ifdef IP_HDRINCL
-  int trueopt = 1;
-#endif
+  const char *check_command = "1 check-support feature send-probe\n";
+  struct command_t command;
+  char reply[PACKET_REPLY_BUFFER_SIZE];
+  int command_length;
+  int write_length;
+  int read_length;
+  int parse_result;
 
-#if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
-  sendsock4_icmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-  sendsock4_udp = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
-#else
-  sendsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-#endif
-  if (sendsock4 < 0) 
-    return -1;
-#ifdef ENABLE_IPV6
-  sendsock6_icmp = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-  sendsock6_udp = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
-#endif
+  /*  Query send-probe support  */
+  command_length = strlen(check_command);
+  write_length = write(
+    packet_command_pipe.write_fd, check_command, command_length);
 
-#ifdef IP_HDRINCL
-  /*  FreeBSD wants this to avoid sending out packets with protocol type RAW
-      to the network.  */
-  if (setsockopt(sendsock4, SOL_IP, IP_HDRINCL, &trueopt, sizeof(trueopt))) {
-    error(0, errno, "setsockopt IP_HDRINCL");
+  if (write_length == -1) {
     return -1;
   }
-#endif /* IP_HDRINCL */
 
-  recvsock4 = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-  if (recvsock4 < 0)
+  if (write_length != command_length) {
+    errno = EIO;
     return -1;
-  set_fd_flags(recvsock4);
-#ifdef ENABLE_IPV6
-  recvsock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-  if (recvsock6 >= 0)
-     set_fd_flags(recvsock6);
-#endif
+  }
+
+  /*  Read the reply to our query  */
+  read_length = read(
+    packet_command_pipe.read_fd, reply, PACKET_REPLY_BUFFER_SIZE - 1);
+
+  if (read_length < 0) {
+    return -1;
+  }
+
+  /*  Parse the query reply  */
+  reply[read_length] = 0;
+  parse_result = parse_command(&command, reply);
+  if (parse_result) {
+    errno = parse_result;
+    return -1;
+  }
+
+  /*  Check that send-probe is supported  */
+  if (!strcmp(command.command_name, "feature-support")
+    && command.argument_count >= 1
+    && !strcmp(command.argument_name[0], "support")
+    && !strcmp(command.argument_value[0], "ok")) {
+
+    /*  Looks good  */
+    return 0;
+  }
+
+  errno = ENOTSUP;
+  return -1;
+}
+
+
+/*  Create the command pipe to a new mtr-packet subprocess  */
+static int net_command_pipe_open(struct mtr_ctl *ctl)
+{
+  int stdin_pipe[2];
+  int stdout_pipe[2];
+  pid_t child_pid;
+  int i;
+  char *mtr_packet_path;
+
+  /*
+      We actually need two Unix pipes.  One for stdin and one for
+      stdout on the new process.
+  */
+  if (pipe(stdin_pipe) || pipe(stdout_pipe)) {
+    return errno;
+  }
+
+  child_pid = fork();
+  if (child_pid == -1) {
+    return errno;
+  }
+
+  if (child_pid == 0) {
+    /*  In the child process, attach our created pipes to stdin and stdout  */
+    dup2(stdin_pipe[0], STDIN_FILENO);
+    dup2(stdout_pipe[1], STDOUT_FILENO);
+
+    /*  Close all unnecessary fds  */
+    for (i = STDERR_FILENO + 1; i <= stdout_pipe[1]; i++) {
+      close(i);
+    }
+
+    /*
+        Allow the MTR_PACKET environment variable to overrride
+        the path to the mtr-packet executable.  This is necessary
+        for debugging changes for mtr-packet.
+    */
+    mtr_packet_path = getenv("MTR_PACKET");
+    if (mtr_packet_path == NULL) {
+      mtr_packet_path = "mtr-packet";
+    }
+
+    /*
+        First, try to execute using /usr/bin/env, because this
+        will search the PATH for mtr-packet
+    */
+    execl("/usr/bin/env", "mtr-packet", mtr_packet_path, NULL);
+
+    /*
+        If env fails to execute, try to use the MTR_PACKET environment as a
+        full path to the executable.  This is necessary because on
+        Windows, minimal mtr binary distributions will lack /usr/bin/env.
+
+        Note: A side effect is that an mtr-packet in the current directory
+        could be executed.  This will only be the case if /usr/bin/env
+        doesn't exist.
+    */
+    execl(mtr_packet_path, "mtr-packet", NULL);
+
+    /*  Both exec attempts failed, so nothing to do but exit  */
+    exit(1);
+  } else {
+    memset(&packet_command_pipe, 0, sizeof(struct packet_command_pipe_t));
+
+    /*
+        In the parent process, save the opposite ends of the pipes
+        attached as stdin and stdout in the child.
+    */
+    packet_command_pipe.pid = child_pid;
+    packet_command_pipe.read_fd = stdout_pipe[0];
+    packet_command_pipe.write_fd = stdin_pipe[1];
+
+    /*  We don't need the child ends of the pipe open in the parent.  */
+    close(stdout_pipe[1]);
+    close(stdin_pipe[0]);
+
+    /*
+      Check that we can communicate with the client.  If we failed to
+      execute the mtr-packet binary, we will discover that here.
+    */
+    if (net_command_pipe_check(ctl)) {
+      error(EXIT_FAILURE, errno, "Failure to start mtr-packet");
+    }
+
+    /*  We will need non-blocking reads from the child  */
+    set_fd_nonblock(packet_command_pipe.read_fd);
+  }
 
   return 0;
 }
 
 
-extern int net_selectsocket(struct mtr_ctl *ctl)
-{
-#if !defined(IP_HDRINCL) && defined(IP_TOS) && defined(IP_TTL)
-  switch ( ctl->mtrtype ) {
-  case IPPROTO_ICMP:
-    sendsock4 = sendsock4_icmp;
-    break;
-  case IPPROTO_UDP:
-    sendsock4 = sendsock4_udp;
-    break;
-  }
-#endif
-  if (sendsock4 < 0)
-    return -1;
-#ifdef ENABLE_IPV6
-  switch ( ctl->mtrtype ) {
-  case IPPROTO_ICMP:
-    sendsock6 = sendsock6_icmp;
-    break;
-  case IPPROTO_UDP:
-    sendsock6 = sendsock6_udp;
-    break;
-  }
-  if ((sendsock6 < 0) && (sendsock4 < 0))
-    return -1;
-#endif
-
- return 0;
-}
-
-
 extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 {
-#ifdef ENABLE_IPV6
-  struct sockaddr_storage name_struct;
-#else
-  struct sockaddr_in name_struct; 
-#endif
-  struct sockaddr * name = (struct sockaddr *) &name_struct;
-  socklen_t len; 
+  int err;
+
+  /*  Spawn the mtr-packet child process  */
+  err = net_command_pipe_open(ctl);
+  if (err) {
+    return err;
+  }
 
   net_reset(ctl);
 
@@ -1414,19 +913,12 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 
   switch ( hostent->h_addrtype ) {
   case AF_INET:
-    sendsock = sendsock4;
-    recvsock = recvsock4;
     addrcpy( (void *) &(rsa4->sin_addr), hostent->h_addr, AF_INET );
     sourceaddress = (ip_t *) &(ssa4->sin_addr);
     remoteaddress = (ip_t *) &(rsa4->sin_addr);
     break;
 #ifdef ENABLE_IPV6
   case AF_INET6:
-    if (sendsock6 < 0 || recvsock6 < 0) {
-      error(EXIT_FAILURE, errno, "Could not open IPv6 socket");
-    }
-    sendsock = sendsock6;
-    recvsock = recvsock6;
     addrcpy( (void *) &(rsa6->sin6_addr), hostent->h_addr, AF_INET6 );
     sourceaddress = (ip_t *) &(ssa6->sin6_addr);
     remoteaddress = (ip_t *) &(rsa6->sin6_addr);
@@ -1435,10 +927,6 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
   default:
     error(EXIT_FAILURE, 0, "net_open bad address type");
   }
-
-  len = sizeof name_struct; 
-  getsockname (recvsock, name, &len);
-  sockaddrtop( name, localaddr, sizeof localaddr );
 
   return 0;
 }
@@ -1501,135 +989,27 @@ extern void net_reset(struct mtr_ctl *ctl)
 
 }
 
-static int net_set_interfaceaddress_udp(struct mtr_ctl *ctl)
-{
-  struct sockaddr_in *  sa4;
-  struct sockaddr_storage remote;
-  struct sockaddr_in *remote4 = (struct sockaddr_in *) &remote;
-#ifdef ENABLE_IPV6
-  struct sockaddr_storage name_struct;
-  struct sockaddr_in6 * sa6;
-  struct sockaddr_in6 *remote6 = (struct sockaddr_in6 *) &remote;
-#else
-  struct sockaddr_in name_struct;
-#endif
-  struct sockaddr * name = (struct sockaddr *) &name_struct;
-  socklen_t len;
-  int s;
 
-  memset(&remote, 0, sizeof (remote));
-  remote.ss_family = ctl->af;
-
-  switch (ctl->af) {
-  case AF_INET:
-    addrcpy((void *) &remote4->sin_addr, (void *) remoteaddress, ctl->af);
-    remote4->sin_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in);
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    addrcpy((void *) &remote6->sin6_addr, (void *) remoteaddress, ctl->af);
-    remote6->sin6_port = htons(ctl->remoteport);
-    len = sizeof (struct sockaddr_in6);
-    break;
-#endif
-  }
-
-  s = socket (ctl->af, SOCK_DGRAM, 0);
-  if (s < 0) {
-    error(EXIT_FAILURE, errno, "udp socket()");
-  }
-
-  if (connect(s, (struct sockaddr *) &remote, len)) {
-    error(EXIT_FAILURE, errno, "udp connect()");
-  }
-
-  getsockname(s, name, &len);
-  sockaddrtop( name, localaddr, sizeof localaddr );
-  switch (ctl->af) {
-  case AF_INET:
-    sa4 = (struct sockaddr_in *) name;
-    addrcpy((void*)&ssa4->sin_addr, (void *) &(sa4->sin_addr), ctl->af );
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    sa6 = (struct sockaddr_in6 *) name;
-    addrcpy((void*)&ssa6->sin6_addr, (void *) &(sa6->sin6_addr), ctl->af );
-    break;
-#endif
-  }
-  close(s);
-
-  return 0;
-}
-
-
-extern int net_set_interfaceaddress (struct mtr_ctl *ctl)
-{
-#ifdef ENABLE_IPV6
-  struct sockaddr_storage name_struct;
-#else
-  struct sockaddr_in name_struct;
-#endif
-  struct sockaddr * name = (struct sockaddr *) &name_struct;
-  socklen_t len = 0;
-
-  if (ctl->mtrtype == IPPROTO_UDP && ctl->remoteport && !ctl->InterfaceAddress) {
-    return net_set_interfaceaddress_udp(ctl);
-  }
-  if (!ctl->InterfaceAddress) return 0; 
-
-  sourcesockaddr->sa_family = ctl->af;
-  switch ( ctl->af ) {
-  case AF_INET:
-    ssa4->sin_port = 0;
-    if ( inet_aton( ctl->InterfaceAddress, &(ssa4->sin_addr) ) < 1 ) {
-      error(0, 0, "bad interface address: %s", ctl->InterfaceAddress);
-      return( 1 );
-  }
-    len = sizeof (struct sockaddr);
-    break;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    ssa6->sin6_port = 0;
-    if ( inet_pton( ctl->af, ctl->InterfaceAddress, &(ssa6->sin6_addr) ) < 1 ) {
-      error(0, 0, "bad interface address: %s", ctl->InterfaceAddress);
-      return( 1 );
-    }
-    len = sizeof (struct sockaddr_in6);
-    break;
-#endif
-  }
-
-  if ( bind( sendsock, sourcesockaddr, len ) == -1 ) {
-    error(0, 0, "failed to bind to interface: %s", ctl->InterfaceAddress);
-      return( 1 );
-  }
-  getsockname (sendsock, name, &len);
-  sockaddrtop( name, localaddr, sizeof localaddr );
-  return 0; 
-}
-
-
-
+/*  Close the pipe to the packet generator process, and kill the process  */
 extern void net_close(void)
 {
-  if (sendsock4 >= 0) {
-    close(sendsock4_icmp);
-    close(sendsock4_udp);
+  int child_exit_value;
+
+  if (packet_command_pipe.pid) {
+    close(packet_command_pipe.read_fd);
+    close(packet_command_pipe.write_fd);
+
+    kill(packet_command_pipe.pid, SIGTERM);
+    waitpid(packet_command_pipe.pid, &child_exit_value, 0);
   }
-  if (recvsock4 >= 0) close(recvsock4);
-  if (sendsock6 >= 0) {
-    close(sendsock6_icmp);
-    close(sendsock6_udp);
-  }
-  if (recvsock6 >= 0) close(recvsock6);
+
+  memset(&packet_command_pipe, 0, sizeof(struct packet_command_pipe_t));
 }
 
 
 extern int net_waitfd(void)
 {
-  return recvsock;
+  return packet_command_pipe.read_fd;
 }
 
 
@@ -1668,32 +1048,6 @@ extern void net_save_return(int at, int seq, int ms)
   host[at].saved[idx] = ms;
 }
 
-/* Similar to inet_ntop but uses a sockaddr as it's argument. */
-static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
-  struct sockaddr_in *  sa4;
-#ifdef ENABLE_IPV6
-  struct sockaddr_in6 * sa6;
-#endif
-
-  switch ( saddr->sa_family ) {
-  case AF_INET:
-    sa4 = (struct sockaddr_in *) saddr;
-    xstrncpy( strptr, inet_ntoa( sa4->sin_addr ), len - 1 );
-    strptr[ len - 1 ] = '\0';
-    return;
-#ifdef ENABLE_IPV6
-  case AF_INET6:
-    sa6 = (struct sockaddr_in6 *) saddr;
-    inet_ntop( sa6->sin6_family, &(sa6->sin6_addr), strptr, len );
-    return;
-#endif
-  default:
-    error(0, 0, "sockaddrtop unknown address type");
-    strptr[0] = '\0';
-    return;
-  }
-}
-
 /* Address comparison. */
 extern int addrcmp( char * a, char * b, int family ) {
   int rc = -1;
@@ -1727,45 +1081,6 @@ extern void addrcpy( char * a, char * b, int family ) {
   }
 }
 
-/* Decode MPLS */
-static void decodempls(int num, char *packet, struct mplslen *mpls, int offset) {
-
-  int i;
-  unsigned int ext_ver, ext_res, ext_chk, obj_hdr_len;
-  u_char obj_hdr_class, obj_hdr_type;
-
-  /* loosely derived from the traceroute-nanog.c
-   * decoding by Jorge Boncompte */
-  ext_ver = packet[offset]>>4;
-  ext_res = (packet[offset]&15)+ packet[offset+1];
-  ext_chk = ((unsigned int)packet[offset+2]<<8)+packet[offset+3];
-
-  /* Check for ICMP extension header */
-  if (ext_ver == 2 && ext_res == 0 && ext_chk != 0 && num >= (offset+6)) {
-    obj_hdr_len = ((int)packet[offset+4]<<8)+packet[offset+5];
-    obj_hdr_class = packet[offset+6];
-    obj_hdr_type = packet[offset+7];
-
-    /* make sure we have an MPLS extension */
-    if (obj_hdr_len >= 8 && obj_hdr_class == 1 && obj_hdr_type == 1) {
-      /* how many labels do we have?  will be at least 1 */
-      mpls->labels = (obj_hdr_len-4)/4;
-
-      /* save all label objects */
-      for(i=0; (i<mpls->labels) && (i < MAXLABELS) && (num >= (offset+8)+(i*4)); i++) {
-
-        /* piece together the 20 byte label value */
-        mpls->label[i] = ((unsigned long) (packet[(offset+8)+(i*4)] << 12 & 0xff000) +
-            (unsigned int) (packet[(offset+9)+(i*4)] << 4 & 0xff0) +
-            (packet[(offset+10)+(i*4)] >> 4 & 0xf));
-        mpls->exp[i] = (packet[(offset+10)+(i*4)] >> 1) & 0x7;
-        mpls->s[i] = (packet[(offset+10)+(i*4)] & 0x1); /* should be 1 if only one label */
-        mpls->ttl[i] = packet[(offset+11)+(i*4)];
-      }
-    }
-  }
-}
-
 /* Add open sockets to select() */
 extern void net_add_fds(fd_set *writefd, int *maxfd)
 {
@@ -1776,43 +1091,6 @@ extern void net_add_fds(fd_set *writefd, int *maxfd)
       FD_SET(fd, writefd);
       if (fd >= *maxfd)
         *maxfd = fd + 1;
-    }
-  }
-}
-
-/* check if we got connection or error on any fds */
-extern void net_process_fds(struct mtr_ctl *ctl, fd_set *writefd)
-{
-  int at, fd, r;
-  struct timeval now;
-
-  /* Can't do MPLS decoding */
-  struct mplslen mpls;
-  mpls.labels = 0;
-
-  gettimeofday(&now, NULL);
-
-  for (at = 0; at < MaxSequence; at++) {
-    fd = sequence[at].socket;
-    if (fd > 0 && FD_ISSET(fd, writefd)) {
-      r = write(fd, "G", 1);
-      /* if write was successful, or connection refused we have
-       * (probably) reached the remote address. Anything else happens to the
-       * connection, we write it off to avoid leaking sockets */
-      if (r == 1 || errno == ECONNREFUSED)
-        net_process_ping(ctl, at, mpls, remoteaddress, now);
-      else if (errno != EAGAIN) {
-        close(fd);
-        sequence[at].socket = 0;
-      }
-    }
-    if (fd > 0) {
-     struct timeval subtract;
-     timersub(&now, &sequence[at].time, &subtract);
-     if ((subtract.tv_sec * 1000000L + subtract.tv_usec) > ctl->tcp_timeout) {
-        close(fd);
-        sequence[at].socket = 0;
-      }
     }
   }
 }
@@ -1829,5 +1107,4 @@ extern void net_harvest_fds(struct mtr_ctl *ctl)
   tv.tv_usec = 0;
   net_add_fds(&writefd, &maxfd);
   select(maxfd, NULL, &writefd, NULL, &tv);
-  net_process_fds(ctl, &writefd);
 }

@@ -17,6 +17,7 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
+AC_CANONICAL_HOST
 AC_PROG_CC
 
 # Check pkg-config availability.
@@ -28,6 +29,8 @@ try setting the environment variable ACLOCAL_OPTS="-I/other/macro/dir"
 before running ./bootstrap.sh again.])
 ])
 PKG_PROG_PKG_CONFIG
+
+AM_CONDITIONAL([CYGWIN], [test "$host_os" = cygwin])
 
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])

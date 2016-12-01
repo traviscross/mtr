@@ -53,7 +53,7 @@ enum {
 /*  Prototypes for display.c  */
 extern void display_detect(struct mtr_ctl *ctl, int *argc, char ***argv);
 extern void display_open(struct mtr_ctl *ctl);
-extern void display_close(struct mtr_ctl *ctl, time_t now);
+extern void display_close(struct mtr_ctl *ctl);
 extern void display_redraw(struct mtr_ctl *ctl);
 extern void display_rawxmit(struct mtr_ctl *ctl, int hostnum, int seq);
 extern void display_rawping(struct mtr_ctl *ctl, int hostnum, int msec, int seq);

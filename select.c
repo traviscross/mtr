@@ -254,10 +254,6 @@ extern void select_loop(struct mtr_ctl *ctl){
       }
       anyset = 1;
     }
-
-    /* Check for activity on open sockets */
-    if (ctl->mtrtype == IPPROTO_TCP)
-      net_process_fds(ctl, &writefd);
   }
   return;
 }

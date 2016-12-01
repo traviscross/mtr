@@ -448,8 +448,19 @@ passed in
 .B MTR_OPTIONS\c
 ).
 .TP
+.B MTR_PACKET
+A path to the
+.I mtr-packet
+executable, to be used for sending and receiving network probes.  If
+.B MTR_PACKET
+is unset, the
+.B PATH
+will be used to search for an
+.I mtr-packet
+executable.
+.TP
 .B DISPLAY
-Used for the GTK+ frontend.
+Specifies an X11 server for the GTK+ frontend.
 .SH BUGS
 Some modern routers give a lower priority to ICMP ECHO packets than 
 to other network traffic.  Consequently, the reliability of these
@@ -470,6 +481,7 @@ GitHub at:
 .UR https://\:github\:.com/\:traviscross/\:mtr
 .UE .
 .SH "SEE ALSO"
+.BR mtr-packet (8),
 .BR traceroute (8),
 .BR ping (8),
 .BR socket (7),
