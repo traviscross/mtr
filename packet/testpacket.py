@@ -78,10 +78,16 @@ class TestProbe(unittest.TestCase):
         except OSError:
             return
 
+        self.packet_process.stdin.close()
+        self.packet_process.stdout.close()
+
     def write_command(self, cmd):  # type: (str) -> None
         'Send a command string to the mtr-packet instance'
 
-        self.packet_process.stdin.write(cmd + '\n')
+        command_str = cmd + '\n'
+        command_bytes = command_str.encode('utf-8')
+
+        self.packet_process.stdin.write(command_bytes)
         self.packet_process.stdin.flush()
 
     def read_reply(self, timeout=10.0):  # type: (float) -> str
@@ -106,10 +112,15 @@ class TestProbe(unittest.TestCase):
 
             select.select([self.stdout_fd], [], [], select_time)
 
+            reply_bytes = None
+
             try:
-                self.reply_buffer += os.read(self.stdout_fd, 1024)
+                reply_bytes = os.read(self.stdout_fd, 1024)
             except OSError:
                 pass
+
+            if reply_bytes:
+                self.reply_buffer += reply_bytes.decode('utf-8')
 
             #  If we have read a newline character, we can stop waiting
             #  for more input.
