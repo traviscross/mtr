@@ -151,6 +151,11 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
 
 static void
 append_to_names(names_t **names_head, const char *item) {
+  names_t** name_tail = names_head;
+
+  while (*name_tail) {
+    name_tail = &(*name_tail)->next;
+  }
 
   names_t* name = calloc(1, sizeof(names_t));
   if (name == NULL) {
@@ -158,8 +163,8 @@ append_to_names(names_t **names_head, const char *item) {
   }
   name->name = xstrdup(item);
   name->next = NULL;
-  *names_head = name;
-  names_head = &(name->next);
+
+  *name_tail = name;
 }
 
 static void
@@ -633,8 +638,8 @@ extern int main(int argc, char **argv)
   struct sockaddr_in6 * sa6;
 #endif
   time_t now;
-  names_t *names_root = NULL;
-  names_t **names_head = &names_root;
+  names_t *names_head = NULL;
+  names_t *names_walk;
 
   struct mtr_ctl ctl;
   memset(&ctl, 0, sizeof(ctl));
@@ -685,13 +690,13 @@ extern int main(int argc, char **argv)
      but that requires a run-time initialization. */
   init_fld_options (&ctl);
 
-  parse_mtr_options (&ctl, names_head, getenv ("MTR_OPTIONS"));
+  parse_mtr_options(&ctl, &names_head, getenv ("MTR_OPTIONS"));
 
-  parse_arg (&ctl, names_head, argc, argv);
+  parse_arg(&ctl, &names_head, argc, argv);
 
   while (optind < argc) {
     char* name = argv[optind++];
-    append_to_names(names_head, name);
+    append_to_names(&names_head, name);
   }
 
   /* Now that we know mtrtype we can select which socket to use */
@@ -699,22 +704,23 @@ extern int main(int argc, char **argv)
     error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
   }
 
-  if (!names_root) append_to_names (names_head, "localhost"); /* default: localhost. */
+  /* default: localhost. */
+  if (!names_head) append_to_names(&names_head, "localhost");
 
-  names_head = &names_root;
-  while (*names_head != NULL) {
+  names_walk = names_head;
+  while (names_walk != NULL) {
 
-    ctl.Hostname = names_root->name;
+    ctl.Hostname = names_walk->name;
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
     }
 
     if (net_preopen_result != 0) {
       error(0, 0, "Unable to get raw socket.  (Executable not suid?)");
-      if (ctl.DisplayMode != DisplayCSV)
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -730,9 +736,9 @@ extern int main(int argc, char **argv)
       else
          error(0, 0, "Failed to resolve host: %s: %s", ctl.Hostname, gai_strerror(gai_error));
 
-      if ( ctl.DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if (ctl.Interactive) exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -758,10 +764,10 @@ extern int main(int argc, char **argv)
 #endif
     default:
       error(0, 0, "unknown address type");
-      if (ctl.DisplayMode != DisplayCSV )
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -769,20 +775,20 @@ extern int main(int argc, char **argv)
 
     if (net_open(&ctl, host) != 0) {
       error(0, 0, "Unable to start net module");
-      if (ctl.DisplayMode != DisplayCSV)
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
 
     if (net_set_interfaceaddress (&ctl) != 0) {
       error(0, 0, "Couldn't set interface address: %s", ctl.InterfaceAddress);
-      if (ctl.DisplayMode != DisplayCSV)
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -799,22 +805,21 @@ extern int main(int argc, char **argv)
       display_close(&ctl, now);
     unlock(stdout);
 
-    if (ctl.DisplayMode != DisplayCSV)
+    if (ctl.Interactive)
       break;
     else
-      names_root = names_root->next;
+      names_walk = names_walk->next;
 
   }
 
   net_close();
 
-  while (*names_head != NULL) {
-    names_t* item = *names_head;
+  while (names_head != NULL) {
+    names_t* item = names_head;
     free(item->name); item->name = NULL;
-    *names_head = item->next;
+    names_head = item->next;
     free(item); item = NULL;
   }
-  names_head=NULL;
 
   return 0;
 }
