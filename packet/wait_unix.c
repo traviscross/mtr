@@ -32,8 +32,8 @@
     and the raw recieve socket.
 */
 void wait_for_activity(
-    const struct command_buffer_t *command_buffer,
-    const struct net_state_t *net_state)
+    struct command_buffer_t *command_buffer,
+    struct net_state_t *net_state)
 {
     int nfds;
     fd_set read_set;
@@ -41,14 +41,21 @@ void wait_for_activity(
     struct timeval *select_timeout;
     int ready_count;
     int command_stream = command_buffer->command_stream;
-    int socket = net_state->platform.ipv4_recv_socket;
+    int ipv4_socket = net_state->platform.ipv4_recv_socket;
+    int ipv6_socket = net_state->platform.ipv6_recv_socket;
 
     FD_ZERO(&read_set);
     FD_SET(command_stream, &read_set);
     nfds = command_stream + 1;
-    FD_SET(socket, &read_set);
-    if (socket >= nfds) {
-        nfds = socket + 1;
+
+    FD_SET(ipv4_socket, &read_set);
+    if (ipv4_socket >= nfds) {
+        nfds = ipv4_socket + 1;
+    }
+
+    FD_SET(ipv6_socket, &read_set);
+    if (ipv6_socket >= nfds) {
+        nfds = ipv6_socket + 1;
     }
 
     while (true) {

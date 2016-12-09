@@ -23,15 +23,27 @@
 
 #include "protocols.h"
 
+/*  Windows doesn't require any initialization at a privileged level  */
+void init_net_state_privileged(
+    struct net_state_t *net_state)
+{
+}
+
 /*  Open the ICMP.DLL interface  */
 void init_net_state(
     struct net_state_t *net_state)
 {
     memset(net_state, 0, sizeof(struct net_state_t));
 
-    net_state->platform.icmp = IcmpCreateFile();
-    if (net_state->platform.icmp == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Failure opening ICMP %d\n", GetLastError());
+    net_state->platform.icmp4 = IcmpCreateFile();
+    if (net_state->platform.icmp4 == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Failure opening ICMPv4 %d\n", GetLastError());
+        exit(1);
+    }
+
+    net_state->platform.icmp6 = Icmp6CreateFile();
+    if (net_state->platform.icmp6 == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Failure opening ICMPv6 %d\n", GetLastError());
         exit(1);
     }
 }
@@ -49,14 +61,51 @@ void WINAPI on_icmp_reply(
 {
     struct probe_t *probe = (struct probe_t *)context;
     int icmp_type;
-    int round_trip_us;
+    int round_trip_us = 0;
     int reply_count;
+    int reply_status = 0;
     int err;
-    struct sockaddr_in remote_addr;
-    ICMP_ECHO_REPLY32 *reply;
+    struct sockaddr_storage remote_addr;
+    struct sockaddr_in *remote_addr4;
+    struct sockaddr_in6 *remote_addr6;
+    ICMP_ECHO_REPLY32 *reply4;
+    ICMPV6_ECHO_REPLY *reply6;
 
-    reply_count = IcmpParseReplies(
-        &probe->platform.reply, sizeof(ICMP_ECHO_REPLY));
+    if (probe->platform.ip_version == 6) {
+        reply6 = &probe->platform.reply6;
+        reply_count = Icmp6ParseReplies(reply6, sizeof(ICMPV6_ECHO_REPLY));
+
+        if (reply_count > 0) {
+            reply_status = reply6->Status;
+
+            /*  Unfortunately, ICMP.DLL only has millisecond precision  */
+            round_trip_us = reply6->RoundTripTime * 1000;
+
+            remote_addr6 = (struct sockaddr_in6 *)&remote_addr;
+            remote_addr6->sin6_family = AF_INET6;
+            remote_addr6->sin6_port = 0;
+            remote_addr6->sin6_flowinfo = 0;
+            memcpy(
+                &remote_addr6->sin6_addr, reply6->AddressBits,
+                sizeof(struct in6_addr));
+            remote_addr6->sin6_scope_id = 0;
+        }
+    } else {
+        reply4 = &probe->platform.reply4;
+        reply_count = IcmpParseReplies(reply4, sizeof(ICMP_ECHO_REPLY));
+
+        if (reply_count > 0) {
+            reply_status = reply4->Status;
+
+            /*  Unfortunately, ICMP.DLL only has millisecond precision  */
+            round_trip_us = reply4->RoundTripTime * 1000;
+
+            remote_addr4 = (struct sockaddr_in *)&remote_addr;
+            remote_addr4->sin_family = AF_INET;
+            remote_addr4->sin_port = 0;
+            remote_addr4->sin_addr.s_addr = reply4->Address;
+        }
+    }
 
     if (reply_count == 0) {
         err = GetLastError();
@@ -73,25 +122,19 @@ void WINAPI on_icmp_reply(
         exit(1);
     }
 
-    reply = &probe->platform.reply;
-
-    remote_addr.sin_family = AF_INET;
-    remote_addr.sin_port = 0;
-    remote_addr.sin_addr.s_addr = reply->Address;
-
-    /*  Unfortunately, ICMP.DLL only gives us millisecond precision  */
-    round_trip_us = reply->RoundTripTime * 1000;
 
     icmp_type = -1;
-    if (reply->Status == IP_SUCCESS) {
+    if (reply_status == IP_SUCCESS) {
         icmp_type = ICMP_ECHOREPLY;
-    } else if (reply->Status == IP_TTL_EXPIRED_TRANSIT) {
+    } else if (reply_status == IP_TTL_EXPIRED_TRANSIT) {
         icmp_type = ICMP_TIME_EXCEEDED;
     }
 
     if (icmp_type != -1) {
         /*  Record probe result  */
-        respond_to_probe(probe, icmp_type, remote_addr, round_trip_us);
+        respond_to_probe(probe, icmp_type, &remote_addr, round_trip_us);
+    } else {
+        fprintf(stderr, "Unexpected ICMP result %d\n", icmp_type);
     }
 }
 
@@ -104,7 +147,11 @@ void send_probe(
     DWORD send_result;
     DWORD timeout;
     struct probe_t *probe;
-    struct sockaddr_in dest_sockaddr;
+    struct sockaddr_storage dest_sockaddr;
+    struct sockaddr_storage src_sockaddr;
+    struct sockaddr_in *dest_sockaddr4;
+    struct sockaddr_in6 *src_sockaddr6;
+    struct sockaddr_in6 *dest_sockaddr6;
 
     if (decode_dest_addr(param, &dest_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
@@ -128,14 +175,33 @@ void send_probe(
         return;
     }
 
+    if (find_source_addr(&src_sockaddr, &dest_sockaddr)) {
+        fprintf(stderr, "error finding source address\n");
+        exit(1);
+    }
+
+    probe->platform.ip_version = param->ip_version;
+
     memset(&option, 0, sizeof(IP_OPTION_INFORMATION32));
     option.Ttl = param->ttl;
 
-    send_result = IcmpSendEcho2(
-        net_state->platform.icmp, NULL,
-        (FARPROC)on_icmp_reply, probe,
-        dest_sockaddr.sin_addr.s_addr, NULL, 0, &option,
-        &probe->platform.reply, sizeof(ICMP_ECHO_REPLY), timeout);
+    if (param->ip_version == 6) {
+        src_sockaddr6 = (struct sockaddr_in6 *)&src_sockaddr;
+        dest_sockaddr6 = (struct sockaddr_in6 *)&dest_sockaddr;
+
+        send_result = Icmp6SendEcho2(
+            net_state->platform.icmp6, NULL,
+            (FARPROC)on_icmp_reply, probe,
+            src_sockaddr6, dest_sockaddr6, NULL, 0, &option,
+            &probe->platform.reply6, sizeof(ICMPV6_ECHO_REPLY), timeout);
+    } else {
+        dest_sockaddr4 = (struct sockaddr_in *)&dest_sockaddr;
+        send_result = IcmpSendEcho2(
+            net_state->platform.icmp4, NULL,
+            (FARPROC)on_icmp_reply, probe,
+            dest_sockaddr4->sin_addr.s_addr, NULL, 0, &option,
+            &probe->platform.reply4, sizeof(ICMP_ECHO_REPLY), timeout);
+    }
 
     if (send_result == 0) {
         /*

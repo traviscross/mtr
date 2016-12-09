@@ -1,12 +1,20 @@
 EXTRA_DIST = \
 	SECURITY \
 	mtr.bat \
-	img/mtr_icon.xpm \
-	packet/testpacket.py \
-	packet/lint.sh
+	img/mtr_icon.xpm
+	$(TEST_FILES)
 
 sbin_PROGRAMS = mtr mtr-packet
-TESTS = packet/testpacket.py
+TESTS = \
+	test/cmdparse.py \
+	test/probe.py
+
+TEST_FILES = \
+	test/cmdparse.py \
+	test/mtrpacket.py \
+	test/probe.py \
+	test/lint.sh
+EXTRA_DIST += $(TEST_FILES)
 
 PATHFILES =
 CLEANFILES = $(PATHFILES)
@@ -92,7 +100,7 @@ mtr_packet_SOURCES += \
 	packet/command_cygwin.c packet/command_cygwin.h \
 	packet/probe_cygwin.c packet/probe_cygwin.h \
 	packet/wait_cygwin.c
-mtr_packet_LDADD = -lcygwin -licmp -lws2_32
+mtr_packet_LDADD = -lcygwin -liphlpapi -lws2_32
 
 dist_windows_aux = \
 	$(srcdir)/mtr.bat \
@@ -122,6 +130,8 @@ else  # if CYGWIN
 
 mtr_packet_SOURCES += \
 	packet/command_unix.c packet/command_unix.h \
+	packet/construct_unix.c packet/construct_unix.h \
+	packet/deconstruct_unix.c packet/deconstruct_unix.h \
 	packet/probe_unix.c packet/probe_unix.h \
 	packet/wait_unix.c
 

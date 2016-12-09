@@ -36,11 +36,14 @@
 /*  Parameters for sending a new probe  */
 struct probe_param_t
 {
+    /*  The version of the Internet Protocol to use.  (4 or 6)  */
+    int ip_version;
+
     /*  The command token used to identify a probe when it is completed  */
     int command_token;
 
     /*  The IP address to probe  */
-    const char *ipv4_address;
+    const char *address;
 
     /*  Time to live for the transmited probe  */
     int ttl;
@@ -72,6 +75,9 @@ struct net_state_t
     struct net_state_platform_t platform;
 };
 
+void init_net_state_privileged(
+    struct net_state_t *net_state);
+
 void init_net_state(
     struct net_state_t *net_state);
 
@@ -92,12 +98,12 @@ void check_probe_timeouts(
 void respond_to_probe(
     struct probe_t *probe,
     int icmp_type,
-    struct sockaddr_in remote_addr,
+    const struct sockaddr_storage *remote_addr,
     unsigned int round_trip_us);
 
 int decode_dest_addr(
     const struct probe_param_t *param,
-    struct sockaddr_in *dest_sockaddr);
+    struct sockaddr_storage *dest_sockaddr);
 
 struct probe_t *alloc_probe(
     struct net_state_t *net_state,
@@ -113,5 +119,9 @@ struct probe_t *find_probe(
     struct net_state_t *net_state,
     int icmp_id,
     int icmp_sequence);
+
+int find_source_addr(
+    struct sockaddr_storage *srcaddr,
+    const struct sockaddr_storage *destaddr);
 
 #endif

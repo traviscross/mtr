@@ -45,4 +45,9 @@ struct command_buffer_platform_t
     char overlapped_buffer[COMMAND_BUFFER_SIZE];
 };
 
+struct command_buffer_t;
+
+void start_read_command(
+    struct command_buffer_t *buffer);
+
 #endif

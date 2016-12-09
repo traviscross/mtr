@@ -44,14 +44,14 @@ int main(
     struct command_buffer_t command_buffer;
     struct net_state_t net_state;
 
-    init_net_state(&net_state);
-
     /*
         To minimize security risk, the only thing done prior to 
         dropping SUID should be opening the network state for
         raw sockets.
     */
+    init_net_state_privileged(&net_state);
     drop_suid_permissions();
+    init_net_state(&net_state);
 
     init_command_buffer(&command_buffer, fileno(stdin));
 

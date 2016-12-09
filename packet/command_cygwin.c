@@ -82,7 +82,6 @@ void queue_empty_apc(void)
 }
 
 /*  Start a new overlapped I/O read from the command stream  */
-static
 void start_read_command(
     struct command_buffer_t *buffer)
 {
@@ -132,19 +131,15 @@ void init_command_buffer(
     memset(command_buffer, 0, sizeof(struct command_buffer_t));
     command_buffer->command_stream = command_stream;
     command_buffer->platform.pipe_open = true;
-
-    start_read_command(command_buffer);
 }
 
 /*
-    Start the next incoming read, or return EPIPE if the command stream
-    has been closed.
+    Return EPIPE if the command stream has been closed.  Otherwise, not much
+    to do for Cygwin, since we are using Overlapped I/O to read commands.
 */
 int read_commands(
     struct command_buffer_t *buffer)
 {
-    start_read_command(buffer);
-
     if (!buffer->platform.pipe_open) {
         return EPIPE;
     }

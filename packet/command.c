@@ -67,6 +67,10 @@ const char *check_support(
         return "ok";
     }
 
+    if (!strcmp(feature, "ip-6")) {
+        return "ok";
+    }
+
     if (!strcmp(feature, "send-probe")) {
         return "ok";
     }
@@ -106,7 +110,14 @@ bool decode_probe_argument(
 
     /*  Pass IPv4 addresses as string values  */
     if (!strcmp(name, "ip-4")) {
-        param->ipv4_address = value;
+        param->ip_version = 4;
+        param->address = value;
+    }
+
+    /*  IPv6 address  */
+    if (!strcmp(name, "ip-6")) {
+        param->ip_version = 6;
+        param->address = value;
     }
 
     /*  Time-to-live values  */

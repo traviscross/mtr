@@ -31,26 +31,47 @@
 #include "protocols.h"
 #include "timeval.h"
 
-#define IP_TEXT_LENGTH 32
+#define IP_TEXT_LENGTH 64
 
 /*  Convert the destination address from text to sockaddr  */
 int decode_dest_addr(
     const struct probe_param_t *param,
-    struct sockaddr_in *dest_sockaddr)
+    struct sockaddr_storage *dest_sockaddr)
 {
-    struct in_addr dest_addr;
+    struct in_addr dest_addr4;
+    struct in6_addr dest_addr6;
+    struct sockaddr_in *sockaddr4;
+    struct sockaddr_in6 *sockaddr6;
 
-    if (param->ipv4_address == NULL) {
+    if (param->address == NULL) {
         return EINVAL;
     }
 
-    if (inet_pton(AF_INET, param->ipv4_address, &dest_addr) != 1) {
+    if (param->ip_version == 6) {
+        sockaddr6 = (struct sockaddr_in6 *)dest_sockaddr;
+
+        if (inet_pton(AF_INET6, param->address, &dest_addr6) != 1) {
+            return EINVAL;
+        }
+
+        sockaddr6->sin6_family = AF_INET6;
+        sockaddr6->sin6_port = 0;
+        sockaddr6->sin6_flowinfo = 0;
+        sockaddr6->sin6_addr = dest_addr6;
+        sockaddr6->sin6_scope_id = 0;
+    } else if (param->ip_version == 4) {
+        sockaddr4 = (struct sockaddr_in *)dest_sockaddr;
+
+        if (inet_pton(AF_INET, param->address, &dest_addr4) != 1) {
+            return EINVAL;
+        }
+
+        sockaddr4->sin_family = AF_INET;
+        sockaddr4->sin_port = 0;
+        sockaddr4->sin_addr = dest_addr4;
+    } else {
         return EINVAL;
     }
-
-    dest_sockaddr->sin_family = AF_INET;
-    dest_sockaddr->sin_port = 0;
-    dest_sockaddr->sin_addr = dest_addr;
 
     return 0;
 }
@@ -147,19 +168,15 @@ struct probe_t *find_probe(
 void respond_to_probe(
     struct probe_t *probe,
     int icmp_type,
-    struct sockaddr_in remote_addr,
+    const struct sockaddr_storage *remote_addr,
     unsigned int round_trip_us)
 {
     char ip_text[IP_TEXT_LENGTH];
     const char *result;
-
-    if (inet_ntop(
-            AF_INET, &remote_addr.sin_addr,
-            ip_text, IP_TEXT_LENGTH) == NULL) {
-
-        perror("inet_ntop failure");
-        exit(1);
-    }
+    const char *ip_argument;
+    struct sockaddr_in *sockaddr4;
+    struct sockaddr_in6 *sockaddr6;
+    void *addr;
 
     if (icmp_type == ICMP_TIME_EXCEEDED) {
         result = "ttl-expired";
@@ -168,9 +185,87 @@ void respond_to_probe(
         result = "reply";
     }
 
+    if (remote_addr->ss_family == AF_INET6) {
+        ip_argument = "ip-6";
+        sockaddr6 = (struct sockaddr_in6 *)remote_addr;
+        addr = &sockaddr6->sin6_addr;
+    } else {
+        ip_argument = "ip-4";
+        sockaddr4 = (struct sockaddr_in *)remote_addr;
+        addr = &sockaddr4->sin_addr;
+    }
+
+    if (inet_ntop(
+            remote_addr->ss_family, addr, ip_text, IP_TEXT_LENGTH) == NULL) {
+
+        perror("inet_ntop failure");
+        exit(1);
+    }
+
     printf(
-        "%d %s ip-4 %s round-trip-time %d\n",
-        probe->token, result, ip_text, round_trip_us);
+        "%d %s %s %s round-trip-time %d\n",
+        probe->token, result, ip_argument, ip_text, round_trip_us);
 
     free_probe(probe);
+}
+
+/*
+    Find the source address for transmitting to a particular destination
+    address.  Remember that hosts can have multiple addresses, for example
+    a unique address for each network interface.  So we will bind a UDP
+    socket to our destination and check the socket address after binding
+    to get the source for that destination, which will allow the kernel
+    to do the routing table work for us.
+
+    (connecting UDP sockets, unlike TCP sockets, doesn't transmit any packets.
+    It's just an association.)
+*/
+int find_source_addr(
+    struct sockaddr_storage *srcaddr,
+    const struct sockaddr_storage *destaddr)
+{
+    int sock;
+    int len;
+    struct sockaddr_in *destaddr4;
+    struct sockaddr_in6 *destaddr6;
+    struct sockaddr_storage dest_with_port;
+
+    dest_with_port = *destaddr;
+
+    /*
+        MacOS requires a non-zero sin_port when used as an
+        address for a UDP connect.  If we provide a zero port,
+        the connect will fail.  We aren't actually sending
+        anything to the port.
+    */
+    if (destaddr->ss_family == AF_INET6) {
+        destaddr6 = (struct sockaddr_in6 *)&dest_with_port;
+        destaddr6->sin6_port = htons(1);
+
+        len = sizeof(struct sockaddr_in6);
+    } else {
+        destaddr4 = (struct sockaddr_in *)&dest_with_port;
+        destaddr4->sin_port = htons(1);
+
+        len = sizeof(struct sockaddr_in);
+    }
+
+    sock = socket(destaddr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock == -1) {
+        return -errno;
+    }
+
+    if (connect(sock, (struct sockaddr *)&dest_with_port, len)) {
+        close(sock);
+        return -errno;
+    }
+
+    if (getsockname(sock, (struct sockaddr *)srcaddr, &len)) {
+        close(sock);
+        return -errno;
+    }
+
+    close(sock);
+
+    return 0;
 }

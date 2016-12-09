@@ -140,7 +140,6 @@ static struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct
 static ip_t * sourceaddress;
 static ip_t * remoteaddress;
 
-/* XXX How do I code this to be IPV6 compatible??? */
 #ifdef ENABLE_IPV6
 static char localaddr[INET6_ADDRSTRLEN];
 #else
@@ -197,19 +196,28 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
 {
   int seq = new_sequence(ctl, index);
   int time_to_live = index + 1;
-  char ip_string[INET_ADDRSTRLEN];
+  char ip_string[INET6_ADDRSTRLEN];
+  const char *ip_type;
 
   /*  Conver the remote IP address to a string  */
-  if (inet_ntop(AF_INET, remoteaddress, ip_string, INET_ADDRSTRLEN) == NULL) {
+  if (inet_ntop(
+      ctl->af, remoteaddress, ip_string, INET6_ADDRSTRLEN) == NULL) {
+
     display_close(ctl);
     error(EXIT_FAILURE, errno, "failure stringifying remote IP address");
+  }
+
+  if (ctl->af == AF_INET6) {
+    ip_type = "ip-6";
+  } else {
+    ip_type = "ip-4";
   }
 
   /*  Send a probe using the mtr-packet subprocess  */
   if (dprintf(
     packet_command_pipe.write_fd,
-    "%d send-probe ip-4 %s ttl %d\n",
-    seq, ip_string, time_to_live) < 0) {
+    "%d send-probe %s %s ttl %d\n",
+    seq, ip_type, ip_string, time_to_live) < 0) {
 
     display_close(ctl);
     error(EXIT_FAILURE, errno, "mtr-packet command pipe write failure");
@@ -314,6 +322,94 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
 
 
 /*
+  Extract the IP address and round trip time from a reply to a probe.
+  Returns true if both arguments are found in the reply, false otherwise.
+*/
+static bool parse_reply_arguments(
+  struct mtr_ctl *ctl, struct command_t *reply,
+  ip_t *fromaddress, int *round_trip_time)
+{
+  bool found_round_trip;
+  bool found_ip;
+  char *arg_name;
+  char *arg_value;
+  int i;
+
+  *round_trip_time = 0;
+  memset(fromaddress, 0, sizeof(ip_t));
+
+  found_ip = false;
+  found_round_trip = false;
+
+  /*  Examine the reply arguments for known values  */
+  for (i = 0; i < reply->argument_count; i++) {
+    arg_name = reply->argument_name[i];
+    arg_value = reply->argument_value[i];
+
+    if (ctl->af == AF_INET6) {
+      /*  IPv6 address of the responding host  */
+      if (!strcmp(arg_name, "ip-6")) {
+        if (inet_pton(AF_INET6, arg_value, fromaddress)) {
+          found_ip = true;
+        }
+      }
+    } else {
+      /*  IPv4 address of the responding host  */
+      if (!strcmp(arg_name, "ip-4")) {
+        if (inet_pton(AF_INET, arg_value, fromaddress)) {
+          found_ip = true;
+        }
+      }
+    }
+
+    /*  The round trip time in microseconds  */
+    if (!strcmp(arg_name, "round-trip-time")) {
+      errno = 0;
+      *round_trip_time = strtol(arg_value, NULL, 10);
+      if (!errno) {
+        found_round_trip = true;
+      }
+    }
+  }
+
+  return found_ip && found_round_trip;
+}
+
+
+/*
+    If an mtr-packet command has returned an error result,
+    report the error and exit.
+*/
+static void net_handle_command_reply_errors(
+  struct mtr_ctl *ctl, struct command_t *reply)
+{
+  char *reply_name;
+
+  reply_name = reply->command_name;
+
+  if (!strcmp(reply_name, "no-route")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "No route to host");
+  }
+
+  if (!strcmp(reply_name, "network-down")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "Network down");
+  }
+
+  if (!strcmp(reply_name, "probes-exhausted")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "Probes exhausted");
+  }
+
+  if (!strcmp(reply_name, "invalid-argument")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "mtr-packet reported invalid argument");
+  }
+}
+
+
+/*
     A complete mtr-packet reply line has arrived.  Parse it and record
     the responding IP and round trip time, if it is a reply that we
     understand.
@@ -322,15 +418,10 @@ static void net_process_command_reply(
   struct mtr_ctl *ctl, char *reply_str)
 {
   struct command_t reply;
-  struct in_addr fromaddress;
+  ip_t fromaddress;
   int seq_num;
-  int i;
-  int round_trip_time = 0;
-  bool found_round_trip;
-  bool found_ip;
+  int round_trip_time;
   char *reply_name;
-  char *arg_name;
-  char *arg_value;
   struct mplslen mpls;
 
   /*  Parse the reply string  */
@@ -340,9 +431,12 @@ static void net_process_command_reply(
         wrong, as we might as well exit.  Even if the reply is of an
         unknown type, it should still parse.
     */
+    display_close(ctl);
     error(EXIT_FAILURE, errno, "reply parse failure");
     return;
   }
+
+  net_handle_command_reply_errors(ctl, &reply);
 
   seq_num = reply.token;
   reply_name = reply.command_name;
@@ -352,36 +446,11 @@ static void net_process_command_reply(
     return;
   }
 
-  found_ip = false;
-  found_round_trip = false;
-
-  /*  Examine the reply arguments for known values  */
-  for (i = 0; i < reply.argument_count; i++) {
-    arg_name = reply.argument_name[i];
-    arg_value = reply.argument_value[i];
-
-    /*  IPv4 address of the responding host  */
-    if (!strcmp(arg_name, "ip-4")) {
-      if (inet_pton(AF_INET, arg_value, &fromaddress)) {
-        found_ip = true;
-      }
-    }
-
-    /*  The round trip time in microseconds  */
-    if (!strcmp(arg_name, "round-trip-time")) {
-      errno = 0;
-      round_trip_time = strtol(arg_value, NULL, 10);
-      if (!errno) {
-        found_round_trip = true;
-      }
-    }
-  }
-
   /*
       If the reply had an IP address and a round trip time, we can
       record the result.
   */
-  if (found_ip && found_round_trip) {
+  if (parse_reply_arguments(ctl, &reply, &fromaddress, &round_trip_time)) {
     /* MPLS decoding */
     memset(&mpls, 0, sizeof(struct mplslen));
     mpls.labels = 0;

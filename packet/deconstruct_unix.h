@@ -16,14 +16,30 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef WAIT_H
-#define WAIT_H
+#ifndef DECONSTRUCT_H
+#define DECONSTRUCT_H
 
-#include "command.h"
 #include "probe.h"
 
-void wait_for_activity(
-    struct command_buffer_t *command_buffer,
-    struct net_state_t *net_state);
+typedef void (*received_packet_func_t)(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    const void *packet,
+    int packet_length,
+    struct timeval timestamp);
+
+void handle_received_ipv4_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    const void *packet,
+    int packet_length,
+    struct timeval timestamp);
+
+void handle_received_ipv6_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    const void *packet,
+    int packet_length,
+    struct timeval timestamp);
 
 #endif

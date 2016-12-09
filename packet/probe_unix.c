@@ -27,97 +27,57 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "protocols.h"
+#include "platform.h"
+#include "construct_unix.h"
+#include "deconstruct_unix.h"
 #include "timeval.h"
 
 /*  Use the "jumbo" frame size as the max packet size  */
 #define PACKET_BUFFER_SIZE 9000
 
-/*  Compute the IP checksum (or ICMP checksum) of a packet.  */
+/*  Set the IPv6 options affecting and outgoing IPv6 packet  */
 static
-uint16_t compute_checksum(
-    const void *packet,
-    int size)
-{
-    const uint8_t *packet_bytes = (uint8_t *)packet;
-    uint32_t sum = 0;
-    int i;
-
-    for (i = 0; i < size; i++) {
-        if ((i & 1) == 0) {
-            sum += packet_bytes[i] << 8;
-        } else {
-            sum += packet_bytes[i];
-        }
-    }
-
-    /*
-        Sums which overflow a 16-bit value have the high bits
-        added back into the low 16 bits.
-    */
-    while (sum >> 16) {
-        sum = (sum >> 16) + (sum & 0xffff);
-    }
-
-    /*
-        The value stored is the one's complement of the
-        mathematical sum.
-    */
-    return (~sum & 0xffff);
-}
-
-/*  Encode the IP header length field in the order required by the OS.  */
-static
-uint16_t length_byte_swap(
-    const struct net_state_t *net_state,
-    uint16_t length)
-{
-    if (net_state->platform.ip_length_host_order) {
-        return length;
-    } else {
-        return htons(length);
-    }
-}
-
-/*  Construct a probe packet based on the probe parameters  */
-static
-int construct_packet(
-    const struct net_state_t *net_state,
-    char *packet_buffer,
-    int packet_buffer_size,
-    struct sockaddr_in dest_sockaddr,
+void set_ipv6_socket_options(
+    int socket,
     const struct probe_param_t *param)
 {
-    struct IPHeader *ip;
-    struct ICMPHeader *icmp;
-    int packet_size;
-    int icmp_size;
+    if (setsockopt(
+            socket, IPPROTO_IPV6,
+            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
 
-    ip = (struct IPHeader *)&packet_buffer[0];
-    icmp = (struct ICMPHeader *)(ip + 1);
-    packet_size = sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
-    icmp_size = packet_size - sizeof(struct IPHeader);
+        perror("Failure to set IPV6_UNICAST_HOPS");
+        exit(1);
+    }
+}
 
-    if (packet_buffer_size < packet_size) {
-        return -EINVAL;
+/*  A wrapper around sendto for mixed IPv4 and IPv6 sending  */
+static
+int send_packet(
+    const struct net_state_t *net_state,
+    const struct probe_param_t *param,
+    const char *packet,
+    int packet_size,
+    const struct sockaddr_storage *sockaddr)
+{
+    int send_socket;
+    int sockaddr_length;
+
+    if (sockaddr->ss_family == AF_INET6) {
+        send_socket = net_state->platform.ipv6_send_socket;
+        sockaddr_length = sizeof(struct sockaddr_in6);
+
+        if (!net_state->platform.ipv6_header_constructed) {
+            set_ipv6_socket_options(send_socket, param);
+        }
+    } else {
+        assert(sockaddr->ss_family == AF_INET);
+        send_socket = net_state->platform.ipv4_send_socket;
+        sockaddr_length = sizeof(struct sockaddr_in);
     }
 
-    memset(packet_buffer, 0, packet_size);
-
-    /*  Fill the IP header  */
-    ip->version = 0x45;
-    ip->len = length_byte_swap(net_state, packet_size);
-    ip->ttl = param->ttl;
-    ip->protocol = IPPROTO_ICMP;
-    memcpy(&ip->daddr, &dest_sockaddr.sin_addr, sizeof(uint32_t));
-
-    /*  Fill the ICMP header  */
-    icmp->type = ICMP_ECHO;
-    icmp->id = htons(getpid());
-    icmp->sequence = htons(param->command_token);
-    icmp->checksum = htons(compute_checksum(icmp, icmp_size));
-
-    return packet_size;
+    return sendto(
+        send_socket, packet, packet_size, 0,
+        (struct sockaddr *)sockaddr, sockaddr_length);
 }
 
 /*
@@ -137,13 +97,14 @@ void check_length_order(
 {
     char packet[PACKET_BUFFER_SIZE];
     struct probe_param_t param;
-    struct sockaddr_in dest_sockaddr;
+    struct sockaddr_storage dest_sockaddr;
     ssize_t bytes_sent;
     int packet_size;
 
     memset(&param, 0, sizeof(struct probe_param_t));
+    param.ip_version = 4;
     param.ttl = 255;
-    param.ipv4_address = "127.0.0.1";
+    param.address = "127.0.0.1";
 
     if (decode_dest_addr(&param, &dest_sockaddr)) {
         fprintf(stderr, "Error decoding localhost address\n");
@@ -154,15 +115,15 @@ void check_length_order(
     net_state->platform.ip_length_host_order = false;
 
     packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, dest_sockaddr, &param);
-    assert(packet_size > 0);
+        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+    if (packet_size < 0) {
+        errno = -packet_size;
+        perror("Unable to send to localhost");
+        exit(1);
+    }
 
-    bytes_sent = sendto(
-        net_state->platform.ipv4_send_socket,
-        packet, packet_size, 0,
-        (struct sockaddr *)&dest_sockaddr,
-        sizeof(struct sockaddr_in));
-
+    bytes_sent = send_packet(
+        net_state, &param, packet, packet_size, &dest_sockaddr);
     if (bytes_sent > 0) {
         return;
     }
@@ -171,35 +132,52 @@ void check_length_order(
     net_state->platform.ip_length_host_order = true;
 
     packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, dest_sockaddr, &param);
-    assert(packet_size > 0);
+        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+    if (packet_size < 0) {
+        errno = -packet_size;
+        perror("Unable to send to localhost");
+        exit(1);
+    }
 
-    bytes_sent = sendto(
-        net_state->platform.ipv4_send_socket,
-        packet, packet_size, 0,
-        (struct sockaddr *)&dest_sockaddr,
-        sizeof(struct sockaddr_in));
-
+    bytes_sent = send_packet(
+        net_state, &param, packet, packet_size, &dest_sockaddr);
     if (bytes_sent < 0) {
         perror("Unable to send with swapped length");
         exit(1);
     }
 }
 
-/*  Open the raw sockets for transmitting custom crafted packets  */
-void init_net_state(
+/*  Set a socket to non-blocking mode  */
+static
+void set_socket_nonblocking(
+    int socket)
+{
+    int flags;
+
+    flags = fcntl(socket, F_GETFL, 0);
+    if (flags == -1) {
+        perror("Unexpected socket F_GETFL error");
+        exit(1);
+    }
+
+    if (fcntl(socket, F_SETFL, flags | O_NONBLOCK)) {
+        perror("Unexpected socket F_SETFL O_NONBLOCK error");
+        exit(1);
+    }
+}
+
+/*  Open the raw sockets for sending/receiving IPv4 packets  */
+static
+void open_ipv4_sockets(
     struct net_state_t *net_state)
 {
     int send_socket;
     int recv_socket;
-    int flags;
     int trueopt = 1;
-
-    memset(net_state, 0, sizeof(struct net_state_t));
 
     send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (send_socket == -1) {
-        perror("Failure opening raw socket");
+        perror("Failure opening IPv4 send socket");
         exit(1);
     }
 
@@ -220,24 +198,84 @@ void init_net_state(
     */
     recv_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (recv_socket == -1) {
-        perror("Failure opening raw socket");
-        exit(1);
-    }
-
-    flags = fcntl(recv_socket, F_GETFL, 0);
-    if (flags == -1) {
-        perror("Unexpected socket error");
-        exit(1);
-    }
-
-    /*  Set the receive socket to be non-blocking  */
-    if (fcntl(recv_socket, F_SETFL, flags | O_NONBLOCK)) {
-        perror("Unexpected socket error");
+        perror("Failure opening IPv4 receive socket");
         exit(1);
     }
 
     net_state->platform.ipv4_send_socket = send_socket;
     net_state->platform.ipv4_recv_socket = recv_socket;
+}
+
+/*  Open the raw sockets for sending/receiving IPv6 packets  */
+static
+void open_ipv6_sockets(
+    struct net_state_t *net_state)
+{
+    int send_socket;
+    int recv_socket;
+    int send_protocol;
+
+    /*
+        Linux allows us to construct our own IPv6 header, so
+        we'll prefer that method for more explicit control.
+
+        Other OSes, such as MacOS, don't allow this, and on
+        those platforms we must use setsockopt() to control
+        fields of the IP header.
+    */
+#ifdef PLATFORM_LINUX
+    net_state->platform.ipv6_header_constructed = true;
+#else
+    net_state->platform.ipv6_header_constructed = false;
+#endif
+
+    if (net_state->platform.ipv6_header_constructed) {
+        send_protocol = IPPROTO_RAW;
+    } else {
+        send_protocol = IPPROTO_ICMPV6;
+    }
+
+    send_socket = socket(AF_INET6, SOCK_RAW, send_protocol);
+    if (send_socket == -1) {
+        perror("Failure opening IPv6 send socket");
+        exit(1);
+    }
+
+    recv_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+    if (recv_socket == -1) {
+        perror("Failure opening IPv6 receive socket");
+        exit(1);
+    }
+
+    set_socket_nonblocking(recv_socket);
+
+    net_state->platform.ipv6_send_socket = send_socket;
+    net_state->platform.ipv6_recv_socket = recv_socket;
+}
+
+/*
+    The first half of the net state initialization.  Since this
+    happens with elevated privileges, this is kept as minimal
+    as possible to minimize security risk.
+*/
+void init_net_state_privileged(
+    struct net_state_t *net_state)
+{
+    memset(net_state, 0, sizeof(struct net_state_t));
+
+    open_ipv4_sockets(net_state);
+    open_ipv6_sockets(net_state);
+}
+
+/*
+    The second half of net state initialization, which is run
+    at normal privilege levels.
+*/
+void init_net_state(
+    struct net_state_t *net_state)
+{
+    set_socket_nonblocking(net_state->platform.ipv4_recv_socket);
+    set_socket_nonblocking(net_state->platform.ipv6_recv_socket);
 
     check_length_order(net_state);
 }
@@ -248,7 +286,7 @@ void send_probe(
     const struct probe_param_t *param)
 {
     char packet[PACKET_BUFFER_SIZE];
-    struct sockaddr_in dest_sockaddr;
+    struct sockaddr_storage dest_sockaddr;
     struct probe_t *probe;
     int packet_size;
 
@@ -258,9 +296,19 @@ void send_probe(
     }
 
     packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, dest_sockaddr, param);
+        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, param);
     if (packet_size < 0) {
-        printf("%d invalid-argument\n", param->command_token);
+        if (packet_size == -EINVAL) {
+            printf("%d invalid-argument\n", param->command_token);
+        } else if (packet_size == -ENETDOWN) {
+            printf("%d network-down\n", param->command_token);
+        } else if (packet_size == -ENETUNREACH) {
+            printf("%d no-route\n", param->command_token);
+        } else {
+            errno = -packet_size;
+            perror("Failure constructing packet");
+            exit(1);
+        }
         return;
     }
 
@@ -279,11 +327,8 @@ void send_probe(
         exit(1);
     }
 
-    if (sendto(
-            net_state->platform.ipv4_send_socket,
-            packet, packet_size, 0,
-            (struct sockaddr *)&dest_sockaddr,
-            sizeof(struct sockaddr_in)) == -1) {
+    if (send_packet(
+            net_state, param, packet, packet_size, &dest_sockaddr) == -1) {
 
         perror("Failure sending probe");
         exit(1);
@@ -294,116 +339,25 @@ void send_probe(
 }
 
 /*
-    Compute the round trip time of a just-received probe and pass it
-    to the platform agnostic response handling.
-*/
-static
-void receive_probe(
-    struct probe_t *probe,
-    int icmp_type,
-    struct sockaddr_in remote_addr,
-    struct timeval timestamp)
-{
-    unsigned int round_trip_us;
-
-    round_trip_us =
-        (timestamp.tv_sec - probe->platform.departure_time.tv_sec) * 1000000 +
-        timestamp.tv_usec - probe->platform.departure_time.tv_usec;
-
-    respond_to_probe(probe, icmp_type, remote_addr, round_trip_us);
-}
-
-/*
-    Called when we have received a new packet through our raw socket.
-    We'll check to see that it is a response to one of our probes, and
-    if so, report the result of the probe to our command stream.
-*/
-static
-void handle_received_packet(
-    struct net_state_t *net_state,
-    struct sockaddr_in remote_addr,
-    const void *packet,
-    int packet_length,
-    struct timeval timestamp)
-{
-    const int ip_icmp_size =
-        sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
-    const int ip_icmp_ip_icmp_size = 
-        sizeof(struct IPHeader) + sizeof(struct ICMPHeader) +
-        sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
-    const struct IPHeader *ip;
-    const struct ICMPHeader *icmp;
-    const struct IPHeader *inner_ip;
-    const struct ICMPHeader *inner_icmp;
-    struct probe_t *probe;
-
-    /*  Ensure that we don't access memory beyond the bounds of the packet  */
-    if (packet_length < ip_icmp_size) {
-        return;
-    }
-
-    ip = (struct IPHeader *)packet;
-    if (ip->protocol != IPPROTO_ICMP) {
-        return;
-    }
-
-    icmp = (struct ICMPHeader *)(ip + 1);
-
-    /*  If we get an echo reply, our probe reached the destination host  */
-    if (icmp->type == ICMP_ECHOREPLY) {
-        probe = find_probe(net_state, icmp->id, icmp->sequence);
-        if (probe == NULL) {
-            return;
-        }
-
-        receive_probe(probe, icmp->type, remote_addr, timestamp);
-    }
-
-    /*
-        If we get a time exceeded, we got a response from an intermediate
-        host along the path to our destination.
-    */
-    if (icmp->type == ICMP_TIME_EXCEEDED) {
-        if (packet_length < ip_icmp_ip_icmp_size) {
-            return;
-        }
-
-        /*
-            The IP packet inside the ICMP response contains our original
-            IP header.  That's where we can get our original ID and
-            sequence number.
-        */
-        inner_ip = (struct IPHeader *)(icmp + 1);
-        inner_icmp = (struct ICMPHeader *)(inner_ip + 1);
-
-        probe = find_probe(net_state, inner_icmp->id, inner_icmp->sequence);
-        if (probe == NULL) {
-            return;
-        }
-
-        receive_probe(probe, icmp->type, remote_addr, timestamp);
-    }
-}
-
-/*
     Read all available packets through our receiving raw socket, and
     handle any responses to probes we have preivously sent.
 */
-void receive_replies(
-    struct net_state_t *net_state)
+void receive_replies_from_socket(
+    struct net_state_t *net_state,
+    int socket,
+    received_packet_func_t handle_received_packet)
 {
     char packet[PACKET_BUFFER_SIZE];
     int packet_length;
-    struct sockaddr_in remote_addr;
+    struct sockaddr_storage remote_addr;
     socklen_t sockaddr_length;
     struct timeval timestamp;
 
     /*  Read until no more packets are available  */
     while (true) {
-        sockaddr_length = sizeof(struct sockaddr_in);
+        sockaddr_length = sizeof(struct sockaddr_storage);
         packet_length = recvfrom(
-            net_state->platform.ipv4_recv_socket,
-            packet, PACKET_BUFFER_SIZE, 0,
+            socket, packet, PACKET_BUFFER_SIZE, 0,
             (struct sockaddr *)&remote_addr, &sockaddr_length);
 
         /*
@@ -437,8 +391,22 @@ void receive_replies(
         }
 
         handle_received_packet(
-            net_state, remote_addr, packet, packet_length, timestamp);
+            net_state, &remote_addr, packet, packet_length, timestamp);
     }
+
+}
+
+/*  Check both the IPv4 and IPv6 sockets for incoming packets  */
+void receive_replies(
+    struct net_state_t *net_state)
+{
+    receive_replies_from_socket(
+        net_state, net_state->platform.ipv4_recv_socket,
+        handle_received_ipv4_packet);
+
+    receive_replies_from_socket(
+        net_state, net_state->platform.ipv6_recv_socket,
+        handle_received_ipv6_packet);
 }
 
 /*

@@ -23,7 +23,6 @@
 #include <sys/socket.h>
 #ifdef ENABLE_IPV6
 #include <netinet/ip6.h>
-#include <netinet/icmp6.h>
 #endif
 
 #include <stdint.h>

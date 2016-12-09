@@ -19,11 +19,16 @@
 #ifndef PROTOCOLS_H
 #define PROTOCOLS_H
 
-/*  ICMP type codes  */
+/*  ICMPv4 type codes  */
 #define ICMP_ECHOREPLY 0
 #define ICMP_DEST_UNREACH 3
 #define ICMP_ECHO 8
 #define ICMP_TIME_EXCEEDED 11
+
+/*  ICMPv6 type codes  */
+#define ICMP6_TIME_EXCEEDED 3
+#define ICMP6_ECHO 128
+#define ICMP6_ECHOREPLY 129
 
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
@@ -79,6 +84,26 @@ struct IPHeader {
     uint16_t check;
     uint32_t saddr;
     uint32_t daddr;
+};
+
+/*  IP version 6 header  */
+struct IP6Header {
+    uint8_t version;
+    uint8_t flow[3];
+    uint16_t len;
+    uint8_t protocol;
+    uint8_t ttl;
+    uint8_t saddr[16];
+    uint8_t daddr[16];
+};
+
+/*  The pseudo-header used for checksum computation for ICMPv6 and UDPv6  */
+struct IP6PseudoHeader {
+    uint8_t saddr[16];
+    uint8_t daddr[16];
+    uint32_t len;
+    uint8_t zero[3];
+    uint8_t protocol;
 };
 
 #endif

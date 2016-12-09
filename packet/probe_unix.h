@@ -33,17 +33,29 @@ struct probe_platform_t
 /*  We'll use rack sockets to send and recieve probes on Unix systems  */
 struct net_state_platform_t
 {
-    /*  Socket used to send raw packets  */
+    /*  Socket used to send raw IPv4 packets  */
     int ipv4_send_socket;
 
-    /*  Socket used to receive ICMP replies  */
+    /*  Socket used to receive IPv4 ICMP replies  */
     int ipv4_recv_socket;
+
+    /*  Send socket for IPv6 packets  */
+    int ipv6_send_socket;
+
+    /*  Receive socket for IPv6 packets  */
+    int ipv6_recv_socket;
 
     /*
         true if we should encode the IP header length in host order.
         (as opposed to network order)
     */
     bool ip_length_host_order;
+
+    /*
+        true if we are allowed to construct the IPv6 header, false if
+        we need to let the network stack do it for us.
+    */
+    bool ipv6_header_constructed;
 };
 
 #endif

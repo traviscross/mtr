@@ -16,14 +16,16 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef WAIT_H
-#define WAIT_H
+#ifndef CONSTRUCT_H
+#define CONSTRUCT_H
 
-#include "command.h"
 #include "probe.h"
 
-void wait_for_activity(
-    struct command_buffer_t *command_buffer,
-    struct net_state_t *net_state);
+int construct_packet(
+    const struct net_state_t *net_state,
+    char *packet_buffer,
+    int packet_buffer_size,
+    const struct sockaddr_storage *dest_sockaddr,
+    const struct probe_param_t *param);
 
 #endif
