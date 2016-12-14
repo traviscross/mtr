@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "protocols.h"
@@ -31,31 +32,21 @@ struct checksum_source_t
     size_t size;
 };
 
-/*
-    Compute the IP checksum (or ICMP checksum) of a packet.
-    We may need to use data from multiple sources, to checksum
-    the "psuedo-header" for UDP or ICMPv6.
-*/
+/*  Compute the IP checksum (or ICMP checksum) of a packet.  */
 static
 uint16_t compute_checksum(
-    struct checksum_source_t *source,
-    int source_count)
+    const void *packet,
+    int size)
 {
-    int i, j;
-    const uint8_t *bytes;
-    size_t size;
+    const uint8_t *packet_bytes = (uint8_t *)packet;
     uint32_t sum = 0;
+    int i;
 
-    for (i = 0; i < source_count; i++) {
-        bytes = (uint8_t *)source[i].data;
-        size = source[i].size;
-
-        for (j = 0; j < size; j++) {
-            if ((j & 1) == 0) {
-                sum += bytes[j] << 8;
-            } else {
-                sum += bytes[j];
-            }
+    for (i = 0; i < size; i++) {
+        if ((i & 1) == 0) {
+            sum += packet_bytes[i] << 8;
+        } else {
+            sum += packet_bytes[i];
         }
     }
 
@@ -72,50 +63,6 @@ uint16_t compute_checksum(
         mathematical sum.
     */
     return (~sum & 0xffff);
-}
-
-/*  Compute the checksum from a single source of data  */
-static
-uint16_t simple_checksum(
-    const void *packet,
-    size_t size)
-{
-    struct checksum_source_t source;
-
-    source.data = packet;
-    source.size = size;
-
-    return compute_checksum(&source, 1);
-}
-
-/*
-    ICMPv6 and UDPv6 use a pseudo-header with a different layout
-    from the real IPv6 header for checksum purposes.  We'll fill
-    in the psuedo-header and use it to start the checksum against
-    the packet.
-*/
-static
-uint16_t pseudo6_checksum(
-    const void *ip_packet,
-    const void *packet,
-    size_t size)
-{
-    const struct IP6Header *ip = (struct IP6Header *)ip_packet;
-    struct IP6PseudoHeader pseudo;
-    struct checksum_source_t source[2];
-
-    memcpy(pseudo.saddr, ip->saddr, sizeof(struct in6_addr));
-    memcpy(pseudo.daddr, ip->daddr, sizeof(struct in6_addr));
-    pseudo.len = ip->len;
-    memset(pseudo.zero, 0, sizeof(pseudo.zero));
-    pseudo.protocol = ip->protocol;
-
-    source[0].data = &pseudo;
-    source[0].size = sizeof(struct IP6PseudoHeader);
-    source[1].data = packet;
-    source[1].size = size;
-
-    return compute_checksum(source, 2);
 }
 
 /*  Encode the IP header length field in the order required by the OS.  */
@@ -150,39 +97,9 @@ void construct_ip4_header(
     ip->version = 0x45;
     ip->len = length_byte_swap(net_state, packet_size);
     ip->ttl = param->ttl;
-    ip->protocol = IPPROTO_ICMP;
+    ip->protocol = param->protocol;
     memcpy(&ip->saddr, &srcaddr4->sin_addr, sizeof(uint32_t));
     memcpy(&ip->daddr, &destaddr4->sin_addr, sizeof(uint32_t));
-}
-
-/*  Construct a header for IP version 6  */
-static
-void construct_ip6_header(
-    const struct net_state_t *net_state,
-    char *packet_buffer,
-    int packet_size,
-    const struct sockaddr_storage *srcaddr,
-    const struct sockaddr_storage *destaddr,
-    const struct probe_param_t *param)
-{
-    struct IP6Header *ip;
-    int payload_size;
-    struct sockaddr_in6 *srcaddr6 = (struct sockaddr_in6 *)srcaddr;
-    struct sockaddr_in6 *destaddr6 = (struct sockaddr_in6 *)destaddr;
-
-    if (!net_state->platform.ipv6_header_constructed) {
-        return;
-    }
-
-    ip = (struct IP6Header *)&packet_buffer[0];
-    payload_size = packet_size - sizeof(struct IP6Header);
-
-    ip->version = 0x60;
-    ip->len = htons(payload_size);
-    ip->protocol = IPPROTO_ICMPV6;
-    ip->ttl = param->ttl;
-    memcpy(&ip->saddr, &srcaddr6->sin6_addr, sizeof(struct in6_addr));
-    memcpy(&ip->daddr, &destaddr6->sin6_addr, sizeof(struct in6_addr));
 }
 
 /*  Construct an ICMP header for IPv4  */
@@ -202,36 +119,99 @@ void construct_icmp4_header(
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
     icmp->sequence = htons(param->command_token);
-    icmp->checksum = htons(simple_checksum(icmp, icmp_size));
+    icmp->checksum = htons(compute_checksum(icmp, icmp_size));
 }
 
 /*  Construct an ICMP header for IPv6  */
 static
-void construct_icmp6_header(
+int construct_icmp6_packet(
     const struct net_state_t *net_state,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
 {
     struct ICMPHeader *icmp;
-    int icmp_size;
 
-    if (net_state->platform.ipv6_header_constructed) {
-        icmp = (struct ICMPHeader *)&packet_buffer[sizeof(struct IP6Header)];
-        icmp_size = packet_size - sizeof(struct IP6Header);
-    } else {
-        icmp = (struct ICMPHeader *)packet_buffer;
-        icmp_size = packet_size;
-    }
+    icmp = (struct ICMPHeader *)packet_buffer;
 
     icmp->type = ICMP6_ECHO;
     icmp->id = htons(getpid());
     icmp->sequence = htons(param->command_token);
 
-    if (net_state->platform.ipv6_header_constructed) {
-        icmp->checksum = htons(
-            pseudo6_checksum(packet_buffer, icmp, icmp_size));
+    if (setsockopt(
+            net_state->platform.icmp6_send_socket, IPPROTO_IPV6,
+            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
+        return -errno;
     }
+
+    return 0;
+}
+
+/*
+    Construct a header for UDP probes.  We'll use the source port
+    as the command token, so that we can identify the probe when its
+    header is returned embedded in an ICMP reply.
+*/
+static
+void construct_udp4_header(
+    const struct net_state_t *net_state,
+    char *packet_buffer,
+    int packet_size,
+    const struct probe_param_t *param)
+{
+    struct UDPHeader *udp;
+    int udp_size;
+
+    udp = (struct UDPHeader *)&packet_buffer[sizeof(struct IPHeader)];
+    udp_size = packet_size - sizeof(struct IPHeader);
+
+    udp->srcport = htons(param->command_token);
+    udp->dstport = htons(param->dest_port);
+    udp->length = htons(udp_size);
+    udp->checksum = 0;
+}
+
+/*  Construct a header for UDPv6 probes  */
+static
+int construct_udp6_packet(
+    const struct net_state_t *net_state,
+    char *packet_buffer,
+    int packet_size,
+    const struct probe_param_t *param)
+{
+    int udp_socket = net_state->platform.udp6_send_socket;
+    struct UDPHeader *udp;
+    int udp_size;
+
+    udp = (struct UDPHeader *)packet_buffer;
+    udp_size = packet_size;
+
+    udp->srcport = htons(param->command_token);
+    udp->dstport = htons(param->dest_port);
+    udp->length = htons(udp_size);
+    udp->checksum = 0;
+
+    /*  Set the TTL via setsockopt  */
+    if (setsockopt(
+            udp_socket, IPPROTO_IPV6,
+            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
+
+        return -errno;
+    }
+
+    /*
+        Instruct the kernel to put the pseudoheader checksum into the
+        UDP header.
+    */
+    int chksum_offset = (char *)&udp->checksum - (char *)udp;
+    if (setsockopt(
+            udp_socket, IPPROTO_IPV6,
+            IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
+
+        return -errno;
+    }
+
+    return 0;
 }
 
 /*
@@ -246,18 +226,23 @@ int compute_packet_size(
     const struct net_state_t *net_state,
     const struct probe_param_t *param)
 {
-    int packet_size = 0;
+    int packet_size;
 
     if (param->ip_version == 6) {
-        if (net_state->platform.ipv6_header_constructed) {
-            packet_size = sizeof(struct IP6Header);
-        }
+        packet_size = 0;
     } else if (param->ip_version == 4) {
         packet_size = sizeof(struct IPHeader);
     } else {
         return -EINVAL;
     }
-    packet_size += sizeof(struct ICMPHeader);
+
+    if (param->protocol == IPPROTO_ICMP) {
+        packet_size += sizeof(struct ICMPHeader);
+    } else if (param->protocol == IPPROTO_UDP) {
+        packet_size += sizeof(struct UDPHeader);
+    } else {
+        return -EINVAL;
+    }
 
     return packet_size;
 }
@@ -290,18 +275,35 @@ int construct_packet(
 
     memset(packet_buffer, 0, packet_size);
 
+    err = 0;
     if (param->ip_version == 6) {
-        construct_ip6_header(
-            net_state, packet_buffer, packet_size,
-            &src_sockaddr, dest_sockaddr, param);
-        construct_icmp6_header(
-            net_state, packet_buffer, packet_size, param);
+        if (param->protocol == IPPROTO_ICMP) {
+            err = construct_icmp6_packet(
+                net_state, packet_buffer, packet_size, param);
+        } else if (param->protocol == IPPROTO_UDP) {
+            err = construct_udp6_packet(
+                net_state, packet_buffer, packet_size, param);
+        } else {
+            return -EINVAL;
+        }
     } else {
         construct_ip4_header(
             net_state, packet_buffer, packet_size,
             &src_sockaddr, dest_sockaddr, param);
-        construct_icmp4_header(
-            net_state, packet_buffer, packet_size, param);
+
+        if (param->protocol == IPPROTO_ICMP) {
+            construct_icmp4_header(
+                net_state, packet_buffer, packet_size, param);
+        } else if (param->protocol == IPPROTO_UDP) {
+            construct_udp4_header(
+                net_state, packet_buffer, packet_size, param);
+        } else {
+            return -EINVAL;
+        }
+    }
+
+    if (err) {
+        return err;
     }
 
     return packet_size;

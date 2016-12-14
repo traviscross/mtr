@@ -26,6 +26,21 @@ import sys
 import time
 import unittest
 
+#
+#  typing is used for mypy type checking, but isn't required to run,
+#  so it's okay if we can't import it.
+#
+try:
+    # pylint: disable=locally-disabled, unused-import
+    from typing import Dict, List
+except ImportError:
+    pass
+
+
+class MtrPacketExecuteError(Exception):
+    "Exception raised when MtrPacketTest can't execute mtr-packet"
+    pass
+
 
 class ReadReplyTimeout(Exception):
     'Exception raised by TestProbe.read_reply upon timeout'
@@ -39,6 +54,12 @@ class WriteCommandTimeout(Exception):
     pass
 
 
+class MtrPacketReplyParseError(Exception):
+    "Exception raised when MtrPacketReply can't parse the reply string"
+
+    pass
+
+
 def set_nonblocking(file_descriptor):  # type: (int) -> None
     'Put a file descriptor into non-blocking mode'
 
@@ -46,6 +67,40 @@ def set_nonblocking(file_descriptor):  # type: (int) -> None
 
     # pylint: disable=locally-disabled, no-member
     fcntl.fcntl(file_descriptor, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+
+# pylint: disable=locally-disabled, too-few-public-methods
+class MtrPacketReply(object):
+    'A parsed reply from mtr-packet'
+
+    def __init__(self, reply):  # type: (unicode) -> None
+        self.token = 0  # type: int
+        self.command_name = None  # type: unicode
+        self.argument = {}  # type: Dict[unicode, unicode]
+
+        self.parse_reply(reply)
+
+    def parse_reply(self, reply):  # type (unicode) -> None
+        'Parses a reply string into members for the instance of this class'
+
+        tokens = reply.split()  # type List[unicode]
+
+        try:
+            self.token = int(tokens[0])
+            self.command_name = tokens[1]
+        except IndexError:
+            raise MtrPacketReplyParseError(reply)
+
+        i = 2
+        while i < len(tokens):
+            try:
+                name = tokens[i]
+                value = tokens[i + 1]
+            except IndexError:
+                raise MtrPacketReplyParseError(reply)
+
+            self.argument[name] = value
+            i += 2
 
 
 class MtrPacketTest(unittest.TestCase):
@@ -70,10 +125,13 @@ class MtrPacketTest(unittest.TestCase):
         packet_path = os.environ.get('MTR_PACKET', './mtr-packet')
 
         self.reply_buffer = ''
-        self.packet_process = subprocess.Popen(
-            [packet_path],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE)
+        try:
+            self.packet_process = subprocess.Popen(
+                [packet_path],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE)
+        except OSError:
+            raise MtrPacketExecuteError(packet_path)
 
         #  Put the mtr-packet process's stdout in non-blocking mode
         #  so that we can read from it without a timeout when
@@ -94,6 +152,14 @@ class MtrPacketTest(unittest.TestCase):
             self.packet_process.kill()
         except OSError:
             return
+
+    def parse_reply(self, timeout=10.0):  # type: (float) -> MtrPacketReply
+        '''Read the next reply from mtr-packet and parse it into
+        an MtrPacketReply object.'''
+
+        reply_str = self.read_reply(timeout)
+
+        return MtrPacketReply(reply_str)
 
     def read_reply(self, timeout=10.0):  # type: (float) -> unicode
         '''Read the next reply from mtr-packet.
@@ -184,4 +250,4 @@ def check_running_as_root():
     # pylint: disable=locally-disabled, no-member
     if sys.platform != 'cygwin' and os.getuid() > 0:
         sys.stderr.write(
-            "Warning: Many tests require running as root\n")
+            'Warning: many tests require running as root\n')

@@ -62,6 +62,7 @@
 #define MinSequence 33000
 #define MaxSequence 65536
 
+#define COMMAND_BUFFER_SIZE 4096
 #define PACKET_REPLY_BUFFER_SIZE 4096
 
 static int packetsize;         /* packet size used by ping */
@@ -197,7 +198,11 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   int seq = new_sequence(ctl, index);
   int time_to_live = index + 1;
   char ip_string[INET6_ADDRSTRLEN];
+  char command[COMMAND_BUFFER_SIZE];
+  char argument[COMMAND_BUFFER_SIZE];
+  int remaining_size;
   const char *ip_type;
+  const char *protocol = NULL;
 
   /*  Conver the remote IP address to a string  */
   if (inet_ntop(
@@ -213,12 +218,32 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
     ip_type = "ip-4";
   }
 
-  /*  Send a probe using the mtr-packet subprocess  */
-  if (dprintf(
-    packet_command_pipe.write_fd,
-    "%d send-probe %s %s ttl %d\n",
-    seq, ip_type, ip_string, time_to_live) < 0) {
+  if (ctl->mtrtype == IPPROTO_ICMP) {
+    protocol = "icmp";
+  } else if (ctl->mtrtype == IPPROTO_UDP) {
+    protocol = "udp";
+  } else {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "protocol unsupported by mtr-packet interface");
+  }
 
+  snprintf(
+    command, COMMAND_BUFFER_SIZE,
+    "%d send-probe %s %s protocol %s ttl %d",
+    seq, ip_type, ip_string, protocol, time_to_live);
+
+  if (ctl->remoteport) {
+    remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
+
+    snprintf(argument, COMMAND_BUFFER_SIZE, " port %d", ctl->remoteport);
+    strncat(command, argument, remaining_size);
+  }
+
+  remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
+  strncat(command, "\n", remaining_size);
+
+  /*  Send a probe using the mtr-packet subprocess  */
+  if (write(packet_command_pipe.write_fd, command, strlen(command)) == -1) {
     display_close(ctl);
     error(EXIT_FAILURE, errno, "mtr-packet command pipe write failure");
   }
@@ -817,12 +842,15 @@ static void set_fd_nonblock(int fd)
   }
 }
 
-
-/*  Ensure we can communicate with the mtr-packet subprocess  */
-static int net_command_pipe_check(struct mtr_ctl *ctl)
+/*
+  Send a command synchronously to mtr-packet, blocking until a result
+  is available.  This is intended to be used at start-up to check the
+  capabilities of mtr-packet, but probes should be sent asynchronously
+  to avoid blocking other probes and the user interface.
+*/
+static int net_synchronous_command(
+  struct mtr_ctl *ctl, const char *cmd, struct command_t *result)
 {
-  const char *check_command = "1 check-support feature send-probe\n";
-  struct command_t command;
   char reply[PACKET_REPLY_BUFFER_SIZE];
   int command_length;
   int write_length;
@@ -830,9 +858,9 @@ static int net_command_pipe_check(struct mtr_ctl *ctl)
   int parse_result;
 
   /*  Query send-probe support  */
-  command_length = strlen(check_command);
+  command_length = strlen(cmd);
   write_length = write(
-    packet_command_pipe.write_fd, check_command, command_length);
+    packet_command_pipe.write_fd, cmd, command_length);
 
   if (write_length == -1) {
     return -1;
@@ -853,17 +881,35 @@ static int net_command_pipe_check(struct mtr_ctl *ctl)
 
   /*  Parse the query reply  */
   reply[read_length] = 0;
-  parse_result = parse_command(&command, reply);
+  parse_result = parse_command(result, reply);
   if (parse_result) {
     errno = parse_result;
     return -1;
   }
 
-  /*  Check that send-probe is supported  */
-  if (!strcmp(command.command_name, "feature-support")
-    && command.argument_count >= 1
-    && !strcmp(command.argument_name[0], "support")
-    && !strcmp(command.argument_value[0], "ok")) {
+  return 0;
+}
+
+
+/*  Check support for a particular feature with the mtr-packet we invoked  */
+static int net_check_feature(struct mtr_ctl *ctl, const char *feature)
+{
+  char check_command[COMMAND_BUFFER_SIZE];
+  struct command_t reply;
+
+  snprintf(
+    check_command, COMMAND_BUFFER_SIZE,
+    "1 check-support feature %s\n", feature);
+
+  if (net_synchronous_command(ctl, check_command, &reply) == -1) {
+    return -1;
+  }
+
+  /*  Check that the feature is supported  */
+  if (!strcmp(reply.command_name, "feature-support")
+    && reply.argument_count >= 1
+    && !strcmp(reply.argument_name[0], "support")
+    && !strcmp(reply.argument_value[0], "ok")) {
 
     /*  Looks good  */
     return 0;
@@ -871,6 +917,24 @@ static int net_command_pipe_check(struct mtr_ctl *ctl)
 
   errno = ENOTSUP;
   return -1;
+}
+
+
+/*
+  Check the protocol selected against the mtr-packet we are using.
+  Returns zero if everything is fine, or -1 with errno for either
+  a failure during the check, or for an unsupported feature.
+*/
+static int net_packet_feature_check(struct mtr_ctl *ctl)
+{
+  if (ctl->mtrtype == IPPROTO_ICMP) {
+    return net_check_feature(ctl, "icmp");
+  } else if (ctl->mtrtype == IPPROTO_UDP) {
+    return net_check_feature(ctl, "udp");
+  } else {
+    errno = EINVAL;
+    return -1;
+  }
 }
 
 
@@ -954,8 +1018,12 @@ static int net_command_pipe_open(struct mtr_ctl *ctl)
       Check that we can communicate with the client.  If we failed to
       execute the mtr-packet binary, we will discover that here.
     */
-    if (net_command_pipe_check(ctl)) {
+    if (net_check_feature(ctl, "send-probe")) {
       error(EXIT_FAILURE, errno, "Failure to start mtr-packet");
+    }
+
+    if (net_packet_feature_check(ctl)) {
+      error(EXIT_FAILURE, errno, "Packet type unsupported");
     }
 
     /*  We will need non-blocking reads from the child  */

@@ -474,8 +474,6 @@ For the latest version, see the mtr web page at
 .UR http://\:www.\:bitwizard.\:nl/\:mtr/
 .UE
 .PP
-The mtr mailinglist was little used and is no longer active. 
-.PP
 For patches, bug reports, or feature requests, please open an issue on
 GitHub at:
 .UR https://\:github\:.com/\:traviscross/\:mtr

@@ -45,6 +45,12 @@ struct probe_param_t
     /*  The IP address to probe  */
     const char *address;
 
+    /*  Protocol for the probe, using the IPPROTO_* defines  */
+    int protocol;
+
+    /*  The destination port for non-ICMP probes  */
+    int dest_port;
+
     /*  Time to live for the transmited probe  */
     int ttl;
 
@@ -80,6 +86,10 @@ void init_net_state_privileged(
 
 void init_net_state(
     struct net_state_t *net_state);
+
+bool is_protocol_supported(
+    struct net_state_t *net_state,
+    int protocol);
 
 bool get_next_probe_timeout(
     const struct net_state_t *net_state,
@@ -117,6 +127,7 @@ int count_in_flight_probes(
 
 struct probe_t *find_probe(
     struct net_state_t *net_state,
+    int protocol,
     int icmp_id,
     int icmp_sequence);
 

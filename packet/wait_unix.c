@@ -41,21 +41,21 @@ void wait_for_activity(
     struct timeval *select_timeout;
     int ready_count;
     int command_stream = command_buffer->command_stream;
-    int ipv4_socket = net_state->platform.ipv4_recv_socket;
-    int ipv6_socket = net_state->platform.ipv6_recv_socket;
+    int ip4_socket = net_state->platform.ip4_recv_socket;
+    int ip6_socket = net_state->platform.ip6_recv_socket;
 
     FD_ZERO(&read_set);
     FD_SET(command_stream, &read_set);
     nfds = command_stream + 1;
 
-    FD_SET(ipv4_socket, &read_set);
-    if (ipv4_socket >= nfds) {
-        nfds = ipv4_socket + 1;
+    FD_SET(ip4_socket, &read_set);
+    if (ip4_socket >= nfds) {
+        nfds = ip4_socket + 1;
     }
 
-    FD_SET(ipv6_socket, &read_set);
-    if (ipv6_socket >= nfds) {
-        nfds = ipv6_socket + 1;
+    FD_SET(ip6_socket, &read_set);
+    if (ip6_socket >= nfds) {
+        nfds = ip6_socket + 1;
     }
 
     while (true) {

@@ -48,6 +48,18 @@ void init_net_state(
     }
 }
 
+/*  On Windows, we only support ICMP probes  */
+bool is_protocol_supported(
+    struct net_state_t *net_state,
+    int protocol)
+{
+    if (protocol == IPPROTO_ICMP) {
+        return true;
+    }
+
+    return false;
+}
+
 /*
     The overlapped I/O style completion routine to be called by
     Windows during an altertable wait when an ICMP probe has

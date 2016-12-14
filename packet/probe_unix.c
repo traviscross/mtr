@@ -35,21 +35,6 @@
 /*  Use the "jumbo" frame size as the max packet size  */
 #define PACKET_BUFFER_SIZE 9000
 
-/*  Set the IPv6 options affecting and outgoing IPv6 packet  */
-static
-void set_ipv6_socket_options(
-    int socket,
-    const struct probe_param_t *param)
-{
-    if (setsockopt(
-            socket, IPPROTO_IPV6,
-            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
-
-        perror("Failure to set IPV6_UNICAST_HOPS");
-        exit(1);
-    }
-}
-
 /*  A wrapper around sendto for mixed IPv4 and IPv6 sending  */
 static
 int send_packet(
@@ -59,20 +44,26 @@ int send_packet(
     int packet_size,
     const struct sockaddr_storage *sockaddr)
 {
-    int send_socket;
+    int send_socket = 0;
     int sockaddr_length;
 
     if (sockaddr->ss_family == AF_INET6) {
-        send_socket = net_state->platform.ipv6_send_socket;
         sockaddr_length = sizeof(struct sockaddr_in6);
 
-        if (!net_state->platform.ipv6_header_constructed) {
-            set_ipv6_socket_options(send_socket, param);
+        if (param->protocol == IPPROTO_ICMP) {
+            send_socket = net_state->platform.icmp6_send_socket;
+        } else if (param->protocol == IPPROTO_UDP) {
+            send_socket = net_state->platform.udp6_send_socket;
         }
-    } else {
-        assert(sockaddr->ss_family == AF_INET);
-        send_socket = net_state->platform.ipv4_send_socket;
+    } else if (sockaddr->ss_family == AF_INET) {
         sockaddr_length = sizeof(struct sockaddr_in);
+
+        send_socket = net_state->platform.ip4_send_socket;
+    }
+
+    if (send_socket == 0) {
+        errno = EINVAL;
+        return -1;
     }
 
     return sendto(
@@ -103,6 +94,7 @@ void check_length_order(
 
     memset(&param, 0, sizeof(struct probe_param_t));
     param.ip_version = 4;
+    param.protocol = IPPROTO_ICMP;
     param.ttl = 255;
     param.address = "127.0.0.1";
 
@@ -168,7 +160,7 @@ void set_socket_nonblocking(
 
 /*  Open the raw sockets for sending/receiving IPv4 packets  */
 static
-void open_ipv4_sockets(
+void open_ip4_sockets(
     struct net_state_t *net_state)
 {
     int send_socket;
@@ -202,42 +194,28 @@ void open_ipv4_sockets(
         exit(1);
     }
 
-    net_state->platform.ipv4_send_socket = send_socket;
-    net_state->platform.ipv4_recv_socket = recv_socket;
+    net_state->platform.ip4_send_socket = send_socket;
+    net_state->platform.ip4_recv_socket = recv_socket;
 }
 
 /*  Open the raw sockets for sending/receiving IPv6 packets  */
 static
-void open_ipv6_sockets(
+void open_ip6_sockets(
     struct net_state_t *net_state)
 {
-    int send_socket;
+    int send_socket_icmp;
+    int send_socket_udp;
     int recv_socket;
-    int send_protocol;
 
-    /*
-        Linux allows us to construct our own IPv6 header, so
-        we'll prefer that method for more explicit control.
-
-        Other OSes, such as MacOS, don't allow this, and on
-        those platforms we must use setsockopt() to control
-        fields of the IP header.
-    */
-#ifdef PLATFORM_LINUX
-    net_state->platform.ipv6_header_constructed = true;
-#else
-    net_state->platform.ipv6_header_constructed = false;
-#endif
-
-    if (net_state->platform.ipv6_header_constructed) {
-        send_protocol = IPPROTO_RAW;
-    } else {
-        send_protocol = IPPROTO_ICMPV6;
+    send_socket_icmp = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+    if (send_socket_icmp == -1) {
+        perror("Failure opening ICMPv6 send socket");
+        exit(1);
     }
 
-    send_socket = socket(AF_INET6, SOCK_RAW, send_protocol);
-    if (send_socket == -1) {
-        perror("Failure opening IPv6 send socket");
+    send_socket_udp = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
+    if (send_socket_udp == -1) {
+        perror("Failure opening UDPv6 send socket");
         exit(1);
     }
 
@@ -249,8 +227,9 @@ void open_ipv6_sockets(
 
     set_socket_nonblocking(recv_socket);
 
-    net_state->platform.ipv6_send_socket = send_socket;
-    net_state->platform.ipv6_recv_socket = recv_socket;
+    net_state->platform.icmp6_send_socket = send_socket_icmp;
+    net_state->platform.udp6_send_socket = send_socket_udp;
+    net_state->platform.ip6_recv_socket = recv_socket;
 }
 
 /*
@@ -263,8 +242,8 @@ void init_net_state_privileged(
 {
     memset(net_state, 0, sizeof(struct net_state_t));
 
-    open_ipv4_sockets(net_state);
-    open_ipv6_sockets(net_state);
+    open_ip4_sockets(net_state);
+    open_ip6_sockets(net_state);
 }
 
 /*
@@ -274,10 +253,26 @@ void init_net_state_privileged(
 void init_net_state(
     struct net_state_t *net_state)
 {
-    set_socket_nonblocking(net_state->platform.ipv4_recv_socket);
-    set_socket_nonblocking(net_state->platform.ipv6_recv_socket);
+    set_socket_nonblocking(net_state->platform.ip4_recv_socket);
+    set_socket_nonblocking(net_state->platform.ip6_recv_socket);
 
     check_length_order(net_state);
+}
+
+/*  Returns true if we can transmit probes using the specified protocol  */
+bool is_protocol_supported(
+    struct net_state_t *net_state,
+    int protocol)
+{
+    if (protocol == IPPROTO_ICMP) {
+        return true;
+    }
+
+    if (protocol == IPPROTO_UDP) {
+        return true;
+    }
+
+    return false;
 }
 
 /*  Craft a custom ICMP packet for a network probe.  */
@@ -330,8 +325,19 @@ void send_probe(
     if (send_packet(
             net_state, param, packet, packet_size, &dest_sockaddr) == -1) {
 
-        perror("Failure sending probe");
-        exit(1);
+        if (errno == ENETDOWN) {
+            printf("%d network-down\n", param->command_token);
+        } else if (errno == ENETUNREACH) {
+            printf("%d no-route\n", param->command_token);
+        } else if (errno == EINVAL) {
+            printf("%d invalid-argument\n", param->command_token);
+        } else {
+            perror("Failure sending probe");
+            exit(1);
+        }
+
+        free_probe(probe);
+        return;
     }
 
     probe->platform.timeout_time = probe->platform.departure_time;
@@ -401,12 +407,12 @@ void receive_replies(
     struct net_state_t *net_state)
 {
     receive_replies_from_socket(
-        net_state, net_state->platform.ipv4_recv_socket,
-        handle_received_ipv4_packet);
+        net_state, net_state->platform.ip4_recv_socket,
+        handle_received_ip4_packet);
 
     receive_replies_from_socket(
-        net_state, net_state->platform.ipv6_recv_socket,
-        handle_received_ipv6_packet);
+        net_state, net_state->platform.ip6_recv_socket,
+        handle_received_ip6_packet);
 }
 
 /*

@@ -20,7 +20,6 @@
 '''Test mtr-packet's command parsing.'''
 
 
-import re
 import time
 import unittest
 
@@ -58,8 +57,6 @@ class TestCommandParse(mtrpacket.MtrPacketTest):
     def test_invalid_argument(self):
         'Test sending invalid arguments with probe requests'
 
-        invalid_argument_regex = r'^[0-9]+ invalid-argument$'
-
         bad_commands = [
             '22 send-probe',
             '23 send-probe ip-4 str-value',
@@ -69,29 +66,30 @@ class TestCommandParse(mtrpacket.MtrPacketTest):
 
         for cmd in bad_commands:
             self.write_command(cmd)
-            reply = self.read_reply()
-            match = re.match(invalid_argument_regex, reply)
-            self.assertIsNotNone(match)
+            reply = self.parse_reply()
+            self.assertEqual(reply.command_name, 'invalid-argument')
 
     def test_versioning(self):
         'Test version checks and feature support checks'
 
         feature_tests = [
-            ('30 check-support feature version',
-             r'^30 feature-support support [0-9]+\.[0-9a-z\-\.]+$'),
-            ('31 check-support feature ip-4',
-             r'^31 feature-support support ok$'),
-            ('32 check-support feature send-probe',
-             r'^32 feature-support support ok$'),
-            ('33 check-support feature bogus-feature',
-             r'^33 feature-support support no$')
+            ('31 check-support feature ip-4', 'ok'),
+            ('32 check-support feature send-probe', 'ok'),
+            ('33 check-support feature bogus-feature', 'no')
         ]
 
-        for (request, regex) in feature_tests:
+        self.write_command('30 check-support feature version')
+        reply = self.parse_reply()
+        self.assertEqual(reply.token, 30)
+        self.assertEqual(reply.command_name, 'feature-support')
+        self.assertIn('support', reply.argument)
+
+        for (request, expected) in feature_tests:
             self.write_command(request)
-            reply = self.read_reply()
-            match = re.match(regex, reply)
-            self.assertIsNotNone(match)
+            reply = self.parse_reply()
+            self.assertEqual(reply.command_name, 'feature-support')
+            self.assertIn('support', reply.argument)
+            self.assertEqual(reply.argument['support'], expected)
 
     def test_command_overflow(self):
         'Test overflowing the incoming command buffer'

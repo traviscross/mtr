@@ -54,10 +54,24 @@ const char *find_parameter(
     return NULL;
 }
 
+/*  Returns a feature support string for a particular probe protocol  */
+static
+const char *check_protocol_support(
+    struct net_state_t *net_state,
+    int protocol)
+{
+    if (is_protocol_supported(net_state, protocol)) {
+        return "ok";
+    } else {
+        return "no";
+    }
+}
+
 /*  Given a feature name, return a string for the check-support reply  */
 static
 const char *check_support(
-    const char *feature)
+    const char *feature,
+    struct net_state_t *net_state)
 {
     if (!strcmp(feature, "version")) {
         return PACKAGE_VERSION;
@@ -75,13 +89,22 @@ const char *check_support(
         return "ok";
     }
 
+    if (!strcmp(feature, "icmp")) {
+        return check_protocol_support(net_state, IPPROTO_ICMP);
+    }
+
+    if (!strcmp(feature, "udp")) {
+        return check_protocol_support(net_state, IPPROTO_UDP);
+    }
+
     return "no";
 }
 
 /*  Handle a check-support request by checking for a particular feature  */
 static
 void check_support_command(
-    const struct command_t *command)
+    const struct command_t *command,
+    struct net_state_t *net_state)
 {
     const char *feature;
     const char *support;
@@ -92,7 +115,7 @@ void check_support_command(
         return;
     }
 
-    support = check_support(feature);
+    support = check_support(feature, net_state);
     printf("%d feature-support support %s\n", command->token, support);
 }
 
@@ -118,6 +141,25 @@ bool decode_probe_argument(
     if (!strcmp(name, "ip-6")) {
         param->ip_version = 6;
         param->address = value;
+    }
+
+    /*  Protocol for the probe  */
+    if (!strcmp(name, "protocol")) {
+        if (!strcmp(value, "icmp")) {
+            param->protocol = IPPROTO_ICMP;
+        } else if (!strcmp(value, "udp")) {
+            param->protocol = IPPROTO_UDP;
+        } else {
+            return false;
+        }
+    }
+
+    /*  Destination port for the probe  */
+    if (!strcmp(name, "port")) {
+        param->dest_port = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
     }
 
     /*  Time-to-live values  */
@@ -153,6 +195,8 @@ void send_probe_command(
     /*  We will prepare a probe_param_t for send_probe.  */
     memset(&param, 0, sizeof(struct probe_param_t));
     param.command_token = command->token;
+    param.protocol = IPPROTO_ICMP;
+    param.dest_port = 7; /* Use the 'echo' port as the default destination */
     param.ttl = 255;
     param.timeout = 10;
 
@@ -180,7 +224,7 @@ void dispatch_command(
     struct net_state_t *net_state)
 {
     if (!strcmp(command->command_name, "check-support")) {
-        check_support_command(command);
+        check_support_command(command, net_state);
     } else if (!strcmp(command->command_name, "send-probe")) {
         send_probe_command(command, net_state);
     } else {

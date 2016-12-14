@@ -25,10 +25,17 @@
 #define ICMP_ECHO 8
 #define ICMP_TIME_EXCEEDED 11
 
+/*  ICMP_DEST_UNREACH codes */
+#define ICMP_PORT_UNREACH 3
+
 /*  ICMPv6 type codes  */
+#define ICMP6_DEST_UNREACH 1
 #define ICMP6_TIME_EXCEEDED 3
 #define ICMP6_ECHO 128
 #define ICMP6_ECHOREPLY 129
+
+/*  ICMP6_DEST_UNREACH codes */
+#define ICMP6_PORT_UNREACH 4
 
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
@@ -64,7 +71,7 @@ struct SCTPHeader {
 };
 
 /* Structure of an IPv4 UDP pseudoheader.  */
-struct UDPv4PHeader {
+struct UDPPseudoHeader {
     uint32_t saddr;
     uint32_t daddr;
     uint8_t zero;

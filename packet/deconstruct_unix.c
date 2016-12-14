@@ -53,12 +53,13 @@ void find_and_receive_probe(
     const struct sockaddr_storage *remote_addr,
     struct timeval timestamp,
     int icmp_type,
+    int protocol,
     int icmp_id,
     int icmp_sequence)
 {
     struct probe_t *probe;
 
-    probe = find_probe(net_state, icmp_id, icmp_sequence);
+    probe = find_probe(net_state, protocol, icmp_id, icmp_sequence);
     if (probe == NULL) {
         return;
     }
@@ -67,50 +68,147 @@ void find_and_receive_probe(
 }
 
 /*
+    We've received an ICMP message with an embedded IP packet.
+    We will try to determine which of our outgoing probes
+    corresponds to the embedded IP packet and record the response.
+*/
+static
+void handle_inner_ip4_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    int icmp_result,
+    const struct IPHeader *ip,
+    int packet_length,
+    struct timeval timestamp)
+{
+    const int ip_icmp_size =
+        sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
+    const int ip_udp_size =
+        sizeof(struct IPHeader) + sizeof(struct UDPHeader);
+    const struct ICMPHeader *icmp;
+    const struct UDPHeader *udp;
+
+    if (ip->protocol == IPPROTO_ICMP) {
+        if (packet_length < ip_icmp_size) {
+            return;
+        }
+
+        icmp = (struct ICMPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_ICMP, icmp->id, icmp->sequence);
+    } else if (ip->protocol == IPPROTO_UDP) {
+        if (packet_length < ip_udp_size) {
+            return;
+        }
+
+        udp = (struct UDPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_UDP, 0, udp->srcport);
+    }
+}
+
+/*
+    Examine the IPv6 header embedded in a returned ICMPv6 packet
+    in order to match it with a probe which we previously sent.
+*/
+static
+void handle_inner_ip6_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    int icmp_result,
+    const struct IP6Header *ip,
+    int packet_length,
+    struct timeval timestamp)
+{
+    const int ip_icmp_size =
+        sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
+    const int ip_udp_size =
+        sizeof(struct IP6Header) + sizeof(struct UDPHeader);
+    const struct ICMPHeader *icmp;
+    const struct UDPHeader *udp;
+
+    if (ip->protocol == IPPROTO_ICMPV6) {
+        if (packet_length < ip_icmp_size) {
+            return;
+        }
+
+        icmp = (struct ICMPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_ICMP, icmp->id, icmp->sequence);
+    } else if (ip->protocol == IPPROTO_UDP) {
+        if (packet_length < ip_udp_size) {
+            return;
+        }
+
+        udp = (struct UDPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_UDP, 0, udp->srcport);
+    }
+}
+
+/*
     Decode the ICMP header received and try to find a probe which it
     is in response to.
 */
 static
-void handle_received_icmpv4_packet(
+void handle_received_icmp4_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const struct ICMPHeader *icmp,
     int packet_length,
     struct timeval timestamp)
 {
-    const int icmp_ip_icmp_size =
-        sizeof(struct ICMPHeader) +
-        sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
+    const int icmp_ip_size =
+        sizeof(struct ICMPHeader) + sizeof(struct IPHeader);
     const struct IPHeader *inner_ip;
-    const struct ICMPHeader *inner_icmp;
+    int inner_size = packet_length - sizeof(struct ICMPHeader);
 
     /*  If we get an echo reply, our probe reached the destination host  */
     if (icmp->type == ICMP_ECHOREPLY) {
         find_and_receive_probe(
             net_state, remote_addr, timestamp,
-            ICMP_ECHOREPLY, icmp->id, icmp->sequence);
+            ICMP_ECHOREPLY, IPPROTO_ICMP, icmp->id, icmp->sequence);
     }
+
+    if (packet_length < icmp_ip_size) {
+        return;
+    }
+    inner_ip = (struct IPHeader *)(icmp + 1);
 
     /*
         If we get a time exceeded, we got a response from an intermediate
         host along the path to our destination.
     */
     if (icmp->type == ICMP_TIME_EXCEEDED) {
-        if (packet_length < icmp_ip_icmp_size) {
-            return;
-        }
-
         /*
             The IP packet inside the ICMP response contains our original
             IP header.  That's where we can get our original ID and
             sequence number.
         */
-        inner_ip = (struct IPHeader *)(icmp + 1);
-        inner_icmp = (struct ICMPHeader *)(inner_ip + 1);
+        handle_inner_ip4_packet(
+            net_state, remote_addr,
+            ICMP_TIME_EXCEEDED, inner_ip, inner_size, timestamp);
+    }
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp,
-            ICMP_TIME_EXCEEDED, inner_icmp->id, inner_icmp->sequence);
+    if (icmp->type == ICMP_DEST_UNREACH) {
+        /*
+            We'll get a ICMP_PORT_UNREACH when a non-ICMP probe
+            reaches its final destination.  (Assuming that port isn't
+            open on the destination host.)
+        */
+        if (icmp->code == ICMP_PORT_UNREACH) {
+            handle_inner_ip4_packet(
+                net_state, remote_addr,
+                ICMP_ECHOREPLY, inner_ip, inner_size, timestamp);
+        }
     }
 }
 
@@ -120,36 +218,41 @@ void handle_received_icmpv4_packet(
     constants differ.
 */
 static
-void handle_received_icmpv6_packet(
+void handle_received_icmp6_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const struct ICMPHeader *icmp,
     int packet_length,
     struct timeval timestamp)
 {
-    const int icmp_ip_icmp_size =
-        sizeof(struct ICMPHeader) +
-        sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
+    const int icmp_ip_size =
+        sizeof(struct ICMPHeader) + sizeof(struct IP6Header);
     const struct IP6Header *inner_ip;
-    const struct ICMPHeader *inner_icmp;
+    int inner_size = packet_length - sizeof(struct ICMPHeader);
 
     if (icmp->type == ICMP6_ECHOREPLY) {
         find_and_receive_probe(
-            net_state, remote_addr, timestamp,
-            ICMP_ECHOREPLY, icmp->id, icmp->sequence);
+            net_state, remote_addr, timestamp, ICMP_ECHOREPLY,
+            IPPROTO_ICMP, icmp->id, icmp->sequence);
     }
 
+    if (packet_length < icmp_ip_size) {
+        return;
+    }
+    inner_ip = (struct IP6Header *)(icmp + 1);
+
     if (icmp->type == ICMP6_TIME_EXCEEDED) {
-        if (packet_length < icmp_ip_icmp_size) {
-            return;
+        handle_inner_ip6_packet(
+            net_state, remote_addr,
+            ICMP_TIME_EXCEEDED, inner_ip, inner_size, timestamp);
+    }
+
+    if (icmp->type == ICMP6_DEST_UNREACH) {
+        if (icmp->code == ICMP6_PORT_UNREACH) {
+            handle_inner_ip6_packet(
+                net_state, remote_addr,
+                ICMP_ECHOREPLY, inner_ip, inner_size, timestamp);
         }
-
-        inner_ip = (struct IP6Header *)(icmp + 1);
-        inner_icmp = (struct ICMPHeader *)(inner_ip + 1);
-
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp,
-            ICMP_TIME_EXCEEDED, inner_icmp->id, inner_icmp->sequence);
     }
 }
 
@@ -158,7 +261,7 @@ void handle_received_icmpv6_packet(
     We'll check to see that it is a response to one of our probes, and
     if so, report the result of the probe to our command stream.
 */
-void handle_received_ipv4_packet(
+void handle_received_ip4_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const void *packet,
@@ -184,7 +287,7 @@ void handle_received_ipv4_packet(
     icmp = (struct ICMPHeader *)(ip + 1);
     icmp_length = packet_length - sizeof(struct IPHeader);
 
-    handle_received_icmpv4_packet(
+    handle_received_icmp4_packet(
         net_state, remote_addr, icmp, icmp_length, timestamp);
 }
 
@@ -193,7 +296,7 @@ void handle_received_ipv4_packet(
     in received packets, so we can assume the packet we got starts
     with the ICMP packet.
 */
-void handle_received_ipv6_packet(
+void handle_received_ip6_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const void *packet,
@@ -204,6 +307,6 @@ void handle_received_ipv6_packet(
 
     icmp = (struct ICMPHeader *)packet;
 
-    handle_received_icmpv6_packet(
+    handle_received_icmp6_packet(
         net_state, remote_addr, icmp, packet_length, timestamp);
 }
