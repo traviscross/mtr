@@ -19,6 +19,7 @@
 #include "construct_unix.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -94,7 +95,10 @@ void construct_ip4_header(
 
     ip = (struct IPHeader *)&packet_buffer[0];
 
+    memset(ip, 0, sizeof(struct IPHeader));
+
     ip->version = 0x45;
+    ip->tos = param->type_of_service;
     ip->len = length_byte_swap(net_state, packet_size);
     ip->ttl = param->ttl;
     ip->protocol = param->protocol;
@@ -116,6 +120,8 @@ void construct_icmp4_header(
     icmp = (struct ICMPHeader *)&packet_buffer[sizeof(struct IPHeader)];
     icmp_size = packet_size - sizeof(struct IPHeader);
 
+    memset(icmp, 0, sizeof(struct ICMPHeader));
+
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
     icmp->sequence = htons(param->command_token);
@@ -134,15 +140,11 @@ int construct_icmp6_packet(
 
     icmp = (struct ICMPHeader *)packet_buffer;
 
+    memset(icmp, 0, sizeof(struct ICMPHeader));
+
     icmp->type = ICMP6_ECHO;
     icmp->id = htons(getpid());
     icmp->sequence = htons(param->command_token);
-
-    if (setsockopt(
-            net_state->platform.icmp6_send_socket, IPPROTO_IPV6,
-            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
-        return -errno;
-    }
 
     return 0;
 }
@@ -165,6 +167,8 @@ void construct_udp4_header(
     udp = (struct UDPHeader *)&packet_buffer[sizeof(struct IPHeader)];
     udp_size = packet_size - sizeof(struct IPHeader);
 
+    memset(udp, 0, sizeof(struct UDPHeader));
+
     udp->srcport = htons(param->command_token);
     udp->dstport = htons(param->dest_port);
     udp->length = htons(udp_size);
@@ -186,18 +190,12 @@ int construct_udp6_packet(
     udp = (struct UDPHeader *)packet_buffer;
     udp_size = packet_size;
 
+    memset(udp, 0, sizeof(struct UDPHeader));
+
     udp->srcport = htons(param->command_token);
     udp->dstport = htons(param->dest_port);
     udp->length = htons(udp_size);
     udp->checksum = 0;
-
-    /*  Set the TTL via setsockopt  */
-    if (setsockopt(
-            udp_socket, IPPROTO_IPV6,
-            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
-
-        return -errno;
-    }
 
     /*
         Instruct the kernel to put the pseudoheader checksum into the
@@ -207,8 +205,7 @@ int construct_udp6_packet(
     if (setsockopt(
             udp_socket, IPPROTO_IPV6,
             IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
-
-        return -errno;
+        return -1;
     }
 
     return 0;
@@ -228,12 +225,14 @@ int compute_packet_size(
 {
     int packet_size;
 
+    /*  Start by determining the full size, including omitted headers  */
     if (param->ip_version == 6) {
-        packet_size = 0;
+        packet_size = sizeof(struct IP6Header);
     } else if (param->ip_version == 4) {
         packet_size = sizeof(struct IPHeader);
     } else {
-        return -EINVAL;
+        errno = EINVAL;
+        return -1;
     }
 
     if (param->protocol == IPPROTO_ICMP) {
@@ -241,10 +240,131 @@ int compute_packet_size(
     } else if (param->protocol == IPPROTO_UDP) {
         packet_size += sizeof(struct UDPHeader);
     } else {
-        return -EINVAL;
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*
+        If the requested size from send-probe is greater, extend the
+        packet size.
+    */
+    if (param->packet_size > packet_size) {
+        packet_size = param->packet_size;
+    }
+
+    /*
+        Since we don't explicitly construct the IPv6 header, we
+        need to account for it in our transmitted size.
+    */
+    if (param->ip_version == 6) {
+        packet_size -= sizeof(struct IP6Header);
     }
 
     return packet_size;
+}
+
+/*  Construct a packet for an IPv4 probe  */
+int construct_ip4_packet(
+    const struct net_state_t *net_state,
+    char *packet_buffer,
+    int packet_size,
+    const struct sockaddr_storage *src_sockaddr,
+    const struct sockaddr_storage *dest_sockaddr,
+    const struct probe_param_t *param)
+{
+    construct_ip4_header(
+        net_state, packet_buffer, packet_size,
+        src_sockaddr, dest_sockaddr, param);
+
+    if (param->protocol == IPPROTO_ICMP) {
+        construct_icmp4_header(
+            net_state, packet_buffer, packet_size, param);
+    } else if (param->protocol == IPPROTO_UDP) {
+        construct_udp4_header(
+            net_state, packet_buffer, packet_size, param);
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*
+        The routing mark requires CAP_NET_ADMIN, as opposed to the
+        CAP_NET_RAW which we are sometimes explicitly given.
+        If we don't have CAP_NET_ADMIN, this will fail, so we'll 
+        only set the mark if the user has explicitly requested it.
+
+        Unfortunately, this means that once the mark is set, it won't
+        be set on the socket again until a new mark is explicitly
+        specified.
+    */
+#ifdef SO_MARK
+    if (param->routing_mark) {
+        if (setsockopt(
+                net_state->platform.ip4_send_socket,
+                SOL_SOCKET, SO_MARK, &param->routing_mark, sizeof(int))) {
+            return -1;
+        }
+    }
+#endif
+
+    return 0;
+}
+
+/*  Construct a packet for an IPv6 probe  */
+int construct_ip6_packet(
+    const struct net_state_t *net_state,
+    char *packet_buffer,
+    int packet_size,
+    const struct sockaddr_storage *src_sockaddr,
+    const struct sockaddr_storage *dest_sockaddr,
+    const struct probe_param_t *param)
+{
+    int send_socket;
+
+    if (param->protocol == IPPROTO_ICMP) {
+        send_socket = net_state->platform.icmp6_send_socket;
+
+        if (construct_icmp6_packet(
+                net_state, packet_buffer, packet_size, param)) {
+            return -1;
+        }
+    } else if (param->protocol == IPPROTO_UDP) {
+        send_socket = net_state->platform.udp6_send_socket;
+
+        if (construct_udp6_packet(
+                net_state, packet_buffer, packet_size, param)) {
+            return -1;
+        }
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
+    if (setsockopt(
+            send_socket, IPPROTO_IPV6,
+            IPV6_TCLASS, &param->type_of_service, sizeof(int))) {
+        return -1;
+    }
+
+    /*  Set the time-to-live  */
+    if (setsockopt(
+            send_socket, IPPROTO_IPV6,
+            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
+        return -1;
+    }
+
+#ifdef SO_MARK
+    if (param->routing_mark) {
+        if (setsockopt(
+                send_socket,
+                SOL_SOCKET, SO_MARK, &param->routing_mark, sizeof(int))) {
+            return -1;
+        }
+    }
+#endif
+
+    return 0;
 }
 
 /*  Construct a probe packet based on the probe parameters  */
@@ -255,55 +375,40 @@ int construct_packet(
     const struct sockaddr_storage *dest_sockaddr,
     const struct probe_param_t *param)
 {
-    int err;
     int packet_size;
     struct sockaddr_storage src_sockaddr;
 
     packet_size = compute_packet_size(net_state, param);
     if (packet_size < 0) {
-        return packet_size;
+        return -1;
     }
 
     if (packet_buffer_size < packet_size) {
-        return -EINVAL;
+        errno = EINVAL;
+        return -1;
     }
 
-    err = find_source_addr(&src_sockaddr, dest_sockaddr);
-    if (err) {
-        return err;
+    if (find_source_addr(&src_sockaddr, dest_sockaddr)) {
+        return -1;
     }
 
-    memset(packet_buffer, 0, packet_size);
+    memset(packet_buffer, param->bit_pattern, packet_size);
 
-    err = 0;
     if (param->ip_version == 6) {
-        if (param->protocol == IPPROTO_ICMP) {
-            err = construct_icmp6_packet(
-                net_state, packet_buffer, packet_size, param);
-        } else if (param->protocol == IPPROTO_UDP) {
-            err = construct_udp6_packet(
-                net_state, packet_buffer, packet_size, param);
-        } else {
-            return -EINVAL;
+        if (construct_ip6_packet(
+                net_state, packet_buffer, packet_size,
+                &src_sockaddr, dest_sockaddr, param)) {
+            return -1;
+        }
+    } else if (param->ip_version == 4) {
+        if (construct_ip4_packet(
+                net_state, packet_buffer, packet_size,
+                &src_sockaddr, dest_sockaddr, param)) {
+            return -1;
         }
     } else {
-        construct_ip4_header(
-            net_state, packet_buffer, packet_size,
-            &src_sockaddr, dest_sockaddr, param);
-
-        if (param->protocol == IPPROTO_ICMP) {
-            construct_icmp4_header(
-                net_state, packet_buffer, packet_size, param);
-        } else if (param->protocol == IPPROTO_UDP) {
-            construct_udp4_header(
-                net_state, packet_buffer, packet_size, param);
-        } else {
-            return -EINVAL;
-        }
-    }
-
-    if (err) {
-        return err;
+        errno = EINVAL;
+        return -1;
     }
 
     return packet_size;

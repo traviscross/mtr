@@ -134,14 +134,16 @@ void init_command_buffer(
 }
 
 /*
-    Return EPIPE if the command stream has been closed.  Otherwise, not much
-    to do for Cygwin, since we are using Overlapped I/O to read commands.
+    Return with errno EPIPE if the command stream has been closed.
+    Otherwise, not much to do for Cygwin, since we are using Overlapped I/O
+    to read commands.
 */
 int read_commands(
     struct command_buffer_t *buffer)
 {
     if (!buffer->platform.pipe_open) {
-        return EPIPE;
+        errno = EPIPE;
+        return -1;
     }
 
     return 0;

@@ -60,6 +60,16 @@ bool is_protocol_supported(
     return false;
 }
 
+/*  Free the reply buffer when the probe is freed  */
+void platform_free_probe(
+    struct probe_t *probe)
+{
+    if (probe->platform.reply4) {
+        free(probe->platform.reply4);
+        probe->platform.reply4 = NULL;
+    }
+}
+
 /*
     The overlapped I/O style completion routine to be called by
     Windows during an altertable wait when an ICMP probe has
@@ -84,7 +94,7 @@ void WINAPI on_icmp_reply(
     ICMPV6_ECHO_REPLY *reply6;
 
     if (probe->platform.ip_version == 6) {
-        reply6 = &probe->platform.reply6;
+        reply6 = probe->platform.reply6;
         reply_count = Icmp6ParseReplies(reply6, sizeof(ICMPV6_ECHO_REPLY));
 
         if (reply_count > 0) {
@@ -103,7 +113,7 @@ void WINAPI on_icmp_reply(
             remote_addr6->sin6_scope_id = 0;
         }
     } else {
-        reply4 = &probe->platform.reply4;
+        reply4 = probe->platform.reply4;
         reply_count = IcmpParseReplies(reply4, sizeof(ICMP_ECHO_REPLY));
 
         if (reply_count > 0) {
@@ -150,25 +160,24 @@ void WINAPI on_icmp_reply(
     }
 }
 
-/*  Send a new probe using ICMP.DLL's send echo mechanism  */
-void send_probe(
+/*  Use ICMP.DLL's send echo support to send a probe  */
+static
+void icmp_send_probe(
     struct net_state_t *net_state,
-    const struct probe_param_t *param)
+    struct probe_t *probe,
+    const struct probe_param_t *param,
+    struct sockaddr_storage *src_sockaddr,
+    struct sockaddr_storage *dest_sockaddr,
+    char *payload,
+    int payload_size)
 {
     IP_OPTION_INFORMATION option;
-    DWORD send_result;
     DWORD timeout;
-    struct probe_t *probe;
-    struct sockaddr_storage dest_sockaddr;
-    struct sockaddr_storage src_sockaddr;
+    DWORD send_result;
+    int reply_size;
     struct sockaddr_in *dest_sockaddr4;
     struct sockaddr_in6 *src_sockaddr6;
     struct sockaddr_in6 *dest_sockaddr6;
-
-    if (decode_dest_addr(param, &dest_sockaddr)) {
-        printf("%d invalid-argument\n", param->command_token);
-        return;
-    }
 
     if (param->timeout > 0) {
         timeout = 1000 * param->timeout;
@@ -179,6 +188,102 @@ void send_probe(
             to 1 millisecond.
         */
         timeout = 1;
+    }
+
+    memset(&option, 0, sizeof(IP_OPTION_INFORMATION32));
+    option.Ttl = param->ttl;
+
+    if (param->ip_version == 6) {
+        reply_size = sizeof(ICMPV6_ECHO_REPLY) + payload_size;
+    } else {
+        reply_size = sizeof(ICMP_ECHO_REPLY32) + payload_size;
+    }
+
+    probe->platform.reply4 = malloc(reply_size);
+    if (probe->platform.reply4 == NULL) {
+        perror("failure to allocate reply buffer");
+        exit(1);
+    }
+
+    if (param->ip_version == 6) {
+        src_sockaddr6 = (struct sockaddr_in6 *)src_sockaddr;
+        dest_sockaddr6 = (struct sockaddr_in6 *)dest_sockaddr;
+
+        send_result = Icmp6SendEcho2(
+            net_state->platform.icmp6, NULL,
+            (FARPROC)on_icmp_reply, probe,
+            src_sockaddr6, dest_sockaddr6, payload, payload_size, &option,
+            probe->platform.reply6, reply_size, timeout);
+    } else {
+        dest_sockaddr4 = (struct sockaddr_in *)dest_sockaddr;
+
+        send_result = IcmpSendEcho2(
+            net_state->platform.icmp4, NULL,
+            (FARPROC)on_icmp_reply, probe,
+            dest_sockaddr4->sin_addr.s_addr, payload, payload_size, &option,
+            probe->platform.reply4, reply_size, timeout);
+    }
+
+    if (send_result == 0) {
+        /*
+            ERROR_IO_PENDING is expected for asynchronous probes,
+            but any other error is unexpected.
+        */
+        if (GetLastError() != ERROR_IO_PENDING) {
+            fprintf(stderr, "IcmpSendEcho2 failure %d\n", GetLastError());
+            exit(1);
+        }
+    }
+}
+
+/*  Fill the payload of the packet as specified by the probe parameters  */
+static
+int fill_payload(
+    const struct probe_param_t *param,
+    char *payload,
+    int payload_buffer_size)
+{
+    int ip_icmp_size;
+    int payload_size;
+
+    if (param->ip_version == 6) {
+        ip_icmp_size = sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
+    } else if (param->ip_version == 4) {
+        ip_icmp_size = sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    payload_size = param->packet_size - ip_icmp_size;
+    if (payload_size < 0) {
+        payload_size = 0;
+    }
+
+    if (payload_size > payload_buffer_size) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    memset(payload, param->bit_pattern, payload_size);
+
+    return payload_size;
+}
+
+/*  Decode the probe parameters and send a probe  */
+void send_probe(
+    struct net_state_t *net_state,
+    const struct probe_param_t *param)
+{
+    struct probe_t *probe;
+    struct sockaddr_storage dest_sockaddr;
+    struct sockaddr_storage src_sockaddr;
+    char payload[PACKET_BUFFER_SIZE];
+    int payload_size;
+
+    if (decode_dest_addr(param, &dest_sockaddr)) {
+        printf("%d invalid-argument\n", param->command_token);
+        return;
     }
 
     probe = alloc_probe(net_state, param->command_token);
@@ -194,37 +299,15 @@ void send_probe(
 
     probe->platform.ip_version = param->ip_version;
 
-    memset(&option, 0, sizeof(IP_OPTION_INFORMATION32));
-    option.Ttl = param->ttl;
-
-    if (param->ip_version == 6) {
-        src_sockaddr6 = (struct sockaddr_in6 *)&src_sockaddr;
-        dest_sockaddr6 = (struct sockaddr_in6 *)&dest_sockaddr;
-
-        send_result = Icmp6SendEcho2(
-            net_state->platform.icmp6, NULL,
-            (FARPROC)on_icmp_reply, probe,
-            src_sockaddr6, dest_sockaddr6, NULL, 0, &option,
-            &probe->platform.reply6, sizeof(ICMPV6_ECHO_REPLY), timeout);
-    } else {
-        dest_sockaddr4 = (struct sockaddr_in *)&dest_sockaddr;
-        send_result = IcmpSendEcho2(
-            net_state->platform.icmp4, NULL,
-            (FARPROC)on_icmp_reply, probe,
-            dest_sockaddr4->sin_addr.s_addr, NULL, 0, &option,
-            &probe->platform.reply4, sizeof(ICMP_ECHO_REPLY), timeout);
+    payload_size = fill_payload(param, payload, PACKET_BUFFER_SIZE);
+    if (payload_size < 0) {
+        perror("Error construction packet");
+        exit(1);
     }
 
-    if (send_result == 0) {
-        /*
-            ERROR_IO_PENDING is expected for asynchronous probes,
-            but any other error is unexpected.
-        */
-        if (GetLastError() != ERROR_IO_PENDING) {
-            fprintf(stderr, "IcmpSendEcho2 failure %d\n", GetLastError());
-            exit(1);
-        }
-    }
+    icmp_send_probe(
+        net_state, probe, param,
+        &src_sockaddr, &dest_sockaddr, payload, payload_size);
 }
 
 /*

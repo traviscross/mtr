@@ -86,14 +86,16 @@ int parse_command(
     /*  Tokenize the string using whitespace  */
     token_count = tokenize_command(tokens, max_tokens, command_string);
     if (token_count < 2) {
-        return EINVAL;
+        errno = EINVAL;
+        return -1;
     }
 
     /*  Expect the command token to be a numerical value  */
     errno = 0;
     command->token = strtol(tokens[0], NULL, 10);
     if (errno) {
-        return EINVAL;
+        errno = EINVAL;
+        return -1;
     }
     command->command_name = tokens[1];
 
@@ -106,12 +108,14 @@ int parse_command(
     while (i < token_count) {
         /*  It's an error if we get a name without a key  */
         if (i + 1 >= token_count) {
-            return EINVAL;
+            errno = EINVAL;
+            return -1;
         }
 
         /*  It's an error if we get more arguments than we have space for  */
         if (command->argument_count >= MAX_COMMAND_ARGUMENTS) {
-            return EINVAL;
+            errno = EINVAL;
+            return -1;
         }
 
         command->argument_name[command->argument_count] = tokens[i];

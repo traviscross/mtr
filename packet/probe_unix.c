@@ -32,9 +32,6 @@
 #include "deconstruct_unix.h"
 #include "timeval.h"
 
-/*  Use the "jumbo" frame size as the max packet size  */
-#define PACKET_BUFFER_SIZE 9000
-
 /*  A wrapper around sendto for mixed IPv4 and IPv6 sending  */
 static
 int send_packet(
@@ -109,7 +106,6 @@ void check_length_order(
     packet_size = construct_packet(
         net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
     if (packet_size < 0) {
-        errno = -packet_size;
         perror("Unable to send to localhost");
         exit(1);
     }
@@ -126,7 +122,6 @@ void check_length_order(
     packet_size = construct_packet(
         net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
     if (packet_size < 0) {
-        errno = -packet_size;
         perror("Unable to send to localhost");
         exit(1);
     }
@@ -275,6 +270,24 @@ bool is_protocol_supported(
     return false;
 }
 
+/*  Report an error during send_probe based on the errno value  */
+static
+void report_packet_error(
+    const struct probe_param_t *param)
+{
+    if (errno == EINVAL) {
+        printf("%d invalid-argument\n", param->command_token);
+    } else if (errno == ENETDOWN) {
+        printf("%d network-down\n", param->command_token);
+    } else if (errno == ENETUNREACH) {
+        printf("%d no-route\n", param->command_token);
+    } else if (errno == EPERM) {
+        printf("%d permission-denied\n", param->command_token);
+    } else {
+        printf("%d unexpected-error errno %d\n", param->command_token, errno);
+    }
+}
+
 /*  Craft a custom ICMP packet for a network probe.  */
 void send_probe(
     struct net_state_t *net_state,
@@ -293,17 +306,7 @@ void send_probe(
     packet_size = construct_packet(
         net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, param);
     if (packet_size < 0) {
-        if (packet_size == -EINVAL) {
-            printf("%d invalid-argument\n", param->command_token);
-        } else if (packet_size == -ENETDOWN) {
-            printf("%d network-down\n", param->command_token);
-        } else if (packet_size == -ENETUNREACH) {
-            printf("%d no-route\n", param->command_token);
-        } else {
-            errno = -packet_size;
-            perror("Failure constructing packet");
-            exit(1);
-        }
+        report_packet_error(param);
         return;
     }
 
@@ -325,17 +328,7 @@ void send_probe(
     if (send_packet(
             net_state, param, packet, packet_size, &dest_sockaddr) == -1) {
 
-        if (errno == ENETDOWN) {
-            printf("%d network-down\n", param->command_token);
-        } else if (errno == ENETUNREACH) {
-            printf("%d no-route\n", param->command_token);
-        } else if (errno == EINVAL) {
-            printf("%d invalid-argument\n", param->command_token);
-        } else {
-            perror("Failure sending probe");
-            exit(1);
-        }
-
+        report_packet_error(param);
         free_probe(probe);
         return;
     }
@@ -344,10 +337,17 @@ void send_probe(
     probe->platform.timeout_time.tv_sec += param->timeout;
 }
 
+/*  Nothing is needed for freeing Unix probes  */
+void platform_free_probe(
+    struct probe_t *probe)
+{
+}
+
 /*
     Read all available packets through our receiving raw socket, and
     handle any responses to probes we have preivously sent.
 */
+static
 void receive_replies_from_socket(
     struct net_state_t *net_state,
     int socket,

@@ -68,7 +68,8 @@ int read_commands(
     /*  If the command stream has been closed, read will return zero.  */
     if (read_count == 0)
     {
-        return EPIPE;
+        errno = EPIPE;
+        return -1;
     }
 
     if (read_count > 0) {

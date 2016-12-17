@@ -97,6 +97,12 @@ const char *check_support(
         return check_protocol_support(net_state, IPPROTO_UDP);
     }
 
+#ifdef SO_MARK
+    if (!strcmp(feature, "mark")) {
+        return "ok";
+    }
+#endif
+
     return "no";
 }
 
@@ -162,6 +168,38 @@ bool decode_probe_argument(
         }
     }
 
+    /*  The "type of service" field for the IP header  */
+    if (!strcmp(name, "tos")) {
+        param->type_of_service = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
+    }
+
+    /*  The Linux packet mark for mark-based routing  */
+    if (!strcmp(name, "mark")) {
+        param->routing_mark = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
+    }
+
+    /*  The size of the packet (including headers)  */
+    if (!strcmp(name, "size")) {
+        param->packet_size = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
+    }
+
+    /*  The packet's bytes will be filled with this value  */
+    if (!strcmp(name, "bitpattern")) {
+        param->bit_pattern = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
+    }
+
     /*  Time-to-live values  */
     if (!strcmp(name, "ttl")) {
         param->ttl = strtol(value, &endstr, 10);
@@ -198,6 +236,7 @@ void send_probe_command(
     param.protocol = IPPROTO_ICMP;
     param.dest_port = 7; /* Use the 'echo' port as the default destination */
     param.ttl = 255;
+    param.packet_size = 128;
     param.timeout = 10;
 
     for (i = 0; i < command->argument_count; i++) {

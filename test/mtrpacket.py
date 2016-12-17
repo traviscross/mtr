@@ -21,6 +21,7 @@
 import fcntl
 import os
 import select
+import socket
 import subprocess
 import sys
 import time
@@ -35,6 +36,9 @@ try:
     from typing import Dict, List
 except ImportError:
     pass
+
+
+IPV6_TEST_HOST = 'google-public-dns-a.google.com'
 
 
 class MtrPacketExecuteError(Exception):
@@ -60,6 +64,12 @@ class MtrPacketReplyParseError(Exception):
     pass
 
 
+class PacketListenError(Exception):
+    'Exception raised when we have unexpected results from mtr-packet-listen'
+
+    pass
+
+
 def set_nonblocking(file_descriptor):  # type: (int) -> None
     'Put a file descriptor into non-blocking mode'
 
@@ -67,6 +77,39 @@ def set_nonblocking(file_descriptor):  # type: (int) -> None
 
     # pylint: disable=locally-disabled, no-member
     fcntl.fcntl(file_descriptor, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+
+def check_for_local_ipv6():
+    '''Check for IPv6 support on the test host, to see if we should skip
+    the IPv6 tests'''
+
+    addrinfo = socket.getaddrinfo(IPV6_TEST_HOST, 1, socket.AF_INET6)
+    if len(addrinfo):
+        addr = addrinfo[0][4]
+
+    #  Create a UDP socket and check to see it can be connected to
+    #  IPV6_TEST_HOST.  (Connecting UDP requires no packets sent, just
+    #  a route present.)
+    sock = socket.socket(
+        socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+
+    connect_success = False
+    try:
+        sock.connect(addr)
+        connect_success = True
+    except socket.error:
+        pass
+
+    sock.close()
+
+    if not connect_success:
+        sys.stderr.write(
+            'This host has no IPv6.  Skipping IPv6 tests.\n')
+
+    return connect_success
+
+
+HAVE_IPV6 = check_for_local_ipv6()
 
 
 # pylint: disable=locally-disabled, too-few-public-methods
@@ -101,6 +144,76 @@ class MtrPacketReply(object):
 
             self.argument[name] = value
             i += 2
+
+
+class PacketListen(object):
+    'A test process which listens for a single packet'
+
+    def __init__(self, *args):
+        self.process_args = list(args)  # type: List[unicode]
+        self.listen_process = None  # type: subprocess.Popen
+        self.token = None  # type: unicode
+        self.attrib = None  # type: Dict[unicode, unicode]
+
+    def __enter__(self):
+        try:
+            self.listen_process = subprocess.Popen(
+                ['./mtr-packet-listen'] + self.process_args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE)
+        except OSError:
+            raise PacketListenError('unable to launch mtr-packet-listen')
+
+        status = self.listen_process.stdout.readline().decode('utf-8')
+        if status != 'status listening\n':
+            raise PacketListenError('unexpected status')
+
+        self.token = str(self.listen_process.pid)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.wait_for_exit()
+
+        self.attrib = {}
+        for line in self.listen_process.stdout.readlines():
+            tokens = line.decode('utf-8').split()
+
+            if len(tokens) >= 2:
+                name = tokens[0]
+                value = tokens[1]
+
+                self.attrib[name] = value
+
+        self.listen_process.stdin.close()
+        self.listen_process.stdout.close()
+
+    def wait_for_exit(self):
+        '''Poll the subprocess for up to ten seconds, until it exits.
+
+        We need to wait for its exit to ensure we are able to read its
+        output.'''
+
+        wait_time = 10
+        wait_step = 0.1
+
+        steps = int(wait_time / wait_step)
+
+        exit_value = None
+
+        # pylint: disable=locally-disabled, unused-variable
+        for i in range(steps):
+            exit_value = self.listen_process.poll()
+            if exit_value is not None:
+                break
+
+            time.sleep(wait_step)
+
+        if exit_value is None:
+            raise PacketListenError('mtr-packet-listen timeout')
+
+        if exit_value != 0:
+            raise PacketListenError('mtr-packet-listen unexpected error')
 
 
 class MtrPacketTest(unittest.TestCase):

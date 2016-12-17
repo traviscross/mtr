@@ -44,14 +44,16 @@ int decode_dest_addr(
     struct sockaddr_in6 *sockaddr6;
 
     if (param->address == NULL) {
-        return EINVAL;
+        errno = EINVAL;
+        return -1;
     }
 
     if (param->ip_version == 6) {
         sockaddr6 = (struct sockaddr_in6 *)dest_sockaddr;
 
         if (inet_pton(AF_INET6, param->address, &dest_addr6) != 1) {
-            return EINVAL;
+            errno = EINVAL;
+            return -1;
         }
 
         sockaddr6->sin6_family = AF_INET6;
@@ -63,14 +65,16 @@ int decode_dest_addr(
         sockaddr4 = (struct sockaddr_in *)dest_sockaddr;
 
         if (inet_pton(AF_INET, param->address, &dest_addr4) != 1) {
-            return EINVAL;
+            errno = EINVAL;
+            return -1;
         }
 
         sockaddr4->sin_family = AF_INET;
         sockaddr4->sin_port = 0;
         sockaddr4->sin_addr = dest_addr4;
     } else {
-        return EINVAL;
+        errno = EINVAL;
+        return -1;
     }
 
     return 0;
@@ -104,6 +108,8 @@ struct probe_t *alloc_probe(
 void free_probe(
     struct probe_t *probe)
 {
+    platform_free_probe(probe);
+
     probe->used = false;
 }
 
@@ -261,17 +267,17 @@ int find_source_addr(
 
     sock = socket(destaddr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == -1) {
-        return -errno;
+        return -1;
     }
 
     if (connect(sock, (struct sockaddr *)&dest_with_port, len)) {
         close(sock);
-        return -errno;
+        return -1;
     }
 
     if (getsockname(sock, (struct sockaddr *)srcaddr, &len)) {
         close(sock);
-        return -errno;
+        return -1;
     }
 
     close(sock);

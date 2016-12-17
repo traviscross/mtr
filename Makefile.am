@@ -7,6 +7,7 @@ EXTRA_DIST = \
 sbin_PROGRAMS = mtr mtr-packet
 TESTS = \
 	test/cmdparse.py \
+	test/param.py \
 	test/probe.py
 
 TEST_FILES = \
@@ -19,16 +20,18 @@ EXTRA_DIST += $(TEST_FILES)
 PATHFILES =
 CLEANFILES = $(PATHFILES)
 EXTRA_DIST += $(PATHFILES:=.in)
-edit_cmd = sed \
-	-e 's|@VERSION[@]|$(VERSION)|g'
 
-%.8: $(srcdir)/%.8.in
-	@ rm -f $@ $@.tmp
-	$(AM_V_at) $(MKDIR_P) $$(dirname $@)
-	$(AM_V_GEN) srcdir=''; \
-		test -f ./$@.in || srcdir=$(srcdir)/; \
-		$(edit_cmd) $${srcdir}$@.in >$@.tmp
-	@ mv $@.tmp $@
+#
+#  We would use % pattern matching here, but that is a GNU make
+#  extension and doesn't work on FreeBSD.
+#
+mtr-packet.8: $(srcdir)/mtr-packet.8.in
+	$(AM_V_GEN) $(srcdir)/mangen.sh "$(VERSION)" \
+		$(srcdir)/mtr-packet.8.in $@
+
+mtr.8: $(srcdir)/mtr.8.in
+	$(AM_V_GEN) $(srcdir)/mangen.sh "$(VERSION)" \
+		$(srcdir)/mtr.8.in $@
 
 $(PATHFILES): Makefile
 
@@ -128,12 +131,17 @@ dist-windows-bin: distdir-win
 
 else  # if CYGWIN
 
+check_PROGRAMS = mtr-packet-listen
+
 mtr_packet_SOURCES += \
 	packet/command_unix.c packet/command_unix.h \
 	packet/construct_unix.c packet/construct_unix.h \
 	packet/deconstruct_unix.c packet/deconstruct_unix.h \
 	packet/probe_unix.c packet/probe_unix.h \
 	packet/wait_unix.c
+
+mtr_packet_listen_SOURCES = \
+	test/packet_listen.c
 
 endif  # if CYGWIN
 

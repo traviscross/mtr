@@ -20,14 +20,10 @@
 '''Test sending probes and receiving respones.'''
 
 import socket
-import sys
 import time
 import unittest
 
 import mtrpacket
-
-
-IPV6_TEST_HOST = 'google-public-dns-a.google.com'
 
 
 def resolve_ipv6_address(hostname):  # type: (str) -> str
@@ -44,39 +40,6 @@ def resolve_ipv6_address(hostname):  # type: (str) -> str
             return address
 
     raise LookupError(hostname)
-
-
-def check_for_local_ipv6():
-    '''Check for IPv6 support on the test host, to see if we should skip
-    the IPv6 tests'''
-
-    addrinfo = socket.getaddrinfo(IPV6_TEST_HOST, 1, socket.AF_INET6)
-    if len(addrinfo):
-        addr = addrinfo[0][4]
-
-    #  Create a UDP socket and check to see it can be connected to
-    #  IPV6_TEST_HOST.  (Connecting UDP requires no packets sent, just
-    #  a route present.)
-    sock = socket.socket(
-        socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-
-    connect_success = False
-    try:
-        sock.connect(addr)
-        connect_success = True
-    except socket.error:
-        pass
-
-    sock.close()
-
-    if not connect_success:
-        sys.stderr.write(
-            'This host has no IPv6.  Skipping IPv6 tests.\n')
-
-    return connect_success
-
-
-HAVE_IPV6 = check_for_local_ipv6()
 
 
 class TestProbeICMPv4(mtrpacket.MtrPacketTest):
@@ -230,13 +193,13 @@ class TestProbeICMPv6(mtrpacket.MtrPacketTest):
     '''Test sending probes using IP version 6'''
 
     def __init__(self, *args):
-        google_addr = resolve_ipv6_address(IPV6_TEST_HOST)
+        google_addr = resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
 
         self.google_addr = google_addr  # type: str
 
         super(TestProbeICMPv6, self).__init__(*args)
 
-    @unittest.skipUnless(HAVE_IPV6, 'No IPv6')
+    @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_probe(self):
         "Test a probe to Google's public DNS server"
 
@@ -258,7 +221,7 @@ class TestProbeICMPv6(mtrpacket.MtrPacketTest):
         self.assertIn('round-trip-time', reply.argument)
         self.assertEqual(reply.argument['ip-6'], '::1')
 
-    @unittest.skipUnless(HAVE_IPV6, 'No IPv6')
+    @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_ttl_expired(self):
         'Test sending a probe which will have its time-to-live expire'
 
@@ -292,11 +255,11 @@ class TestProbeUDP(mtrpacket.MtrPacketTest):
         self.assertIn('ip-4', reply.argument)
         self.assertEqual(reply.argument['ip-4'], '127.0.0.1')
 
-    @unittest.skipUnless(HAVE_IPV6, 'No IPv6')
+    @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_udp_v6(self):
         'Test IPv6 UDP probes'
 
-        test_addr = resolve_ipv6_address(IPV6_TEST_HOST)
+        test_addr = resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
 
         cmd = '62 send-probe protocol udp ip-6 ' + test_addr + \
             ' port 164 ttl 1'

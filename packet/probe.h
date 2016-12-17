@@ -33,6 +33,9 @@
 
 #define MAX_PROBES 1024
 
+/*  Use the "jumbo" frame size as the max packet size  */
+#define PACKET_BUFFER_SIZE 9000
+
 /*  Parameters for sending a new probe  */
 struct probe_param_t
 {
@@ -51,8 +54,20 @@ struct probe_param_t
     /*  The destination port for non-ICMP probes  */
     int dest_port;
 
+    /*  The "type of service" field in the IP header  */
+    int type_of_service;
+
+    /*  The packet "mark" used for mark-based routing on Linux  */
+    int routing_mark;
+
     /*  Time to live for the transmited probe  */
     int ttl;
+
+    /*  The packet size (in bytes) including protocol headers  */
+    int packet_size;
+
+    /*  The value with which to fill the bytes of the packet.  */
+    int bit_pattern;
 
     /*  The number of seconds to wait before assuming the probe was lost  */
     int timeout;
@@ -118,6 +133,9 @@ int decode_dest_addr(
 struct probe_t *alloc_probe(
     struct net_state_t *net_state,
     int token);
+
+void platform_free_probe(
+    struct probe_t *probe);
 
 void free_probe(
     struct probe_t *probe);

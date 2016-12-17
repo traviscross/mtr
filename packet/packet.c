@@ -40,7 +40,6 @@ int main(
     char **argv)
 {
     bool command_pipe_open;
-    int err;
     struct command_buffer_t command_buffer;
     struct net_state_t net_state;
 
@@ -73,10 +72,11 @@ int main(
         receive_replies(&net_state);
 
         if (command_pipe_open) {
-            err = read_commands(&command_buffer);
-            if (err == EPIPE)
-            {
-                command_pipe_open = false;
+            if (read_commands(&command_buffer)) {
+                if (errno == EPIPE)
+                {
+                    command_pipe_open = false;
+                }
             }
         }
 

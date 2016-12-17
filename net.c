@@ -192,15 +192,10 @@ static int new_sequence(struct mtr_ctl *ctl, int index)
   return seq;
 }
 
-/*  Attempt to find the host at a particular number of hops away  */
-static void net_send_query(struct mtr_ctl *ctl, int index)
+static void net_construct_base_command(
+  struct mtr_ctl *ctl, char *command, int buffer_size, int command_token)
 {
-  int seq = new_sequence(ctl, index);
-  int time_to_live = index + 1;
   char ip_string[INET6_ADDRSTRLEN];
-  char command[COMMAND_BUFFER_SIZE];
-  char argument[COMMAND_BUFFER_SIZE];
-  int remaining_size;
   const char *ip_type;
   const char *protocol = NULL;
 
@@ -228,16 +223,56 @@ static void net_send_query(struct mtr_ctl *ctl, int index)
   }
 
   snprintf(
-    command, COMMAND_BUFFER_SIZE,
-    "%d send-probe %s %s protocol %s ttl %d",
-    seq, ip_type, ip_string, protocol, time_to_live);
+    command, buffer_size,
+    "%d send-probe %s %s protocol %s",
+    command_token, ip_type, ip_string, protocol);
+}
+
+static void net_append_command_argument(
+  char *command, int buffer_size, char *name, int value)
+{
+  char argument[COMMAND_BUFFER_SIZE];
+  int remaining_size;
+
+  remaining_size = buffer_size - strlen(command) - 1;
+
+  snprintf(argument, buffer_size, " %s %d", name, value);
+  strncat(command, argument, remaining_size);
+}
+
+/*  Attempt to find the host at a particular number of hops away  */
+static void net_send_query(struct mtr_ctl *ctl, int index, int packet_size)
+{
+  int seq = new_sequence(ctl, index);
+  int time_to_live = index + 1;
+  char command[COMMAND_BUFFER_SIZE];
+  int remaining_size;
+
+  net_construct_base_command(ctl, command, COMMAND_BUFFER_SIZE, seq);
+
+  net_append_command_argument(
+    command, COMMAND_BUFFER_SIZE, "size", packet_size);
+
+  net_append_command_argument(
+    command, COMMAND_BUFFER_SIZE, "bitpattern", ctl->bitpattern);
+
+  net_append_command_argument(
+    command, COMMAND_BUFFER_SIZE, "tos", ctl->tos);
+
+  net_append_command_argument(
+    command, COMMAND_BUFFER_SIZE, "ttl", time_to_live);
 
   if (ctl->remoteport) {
-    remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
-
-    snprintf(argument, COMMAND_BUFFER_SIZE, " port %d", ctl->remoteport);
-    strncat(command, argument, remaining_size);
+    net_append_command_argument(
+      command, COMMAND_BUFFER_SIZE, "port", ctl->remoteport);
   }
+
+#ifdef SO_MARK
+  if (ctl->mark) {
+    net_append_command_argument(
+      command, COMMAND_BUFFER_SIZE, "mark", ctl->mark);
+  }
+#endif
 
   remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
   strncat(command, "\n", remaining_size);
@@ -430,6 +465,16 @@ static void net_handle_command_reply_errors(
   if (!strcmp(reply_name, "invalid-argument")) {
     display_close(ctl);
     error(EXIT_FAILURE, 0, "mtr-packet reported invalid argument");
+  }
+
+  if (!strcmp(reply_name, "permission-denied")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "Permission denied");
+  }
+
+  if (!strcmp(reply_name, "unexpected-error")) {
+    display_close(ctl);
+    error(EXIT_FAILURE, 0, "Unexpected mtr-packet error");
   }
 }
 
@@ -790,7 +835,7 @@ extern int net_send_batch(struct mtr_ctl *ctl)
     }
   }
 
-  net_send_query(ctl, batch_at);
+  net_send_query(ctl, batch_at, abs(packetsize));
 
   for (i=ctl->fstTTL-1;i<batch_at;i++) {
     if ( addrcmp( (void *) &(host[i].addr), (void *) &ctl->unspec_addr, ctl->af ) == 0 )
@@ -855,7 +900,6 @@ static int net_synchronous_command(
   int command_length;
   int write_length;
   int read_length;
-  int parse_result;
 
   /*  Query send-probe support  */
   command_length = strlen(cmd);
@@ -881,9 +925,7 @@ static int net_synchronous_command(
 
   /*  Parse the query reply  */
   reply[read_length] = 0;
-  parse_result = parse_command(result, reply);
-  if (parse_result) {
-    errno = parse_result;
+  if (parse_command(result, reply)) {
     return -1;
   }
 
@@ -928,13 +970,27 @@ static int net_check_feature(struct mtr_ctl *ctl, const char *feature)
 static int net_packet_feature_check(struct mtr_ctl *ctl)
 {
   if (ctl->mtrtype == IPPROTO_ICMP) {
-    return net_check_feature(ctl, "icmp");
+    if (net_check_feature(ctl, "icmp")) {
+      return -1;
+    }
   } else if (ctl->mtrtype == IPPROTO_UDP) {
-    return net_check_feature(ctl, "udp");
+    if (net_check_feature(ctl, "udp")) {
+      return -1;
+    }
   } else {
     errno = EINVAL;
     return -1;
   }
+
+#ifdef SO_MARK
+  if (ctl->mark) {
+    if (net_check_feature(ctl, "mark")) {
+      return -1;
+    }
+  }
+#endif
+
+  return 0;
 }
 
 
