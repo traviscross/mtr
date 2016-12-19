@@ -102,7 +102,9 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs("\n", out);
   fputs(" -F, --filename FILE        read hostname(s) from a file\n", out);
   fputs(" -4                         use IPv4 only\n", out);
+#ifdef ENABLE_IPV6
   fputs(" -6                         use IPv6 only\n", out);
+#endif
   fputs(" -u, --udp                  use udp instead of icmp echo\n", out);
   fputs(" -T, --tcp                  use tcp instead of icmp echo\n", out);
   fputs(" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n", out);
@@ -118,7 +120,9 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
   fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
+#ifdef SO_MARK
   fputs(" -M, --mark MARK            mark each sent packet\n", out);
+#endif
   fputs(" -r, --report               output using report mode\n", out);
   fputs(" -w, --report-wide          output wide report\n", out);
   fputs(" -c, --report-cycles COUNT  set the number of pings sent\n", out);
@@ -326,7 +330,9 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
 	{ "max-unknown",    1, NULL, 'U' },
     { "udp",            0, NULL, 'u' }, /* UDP (default is ICMP) */
     { "tcp",            0, NULL, 'T' }, /* TCP (default is ICMP) */
+#ifdef HAS_SCTP
     { "sctp",           0, NULL, 'S' }, /* SCTP (default is ICMP) */
+#endif
     { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
     { "localport",      1, NULL, 'L' }, /* source port number for UDP */
     { "timeout",        1, NULL, 'Z' }, /* timeout for TCP sockets */
@@ -508,8 +514,8 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
       }
       ctl->mtrtype = IPPROTO_TCP;
       break;
-    case 'S':
 #ifdef HAS_SCTP
+    case 'S':
       if (ctl->mtrtype != IPPROTO_ICMP) {
         error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
@@ -517,10 +523,8 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
         ctl->remoteport = 80;
       }
       ctl->mtrtype = IPPROTO_SCTP;
-#else
-      error(EXIT_FAILURE, 0, "No SCTP support found at compiletime");
-#endif
       break;
+#endif
     case 'b':
       ctl->show_ips = 1;
       break;
@@ -543,12 +547,9 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
     case '4':
       ctl->af = AF_INET;
       break;
-    case '6':
 #ifdef ENABLE_IPV6
+    case '6':
       ctl->af = AF_INET6;
-      break;
-#else
-      error(EXIT_FAILURE, 0, "IPv6 not enabled");
       break;
 #endif
 #ifdef HAVE_IPINFO
@@ -561,19 +562,10 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
     case 'z':
       ctl->ipinfo_no = 0;
       break;
-#else
-    case 'y':
-    case 'z':
-      error(EXIT_FAILURE, 0, "IPINFO not enabled");
-      break;
 #endif
 #ifdef SO_MARK
     case 'M':
       ctl->mark = strtonum_or_err(optarg, "invalid argument", STRTO_U32INT);
-      break;
-#else
-    case 'M':
-      error(EXIT_FAILURE, 0, "SO_MARK not enabled");
       break;
 #endif
     default:
