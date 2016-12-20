@@ -33,7 +33,7 @@ class TestParameters(mtrpacket.MtrPacketTest):
         'Test probes sent with an explicit packet size'
 
         with mtrpacket.PacketListen('-4') as listen:
-            cmd = listen.token + ' send-probe ip-4 127.0.0.1 size 512'
+            cmd = '20 send-probe ip-4 127.0.0.1 size 512'
 
             self.write_command(cmd)
 
@@ -43,7 +43,7 @@ class TestParameters(mtrpacket.MtrPacketTest):
         'Test probes are filled with the requested bit pattern'
 
         with mtrpacket.PacketListen('-4') as listen:
-            cmd = listen.token + ' send-probe ip-4 127.0.0.1 bitpattern 44'
+            cmd = '20 send-probe ip-4 127.0.0.1 bitpattern 44'
 
             self.write_command(cmd)
 
@@ -53,7 +53,7 @@ class TestParameters(mtrpacket.MtrPacketTest):
         'Test setting the TOS field'
 
         with mtrpacket.PacketListen('-4') as listen:
-            cmd = listen.token + ' send-probe ip-4 127.0.0.1 tos 62'
+            cmd = '20 send-probe ip-4 127.0.0.1 tos 62'
 
             self.write_command(cmd)
 
@@ -70,7 +70,7 @@ class TestIPv6Parameters(mtrpacket.MtrPacketTest):
 
         with mtrpacket.PacketListen('-6') as listen:
             param = 'size 256 bitpattern 51 tos 77'
-            cmd = listen.token + ' send-probe ip-6 ::1 ' + param
+            cmd = '20 send-probe ip-6 ::1 ' + param
 
             self.write_command(cmd)
 

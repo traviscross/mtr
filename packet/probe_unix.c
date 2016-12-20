@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "platform.h"
+#include "protocols.h"
 #include "construct_unix.h"
 #include "deconstruct_unix.h"
 #include "timeval.h"
@@ -104,7 +105,8 @@ void check_length_order(
     net_state->platform.ip_length_host_order = false;
 
     packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+        net_state, NULL, MIN_PORT,
+        packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(1);
@@ -120,7 +122,8 @@ void check_length_order(
     net_state->platform.ip_length_host_order = true;
 
     packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+        net_state, NULL, MIN_PORT,
+        packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(1);
@@ -134,8 +137,29 @@ void check_length_order(
     }
 }
 
-/*  Set a socket to non-blocking mode  */
+/*
+    Check to see if SCTP is support.  We can't just rely on checking
+    if IPPROTO_SCTP is defined, because while that is necessary,
+    MacOS as of "Sierra" defines IPPROTO_SCTP, but creating an SCTP
+    socket results in an error.
+*/
 static
+void check_sctp_support(
+    struct net_state_t *net_state)
+{
+    int sctp_socket;
+
+#ifdef IPPROTO_SCTP
+    sctp_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
+    if (sctp_socket != -1) {
+        close(sctp_socket);
+
+        net_state->platform.sctp_support = true;
+    }
+#endif
+}
+
+/*  Set a socket to non-blocking mode  */
 void set_socket_nonblocking(
     int socket)
 {
@@ -237,6 +261,8 @@ void init_net_state_privileged(
 {
     memset(net_state, 0, sizeof(struct net_state_t));
 
+    net_state->platform.next_port = MIN_PORT;
+
     open_ip4_sockets(net_state);
     open_ip6_sockets(net_state);
 }
@@ -252,6 +278,7 @@ void init_net_state(
     set_socket_nonblocking(net_state->platform.ip6_recv_socket);
 
     check_length_order(net_state);
+    check_sctp_support(net_state);
 }
 
 /*  Returns true if we can transmit probes using the specified protocol  */
@@ -267,24 +294,36 @@ bool is_protocol_supported(
         return true;
     }
 
+    if (protocol == IPPROTO_TCP) {
+        return true;
+    }
+
+#ifdef IPPROTO_SCTP
+    if (protocol == IPPROTO_SCTP) {
+        return net_state->platform.sctp_support;
+    }
+#endif
+
     return false;
 }
 
 /*  Report an error during send_probe based on the errno value  */
 static
 void report_packet_error(
-    const struct probe_param_t *param)
+    int command_token)
 {
     if (errno == EINVAL) {
-        printf("%d invalid-argument\n", param->command_token);
+        printf("%d invalid-argument\n", command_token);
     } else if (errno == ENETDOWN) {
-        printf("%d network-down\n", param->command_token);
+        printf("%d network-down\n", command_token);
     } else if (errno == ENETUNREACH) {
-        printf("%d no-route\n", param->command_token);
+        printf("%d no-route\n", command_token);
     } else if (errno == EPERM) {
-        printf("%d permission-denied\n", param->command_token);
+        printf("%d permission-denied\n", command_token);
+    } else if (errno == EADDRINUSE) {
+        printf("%d address-in-use\n", command_token);
     } else {
-        printf("%d unexpected-error errno %d\n", param->command_token, errno);
+        printf("%d unexpected-error errno %d\n", command_token, errno);
     }
 }
 
@@ -294,21 +333,8 @@ void send_probe(
     const struct probe_param_t *param)
 {
     char packet[PACKET_BUFFER_SIZE];
-    struct sockaddr_storage dest_sockaddr;
     struct probe_t *probe;
     int packet_size;
-
-    if (decode_dest_addr(param, &dest_sockaddr)) {
-        printf("%d invalid-argument\n", param->command_token);
-        return;
-    }
-
-    packet_size = construct_packet(
-        net_state, packet, PACKET_BUFFER_SIZE, &dest_sockaddr, param);
-    if (packet_size < 0) {
-        report_packet_error(param);
-        return;
-    }
 
     probe = alloc_probe(net_state, param->command_token);
     if (probe == NULL) {
@@ -316,31 +342,106 @@ void send_probe(
         return;
     }
 
-    /*
-        We get the time just before the send call to keep the timing
-        as tight as possible.
-    */
+    if (decode_dest_addr(param, &probe->remote_addr)) {
+        printf("%d invalid-argument\n", param->command_token);
+        free_probe(probe);
+        return;
+    }
+
     if (gettimeofday(&probe->platform.departure_time, NULL)) {
         perror("gettimeofday failure");
         exit(1);
     }
 
-    if (send_packet(
-            net_state, param, packet, packet_size, &dest_sockaddr) == -1) {
+    packet_size = construct_packet(
+        net_state, &probe->platform.socket, probe->port,
+        packet, PACKET_BUFFER_SIZE, &probe->remote_addr, param);
 
-        report_packet_error(param);
-        free_probe(probe);
+    if (packet_size < 0) {
+        /*
+            When using a stream protocol, FreeBSD will return ECONNREFUSED
+            when connecting to localhost if the port doesn't exist,
+            even if the socket is non-blocking, so we should be
+            prepared for that.
+        */
+        if (errno == ECONNREFUSED) {
+            receive_probe(probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL);
+        } else {
+            report_packet_error(param->command_token);
+            free_probe(probe);
+        }
+
         return;
+    }
+
+    if (packet_size > 0) {
+        if (send_packet(
+                net_state, param,
+                packet, packet_size, &probe->remote_addr) == -1) {
+
+            report_packet_error(param->command_token);
+            free_probe(probe);
+            return;
+        }
     }
 
     probe->platform.timeout_time = probe->platform.departure_time;
     probe->platform.timeout_time.tv_sec += param->timeout;
 }
 
-/*  Nothing is needed for freeing Unix probes  */
+/*  When allocating a probe, assign it a unique port number  */
+void platform_alloc_probe(
+    struct net_state_t *net_state,
+    struct probe_t *probe)
+{
+    probe->port = net_state->platform.next_port++;
+
+    if (net_state->platform.next_port > MAX_PORT) {
+        net_state->platform.next_port = MIN_PORT;
+    }
+}
+
+/*
+    When freeing the probe, close the socket for the probe,
+    if one has been opened
+*/
 void platform_free_probe(
     struct probe_t *probe)
 {
+    if (probe->platform.socket) {
+        close(probe->platform.socket);
+        probe->platform.socket = 0;
+    }
+}
+
+/*
+    Compute the round trip time of a just-received probe and pass it
+    to the platform agnostic response handling.
+*/
+void receive_probe(
+    struct probe_t *probe,
+    int icmp_type,
+    const struct sockaddr_storage *remote_addr,
+    struct timeval *timestamp)
+{
+    unsigned int round_trip_us;
+    struct timeval *departure_time = &probe->platform.departure_time;
+    struct timeval now;
+
+    if (timestamp == NULL) {
+        if (gettimeofday(&now, NULL)) {
+            perror("gettimeofday failure");
+            exit(1);
+        }
+
+        timestamp = &now;
+    }
+
+    round_trip_us =
+        (timestamp->tv_sec - departure_time->tv_sec) * 1000000 +
+        timestamp->tv_usec - departure_time->tv_usec;
+
+    respond_to_probe(probe, icmp_type, remote_addr, round_trip_us);
 }
 
 /*
@@ -348,7 +449,7 @@ void platform_free_probe(
     handle any responses to probes we have preivously sent.
 */
 static
-void receive_replies_from_socket(
+void receive_replies_from_icmp_socket(
     struct net_state_t *net_state,
     int socket,
     received_packet_func_t handle_received_packet)
@@ -397,22 +498,123 @@ void receive_replies_from_socket(
         }
 
         handle_received_packet(
-            net_state, &remote_addr, packet, packet_length, timestamp);
+            net_state, &remote_addr, packet, packet_length, &timestamp);
+    }
+}
+
+/*
+    Attempt to send using the probe's socket, in order to check whether
+    the connection has completed, for stream oriented protocols such as
+    TCP.
+*/
+static
+void receive_replies_from_probe_socket(
+    struct net_state_t *net_state,
+    struct probe_t *probe)
+{
+    int probe_socket;
+    struct timeval zero_time;
+    int err;
+    int err_length = sizeof(int);
+    fd_set write_set;
+
+    probe_socket = probe->platform.socket;
+    if (!probe_socket) {
+        return;
     }
 
+    FD_ZERO(&write_set);
+    FD_SET(probe_socket, &write_set);
+
+    zero_time.tv_sec = 0;
+    zero_time.tv_usec = 0;
+
+    if (select(probe_socket + 1, NULL, &write_set, NULL, &zero_time) == -1) {
+        if (errno == EAGAIN) {
+            return;
+        } else {
+            perror("probe socket select error");
+            exit(1);
+        }
+    }
+
+    /*
+        If the socket is writable, the connection attempt has completed.
+    */
+    if (!FD_ISSET(probe_socket, &write_set)) {
+        return;
+    }
+
+    if (getsockopt(probe_socket, SOL_SOCKET, SO_ERROR, &err, &err_length)) {
+        perror("probe socket SO_ERROR");
+        exit(1);
+    }
+
+    /*
+        If the connection complete successfully, or was refused, we can
+        assume our probe arrived at the destination.
+    */
+    if (!err || err == ECONNREFUSED) {
+        receive_probe(probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL);
+    } else {
+        errno = err;
+        report_packet_error(probe->token);
+        free_probe(probe);
+    }
 }
 
 /*  Check both the IPv4 and IPv6 sockets for incoming packets  */
 void receive_replies(
     struct net_state_t *net_state)
 {
-    receive_replies_from_socket(
+    int i;
+    struct probe_t *probe;
+
+    receive_replies_from_icmp_socket(
         net_state, net_state->platform.ip4_recv_socket,
         handle_received_ip4_packet);
 
-    receive_replies_from_socket(
+    receive_replies_from_icmp_socket(
         net_state, net_state->platform.ip6_recv_socket,
         handle_received_ip6_packet);
+
+    for (i = 0; i < MAX_PROBES; i++) {
+        probe = &net_state->probes[i];
+
+        if (probe->used) {
+            receive_replies_from_probe_socket(net_state, probe);
+        }
+    }
+}
+
+/*
+    Put all of our probe sockets in the read set used for an upcoming
+    select so we can wake when any of them become readable.
+*/
+int gather_probe_sockets(
+    const struct net_state_t *net_state,
+    fd_set *write_set)
+{
+    int i;
+    int probe_socket;
+    int nfds;
+    const struct probe_t *probe;
+
+    nfds = 0;
+
+    for (i = 0; i < MAX_PROBES; i++) {
+        probe = &net_state->probes[i];
+        probe_socket = probe->platform.socket;
+
+        if (probe->used && probe_socket) {
+            FD_SET(probe_socket, write_set);
+            if (probe_socket >= nfds) {
+                nfds = probe_socket + 1;
+            }
+        }
+    }
+
+    return nfds;
 }
 
 /*

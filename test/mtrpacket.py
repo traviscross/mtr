@@ -152,7 +152,6 @@ class PacketListen(object):
     def __init__(self, *args):
         self.process_args = list(args)  # type: List[unicode]
         self.listen_process = None  # type: subprocess.Popen
-        self.token = None  # type: unicode
         self.attrib = None  # type: Dict[unicode, unicode]
 
     def __enter__(self):
@@ -167,8 +166,6 @@ class PacketListen(object):
         status = self.listen_process.stdout.readline().decode('utf-8')
         if status != 'status listening\n':
             raise PacketListenError('unexpected status')
-
-        self.token = str(self.listen_process.pid)
 
         return self
 

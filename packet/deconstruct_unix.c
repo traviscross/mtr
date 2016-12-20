@@ -24,26 +24,6 @@
 #include "protocols.h"
 
 /*
-    Compute the round trip time of a just-received probe and pass it
-    to the platform agnostic response handling.
-*/
-static
-void receive_probe(
-    struct probe_t *probe,
-    int icmp_type,
-    const struct sockaddr_storage *remote_addr,
-    struct timeval timestamp)
-{
-    unsigned int round_trip_us;
-
-    round_trip_us =
-        (timestamp.tv_sec - probe->platform.departure_time.tv_sec) * 1000000 +
-        timestamp.tv_usec - probe->platform.departure_time.tv_usec;
-
-    respond_to_probe(probe, icmp_type, remote_addr, round_trip_us);
-}
-
-/*
     Given an ICMP id + ICMP sequence, find the match probe we've
     transmitted and if found, respond to the command which sent it
 */
@@ -51,7 +31,7 @@ static
 void find_and_receive_probe(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
-    struct timeval timestamp,
+    struct timeval *timestamp,
     int icmp_type,
     int protocol,
     int icmp_id,
@@ -79,14 +59,20 @@ void handle_inner_ip4_packet(
     int icmp_result,
     const struct IPHeader *ip,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const int ip_icmp_size =
         sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
     const int ip_udp_size =
         sizeof(struct IPHeader) + sizeof(struct UDPHeader);
+    const int ip_tcp_size =
+        sizeof(struct IPHeader) + sizeof(struct TCPHeader);
+    const int ip_sctp_size =
+        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
     const struct ICMPHeader *icmp;
     const struct UDPHeader *udp;
+    const struct TCPHeader *tcp;
+    const struct SCTPHeader *sctp;
 
     if (ip->protocol == IPPROTO_ICMP) {
         if (packet_length < ip_icmp_size) {
@@ -108,6 +94,28 @@ void handle_inner_ip4_packet(
         find_and_receive_probe(
             net_state, remote_addr, timestamp, icmp_result,
             IPPROTO_UDP, 0, udp->srcport);
+    } else if (ip->protocol == IPPROTO_TCP) {
+        if (packet_length < ip_tcp_size) {
+            return;
+        }
+
+        tcp = (struct TCPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_TCP, 0, tcp->srcport);
+#ifdef IPPROTO_SCTP
+    } else if (ip->protocol == IPPROTO_SCTP) {
+        if (packet_length < ip_sctp_size) {
+            return;
+        }
+
+        sctp = (struct SCTPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_SCTP, 0, sctp->srcport);
+#endif
     }
 }
 
@@ -122,14 +130,20 @@ void handle_inner_ip6_packet(
     int icmp_result,
     const struct IP6Header *ip,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const int ip_icmp_size =
         sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
     const int ip_udp_size =
         sizeof(struct IP6Header) + sizeof(struct UDPHeader);
+    const int ip_tcp_size =
+        sizeof(struct IP6Header) + sizeof(struct TCPHeader);
+    const int ip_sctp_size =
+        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
     const struct ICMPHeader *icmp;
     const struct UDPHeader *udp;
+    const struct TCPHeader *tcp;
+    const struct SCTPHeader *sctp;
 
     if (ip->protocol == IPPROTO_ICMPV6) {
         if (packet_length < ip_icmp_size) {
@@ -151,6 +165,27 @@ void handle_inner_ip6_packet(
         find_and_receive_probe(
             net_state, remote_addr, timestamp, icmp_result,
             IPPROTO_UDP, 0, udp->srcport);
+    } else if (ip->protocol == IPPROTO_TCP) {
+        if (packet_length < ip_tcp_size) {
+            return;
+        }
+
+        tcp = (struct TCPHeader *)(ip + 1);
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_TCP, 0, tcp->srcport);
+#ifdef IPPROTO_SCTP
+    } else if (ip->protocol == IPPROTO_SCTP) {
+        if (packet_length < ip_sctp_size) {
+            return;
+        }
+
+        sctp = (struct SCTPHeader *)(ip + 1);
+
+        find_and_receive_probe(
+            net_state, remote_addr, timestamp, icmp_result,
+            IPPROTO_SCTP, 0, sctp->srcport);
+#endif
     }
 }
 
@@ -164,7 +199,7 @@ void handle_received_icmp4_packet(
     const struct sockaddr_storage *remote_addr,
     const struct ICMPHeader *icmp,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const int icmp_ip_size =
         sizeof(struct ICMPHeader) + sizeof(struct IPHeader);
@@ -223,7 +258,7 @@ void handle_received_icmp6_packet(
     const struct sockaddr_storage *remote_addr,
     const struct ICMPHeader *icmp,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const int icmp_ip_size =
         sizeof(struct ICMPHeader) + sizeof(struct IP6Header);
@@ -266,7 +301,7 @@ void handle_received_ip4_packet(
     const struct sockaddr_storage *remote_addr,
     const void *packet,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const int ip_icmp_size =
         sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
@@ -301,7 +336,7 @@ void handle_received_ip6_packet(
     const struct sockaddr_storage *remote_addr,
     const void *packet,
     int packet_length,
-    struct timeval timestamp)
+    struct timeval *timestamp)
 {
     const struct ICMPHeader *icmp;
 

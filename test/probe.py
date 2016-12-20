@@ -20,6 +20,7 @@
 '''Test sending probes and receiving respones.'''
 
 import socket
+import sys
 import time
 import unittest
 
@@ -40,6 +41,80 @@ def resolve_ipv6_address(hostname):  # type: (str) -> str
             return address
 
     raise LookupError(hostname)
+
+
+def check_feature(test, feature):
+    'Check for support for a particular feature with mtr-packet'
+
+    check_cmd = '70 check-support feature ' + feature
+    test.write_command(check_cmd)
+
+    reply = test.parse_reply()
+    test.assertEqual(reply.command_name, 'feature-support')
+    test.assertIn('support', reply.argument)
+
+    if reply.argument['support'] != 'ok':
+        return False
+
+    return True
+
+
+def test_basic_remote_probe(test, ip_version, protocol):
+    'Test a probe to a remote host with a TTL of 1'
+
+    protocol_str = 'protocol ' + protocol
+    if ip_version == 6:
+        address_str = 'ip-6 ' + resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
+    elif ip_version == 4:
+        address_str = 'ip-4 8.8.8.8'
+    else:
+        raise ValueError(ip_version)
+
+    cmd = '60 send-probe ' + \
+        protocol_str + ' ' + address_str + ' port 164 ttl 1'
+    test.write_command(cmd)
+
+    reply = test.parse_reply()
+    test.assertEqual(reply.command_name, 'ttl-expired')
+
+
+def test_basic_local_probe(test, ip_version, protocol):
+    'Test a probe to a closed port on localhost'
+
+    protocol_str = 'protocol ' + protocol
+    if ip_version == 6:
+        address_str = 'ip-6 ::1'
+    elif ip_version == 4:
+        address_str = 'ip-4 127.0.0.1'
+
+    cmd = '61 send-probe ' + \
+        protocol_str + ' ' + address_str + ' port 164'
+    test.write_command(cmd)
+
+    reply = test.parse_reply()
+    test.assertEqual(reply.command_name, 'reply')
+
+    if ip_version == 6:
+        test.assertIn('ip-6', reply.argument)
+        test.assertEqual(reply.argument['ip-6'], '::1')
+    elif ip_version == 4:
+        test.assertIn('ip-4', reply.argument)
+        test.assertEqual(reply.argument['ip-4'], '127.0.0.1')
+
+
+def test_basic_probe(test, ip_version, protocol):
+    # type: (mtrpacket.MtrPacketTest, int, unicode) -> None
+
+    '''Test a probe with TTL expiration and a probe which reaches its
+    destination with a particular protocol.'''
+
+    if not check_feature(test, protocol):
+        err_str = 'Skipping ' + protocol + ' test due to no support\n'
+        sys.stderr.write(err_str.encode('utf-8'))
+        return
+
+    test_basic_remote_probe(test, ip_version, protocol)
+    test_basic_local_probe(test, ip_version, protocol)
 
 
 class TestProbeICMPv4(mtrpacket.MtrPacketTest):
@@ -241,40 +316,59 @@ class TestProbeUDP(mtrpacket.MtrPacketTest):
     def test_udp_v4(self):
         'Test IPv4 UDP probes'
 
-        cmd = '60 send-probe protocol udp ip-4 8.8.8.8 port 164 ttl 1'
-        self.write_command(cmd)
-
-        reply = self.parse_reply()
-        self.assertEqual(reply.command_name, 'ttl-expired')
-
-        cmd = '61 send-probe protocol udp ip-4 127.0.0.1 port 164'
-        self.write_command(cmd)
-
-        reply = self.parse_reply()
-        self.assertEqual(reply.command_name, 'reply')
-        self.assertIn('ip-4', reply.argument)
-        self.assertEqual(reply.argument['ip-4'], '127.0.0.1')
+        test_basic_probe(self, 4, 'udp')
 
     @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_udp_v6(self):
         'Test IPv6 UDP probes'
 
-        test_addr = resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
+        test_basic_probe(self, 6, 'udp')
 
-        cmd = '62 send-probe protocol udp ip-6 ' + test_addr + \
-            ' port 164 ttl 1'
-        self.write_command(cmd)
 
-        reply = self.parse_reply()
-        self.assertEqual(reply.command_name, 'ttl-expired')
+class TestProbeTCP(mtrpacket.MtrPacketTest):
+    'Test TCP probe support'
 
-        cmd = '63 send-probe protocol udp ip-6 ::1 port 164'
+    def test_tcp_v4(self):
+        '''Test IPv4 TCP probes, with TTL expiration, to a refused port
+        and to an open port'''
+
+        test_basic_probe(self, 4, 'tcp')
+
+        #  Probe a local port assumed to be open  (ssh)
+        cmd = '80 send-probe ip-4 127.0.0.1 protocol tcp port 22'
         self.write_command(cmd)
 
         reply = self.parse_reply()
         self.assertEqual(reply.command_name, 'reply')
-        self.assertIn('ip-6', reply.argument)
-        self.assertEqual(reply.argument['ip-6'], '::1')
+
+    @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
+    def test_tcp_v6(self):
+        'Test IPv6 TCP probes'
+
+        test_basic_probe(self, 6, 'tcp')
+
+        #  Probe a local port assumed to be open  (ssh)
+        cmd = '80 send-probe ip-6 ::1 protocol tcp port 22'
+        self.write_command(cmd)
+
+        reply = self.parse_reply()
+        self.assertEqual(reply.command_name, 'reply')
+
+
+class TestProbeSCTP(mtrpacket.MtrPacketTest):
+    'Test SCTP probes'
+
+    def test_sctp_v4(self):
+        'Test basic SCTP probes over IPv4'
+
+        test_basic_probe(self, 4, 'sctp')
+
+    @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
+    def test_sctp_v6(self):
+        'Test basic SCTP probes over IPv6'
+
+        test_basic_probe(self, 6, 'sctp')
+
 
 if __name__ == '__main__':
     mtrpacket.check_running_as_root()

@@ -79,8 +79,17 @@ struct probe_t
     /*  true if this entry is in use  */
     bool used;
 
+    /*
+        The port number to use when binding sockets for this probe.
+        Also the ICMP sequence ID used to identify the probe.
+    */
+    int port;
+
     /*  Command token of the probe request  */
     int token;
+
+    /*  The address being probed  */
+    struct sockaddr_storage remote_addr;
 
     /*  Platform specific probe tracking  */
     struct probe_platform_t platform;
@@ -133,6 +142,10 @@ int decode_dest_addr(
 struct probe_t *alloc_probe(
     struct net_state_t *net_state,
     int token);
+
+void platform_alloc_probe(
+    struct net_state_t *net_state,
+    struct probe_t *probe);
 
 void platform_free_probe(
     struct probe_t *probe);

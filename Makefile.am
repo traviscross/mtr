@@ -44,6 +44,7 @@ install-exec-hook:
 
 mtr_SOURCES = mtr.c mtr.h \
               net.c net.h \
+              cmdpipe.c cmdpipe.h \
               dns.c dns.h \
               raw.c raw.h \
               split.c split.h \

@@ -79,6 +79,27 @@ uint16_t length_byte_swap(
     }
 }
 
+/*  Construct a combined sockaddr from a source address and source port  */
+static
+void construct_addr_port(
+    struct sockaddr_storage *addr_with_port,
+    const struct sockaddr_storage *addr,
+    int port)
+{
+    struct sockaddr_in *addr4;
+    struct sockaddr_in6 *addr6;
+
+    memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
+
+    if (addr->ss_family == AF_INET6) {
+        addr6 = (struct sockaddr_in6 *)addr_with_port;
+        addr6->sin6_port = htons(port);
+    } else {
+        addr4 = (struct sockaddr_in *)addr_with_port;
+        addr4->sin_port = htons(port);
+    }
+}
+
 /*  Construct a header for IP version 4  */
 static
 void construct_ip4_header(
@@ -110,6 +131,7 @@ void construct_ip4_header(
 static
 void construct_icmp4_header(
     const struct net_state_t *net_state,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -124,7 +146,7 @@ void construct_icmp4_header(
 
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(param->command_token);
+    icmp->sequence = htons(port);
     icmp->checksum = htons(compute_checksum(icmp, icmp_size));
 }
 
@@ -132,6 +154,7 @@ void construct_icmp4_header(
 static
 int construct_icmp6_packet(
     const struct net_state_t *net_state,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -144,19 +167,19 @@ int construct_icmp6_packet(
 
     icmp->type = ICMP6_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(param->command_token);
+    icmp->sequence = htons(port);
 
     return 0;
 }
 
 /*
-    Construct a header for UDP probes.  We'll use the source port
-    as the command token, so that we can identify the probe when its
-    header is returned embedded in an ICMP reply.
+    Construct a header for UDP probes, using the port number associated
+    with the probe.
 */
 static
 void construct_udp4_header(
     const struct net_state_t *net_state,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -169,7 +192,7 @@ void construct_udp4_header(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    udp->srcport = htons(param->command_token);
+    udp->srcport = htons(port);
     udp->dstport = htons(param->dest_port);
     udp->length = htons(udp_size);
     udp->checksum = 0;
@@ -179,6 +202,7 @@ void construct_udp4_header(
 static
 int construct_udp6_packet(
     const struct net_state_t *net_state,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -192,7 +216,7 @@ int construct_udp6_packet(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    udp->srcport = htons(param->command_token);
+    udp->srcport = htons(port);
     udp->dstport = htons(param->dest_port);
     udp->length = htons(udp_size);
     udp->checksum = 0;
@@ -212,6 +236,149 @@ int construct_udp6_packet(
 }
 
 /*
+    Set the socket options for an outgoing stream protocol socket based on
+    the packet parameters.
+*/
+static
+int set_stream_socket_options(
+    int stream_socket,
+    const struct probe_param_t *param)
+{
+    int level;
+    int opt;
+    int reuse = 1;
+
+    /*  Allow binding to a local port previously in use  */
+#ifdef SO_REUSEPORT
+    /*
+        FreeBSD wants SO_REUSEPORT in addition to SO_REUSEADDR to
+        bind to the same port
+    */
+    if (setsockopt(
+            stream_socket, SOL_SOCKET, SO_REUSEPORT,
+            &reuse, sizeof(int)) == -1) {
+
+        return -1;
+    }
+#endif
+
+    if (setsockopt(
+            stream_socket, SOL_SOCKET, SO_REUSEADDR,
+            &reuse, sizeof(int)) == -1) {
+
+        return -1;
+    }
+
+    /*  Set the number of hops the probe will transit across  */
+    if (param->ip_version == 6) {
+        level = IPPROTO_IPV6;
+        opt = IPV6_UNICAST_HOPS;
+    } else {
+        level = IPPROTO_IP;
+        opt = IP_TTL;
+    }
+
+    if (setsockopt(
+            stream_socket, level, opt, &param->ttl, sizeof(int)) == -1) {
+
+        return -1;
+    }
+
+    /*  Set the "type of service" field of the IP header  */
+    if (param->ip_version == 6) {
+        level = IPPROTO_IPV6;
+        opt = IPV6_TCLASS;
+    } else {
+        level = IPPROTO_IP;
+        opt = IP_TOS;
+    }
+
+    if (setsockopt(
+            stream_socket, level, opt,
+            &param->type_of_service, sizeof(int)) == -1) {
+
+        return -1;
+    }
+
+#ifdef SO_MARK
+    if (param->routing_mark) {
+        if (setsockopt(
+                stream_socket, SOL_SOCKET,
+                SO_MARK, &param->routing_mark, sizeof(int))) {
+            return -1;
+        }
+    }
+#endif
+
+    return 0;
+}
+
+/*
+    Open a TCP or SCTP socket, respecting the probe paramters as much as
+    we can, and use it as an outgoing probe.
+*/
+static
+int open_stream_socket(
+    const struct net_state_t *net_state,
+    int protocol,
+    int port,
+    const struct sockaddr_storage *src_sockaddr,
+    const struct sockaddr_storage *dest_sockaddr,
+    const struct probe_param_t *param)
+{
+    int stream_socket;
+    int addr_len;
+    struct sockaddr_storage dest_port_addr;
+    struct sockaddr_storage src_port_addr;
+
+    if (param->ip_version == 6) {
+        stream_socket = socket(AF_INET6, SOCK_STREAM, protocol);
+        addr_len = sizeof(struct sockaddr_in6);
+    } else if (param->ip_version == 4) {
+        stream_socket = socket(AF_INET, SOCK_STREAM, protocol);
+        addr_len = sizeof(struct sockaddr_in);
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (stream_socket == -1) {
+        return -1;
+    }
+
+    set_socket_nonblocking(stream_socket);
+
+    if (set_stream_socket_options(stream_socket, param)) {
+        close(stream_socket);
+        return -1;
+    }
+
+    /*
+        Bind to a known local port so we can identify which probe
+        causes a TTL expiration.
+    */
+    construct_addr_port(&src_port_addr, src_sockaddr, port);
+    if (bind(stream_socket, (struct sockaddr *)&src_port_addr, addr_len)) {
+        close(stream_socket);
+        return -1;
+    }
+
+    /*  Attempt a connection  */
+    construct_addr_port(&dest_port_addr, dest_sockaddr, param->dest_port);
+    if (connect(
+            stream_socket, (struct sockaddr *)&dest_port_addr, addr_len)) {
+
+        /*  EINPROGRESS simply means the connection is in progress  */
+        if (errno != EINPROGRESS) {
+            close(stream_socket);
+            return -1;
+        }
+    }
+
+    return stream_socket;
+}
+
+/*
     Determine the size of the constructed packet based on the packet
     parameters.  This is the amount of space the packet *we* construct
     uses, and doesn't include any headers the operating system tacks
@@ -224,6 +391,16 @@ int compute_packet_size(
     const struct probe_param_t *param)
 {
     int packet_size;
+
+    if (param->protocol == IPPROTO_TCP) {
+        return 0;
+    }
+
+#ifdef IPPROTO_SCTP
+    if (param->protocol == IPPROTO_SCTP) {
+        return 0;
+    }
+#endif
 
     /*  Start by determining the full size, including omitted headers  */
     if (param->ip_version == 6) {
@@ -264,27 +441,54 @@ int compute_packet_size(
 }
 
 /*  Construct a packet for an IPv4 probe  */
+static
 int construct_ip4_packet(
     const struct net_state_t *net_state,
+    int *packet_socket,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct sockaddr_storage *src_sockaddr,
     const struct sockaddr_storage *dest_sockaddr,
     const struct probe_param_t *param)
 {
-    construct_ip4_header(
-        net_state, packet_buffer, packet_size,
-        src_sockaddr, dest_sockaddr, param);
+    int send_socket = net_state->platform.ip4_send_socket;
+    bool is_stream_protocol = false;
 
-    if (param->protocol == IPPROTO_ICMP) {
-        construct_icmp4_header(
-            net_state, packet_buffer, packet_size, param);
-    } else if (param->protocol == IPPROTO_UDP) {
-        construct_udp4_header(
-            net_state, packet_buffer, packet_size, param);
+    if (param->protocol == IPPROTO_TCP) {
+        is_stream_protocol = true;
+#ifdef IPPROTO_SCTP
+    } else if (param->protocol == IPPROTO_SCTP) {
+        is_stream_protocol = true;
+#endif
     } else {
-        errno = EINVAL;
-        return -1;
+        construct_ip4_header(
+            net_state, packet_buffer, packet_size,
+            src_sockaddr, dest_sockaddr, param);
+
+        if (param->protocol == IPPROTO_ICMP) {
+            construct_icmp4_header(
+                net_state, port, packet_buffer, packet_size, param);
+        } else if (param->protocol == IPPROTO_UDP) {
+            construct_udp4_header(
+                net_state, port, packet_buffer, packet_size, param);
+        } else {
+            errno = EINVAL;
+            return -1;
+        }
+    }
+
+    if (is_stream_protocol) {
+        send_socket = open_stream_socket(
+            net_state, param->protocol, port,
+            src_sockaddr, dest_sockaddr, param);
+
+        if (send_socket == -1) {
+            return -1;
+        }
+
+        *packet_socket = send_socket;
+        return 0;
     }
 
     /*
@@ -300,8 +504,8 @@ int construct_ip4_packet(
 #ifdef SO_MARK
     if (param->routing_mark) {
         if (setsockopt(
-                net_state->platform.ip4_send_socket,
-                SOL_SOCKET, SO_MARK, &param->routing_mark, sizeof(int))) {
+                send_socket, SOL_SOCKET,
+                SO_MARK, &param->routing_mark, sizeof(int))) {
             return -1;
         }
     }
@@ -311,8 +515,11 @@ int construct_ip4_packet(
 }
 
 /*  Construct a packet for an IPv6 probe  */
+static
 int construct_ip6_packet(
     const struct net_state_t *net_state,
+    int *packet_socket,
+    int port,
     char *packet_buffer,
     int packet_size,
     const struct sockaddr_storage *src_sockaddr,
@@ -320,24 +527,44 @@ int construct_ip6_packet(
     const struct probe_param_t *param)
 {
     int send_socket;
+    bool is_stream_protocol = false;
 
-    if (param->protocol == IPPROTO_ICMP) {
+    if (param->protocol == IPPROTO_TCP) {
+        is_stream_protocol = true;
+#ifdef IPPROTO_SCTP
+    } else if (param->protocol == IPPROTO_SCTP) {
+        is_stream_protocol = true;
+#endif
+    } else if (param->protocol == IPPROTO_ICMP) {
         send_socket = net_state->platform.icmp6_send_socket;
 
         if (construct_icmp6_packet(
-                net_state, packet_buffer, packet_size, param)) {
+                net_state, port, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else if (param->protocol == IPPROTO_UDP) {
         send_socket = net_state->platform.udp6_send_socket;
 
         if (construct_udp6_packet(
-                net_state, packet_buffer, packet_size, param)) {
+                net_state, port, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else {
         errno = EINVAL;
         return -1;
+    }
+
+    if (is_stream_protocol) {
+        send_socket = open_stream_socket(
+            net_state, param->protocol, port,
+            src_sockaddr, dest_sockaddr, param);
+
+        if (send_socket == -1) {
+            return -1;
+        }
+
+        *packet_socket = send_socket;
+        return 0;
     }
 
     /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
@@ -370,6 +597,8 @@ int construct_ip6_packet(
 /*  Construct a probe packet based on the probe parameters  */
 int construct_packet(
     const struct net_state_t *net_state,
+    int *packet_socket,
+    int port,
     char *packet_buffer,
     int packet_buffer_size,
     const struct sockaddr_storage *dest_sockaddr,
@@ -396,13 +625,13 @@ int construct_packet(
 
     if (param->ip_version == 6) {
         if (construct_ip6_packet(
-                net_state, packet_buffer, packet_size,
+                net_state, packet_socket, port, packet_buffer, packet_size,
                 &src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else if (param->ip_version == 4) {
         if (construct_ip4_packet(
-                net_state, packet_buffer, packet_size,
+                net_state, packet_socket, port, packet_buffer, packet_size,
                 &src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }

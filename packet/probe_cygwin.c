@@ -60,6 +60,13 @@ bool is_protocol_supported(
     return false;
 }
 
+/*  No special action is required for Cygwin on probe allocation  */
+void platform_alloc_probe(
+    struct net_state_t *net_state,
+    struct probe_t *probe)
+{
+}
+
 /*  Free the reply buffer when the probe is freed  */
 void platform_free_probe(
     struct probe_t *probe)

@@ -97,6 +97,8 @@ struct probe_t *alloc_probe(
             probe->used = true;
             probe->token = token;
 
+            platform_alloc_probe(net_state, probe);
+
             return probe;
         }
     }
@@ -166,7 +168,7 @@ struct probe_t *find_probe(
     for (i = 0; i < MAX_PROBES; i++) {
         probe = &net_state->probes[i];
 
-        if (probe->used && htons(probe->token) == icmp_sequence) {
+        if (probe->used && htons(probe->port) == icmp_sequence) {
             return probe;
         }
     }

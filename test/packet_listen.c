@@ -28,6 +28,12 @@
 #define MAX_PACKET_SIZE 9000
 
 /*
+    The first probe sent by mtr-packet will have this sequence number,
+    so wait for an ICMP packet with this sequence ID.
+*/
+#define SEQUENCE_NUM 33000
+
+/*
     Check to see if the packet we've recieved is intended for this test
     process.  We expected the ICMP sequence number to be equal to our
     process ID.
@@ -48,7 +54,7 @@ bool is_packet_for_us4(
     ip = (struct IPHeader *)packet;
     icmp = (struct ICMPHeader *)(ip + 1);
 
-    expected_sequence = htons(getpid());
+    expected_sequence = htons(SEQUENCE_NUM);
     if (icmp->sequence == expected_sequence) {
         return true;
     }
@@ -73,7 +79,7 @@ bool is_packet_for_us6(
 
     icmp = (struct ICMPHeader *)packet;
 
-    expected_sequence = htons(getpid());
+    expected_sequence = htons(SEQUENCE_NUM);
     if (icmp->sequence == expected_sequence) {
         return true;
     }

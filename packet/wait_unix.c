@@ -26,6 +26,47 @@
 #include <sys/select.h>
 
 /*
+    Gather all the file descriptors which should wake our select call when
+    they become readable.
+*/
+static
+int gather_read_fds(
+    const struct command_buffer_t *command_buffer,
+    const struct net_state_t *net_state,
+    fd_set *read_set,
+    fd_set *write_set)
+{
+    int nfds;
+    int probe_nfds;
+    int ip4_socket = net_state->platform.ip4_recv_socket;
+    int ip6_socket = net_state->platform.ip6_recv_socket;
+    int command_stream = command_buffer->command_stream;
+
+    FD_ZERO(read_set);
+    FD_ZERO(write_set);
+
+    FD_SET(command_stream, read_set);
+    nfds = command_stream + 1;
+
+    FD_SET(ip4_socket, read_set);
+    if (ip4_socket >= nfds) {
+        nfds = ip4_socket + 1;
+    }
+
+    FD_SET(ip6_socket, read_set);
+    if (ip6_socket >= nfds) {
+        nfds = ip6_socket + 1;
+    }
+
+    probe_nfds = gather_probe_sockets(net_state, write_set);
+    if (probe_nfds > nfds) {
+        nfds = probe_nfds;
+    }
+
+    return nfds;
+}
+
+/*
     Sleep until we receive a new probe response, a new command on the
     command stream, or a probe timeout.  On Unix systems, this means
     we use select to wait on file descriptors for the command stream
@@ -37,26 +78,12 @@ void wait_for_activity(
 {
     int nfds;
     fd_set read_set;
+    fd_set write_set;
     struct timeval probe_timeout;
     struct timeval *select_timeout;
     int ready_count;
-    int command_stream = command_buffer->command_stream;
-    int ip4_socket = net_state->platform.ip4_recv_socket;
-    int ip6_socket = net_state->platform.ip6_recv_socket;
 
-    FD_ZERO(&read_set);
-    FD_SET(command_stream, &read_set);
-    nfds = command_stream + 1;
-
-    FD_SET(ip4_socket, &read_set);
-    if (ip4_socket >= nfds) {
-        nfds = ip4_socket + 1;
-    }
-
-    FD_SET(ip6_socket, &read_set);
-    if (ip6_socket >= nfds) {
-        nfds = ip6_socket + 1;
-    }
+    nfds = gather_read_fds(command_buffer, net_state, &read_set, &write_set);
 
     while (true) {
         select_timeout = NULL;
@@ -67,7 +94,8 @@ void wait_for_activity(
             select_timeout = &probe_timeout;
         }
 
-        ready_count = select(nfds, &read_set, NULL, NULL, select_timeout);
+        ready_count = select(
+            nfds, &read_set, &write_set, NULL, select_timeout);
 
         /*
             If we didn't have an error, either one of our descriptors is

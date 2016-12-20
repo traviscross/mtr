@@ -97,6 +97,16 @@ const char *check_support(
         return check_protocol_support(net_state, IPPROTO_UDP);
     }
 
+    if (!strcmp(feature, "tcp")) {
+        return check_protocol_support(net_state, IPPROTO_TCP);
+    }
+
+#ifdef IPPROTO_SCTP
+    if (!strcmp(feature, "sctp")) {
+        return check_protocol_support(net_state, IPPROTO_SCTP);
+    }
+#endif
+
 #ifdef SO_MARK
     if (!strcmp(feature, "mark")) {
         return "ok";
@@ -155,6 +165,12 @@ bool decode_probe_argument(
             param->protocol = IPPROTO_ICMP;
         } else if (!strcmp(value, "udp")) {
             param->protocol = IPPROTO_UDP;
+        } else if (!strcmp(value, "tcp")) {
+            param->protocol = IPPROTO_TCP;
+#ifdef IPPROTO_SCTP
+        } else if (!strcmp(value, "sctp")) {
+            param->protocol = IPPROTO_SCTP;
+#endif
         } else {
             return false;
         }

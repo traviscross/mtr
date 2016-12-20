@@ -26,20 +26,20 @@ typedef void (*received_packet_func_t)(
     const struct sockaddr_storage *remote_addr,
     const void *packet,
     int packet_length,
-    struct timeval timestamp);
+    struct timeval *timestamp);
 
 void handle_received_ip4_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const void *packet,
     int packet_length,
-    struct timeval timestamp);
+    struct timeval *timestamp);
 
 void handle_received_ip6_packet(
     struct net_state_t *net_state,
     const struct sockaddr_storage *remote_addr,
     const void *packet,
     int packet_length,
-    struct timeval timestamp);
+    struct timeval *timestamp);
 
 #endif

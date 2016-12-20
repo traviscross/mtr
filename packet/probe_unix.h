@@ -19,15 +19,21 @@
 #ifndef PROBE_UNIX_H
 #define PROBE_UNIX_H
 
+/*  The range of local port numbers to use for probes  */
+#define MIN_PORT 33000
+#define MAX_PORT 65535
+
 /*  We need to track the transmission and timeouts on Unix systems  */
 struct probe_platform_t
 {
+    /*  The socket for the outgoing connection  (used by TCP probes)  */
+    int socket;
+
     /*  The time at which the probe is considered lost  */
     struct timeval timeout_time;
 
     /*  The time at which the probe was sent  */
     struct timeval departure_time;
-
 };
 
 /*  We'll use rack sockets to send and recieve probes on Unix systems  */
@@ -53,6 +59,28 @@ struct net_state_platform_t
         (as opposed to network order)
     */
     bool ip_length_host_order;
+
+    /*  true if the operating system supports SCTP sockets  */
+    bool sctp_support;
+
+    /*  The next port number to use when creating a new probe  */
+    int next_port;
 };
+
+struct net_state_t;
+struct probe_t;
+
+void set_socket_nonblocking(
+    int socket);
+
+void receive_probe(
+    struct probe_t *probe,
+    int icmp_type,
+    const struct sockaddr_storage *remote_addr,
+    struct timeval *timestamp);
+
+int gather_probe_sockets(
+    const struct net_state_t *net_state,
+    fd_set *write_set);
 
 #endif

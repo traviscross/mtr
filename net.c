@@ -18,52 +18,26 @@
 
 #include "config.h"
 
-#if defined(HAVE_SYS_XTI_H)
-# include <sys/xti.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <assert.h>
-#include <memory.h>
-#include <unistd.h>
-#ifdef HAVE_FCNTL_H
-# include <fcntl.h>
-#endif
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <math.h>
-#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
+
 #ifdef HAVE_ERROR_H
 # include <error.h>
 #else
 # include "portability/error.h"
 #endif
-#ifdef HAVE_LINUX_ICMP_H
-# include <linux/icmp.h>
-#endif
 
 #include "mtr.h"
+#include "cmdpipe.h"
 #include "net.h"
 #include "display.h"
 #include "dns.h"
 #include "utils.h"
-#include "packet/cmdparse.h"
 
 #define MinSequence 33000
 #define MaxSequence 65536
-
-#define COMMAND_BUFFER_SIZE 4096
-#define PACKET_REPLY_BUFFER_SIZE 4096
 
 static int packetsize;         /* packet size used by ping */
 
@@ -97,26 +71,6 @@ struct sequence {
   int transit;
   int saved_seq;
   struct timeval time;
-  int socket;
-};
-
-
-/*  We use a pipe to the mtr-packet subprocess to generate probes  */
-struct packet_command_pipe_t {
-  /*  the process id of mtr-packet  */
-  pid_t pid;
-
-  /*  the end of the pipe we read for replies  */
-  int read_fd;
-
-  /*  the end of the pipe we write for commands  */
-  int write_fd;
-
-  /* storage for incoming replies */
-  char reply_buffer[PACKET_REPLY_BUFFER_SIZE];
-
-  /*  the number of bytes currently used in reply_buffer  */
-  size_t reply_buffer_used;
 };
 
 
@@ -192,103 +146,26 @@ static int new_sequence(struct mtr_ctl *ctl, int index)
   return seq;
 }
 
-static void net_construct_base_command(
-  struct mtr_ctl *ctl, char *command, int buffer_size, int command_token)
-{
-  char ip_string[INET6_ADDRSTRLEN];
-  const char *ip_type;
-  const char *protocol = NULL;
-
-  /*  Conver the remote IP address to a string  */
-  if (inet_ntop(
-      ctl->af, remoteaddress, ip_string, INET6_ADDRSTRLEN) == NULL) {
-
-    display_close(ctl);
-    error(EXIT_FAILURE, errno, "failure stringifying remote IP address");
-  }
-
-  if (ctl->af == AF_INET6) {
-    ip_type = "ip-6";
-  } else {
-    ip_type = "ip-4";
-  }
-
-  if (ctl->mtrtype == IPPROTO_ICMP) {
-    protocol = "icmp";
-  } else if (ctl->mtrtype == IPPROTO_UDP) {
-    protocol = "udp";
-  } else {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "protocol unsupported by mtr-packet interface");
-  }
-
-  snprintf(
-    command, buffer_size,
-    "%d send-probe %s %s protocol %s",
-    command_token, ip_type, ip_string, protocol);
-}
-
-static void net_append_command_argument(
-  char *command, int buffer_size, char *name, int value)
-{
-  char argument[COMMAND_BUFFER_SIZE];
-  int remaining_size;
-
-  remaining_size = buffer_size - strlen(command) - 1;
-
-  snprintf(argument, buffer_size, " %s %d", name, value);
-  strncat(command, argument, remaining_size);
-}
 
 /*  Attempt to find the host at a particular number of hops away  */
 static void net_send_query(struct mtr_ctl *ctl, int index, int packet_size)
 {
   int seq = new_sequence(ctl, index);
   int time_to_live = index + 1;
-  char command[COMMAND_BUFFER_SIZE];
-  int remaining_size;
 
-  net_construct_base_command(ctl, command, COMMAND_BUFFER_SIZE, seq);
-
-  net_append_command_argument(
-    command, COMMAND_BUFFER_SIZE, "size", packet_size);
-
-  net_append_command_argument(
-    command, COMMAND_BUFFER_SIZE, "bitpattern", ctl->bitpattern);
-
-  net_append_command_argument(
-    command, COMMAND_BUFFER_SIZE, "tos", ctl->tos);
-
-  net_append_command_argument(
-    command, COMMAND_BUFFER_SIZE, "ttl", time_to_live);
-
-  if (ctl->remoteport) {
-    net_append_command_argument(
-      command, COMMAND_BUFFER_SIZE, "port", ctl->remoteport);
-  }
-
-#ifdef SO_MARK
-  if (ctl->mark) {
-    net_append_command_argument(
-      command, COMMAND_BUFFER_SIZE, "mark", ctl->mark);
-  }
-#endif
-
-  remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
-  strncat(command, "\n", remaining_size);
-
-  /*  Send a probe using the mtr-packet subprocess  */
-  if (write(packet_command_pipe.write_fd, command, strlen(command)) == -1) {
-    display_close(ctl);
-    error(EXIT_FAILURE, errno, "mtr-packet command pipe write failure");
-  }
+  send_probe_command(
+    ctl, &packet_command_pipe, remoteaddress, packetsize, seq, time_to_live);
 }
 
 
 /*   We got a return on something we sent out.  Record the address and
      time.  */
-static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
-			     void *addr, int totusec)
+static void net_process_ping(
+  struct mtr_ctl *ctl,
+  int seq,
+  struct mplslen *mpls,
+  ip_t *addr,
+  int totusec)
 {
   int index;
   int oldavg;	/* usedByMin */
@@ -300,7 +177,7 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
   char addrcopy[sizeof(struct in_addr)];
 #endif
 
-  addrcpy( (void *) &addrcopy, addr, ctl->af );
+  addrcpy( (void *) &addrcopy, (char *)addr, ctl->af );
 
   if (seq < 0 || seq >= MaxSequence)
     return;
@@ -309,23 +186,18 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
     return;
   sequence[seq].transit = 0;
 
-  if (sequence[seq].socket > 0) {
-    close(sequence[seq].socket);
-    sequence[seq].socket = 0;
-  }
-
   index = sequence[seq].index;
 
   if ( addrcmp( (void *) &(host[index].addr),
 		(void *) &ctl->unspec_addr, ctl->af ) == 0 ) {
     /* should be out of if as addr can change */
     addrcpy( (void *) &(host[index].addr), addrcopy, ctl->af );
-    host[index].mpls = mpls;
+    host[index].mpls = *mpls;
     display_rawhost(ctl, index, (void *) &(host[index].addr));
 
   /* multi paths */
     addrcpy( (void *) &(host[index].addrs[0]), addrcopy, ctl->af );
-    host[index].mplss[0] = mpls;
+    host[index].mplss[0] = *mpls;
   } else {
     for( i=0; i<MAXPATH; ) {
       if( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addrcopy,
@@ -337,7 +209,7 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
     if( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, ctl->af ) != 0 && 
         i<MAXPATH ) {
       addrcpy( (void *) &(host[index].addrs[i]), addrcopy, ctl->af );
-      host[index].mplss[i] = mpls;
+      host[index].mplss[i] = *mpls;
       display_rawhost(ctl, index, (void *) &(host[index].addrs[i]));
     }
   }
@@ -380,272 +252,13 @@ static void net_process_ping(struct mtr_ctl *ctl, int seq, struct mplslen mpls,
   display_rawping(ctl, index, totusec, seq);
 }
 
-
-/*
-  Extract the IP address and round trip time from a reply to a probe.
-  Returns true if both arguments are found in the reply, false otherwise.
-*/
-static bool parse_reply_arguments(
-  struct mtr_ctl *ctl, struct command_t *reply,
-  ip_t *fromaddress, int *round_trip_time)
-{
-  bool found_round_trip;
-  bool found_ip;
-  char *arg_name;
-  char *arg_value;
-  int i;
-
-  *round_trip_time = 0;
-  memset(fromaddress, 0, sizeof(ip_t));
-
-  found_ip = false;
-  found_round_trip = false;
-
-  /*  Examine the reply arguments for known values  */
-  for (i = 0; i < reply->argument_count; i++) {
-    arg_name = reply->argument_name[i];
-    arg_value = reply->argument_value[i];
-
-    if (ctl->af == AF_INET6) {
-      /*  IPv6 address of the responding host  */
-      if (!strcmp(arg_name, "ip-6")) {
-        if (inet_pton(AF_INET6, arg_value, fromaddress)) {
-          found_ip = true;
-        }
-      }
-    } else {
-      /*  IPv4 address of the responding host  */
-      if (!strcmp(arg_name, "ip-4")) {
-        if (inet_pton(AF_INET, arg_value, fromaddress)) {
-          found_ip = true;
-        }
-      }
-    }
-
-    /*  The round trip time in microseconds  */
-    if (!strcmp(arg_name, "round-trip-time")) {
-      errno = 0;
-      *round_trip_time = strtol(arg_value, NULL, 10);
-      if (!errno) {
-        found_round_trip = true;
-      }
-    }
-  }
-
-  return found_ip && found_round_trip;
-}
-
-
-/*
-    If an mtr-packet command has returned an error result,
-    report the error and exit.
-*/
-static void net_handle_command_reply_errors(
-  struct mtr_ctl *ctl, struct command_t *reply)
-{
-  char *reply_name;
-
-  reply_name = reply->command_name;
-
-  if (!strcmp(reply_name, "no-route")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "No route to host");
-  }
-
-  if (!strcmp(reply_name, "network-down")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "Network down");
-  }
-
-  if (!strcmp(reply_name, "probes-exhausted")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "Probes exhausted");
-  }
-
-  if (!strcmp(reply_name, "invalid-argument")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "mtr-packet reported invalid argument");
-  }
-
-  if (!strcmp(reply_name, "permission-denied")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "Permission denied");
-  }
-
-  if (!strcmp(reply_name, "unexpected-error")) {
-    display_close(ctl);
-    error(EXIT_FAILURE, 0, "Unexpected mtr-packet error");
-  }
-}
-
-
-/*
-    A complete mtr-packet reply line has arrived.  Parse it and record
-    the responding IP and round trip time, if it is a reply that we
-    understand.
-*/
-static void net_process_command_reply(
-  struct mtr_ctl *ctl, char *reply_str)
-{
-  struct command_t reply;
-  ip_t fromaddress;
-  int seq_num;
-  int round_trip_time;
-  char *reply_name;
-  struct mplslen mpls;
-
-  /*  Parse the reply string  */
-  if (parse_command(&reply, reply_str)) {
-    /*
-        If the reply isn't well structured, something is fundamentally
-        wrong, as we might as well exit.  Even if the reply is of an
-        unknown type, it should still parse.
-    */
-    display_close(ctl);
-    error(EXIT_FAILURE, errno, "reply parse failure");
-    return;
-  }
-
-  net_handle_command_reply_errors(ctl, &reply);
-
-  seq_num = reply.token;
-  reply_name = reply.command_name;
-
-  /*  If the reply type is unknown, ignore it for future compatibility  */
-  if (strcmp(reply_name, "reply") && strcmp(reply_name, "ttl-expired")) {
-    return;
-  }
-
-  /*
-      If the reply had an IP address and a round trip time, we can
-      record the result.
-  */
-  if (parse_reply_arguments(ctl, &reply, &fromaddress, &round_trip_time)) {
-    /* MPLS decoding */
-    memset(&mpls, 0, sizeof(struct mplslen));
-    mpls.labels = 0;
-
-    net_process_ping(
-      ctl, seq_num, mpls, (void *) &fromaddress, round_trip_time);
-  }
-}
-
-
-/*
-  Check the command pipe for completed replies to commands
-  we have previously sent.  Record the results of those replies.
-*/
-static void net_process_pipe_buffer(struct mtr_ctl *ctl)
-{
-  char *reply_buffer;
-  char *reply_start;
-  char *end_of_reply;
-  int used_size;
-  int move_size;
-
-  reply_buffer = packet_command_pipe.reply_buffer;
-
-  /*  Terminate the string storing the replies  */
-  assert(packet_command_pipe.reply_buffer_used < PACKET_REPLY_BUFFER_SIZE);
-  reply_buffer[packet_command_pipe.reply_buffer_used] = 0;
-
-  reply_start = reply_buffer;
-
-  /*
-    We may have multiple completed replies.  Loop until we don't
-    have any more newlines termininating replies.
-  */
-  while (true) {
-    /*  If no newline is found, our reply isn't yet complete  */
-    end_of_reply = index(reply_start, '\n');
-    if (end_of_reply == NULL) {
-      /*  No complete replies remaining  */
-      break;
-    }
-
-    /*
-        Terminate the reply string at the newline, which
-        is necessary in the case where we are able to read
-        mulitple replies arriving simultaneously.
-    */
-    *end_of_reply = 0;
-
-    /*  Parse and record the reply results  */
-    net_process_command_reply(ctl, reply_start);
-
-    reply_start = end_of_reply + 1;
-  }
-
-  /*
-      After replies have been processed, free the space used
-      by the replies, and move any remaining partial reply text
-      to the start of the reply buffer.
-  */
-  used_size = reply_start - reply_buffer;
-  move_size = packet_command_pipe.reply_buffer_used - used_size;
-  memmove(reply_buffer, reply_start, move_size);
-  packet_command_pipe.reply_buffer_used -= used_size;
-
-  if (packet_command_pipe.reply_buffer_used >= 
-      PACKET_REPLY_BUFFER_SIZE - 1) {
-    /*
-      We've overflowed the reply buffer without a complete reply.
-      There's not much we can do about it but discard the data
-      we've got and hope new data coming in fits.
-    */
-    packet_command_pipe.reply_buffer_used = 0;
-  }
-}
-
-
 /*
     Invoked when the read pipe from the mtr-packet subprocess is readable.
     If we have received a complete reply, process it.
 */
 extern void net_process_return(struct mtr_ctl *ctl)
 {
-  int read_count;
-  int buffer_remaining;
-  char *reply_buffer;
-  char *read_buffer;
-
-  reply_buffer = packet_command_pipe.reply_buffer;
-
-  /*
-      Read the available reply text, up to the the remaining
-      buffer space.  (Minus one for the terminating NUL.)
-  */
-  read_buffer = &reply_buffer[packet_command_pipe.reply_buffer_used];
-  buffer_remaining =
-    PACKET_REPLY_BUFFER_SIZE - packet_command_pipe.reply_buffer_used;
-  read_count = read(
-    packet_command_pipe.read_fd, read_buffer, buffer_remaining - 1);
-
-  if (read_count < 0) {
-    /*
-        EAGAIN simply indicates that there is no data currently
-        available on our non-blocking pipe.
-    */
-    if (errno == EAGAIN) {
-      return;
-    }
-
-    display_close(ctl);
-    error(EXIT_FAILURE, errno, "command reply read failure");
-    return;
-  }
-
-  if (read_count == 0) {
-    display_close(ctl);
-
-    errno = EPIPE;
-    error(EXIT_FAILURE, EPIPE, "unexpected packet generator exit");
-  }
-
-  packet_command_pipe.reply_buffer_used += read_count;
-
-  /*  Handle any replies completed by this read  */
-  net_process_pipe_buffer(ctl);
+  handle_command_replies(ctl, &packet_command_pipe, net_process_ping);
 }
 
 
@@ -868,234 +481,12 @@ extern int net_send_batch(struct mtr_ctl *ctl)
 }
 
 
-/*  Set a file descriptor to non-blocking  */
-static void set_fd_nonblock(int fd)
-{
-  int flags;
-
-  /*  Get the current flags of the file descriptor  */
-  flags = fcntl(fd, F_GETFL, 0);
-  if (flags == -1) {
-    error(EXIT_FAILURE, errno, "F_GETFL failure");
-    exit(1);
-  }
-
-  /*  Add the O_NONBLOCK bit to the current flags  */
-  if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-    error(EXIT_FAILURE, errno, "Failure to set O_NONBLOCK");
-    exit(1);
-  }
-}
-
-/*
-  Send a command synchronously to mtr-packet, blocking until a result
-  is available.  This is intended to be used at start-up to check the
-  capabilities of mtr-packet, but probes should be sent asynchronously
-  to avoid blocking other probes and the user interface.
-*/
-static int net_synchronous_command(
-  struct mtr_ctl *ctl, const char *cmd, struct command_t *result)
-{
-  char reply[PACKET_REPLY_BUFFER_SIZE];
-  int command_length;
-  int write_length;
-  int read_length;
-
-  /*  Query send-probe support  */
-  command_length = strlen(cmd);
-  write_length = write(
-    packet_command_pipe.write_fd, cmd, command_length);
-
-  if (write_length == -1) {
-    return -1;
-  }
-
-  if (write_length != command_length) {
-    errno = EIO;
-    return -1;
-  }
-
-  /*  Read the reply to our query  */
-  read_length = read(
-    packet_command_pipe.read_fd, reply, PACKET_REPLY_BUFFER_SIZE - 1);
-
-  if (read_length < 0) {
-    return -1;
-  }
-
-  /*  Parse the query reply  */
-  reply[read_length] = 0;
-  if (parse_command(result, reply)) {
-    return -1;
-  }
-
-  return 0;
-}
-
-
-/*  Check support for a particular feature with the mtr-packet we invoked  */
-static int net_check_feature(struct mtr_ctl *ctl, const char *feature)
-{
-  char check_command[COMMAND_BUFFER_SIZE];
-  struct command_t reply;
-
-  snprintf(
-    check_command, COMMAND_BUFFER_SIZE,
-    "1 check-support feature %s\n", feature);
-
-  if (net_synchronous_command(ctl, check_command, &reply) == -1) {
-    return -1;
-  }
-
-  /*  Check that the feature is supported  */
-  if (!strcmp(reply.command_name, "feature-support")
-    && reply.argument_count >= 1
-    && !strcmp(reply.argument_name[0], "support")
-    && !strcmp(reply.argument_value[0], "ok")) {
-
-    /*  Looks good  */
-    return 0;
-  }
-
-  errno = ENOTSUP;
-  return -1;
-}
-
-
-/*
-  Check the protocol selected against the mtr-packet we are using.
-  Returns zero if everything is fine, or -1 with errno for either
-  a failure during the check, or for an unsupported feature.
-*/
-static int net_packet_feature_check(struct mtr_ctl *ctl)
-{
-  if (ctl->mtrtype == IPPROTO_ICMP) {
-    if (net_check_feature(ctl, "icmp")) {
-      return -1;
-    }
-  } else if (ctl->mtrtype == IPPROTO_UDP) {
-    if (net_check_feature(ctl, "udp")) {
-      return -1;
-    }
-  } else {
-    errno = EINVAL;
-    return -1;
-  }
-
-#ifdef SO_MARK
-  if (ctl->mark) {
-    if (net_check_feature(ctl, "mark")) {
-      return -1;
-    }
-  }
-#endif
-
-  return 0;
-}
-
-
-/*  Create the command pipe to a new mtr-packet subprocess  */
-static int net_command_pipe_open(struct mtr_ctl *ctl)
-{
-  int stdin_pipe[2];
-  int stdout_pipe[2];
-  pid_t child_pid;
-  int i;
-  char *mtr_packet_path;
-
-  /*
-      We actually need two Unix pipes.  One for stdin and one for
-      stdout on the new process.
-  */
-  if (pipe(stdin_pipe) || pipe(stdout_pipe)) {
-    return errno;
-  }
-
-  child_pid = fork();
-  if (child_pid == -1) {
-    return errno;
-  }
-
-  if (child_pid == 0) {
-    /*  In the child process, attach our created pipes to stdin and stdout  */
-    dup2(stdin_pipe[0], STDIN_FILENO);
-    dup2(stdout_pipe[1], STDOUT_FILENO);
-
-    /*  Close all unnecessary fds  */
-    for (i = STDERR_FILENO + 1; i <= stdout_pipe[1]; i++) {
-      close(i);
-    }
-
-    /*
-        Allow the MTR_PACKET environment variable to overrride
-        the path to the mtr-packet executable.  This is necessary
-        for debugging changes for mtr-packet.
-    */
-    mtr_packet_path = getenv("MTR_PACKET");
-    if (mtr_packet_path == NULL) {
-      mtr_packet_path = "mtr-packet";
-    }
-
-    /*
-        First, try to execute using /usr/bin/env, because this
-        will search the PATH for mtr-packet
-    */
-    execl("/usr/bin/env", "mtr-packet", mtr_packet_path, NULL);
-
-    /*
-        If env fails to execute, try to use the MTR_PACKET environment as a
-        full path to the executable.  This is necessary because on
-        Windows, minimal mtr binary distributions will lack /usr/bin/env.
-
-        Note: A side effect is that an mtr-packet in the current directory
-        could be executed.  This will only be the case if /usr/bin/env
-        doesn't exist.
-    */
-    execl(mtr_packet_path, "mtr-packet", NULL);
-
-    /*  Both exec attempts failed, so nothing to do but exit  */
-    exit(1);
-  } else {
-    memset(&packet_command_pipe, 0, sizeof(struct packet_command_pipe_t));
-
-    /*
-        In the parent process, save the opposite ends of the pipes
-        attached as stdin and stdout in the child.
-    */
-    packet_command_pipe.pid = child_pid;
-    packet_command_pipe.read_fd = stdout_pipe[0];
-    packet_command_pipe.write_fd = stdin_pipe[1];
-
-    /*  We don't need the child ends of the pipe open in the parent.  */
-    close(stdout_pipe[1]);
-    close(stdin_pipe[0]);
-
-    /*
-      Check that we can communicate with the client.  If we failed to
-      execute the mtr-packet binary, we will discover that here.
-    */
-    if (net_check_feature(ctl, "send-probe")) {
-      error(EXIT_FAILURE, errno, "Failure to start mtr-packet");
-    }
-
-    if (net_packet_feature_check(ctl)) {
-      error(EXIT_FAILURE, errno, "Packet type unsupported");
-    }
-
-    /*  We will need non-blocking reads from the child  */
-    set_fd_nonblock(packet_command_pipe.read_fd);
-  }
-
-  return 0;
-}
-
-
 extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 {
   int err;
 
   /*  Spawn the mtr-packet child process  */
-  err = net_command_pipe_open(ctl);
+  err = open_command_pipe(ctl, &packet_command_pipe);
   if (err) {
     return err;
   }
@@ -1174,10 +565,6 @@ extern void net_reset(struct mtr_ctl *ctl)
 
   for (at = 0; at < MaxSequence; at++) {
     sequence[at].transit = 0;
-    if (sequence[at].socket > 0) {
-      close(sequence[at].socket);
-      sequence[at].socket = 0;
-    }
   }
 
 }
@@ -1186,17 +573,7 @@ extern void net_reset(struct mtr_ctl *ctl)
 /*  Close the pipe to the packet generator process, and kill the process  */
 extern void net_close(void)
 {
-  int child_exit_value;
-
-  if (packet_command_pipe.pid) {
-    close(packet_command_pipe.read_fd);
-    close(packet_command_pipe.write_fd);
-
-    kill(packet_command_pipe.pid, SIGTERM);
-    waitpid(packet_command_pipe.pid, &child_exit_value, 0);
-  }
-
-  memset(&packet_command_pipe, 0, sizeof(struct packet_command_pipe_t));
+  close_command_pipe(&packet_command_pipe);
 }
 
 
@@ -1274,20 +651,6 @@ extern void addrcpy( char * a, char * b, int family ) {
   }
 }
 
-/* Add open sockets to select() */
-extern void net_add_fds(fd_set *writefd, int *maxfd)
-{
-  int at, fd;
-  for (at = 0; at < MaxSequence; at++) {
-    fd = sequence[at].socket;
-    if (fd > 0) {
-      FD_SET(fd, writefd);
-      if (fd >= *maxfd)
-        *maxfd = fd + 1;
-    }
-  }
-}
-
 /* for GTK frontend */
 extern void net_harvest_fds(struct mtr_ctl *ctl)
 {
@@ -1298,6 +661,5 @@ extern void net_harvest_fds(struct mtr_ctl *ctl)
   FD_ZERO(&writefd);
   tv.tv_sec = 0;
   tv.tv_usec = 0;
-  net_add_fds(&writefd, &maxfd);
   select(maxfd, NULL, &writefd, NULL, &tv);
 }
