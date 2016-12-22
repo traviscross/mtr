@@ -54,6 +54,9 @@ struct probe_param_t
     /*  The destination port for non-ICMP probes  */
     int dest_port;
 
+    /*  The local port number to use when sending probes  */
+    int local_port;
+
     /*  The "type of service" field in the IP header  */
     int type_of_service;
 
@@ -80,10 +83,12 @@ struct probe_t
     bool used;
 
     /*
-        The port number to use when binding sockets for this probe.
         Also the ICMP sequence ID used to identify the probe.
+
+        Also used as the port number to use when binding stream protocol
+        sockets for this probe.  (i.e. TCP or SCTP)
     */
-    int port;
+    int sequence;
 
     /*  Command token of the probe request  */
     int token;
@@ -103,6 +108,14 @@ struct net_state_t
 
     /*  Platform specific tracking information  */
     struct net_state_platform_t platform;
+};
+
+struct mpls_label_t
+{
+    uint32_t label;
+    uint8_t experimental_use;
+    uint8_t bottom_of_stack;
+    uint8_t ttl;
 };
 
 void init_net_state_privileged(
@@ -133,7 +146,9 @@ void respond_to_probe(
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
-    unsigned int round_trip_us);
+    unsigned int round_trip_us,
+    int mpls_count,
+    const struct mpls_label_t *mpls);
 
 int decode_dest_addr(
     const struct probe_param_t *param,

@@ -70,15 +70,15 @@ BUILDING FOR WINDOWS
 
   Install the packages required for building:
 
-  apt-cyg install automake pkg-config make gcc-core libncurses-devel
+        apt-cyg install automake pkg-config make gcc-core libncurses-devel
 
   Build as under Unix:
 
-  ./bootstrap.sh && ./configure && make
+        ./bootstrap.sh && ./configure && make
 
   Finally, install the built binaries:
 
-  make install
+        make install
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 

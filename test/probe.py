@@ -313,16 +313,38 @@ class TestProbeICMPv6(mtrpacket.MtrPacketTest):
 class TestProbeUDP(mtrpacket.MtrPacketTest):
     'Test transmitting probes using UDP'
 
+    def udp_port_test(self, address):  # type: (unicode) -> None
+        'Test UDP probes with variations on source port and dest port'
+
+        cmd = '80 send-probe protocol udp ' + address
+        self.write_command(cmd)
+        reply = self.parse_reply()
+        self.assertEqual('reply', reply.command_name)
+
+        cmd = '81 send-probe protocol udp port 990 ' + address
+        self.write_command(cmd)
+        reply = self.parse_reply()
+        self.assertEqual('reply', reply.command_name)
+
+        cmd = '82 send-probe protocol udp localport 1991 ' + address
+        self.write_command(cmd)
+        reply = self.parse_reply()
+        self.assertEqual('reply', reply.command_name)
+
     def test_udp_v4(self):
         'Test IPv4 UDP probes'
 
         test_basic_probe(self, 4, 'udp')
+
+        self.udp_port_test('ip-4 127.0.0.1')
 
     @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_udp_v6(self):
         'Test IPv6 UDP probes'
 
         test_basic_probe(self, 6, 'udp')
+
+        self.udp_port_test('ip-6 ::1')
 
 
 class TestProbeTCP(mtrpacket.MtrPacketTest):

@@ -161,7 +161,8 @@ void WINAPI on_icmp_reply(
 
     if (icmp_type != -1) {
         /*  Record probe result  */
-        respond_to_probe(probe, icmp_type, &remote_addr, round_trip_us);
+        respond_to_probe(
+            probe, icmp_type, &remote_addr, round_trip_us, 0, NULL);
     } else {
         fprintf(stderr, "Unexpected ICMP result %d\n", icmp_type);
     }

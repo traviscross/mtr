@@ -64,11 +64,12 @@ struct net_state_platform_t
     bool sctp_support;
 
     /*  The next port number to use when creating a new probe  */
-    int next_port;
+    int next_sequence;
 };
 
 struct net_state_t;
 struct probe_t;
+struct mpls_label_t;
 
 void set_socket_nonblocking(
     int socket);
@@ -77,7 +78,9 @@ void receive_probe(
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
-    struct timeval *timestamp);
+    struct timeval *timestamp,
+    int mpls_count,
+    struct mpls_label_t *mpls);
 
 int gather_probe_sockets(
     const struct net_state_t *net_state,

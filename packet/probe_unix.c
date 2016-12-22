@@ -261,7 +261,7 @@ void init_net_state_privileged(
 {
     memset(net_state, 0, sizeof(struct net_state_t));
 
-    net_state->platform.next_port = MIN_PORT;
+    net_state->platform.next_sequence = MIN_PORT;
 
     open_ip4_sockets(net_state);
     open_ip6_sockets(net_state);
@@ -354,7 +354,7 @@ void send_probe(
     }
 
     packet_size = construct_packet(
-        net_state, &probe->platform.socket, probe->port,
+        net_state, &probe->platform.socket, probe->sequence,
         packet, PACKET_BUFFER_SIZE, &probe->remote_addr, param);
 
     if (packet_size < 0) {
@@ -365,7 +365,8 @@ void send_probe(
             prepared for that.
         */
         if (errno == ECONNREFUSED) {
-            receive_probe(probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL);
+            receive_probe(
+                probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL, 0, NULL);
         } else {
             report_packet_error(param->command_token);
             free_probe(probe);
@@ -394,10 +395,10 @@ void platform_alloc_probe(
     struct net_state_t *net_state,
     struct probe_t *probe)
 {
-    probe->port = net_state->platform.next_port++;
+    probe->sequence = net_state->platform.next_sequence++;
 
-    if (net_state->platform.next_port > MAX_PORT) {
-        net_state->platform.next_port = MIN_PORT;
+    if (net_state->platform.next_sequence > MAX_PORT) {
+        net_state->platform.next_sequence = MIN_PORT;
     }
 }
 
@@ -422,7 +423,9 @@ void receive_probe(
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
-    struct timeval *timestamp)
+    struct timeval *timestamp,
+    int mpls_count,
+    struct mpls_label_t *mpls)
 {
     unsigned int round_trip_us;
     struct timeval *departure_time = &probe->platform.departure_time;
@@ -441,7 +444,8 @@ void receive_probe(
         (timestamp->tv_sec - departure_time->tv_sec) * 1000000 +
         timestamp->tv_usec - departure_time->tv_usec;
 
-    respond_to_probe(probe, icmp_type, remote_addr, round_trip_us);
+    respond_to_probe(
+        probe, icmp_type, remote_addr, round_trip_us, mpls_count, mpls);
 }
 
 /*
@@ -555,7 +559,8 @@ void receive_replies_from_probe_socket(
         assume our probe arrived at the destination.
     */
     if (!err || err == ECONNREFUSED) {
-        receive_probe(probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL);
+        receive_probe(
+            probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL, 0, NULL);
     } else {
         errno = err;
         report_packet_error(probe->token);

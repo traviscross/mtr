@@ -130,7 +130,7 @@ static gint About_clicked(ATTRIBUTE_UNUSED GtkWidget *Button,
 			  ATTRIBUTE_UNUSED gpointer data)
 {
   static const gchar *authors[] = {
-        "Matt Kimball <mkimball@xmission.com>",
+        "Matt Kimball <matt.kimball@gmail.com>",
         "Roger Wolff <R.E.Wolff@BitWizard.nl>",
         "Bohdan Vlasyuk <bohdan@cec.vstu.vinnica.ua>",
         "Evgeniy Tretyak <evtr@ukr.net>",

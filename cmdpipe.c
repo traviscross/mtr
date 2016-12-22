@@ -417,6 +417,11 @@ void send_probe_command(
             command, COMMAND_BUFFER_SIZE, "port", ctl->remoteport);
     }
 
+    if (ctl->localport) {
+        append_command_argument(
+            command, COMMAND_BUFFER_SIZE, "localport", ctl->localport);
+    }
+
 #ifdef SO_MARK
     if (ctl->mark) {
         append_command_argument(
@@ -436,6 +441,72 @@ void send_probe_command(
 
 
 /*
+    Parse a comma separated field of mpls values, filling out the mplslen
+    structure with mpls labels.
+*/
+static
+void parse_mpls_values(
+    struct mplslen *mpls,
+    char *value_str)
+{
+    char *next_value = value_str;
+    char *end_of_value;
+    int value;
+    int label_count = 0;
+    int label_field = 0;
+
+    while (*next_value) {
+        value = strtol(next_value, &end_of_value, 10);
+
+        /*  Failure to advance means an invalid numeric value  */
+        if (end_of_value == next_value) {
+            return;
+        }
+
+        /*  If the next character is not a comma or a NUL, we have
+            an invalid string  */
+        if (*end_of_value == ',') {
+            next_value = end_of_value + 1;
+        } else if (*end_of_value == 0) {
+            next_value = end_of_value;
+        } else {
+            return;
+        }
+
+        /*
+            Store the converted value in the next field of the MPLS
+            structure.
+        */
+        if (label_field == 0) {
+            mpls->label[label_count] = value;
+        } else if (label_field == 1) {
+            mpls->exp[label_count] = value;
+        } else if (label_field == 2) {
+            mpls->s[label_count] = value;
+        } else if (label_field == 3) {
+            mpls->ttl[label_count] = value;
+        }
+
+        label_field++;
+        if (label_field > 3) {
+            label_field = 0;
+            label_count++;
+        }
+
+        /*
+            If we've used up all MPLS labels in the structure, return with
+            what we've got
+        */
+        if (label_count >= MAXLABELS) {
+            break;
+        }
+    }
+
+    mpls->labels = label_count;
+}
+
+
+/*
     Extract the IP address and round trip time from a reply to a probe.
     Returns true if both arguments are found in the reply, false otherwise.
 */
@@ -444,7 +515,8 @@ bool parse_reply_arguments(
     struct mtr_ctl *ctl,
     struct command_t *reply,
     ip_t *fromaddress,
-    int *round_trip_time)
+    int *round_trip_time,
+    struct mplslen *mpls)
 {
     bool found_round_trip;
     bool found_ip;
@@ -454,6 +526,7 @@ bool parse_reply_arguments(
 
     *round_trip_time = 0;
     memset(fromaddress, 0, sizeof(ip_t));
+    memset(mpls, 0, sizeof(struct mplslen));
 
     found_ip = false;
     found_round_trip = false;
@@ -486,6 +559,11 @@ bool parse_reply_arguments(
             if (!errno) {
                 found_round_trip = true;
             }
+        }
+
+        /*  MPLS labels  */
+        if (!strcmp(arg_name, "mpls")) {
+            parse_mpls_values(mpls, arg_value);
         }
     }
 
@@ -582,10 +660,8 @@ void handle_command_reply(
         If the reply had an IP address and a round trip time, we can
         record the result.
     */
-    if (parse_reply_arguments(ctl, &reply, &fromaddress, &round_trip_time)) {
-        /* MPLS decoding */
-        memset(&mpls, 0, sizeof(struct mplslen));
-        mpls.labels = 0;
+    if (parse_reply_arguments(
+            ctl, &reply, &fromaddress, &round_trip_time, &mpls)) {
 
         reply_func(
             ctl, seq_num, &mpls, (void *) &fromaddress, round_trip_time);

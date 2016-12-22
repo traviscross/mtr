@@ -117,6 +117,15 @@ or
 probes.
 .HP 7
 .IP
+.B localport
+.I PORT-NUMBER
+.HP 14
+.IP
+For
+.B udp
+probes, the local port number from which to send probes.
+.HP 7
+.IP
 .B timeout
 .I TIMEOUT-SECONDS
 .HP 14
@@ -273,6 +282,25 @@ time-to-live value expired.
 The time which passed between the transmission of the probe and its
 response.  The time is provided as a integral number of microseconds
 elapsed.
+.HP 7
+.IP
+.B mpls
+.I MPLS-LABEL-LIST
+.HP 14
+.IP
+A list of Multiprotocol Label Switching values returned
+with the probe response.
+If the
+.B mpls
+argument is present, one or more MPLS labels will be represented by
+a comma separated list of values.  The values are provided in groups
+of four.  The first four values in the list correspond to the
+first MPLS label, the next four values correspond to the second MPLS
+label, and so on.  The values are provided in this order:
+.IR label ,
+.IR experimental-use ,
+.IR bottom-of-stack ,
+.IR ttl .
 .HP 7
 .TP
 .B no-route

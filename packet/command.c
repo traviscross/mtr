@@ -184,6 +184,23 @@ bool decode_probe_argument(
         }
     }
 
+    /*  The local port to send UDP probes from  */
+    if (!strcmp(name, "localport")) {
+        param->local_port = strtol(value, &endstr, 10);
+        if (*endstr != 0) {
+            return false;
+        }
+
+        /*
+            Don't allow using a local port which requires
+            privileged binding.
+        */
+        if (param->local_port < 1024) {
+            param->local_port = 0;
+            return false;
+        }
+    }
+
     /*  The "type of service" field for the IP header  */
     if (!strcmp(name, "tos")) {
         param->type_of_service = strtol(value, &endstr, 10);
@@ -250,7 +267,6 @@ void send_probe_command(
     memset(&param, 0, sizeof(struct probe_param_t));
     param.command_token = command->token;
     param.protocol = IPPROTO_ICMP;
-    param.dest_port = 7; /* Use the 'echo' port as the default destination */
     param.ttl = 255;
     param.packet_size = 128;
     param.timeout = 10;

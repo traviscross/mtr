@@ -131,7 +131,7 @@ void construct_ip4_header(
 static
 void construct_icmp4_header(
     const struct net_state_t *net_state,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -146,7 +146,7 @@ void construct_icmp4_header(
 
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(port);
+    icmp->sequence = htons(sequence);
     icmp->checksum = htons(compute_checksum(icmp, icmp_size));
 }
 
@@ -154,7 +154,7 @@ void construct_icmp4_header(
 static
 int construct_icmp6_packet(
     const struct net_state_t *net_state,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -167,9 +167,47 @@ int construct_icmp6_packet(
 
     icmp->type = ICMP6_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(port);
+    icmp->sequence = htons(sequence);
 
     return 0;
+}
+
+/*
+    Set the port numbers for an outgoing UDP probe.
+    There is limited space in the header for a sequence number
+    to identify the probe upon return.
+
+    We store the sequence number in the destination port, the local
+    port, or the checksum.  The location chosen depends upon which
+    probe parameters have been requested.
+*/
+static
+void set_udp_ports(
+    struct UDPHeader *udp,
+    int sequence,
+    const struct probe_param_t *param)
+{
+    if (param->dest_port) {
+        udp->dstport = htons(param->dest_port);
+
+        if (param->local_port) {
+            udp->srcport = htons(param->local_port);
+            udp->checksum = htons(sequence);
+        } else {
+            udp->srcport = htons(sequence);
+            udp->checksum = 0;
+        }
+    } else {
+        udp->dstport = htons(sequence);
+
+        if (param->local_port) {
+            udp->srcport = htons(param->local_port);
+        } else {
+            udp->srcport = htons(getpid());
+        }
+
+        udp->checksum = 0;
+    }
 }
 
 /*
@@ -179,7 +217,7 @@ int construct_icmp6_packet(
 static
 void construct_udp4_header(
     const struct net_state_t *net_state,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -192,17 +230,15 @@ void construct_udp4_header(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    udp->srcport = htons(port);
-    udp->dstport = htons(param->dest_port);
+    set_udp_ports(udp, sequence, param);
     udp->length = htons(udp_size);
-    udp->checksum = 0;
 }
 
 /*  Construct a header for UDPv6 probes  */
 static
 int construct_udp6_packet(
     const struct net_state_t *net_state,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -216,10 +252,8 @@ int construct_udp6_packet(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    udp->srcport = htons(port);
-    udp->dstport = htons(param->dest_port);
+    set_udp_ports(udp, sequence, param);
     udp->length = htons(udp_size);
-    udp->checksum = 0;
 
     /*
         Instruct the kernel to put the pseudoheader checksum into the
@@ -328,6 +362,7 @@ int open_stream_socket(
 {
     int stream_socket;
     int addr_len;
+    int dest_port;
     struct sockaddr_storage dest_port_addr;
     struct sockaddr_storage src_port_addr;
 
@@ -363,8 +398,15 @@ int open_stream_socket(
         return -1;
     }
 
+    if (param->dest_port) {
+        dest_port = param->dest_port;
+    } else {
+        /*  Use http if no port is specified  */
+        dest_port = HTTP_PORT;
+    }
+
     /*  Attempt a connection  */
-    construct_addr_port(&dest_port_addr, dest_sockaddr, param->dest_port);
+    construct_addr_port(&dest_port_addr, dest_sockaddr, dest_port);
     if (connect(
             stream_socket, (struct sockaddr *)&dest_port_addr, addr_len)) {
 
@@ -416,6 +458,9 @@ int compute_packet_size(
         packet_size += sizeof(struct ICMPHeader);
     } else if (param->protocol == IPPROTO_UDP) {
         packet_size += sizeof(struct UDPHeader);
+
+        /*  We may need to put the sequence number in the payload  */
+        packet_size += sizeof(int);
     } else {
         errno = EINVAL;
         return -1;
@@ -445,7 +490,7 @@ static
 int construct_ip4_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct sockaddr_storage *src_sockaddr,
@@ -468,10 +513,10 @@ int construct_ip4_packet(
 
         if (param->protocol == IPPROTO_ICMP) {
             construct_icmp4_header(
-                net_state, port, packet_buffer, packet_size, param);
+                net_state, sequence, packet_buffer, packet_size, param);
         } else if (param->protocol == IPPROTO_UDP) {
             construct_udp4_header(
-                net_state, port, packet_buffer, packet_size, param);
+                net_state, sequence, packet_buffer, packet_size, param);
         } else {
             errno = EINVAL;
             return -1;
@@ -480,7 +525,7 @@ int construct_ip4_packet(
 
     if (is_stream_protocol) {
         send_socket = open_stream_socket(
-            net_state, param->protocol, port,
+            net_state, param->protocol, sequence,
             src_sockaddr, dest_sockaddr, param);
 
         if (send_socket == -1) {
@@ -519,7 +564,7 @@ static
 int construct_ip6_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_size,
     const struct sockaddr_storage *src_sockaddr,
@@ -539,14 +584,14 @@ int construct_ip6_packet(
         send_socket = net_state->platform.icmp6_send_socket;
 
         if (construct_icmp6_packet(
-                net_state, port, packet_buffer, packet_size, param)) {
+                net_state, sequence, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else if (param->protocol == IPPROTO_UDP) {
         send_socket = net_state->platform.udp6_send_socket;
 
         if (construct_udp6_packet(
-                net_state, port, packet_buffer, packet_size, param)) {
+                net_state, sequence, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else {
@@ -556,7 +601,7 @@ int construct_ip6_packet(
 
     if (is_stream_protocol) {
         send_socket = open_stream_socket(
-            net_state, param->protocol, port,
+            net_state, param->protocol, sequence,
             src_sockaddr, dest_sockaddr, param);
 
         if (send_socket == -1) {
@@ -598,7 +643,7 @@ int construct_ip6_packet(
 int construct_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int port,
+    int sequence,
     char *packet_buffer,
     int packet_buffer_size,
     const struct sockaddr_storage *dest_sockaddr,
@@ -625,13 +670,15 @@ int construct_packet(
 
     if (param->ip_version == 6) {
         if (construct_ip6_packet(
-                net_state, packet_socket, port, packet_buffer, packet_size,
+                net_state, packet_socket, sequence,
+                packet_buffer, packet_size,
                 &src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else if (param->ip_version == 4) {
         if (construct_ip4_packet(
-                net_state, packet_socket, port, packet_buffer, packet_size,
+                net_state, packet_socket, sequence,
+                packet_buffer, packet_size,
                 &src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }

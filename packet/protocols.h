@@ -37,6 +37,18 @@
 /*  ICMP6_DEST_UNREACH codes */
 #define ICMP6_PORT_UNREACH 4
 
+/*
+    The minimum size of the ICMP "original datagram" when
+    using ICMP extensions
+*/
+#define ICMP_ORIGINAL_DATAGRAM_MIN_SIZE 128
+
+/*  The classnum and type of MPLS labels in an ICMP extension object  */
+#define ICMP_EXT_MPLS_CLASSNUM 1
+#define ICMP_EXT_MPLS_CTYPE 1
+
+#define HTTP_PORT 80
+
 /*  We can't rely on header files to provide this information, because
     the fields have different names between, for instance, Linux and 
     Solaris  */
@@ -46,6 +58,28 @@ struct ICMPHeader {
     uint16_t checksum;
     uint16_t id;
     uint16_t sequence;
+};
+
+/*  ICMP extension header, which might contain MPLS labels  */
+/*  See RFC 4884  */
+struct ICMPExtensionHeader {
+    uint8_t version;
+    uint8_t reserved;
+    uint16_t checksum;
+};
+
+/*  An object in an extended ICMP object  */
+struct ICMPExtensionObject {
+    uint16_t len;
+    uint8_t classnum;
+    uint8_t ctype;
+};
+
+/*  An MPLS label included in an ICMP extension  */
+/*  See RFC 4950  */
+struct ICMPExtMPLSLabel {
+    uint8_t label[3];  // Low 4 bits are Experimental Use, Stack
+    uint8_t ttl;
 };
 
 /* Structure of an UDP header.  */
