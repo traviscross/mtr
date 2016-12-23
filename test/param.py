@@ -43,7 +43,7 @@ class TestParameters(mtrpacket.MtrPacketTest):
         'Test probes are filled with the requested bit pattern'
 
         with mtrpacket.PacketListen('-4') as listen:
-            cmd = '20 send-probe ip-4 127.0.0.1 bitpattern 44'
+            cmd = '20 send-probe ip-4 127.0.0.1 bit-pattern 44'
 
             self.write_command(cmd)
 
@@ -69,7 +69,7 @@ class TestIPv6Parameters(mtrpacket.MtrPacketTest):
         'Test a variety of packet parameters'
 
         with mtrpacket.PacketListen('-6') as listen:
-            param = 'size 256 bitpattern 51 tos 77'
+            param = 'size 256 bit-pattern 51 tos 77'
             cmd = '20 send-probe ip-6 ::1 ' + param
 
             self.write_command(cmd)

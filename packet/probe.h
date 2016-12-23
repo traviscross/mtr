@@ -46,7 +46,10 @@ struct probe_param_t
     int command_token;
 
     /*  The IP address to probe  */
-    const char *address;
+    const char *remote_address;
+
+    /*  The local address from which to send probes  */
+    const char *local_address;
 
     /*  Protocol for the probe, using the IPPROTO_* defines  */
     int protocol;
@@ -150,9 +153,15 @@ void respond_to_probe(
     int mpls_count,
     const struct mpls_label_t *mpls);
 
-int decode_dest_addr(
+int decode_address_string(
+    int ip_version,
+    const char *address_string,
+    struct sockaddr_storage *address);
+
+int resolve_probe_addresses(
     const struct probe_param_t *param,
-    struct sockaddr_storage *dest_sockaddr);
+    struct sockaddr_storage *dest_sockaddr,
+    struct sockaddr_storage *src_sockaddr);
 
 struct probe_t *alloc_probe(
     struct net_state_t *net_state,

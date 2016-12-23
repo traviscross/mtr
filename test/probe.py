@@ -326,7 +326,7 @@ class TestProbeUDP(mtrpacket.MtrPacketTest):
         reply = self.parse_reply()
         self.assertEqual('reply', reply.command_name)
 
-        cmd = '82 send-probe protocol udp localport 1991 ' + address
+        cmd = '82 send-probe protocol udp local-port 1991 ' + address
         self.write_command(cmd)
         reply = self.parse_reply()
         self.assertEqual('reply', reply.command_name)

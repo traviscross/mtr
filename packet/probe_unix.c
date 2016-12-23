@@ -87,6 +87,7 @@ void check_length_order(
     char packet[PACKET_BUFFER_SIZE];
     struct probe_param_t param;
     struct sockaddr_storage dest_sockaddr;
+    struct sockaddr_storage src_sockaddr;
     ssize_t bytes_sent;
     int packet_size;
 
@@ -94,9 +95,9 @@ void check_length_order(
     param.ip_version = 4;
     param.protocol = IPPROTO_ICMP;
     param.ttl = 255;
-    param.address = "127.0.0.1";
+    param.remote_address = "127.0.0.1";
 
-    if (decode_dest_addr(&param, &dest_sockaddr)) {
+    if (resolve_probe_addresses(&param, &dest_sockaddr, &src_sockaddr)) {
         fprintf(stderr, "Error decoding localhost address\n");
         exit(1);
     }
@@ -106,7 +107,8 @@ void check_length_order(
 
     packet_size = construct_packet(
         net_state, NULL, MIN_PORT,
-        packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+        packet, PACKET_BUFFER_SIZE,
+        &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(1);
@@ -123,7 +125,8 @@ void check_length_order(
 
     packet_size = construct_packet(
         net_state, NULL, MIN_PORT,
-        packet, PACKET_BUFFER_SIZE, &dest_sockaddr, &param);
+        packet, PACKET_BUFFER_SIZE,
+        &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(1);
@@ -318,10 +321,14 @@ void report_packet_error(
         printf("%d network-down\n", command_token);
     } else if (errno == ENETUNREACH) {
         printf("%d no-route\n", command_token);
+    } else if (errno == EHOSTUNREACH) {
+        printf("%d no-route\n", command_token);
     } else if (errno == EPERM) {
         printf("%d permission-denied\n", command_token);
     } else if (errno == EADDRINUSE) {
         printf("%d address-in-use\n", command_token);
+    } else if (errno == EADDRNOTAVAIL) {
+        printf("%d address-not-available\n", command_token);
     } else {
         printf("%d unexpected-error errno %d\n", command_token, errno);
     }
@@ -335,6 +342,7 @@ void send_probe(
     char packet[PACKET_BUFFER_SIZE];
     struct probe_t *probe;
     int packet_size;
+    struct sockaddr_storage src_sockaddr;
 
     probe = alloc_probe(net_state, param->command_token);
     if (probe == NULL) {
@@ -342,7 +350,7 @@ void send_probe(
         return;
     }
 
-    if (decode_dest_addr(param, &probe->remote_addr)) {
+    if (resolve_probe_addresses(param, &probe->remote_addr, &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
         free_probe(probe);
         return;
@@ -355,7 +363,8 @@ void send_probe(
 
     packet_size = construct_packet(
         net_state, &probe->platform.socket, probe->sequence,
-        packet, PACKET_BUFFER_SIZE, &probe->remote_addr, param);
+        packet, PACKET_BUFFER_SIZE,
+        &probe->remote_addr, &src_sockaddr, param);
 
     if (packet_size < 0) {
         /*

@@ -18,10 +18,12 @@
 
 #include "config.h"
 
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <unistd.h>
 
 #ifdef HAVE_ERROR_H
 # include <error.h>
@@ -40,6 +42,8 @@
 #define MaxSequence 65536
 
 static int packetsize;         /* packet size used by ping */
+
+static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len );
 
 struct nethost {
   ip_t addr;
@@ -88,6 +92,7 @@ static struct sockaddr_in sourcesockaddr_struct;
 static struct sockaddr_in remotesockaddr_struct;
 #endif
 
+static struct sockaddr * sourcesockaddr = (struct sockaddr *) &sourcesockaddr_struct;
 static struct sockaddr * remotesockaddr = (struct sockaddr *) &remotesockaddr_struct;
 static struct sockaddr_in * ssa4 = (struct sockaddr_in *) &sourcesockaddr_struct;
 static struct sockaddr_in * rsa4 = (struct sockaddr_in *) &remotesockaddr_struct;
@@ -154,7 +159,8 @@ static void net_send_query(struct mtr_ctl *ctl, int index, int packet_size)
   int time_to_live = index + 1;
 
   send_probe_command(
-    ctl, &packet_command_pipe, remoteaddress, packetsize, seq, time_to_live);
+    ctl, &packet_command_pipe, remoteaddress, sourceaddress,
+    packetsize, seq, time_to_live);
 }
 
 
@@ -481,6 +487,75 @@ extern int net_send_batch(struct mtr_ctl *ctl)
 }
 
 
+/*  Ensure the interface address a valid address for our use  */
+static void net_validate_interface_address(
+  int address_family, char *interface_address)
+{
+  if (inet_pton(
+      address_family, interface_address, sourceaddress) != 1) {
+
+    error(EXIT_FAILURE, errno, "invalid local address");
+  }
+
+  if (inet_ntop(
+      address_family, sourceaddress, localaddr, sizeof(localaddr)) == NULL) {
+
+    error(EXIT_FAILURE, errno, "invalid local address");
+  }
+}
+
+
+/*
+  Find the local address we will use to sent to the remote
+  host by connecting a UDP socket and checking the address
+  the socket is bound to.
+*/
+static void net_find_local_address(void)
+{
+  int udp_socket;
+  int addr_length;
+  struct sockaddr_storage remote_sockaddr;
+  struct sockaddr_in *remote4;
+  struct sockaddr_in6 *remote6;
+
+  udp_socket = socket(remotesockaddr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
+  if (udp_socket == -1) {
+    error(EXIT_FAILURE, errno, "udp socket creation failed");
+  }
+
+  /*
+    We need to set the port to a non-zero value for the connect
+    to succeed.
+  */
+  if (remotesockaddr->sa_family == AF_INET6) {
+    addr_length = sizeof(struct sockaddr_in6);
+
+    memcpy(&remote_sockaddr, rsa6, addr_length);
+    remote6 = (struct sockaddr_in6 *)&remote_sockaddr;
+    remote6->sin6_port = htons(1);
+  } else {
+    addr_length = sizeof(struct sockaddr_in);
+
+    memcpy(&remote_sockaddr, rsa4, addr_length);
+    remote4 = (struct sockaddr_in *)&remote_sockaddr;
+    remote4->sin_port = htons(1);
+  }
+
+  if (connect(udp_socket, (struct sockaddr *)&remote_sockaddr, addr_length)) {
+    error(EXIT_FAILURE, errno, "udp socket connect failed");
+  }
+
+  if (getsockname(udp_socket, sourcesockaddr, &addr_length)) {
+
+    error(EXIT_FAILURE, errno, "local address determination failed");
+  }
+
+  sockaddrtop(sourcesockaddr, localaddr, sizeof(localaddr));
+
+  close(udp_socket);
+}
+
+
 extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 {
   int err;
@@ -510,6 +585,12 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 #endif
   default:
     error(EXIT_FAILURE, 0, "net_open bad address type");
+  }
+
+  if (ctl->InterfaceAddress) {
+    net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
+  } else {
+    net_find_local_address();
   }
 
   return 0;
@@ -617,6 +698,33 @@ extern void net_save_return(int at, int seq, int ms)
   }
   host[at].saved[idx] = ms;
 }
+
+/* Similar to inet_ntop but uses a sockaddr as it's argument. */
+static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
+  struct sockaddr_in *  sa4;
+#ifdef ENABLE_IPV6
+  struct sockaddr_in6 * sa6;
+#endif
+
+  switch ( saddr->sa_family ) {
+  case AF_INET:
+    sa4 = (struct sockaddr_in *) saddr;
+    xstrncpy( strptr, inet_ntoa( sa4->sin_addr ), len - 1 );
+    strptr[ len - 1 ] = '\0';
+    return;
+#ifdef ENABLE_IPV6
+  case AF_INET6:
+    sa6 = (struct sockaddr_in6 *) saddr;
+    inet_ntop( sa6->sin6_family, &(sa6->sin6_addr), strptr, len );
+    return;
+#endif
+  default:
+    error(0, 0, "sockaddrtop unknown address type");
+    strptr[0] = '\0';
+    return;
+  }
+}
+
 
 /* Address comparison. */
 extern int addrcmp( char * a, char * b, int family ) {

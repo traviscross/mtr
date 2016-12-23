@@ -77,6 +77,29 @@ void platform_free_probe(
     }
 }
 
+/*  Report a windows error code using a platform-independent error string  */
+static
+void report_win_error(
+    int command_token,
+    int err)
+{
+    /*  It could be that we got no reply because of timeout  */
+    if (err == IP_REQ_TIMED_OUT) {
+        printf("%d no-reply\n", command_token);
+    } else if (err == IP_DEST_HOST_UNREACHABLE
+            || err == IP_DEST_NET_UNREACHABLE
+            || err == IP_DEST_UNREACHABLE
+            || err == IP_DEST_NO_ROUTE) {
+        printf("%d no-route\n", command_token);
+    } else if (err == ERROR_INVALID_NETNAME) {
+        printf("%d address-not-available\n", command_token);
+    } else if (err == ERROR_INVALID_PARAMETER) {
+        printf("%d invalid-argument\n", command_token);
+    } else {
+        printf("%d unexpected-error winerror %d\n", command_token, err);
+    }
+}
+
 /*
     The overlapped I/O style completion routine to be called by
     Windows during an altertable wait when an ICMP probe has
@@ -139,16 +162,9 @@ void WINAPI on_icmp_reply(
     if (reply_count == 0) {
         err = GetLastError();
 
-        /*  It could be that we got no reply because of timeout  */
-        if (err == IP_REQ_TIMED_OUT) {
-            printf("%d no-reply\n", probe->token);
-
-            free_probe(probe);
-            return;
-        }
-
-        fprintf(stderr, "IcmpParseReplies failure %d\n", err);
-        exit(1);
+        report_win_error(probe->token, err);
+        free_probe(probe);
+        return;
     }
 
 
@@ -183,6 +199,7 @@ void icmp_send_probe(
     DWORD timeout;
     DWORD send_result;
     int reply_size;
+    int err;
     struct sockaddr_in *dest_sockaddr4;
     struct sockaddr_in6 *src_sockaddr6;
     struct sockaddr_in6 *dest_sockaddr6;
@@ -233,13 +250,15 @@ void icmp_send_probe(
     }
 
     if (send_result == 0) {
+        err = GetLastError();
+
         /*
             ERROR_IO_PENDING is expected for asynchronous probes,
             but any other error is unexpected.
         */
-        if (GetLastError() != ERROR_IO_PENDING) {
-            fprintf(stderr, "IcmpSendEcho2 failure %d\n", GetLastError());
-            exit(1);
+        if (err != ERROR_IO_PENDING) {
+            report_win_error(probe->token, err);
+            free_probe(probe);
         }
     }
 }
@@ -289,7 +308,7 @@ void send_probe(
     char payload[PACKET_BUFFER_SIZE];
     int payload_size;
 
-    if (decode_dest_addr(param, &dest_sockaddr)) {
+    if (resolve_probe_addresses(param, &dest_sockaddr, &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
         return;
     }
@@ -298,11 +317,6 @@ void send_probe(
     if (probe == NULL) {
         printf("%d probes-exhausted\n", param->command_token);
         return;
-    }
-
-    if (find_source_addr(&src_sockaddr, &dest_sockaddr)) {
-        fprintf(stderr, "error finding source address\n");
-        exit(1);
     }
 
     probe->platform.ip_version = param->ip_version;

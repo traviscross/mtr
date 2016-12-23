@@ -61,6 +61,7 @@ void send_probe_command(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe,
     ip_t *address,
+    ip_t *localaddress,
     int packet_size,
     int sequence,
     int time_to_live);

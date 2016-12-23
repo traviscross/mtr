@@ -407,10 +407,9 @@ The target port number for TCP/SCTP/UDP traces.
 The source port number for UDP traces.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
-The number of seconds to keep the TCP socket open before giving up on
-the connection.  This will only affect the final hop.  Using large values
-for this, especially combined with a short interval, will use up a lot
-of file descriptors.
+The number of seconds to keep probe sockets open before giving up on
+the connection.  Using large values for this, especially combined with
+a short interval, will use up a lot of file descriptors.
 .TP
 .B \-M \fIMARK\fR, \fB\-\-mark \fIMARK
 Set the mark for each packet sent through this socket similar to the

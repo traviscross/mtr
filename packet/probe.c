@@ -35,24 +35,25 @@
 #define IP_TEXT_LENGTH 64
 
 /*  Convert the destination address from text to sockaddr  */
-int decode_dest_addr(
-    const struct probe_param_t *param,
-    struct sockaddr_storage *dest_sockaddr)
+int decode_address_string(
+    int ip_version,
+    const char *address_string,
+    struct sockaddr_storage *address)
 {
-    struct in_addr dest_addr4;
-    struct in6_addr dest_addr6;
+    struct in_addr addr4;
+    struct in6_addr addr6;
     struct sockaddr_in *sockaddr4;
     struct sockaddr_in6 *sockaddr6;
 
-    if (param->address == NULL) {
+    if (address == NULL) {
         errno = EINVAL;
         return -1;
     }
 
-    if (param->ip_version == 6) {
-        sockaddr6 = (struct sockaddr_in6 *)dest_sockaddr;
+    if (ip_version == 6) {
+        sockaddr6 = (struct sockaddr_in6 *)address;
 
-        if (inet_pton(AF_INET6, param->address, &dest_addr6) != 1) {
+        if (inet_pton(AF_INET6, address_string, &addr6) != 1) {
             errno = EINVAL;
             return -1;
         }
@@ -60,22 +61,50 @@ int decode_dest_addr(
         sockaddr6->sin6_family = AF_INET6;
         sockaddr6->sin6_port = 0;
         sockaddr6->sin6_flowinfo = 0;
-        sockaddr6->sin6_addr = dest_addr6;
+        sockaddr6->sin6_addr = addr6;
         sockaddr6->sin6_scope_id = 0;
-    } else if (param->ip_version == 4) {
-        sockaddr4 = (struct sockaddr_in *)dest_sockaddr;
+    } else if (ip_version == 4) {
+        sockaddr4 = (struct sockaddr_in *)address;
 
-        if (inet_pton(AF_INET, param->address, &dest_addr4) != 1) {
+        if (inet_pton(AF_INET, address_string, &addr4) != 1) {
             errno = EINVAL;
             return -1;
         }
 
         sockaddr4->sin_family = AF_INET;
         sockaddr4->sin_port = 0;
-        sockaddr4->sin_addr = dest_addr4;
+        sockaddr4->sin_addr = addr4;
     } else {
         errno = EINVAL;
         return -1;
+    }
+
+    return 0;
+}
+
+/*
+    Resolve the probe parameters into a remote and local address
+    for the probe.
+*/
+int resolve_probe_addresses(
+    const struct probe_param_t *param,
+    struct sockaddr_storage *dest_sockaddr,
+    struct sockaddr_storage *src_sockaddr)
+{
+    if (decode_address_string(
+            param->ip_version, param->remote_address, dest_sockaddr)) {
+        return -1;
+    }
+
+    if (param->local_address) {
+        if (decode_address_string(
+                param->ip_version, param->local_address, src_sockaddr)) {
+            return -1;
+        }
+    } else {
+        if (find_source_addr(src_sockaddr, dest_sockaddr)) {
+            return -1;
+        }
     }
 
     return 0;

@@ -117,7 +117,21 @@ or
 probes.
 .HP 7
 .IP
-.B localport
+.B local-ip-4
+.I IP-ADDRESS
+.HP 14
+.IP
+The local Internet Procol version 4 address to use when sending probes.
+.HP 7
+.IP
+.B local-ip-6
+.I IP-ADDRESS
+.HP 14
+.IP
+The local Internet Protocol version 6 address to use when sending probes.
+.HP 7
+.IP
+.B local-port
 .I PORT-NUMBER
 .HP 14
 .IP
@@ -154,7 +168,7 @@ The size of the packet used to send the probe, in bytes, including the
 Internet Protocol header and transport protocol header.
 .HP 7
 .IP
-.B bitpattern
+.B bit-pattern
 .I PATTERN-VALUE
 .HP 14
 .IP

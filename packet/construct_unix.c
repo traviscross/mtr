@@ -612,6 +612,11 @@ int construct_ip6_packet(
         return 0;
     }
 
+    if (bind(send_socket,
+            (struct sockaddr *)src_sockaddr, sizeof(struct sockaddr_in6))) {
+        return -1;
+    }
+
     /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
     if (setsockopt(
             send_socket, IPPROTO_IPV6,
@@ -647,10 +652,10 @@ int construct_packet(
     char *packet_buffer,
     int packet_buffer_size,
     const struct sockaddr_storage *dest_sockaddr,
+    const struct sockaddr_storage *src_sockaddr,
     const struct probe_param_t *param)
 {
     int packet_size;
-    struct sockaddr_storage src_sockaddr;
 
     packet_size = compute_packet_size(net_state, param);
     if (packet_size < 0) {
@@ -662,24 +667,20 @@ int construct_packet(
         return -1;
     }
 
-    if (find_source_addr(&src_sockaddr, dest_sockaddr)) {
-        return -1;
-    }
-
     memset(packet_buffer, param->bit_pattern, packet_size);
 
     if (param->ip_version == 6) {
         if (construct_ip6_packet(
                 net_state, packet_socket, sequence,
                 packet_buffer, packet_size,
-                &src_sockaddr, dest_sockaddr, param)) {
+                src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else if (param->ip_version == 4) {
         if (construct_ip4_packet(
                 net_state, packet_socket, sequence,
                 packet_buffer, packet_size,
-                &src_sockaddr, dest_sockaddr, param)) {
+                src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else {

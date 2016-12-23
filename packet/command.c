@@ -150,13 +150,23 @@ bool decode_probe_argument(
     /*  Pass IPv4 addresses as string values  */
     if (!strcmp(name, "ip-4")) {
         param->ip_version = 4;
-        param->address = value;
+        param->remote_address = value;
     }
 
     /*  IPv6 address  */
     if (!strcmp(name, "ip-6")) {
         param->ip_version = 6;
-        param->address = value;
+        param->remote_address = value;
+    }
+
+    /*  IPv4 address to send from  */
+    if (!strcmp(name, "local-ip-4")) {
+        param->local_address = value;
+    }
+
+    /*  IPv6 address to send from  */
+    if (!strcmp(name, "local-ip-6")) {
+        param->local_address = value;
     }
 
     /*  Protocol for the probe  */
@@ -185,7 +195,7 @@ bool decode_probe_argument(
     }
 
     /*  The local port to send UDP probes from  */
-    if (!strcmp(name, "localport")) {
+    if (!strcmp(name, "local-port")) {
         param->local_port = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -226,7 +236,7 @@ bool decode_probe_argument(
     }
 
     /*  The packet's bytes will be filled with this value  */
-    if (!strcmp(name, "bitpattern")) {
+    if (!strcmp(name, "bit-pattern")) {
         param->bit_pattern = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;

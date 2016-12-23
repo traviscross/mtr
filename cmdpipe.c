@@ -325,24 +325,38 @@ void construct_base_command(
     char *command,
     int buffer_size,
     int command_token,
-    ip_t *address)
+    ip_t *address,
+    ip_t *localaddress)
 {
     char ip_string[INET6_ADDRSTRLEN];
+    char local_ip_string[INET6_ADDRSTRLEN];
     const char *ip_type;
+    const char *local_ip_type;
     const char *protocol = NULL;
 
     /*  Conver the remote IP address to a string  */
     if (inet_ntop(
-            ctl->af, address, ip_string, INET6_ADDRSTRLEN) == NULL) {
+            ctl->af, address,
+            ip_string, INET6_ADDRSTRLEN) == NULL) {
 
         display_close(ctl);
-        error(EXIT_FAILURE, errno, "failure stringifying remote IP address");
+        error(EXIT_FAILURE, errno, "invalid remote IP address");
+    }
+
+    if (inet_ntop(
+            ctl->af, localaddress,
+            local_ip_string, INET6_ADDRSTRLEN) == NULL) {
+
+        display_close(ctl);
+        error(EXIT_FAILURE, errno, "invalid local IP address");
     }
 
     if (ctl->af == AF_INET6) {
         ip_type = "ip-6";
+        local_ip_type = "local-ip-6";
     } else {
         ip_type = "ip-4";
+        local_ip_type = "local-ip-4";
     }
 
     if (ctl->mtrtype == IPPROTO_ICMP) {
@@ -362,8 +376,10 @@ void construct_base_command(
 
     snprintf(
         command, buffer_size,
-        "%d send-probe %s %s protocol %s",
-        command_token, ip_type, ip_string, protocol);
+        "%d send-probe %s %s %s %s protocol %s",
+        command_token,
+        ip_type, ip_string, local_ip_type, local_ip_string,
+        protocol);
 }
 
 
@@ -390,27 +406,33 @@ void send_probe_command(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe,
     ip_t *address,
+    ip_t *localaddress,
     int packet_size,
     int sequence,
     int time_to_live)
 {
     char command[COMMAND_BUFFER_SIZE];
     int remaining_size;
+    int timeout;
 
     construct_base_command(
-        ctl, command, COMMAND_BUFFER_SIZE, sequence, address);
+        ctl, command, COMMAND_BUFFER_SIZE, sequence, address, localaddress);
 
     append_command_argument(
         command, COMMAND_BUFFER_SIZE, "size", packet_size);
 
     append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "bitpattern", ctl->bitpattern);
+        command, COMMAND_BUFFER_SIZE, "bit-pattern", ctl->bitpattern);
 
     append_command_argument(
         command, COMMAND_BUFFER_SIZE, "tos", ctl->tos);
 
     append_command_argument(
         command, COMMAND_BUFFER_SIZE, "ttl", time_to_live);
+
+    timeout = ctl->probe_timeout / 1000000;
+    append_command_argument(
+        command, COMMAND_BUFFER_SIZE, "timeout", timeout);
 
     if (ctl->remoteport) {
         append_command_argument(
@@ -419,7 +441,7 @@ void send_probe_command(
 
     if (ctl->localport) {
         append_command_argument(
-            command, COMMAND_BUFFER_SIZE, "localport", ctl->localport);
+            command, COMMAND_BUFFER_SIZE, "local-port", ctl->localport);
     }
 
 #ifdef SO_MARK
@@ -607,6 +629,16 @@ void handle_reply_errors(
     if (!strcmp(reply_name, "permission-denied")) {
         display_close(ctl);
         error(EXIT_FAILURE, 0, "Permission denied");
+    }
+
+    if (!strcmp(reply_name, "address-in-use")) {
+        display_close(ctl);
+        error(EXIT_FAILURE, 0, "Address in use");
+    }
+
+    if (!strcmp(reply_name, "address-not-available")) {
+        display_close(ctl);
+        error(EXIT_FAILURE, 0, "Address not available");
     }
 
     if (!strcmp(reply_name, "unexpected-error")) {
