@@ -101,7 +101,9 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs("\n", out);
   fputs(" -F, --filename FILE        read hostname(s) from a file\n", out);
   fputs(" -4                         use IPv4 only\n", out);
+#ifdef ENABLE_IPV6
   fputs(" -6                         use IPv6 only\n", out);
+#endif
   fputs(" -u, --udp                  use UDP instead of ICMP echo\n", out);
   fputs(" -T, --tcp                  use TCP instead of ICMP echo\n", out);
   fputs(" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n", out);
@@ -117,7 +119,9 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
   fputs(" -Z, --timeout SECONDS      seconds to keep probe sockets open\n", out);
+#ifdef SO_MARK
   fputs(" -M, --mark MARK            mark each sent packet\n", out);
+#endif
   fputs(" -r, --report               output using report mode\n", out);
   fputs(" -w, --report-wide          output wide report\n", out);
   fputs(" -c, --report-cycles COUNT  set the number of pings sent\n", out);
@@ -150,6 +154,11 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
 
 static void
 append_to_names(names_t **names_head, const char *item) {
+  names_t** name_tail = names_head;
+
+  while (*name_tail) {
+    name_tail = &(*name_tail)->next;
+  }
 
   names_t* name = calloc(1, sizeof(names_t));
   if (name == NULL) {
@@ -157,8 +166,8 @@ append_to_names(names_t **names_head, const char *item) {
   }
   name->name = xstrdup(item);
   name->next = NULL;
-  *names_head = name;
-  names_head = &(name->next);
+
+  *name_tail = name;
 }
 
 static void
@@ -320,7 +329,9 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
 	{ "max-unknown",    1, NULL, 'U' },
     { "udp",            0, NULL, 'u' }, /* UDP (default is ICMP) */
     { "tcp",            0, NULL, 'T' }, /* TCP (default is ICMP) */
+#ifdef HAS_SCTP
     { "sctp",           0, NULL, 'S' }, /* SCTP (default is ICMP) */
+#endif
     { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
     { "localport",      1, NULL, 'L' }, /* source port number for UDP */
     { "timeout",        1, NULL, 'Z' }, /* timeout for probe sockets */
@@ -502,8 +513,8 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
       }
       ctl->mtrtype = IPPROTO_TCP;
       break;
-    case 'S':
 #ifdef HAS_SCTP
+    case 'S':
       if (ctl->mtrtype != IPPROTO_ICMP) {
         error(EXIT_FAILURE, 0, "-u , -T and -S are mutually exclusive");
       }
@@ -511,10 +522,8 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
         ctl->remoteport = 80;
       }
       ctl->mtrtype = IPPROTO_SCTP;
-#else
-      error(EXIT_FAILURE, 0, "No SCTP support found at compiletime");
-#endif
       break;
+#endif
     case 'b':
       ctl->show_ips = 1;
       break;
@@ -537,12 +546,9 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
     case '4':
       ctl->af = AF_INET;
       break;
-    case '6':
 #ifdef ENABLE_IPV6
+    case '6':
       ctl->af = AF_INET6;
-      break;
-#else
-      error(EXIT_FAILURE, 0, "IPv6 not enabled");
       break;
 #endif
 #ifdef HAVE_IPINFO
@@ -555,19 +561,10 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
     case 'z':
       ctl->ipinfo_no = 0;
       break;
-#else
-    case 'y':
-    case 'z':
-      error(EXIT_FAILURE, 0, "IPINFO not enabled");
-      break;
 #endif
 #ifdef SO_MARK
     case 'M':
       ctl->mark = strtonum_or_err(optarg, "invalid argument", STRTO_U32INT);
-      break;
-#else
-    case 'M':
-      error(EXIT_FAILURE, 0, "SO_MARK not enabled");
       break;
 #endif
     default:
@@ -630,8 +627,8 @@ extern int main(int argc, char **argv)
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
-  names_t *names_root = NULL;
-  names_t **names_head = &names_root;
+  names_t *names_head = NULL;
+  names_t *names_walk;
 
   struct mtr_ctl ctl;
   memset(&ctl, 0, sizeof(ctl));
@@ -675,21 +672,22 @@ extern int main(int argc, char **argv)
      but that requires a run-time initialization. */
   init_fld_options (&ctl);
 
-  parse_mtr_options (&ctl, names_head, getenv ("MTR_OPTIONS"));
+  parse_mtr_options(&ctl, &names_head, getenv ("MTR_OPTIONS"));
 
-  parse_arg (&ctl, names_head, argc, argv);
+  parse_arg(&ctl, &names_head, argc, argv);
 
   while (optind < argc) {
     char* name = argv[optind++];
-    append_to_names(names_head, name);
+    append_to_names(&names_head, name);
   }
 
-  if (!names_root) append_to_names (names_head, "localhost"); /* default: localhost. */
+  /* default: localhost. */
+  if (!names_head) append_to_names(&names_head, "localhost");
 
-  names_head = &names_root;
-  while (*names_head != NULL) {
+  names_walk = names_head;
+  while (names_walk != NULL) {
 
-    ctl.Hostname = names_root->name;
+    ctl.Hostname = names_walk->name;
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
     }
@@ -705,9 +703,9 @@ extern int main(int argc, char **argv)
       else
          error(0, 0, "Failed to resolve host: %s: %s", ctl.Hostname, gai_strerror(gai_error));
 
-      if ( ctl.DisplayMode != DisplayCSV ) exit(EXIT_FAILURE);
+      if (ctl.Interactive) exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -733,10 +731,10 @@ extern int main(int argc, char **argv)
 #endif
     default:
       error(0, 0, "unknown address type");
-      if (ctl.DisplayMode != DisplayCSV )
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
@@ -744,14 +742,13 @@ extern int main(int argc, char **argv)
 
     if (net_open(&ctl, host) != 0) {
       error(0, 0, "Unable to start net module");
-      if (ctl.DisplayMode != DisplayCSV)
+      if (ctl.Interactive)
         exit(EXIT_FAILURE);
       else {
-        names_root = names_root->next;
+        names_walk = names_walk->next;
         continue;
       }
     }
-
 
     lock(stdout);
       dns_open(&ctl);
@@ -763,22 +760,21 @@ extern int main(int argc, char **argv)
       display_close(&ctl);
     unlock(stdout);
 
-    if (ctl.DisplayMode != DisplayCSV)
+    if (ctl.Interactive)
       break;
     else
-      names_root = names_root->next;
+      names_walk = names_walk->next;
 
   }
 
   net_close();
 
-  while (*names_head != NULL) {
-    names_t* item = *names_head;
+  while (names_head != NULL) {
+    names_t* item = names_head;
     free(item->name); item->name = NULL;
-    *names_head = item->next;
+    names_head = item->next;
     free(item); item = NULL;
   }
-  names_head=NULL;
 
   return 0;
 }

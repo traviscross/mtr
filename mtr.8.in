@@ -95,6 +95,9 @@ mtr \- a network diagnostic tool
 .B \-\-tcp\c
 ]
 [\c
+.BI \-\-sctp\c
+]
+[\c
 .BI \-P \ PORT\c
 ]
 [\c
@@ -399,6 +402,9 @@ Use UDP datagrams instead of ICMP ECHO.
 Use TCP SYN packets instead of ICMP ECHO.
 .I PACKETSIZE
 is ignored, since SYN packets can not contain data.
+.TP
+.B \-S\fR, \fB\-\-sctp
+Use Stream Control Transmission Protocol packets instead of ICMP ECHO.
 .TP
 .B \-P \fIPORT\fR, \fB\-\-port \fIPORT
 The target port number for TCP/SCTP/UDP traces.
