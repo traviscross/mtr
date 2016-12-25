@@ -21,20 +21,17 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #ifdef ENABLE_IPV6
 #include <netinet/ip6.h>
-#include <netinet/icmp6.h>
 #endif
 
 #include <stdint.h>
 
 #include "mtr.h"
 
-extern int net_preopen(void);
-extern int net_selectsocket(struct mtr_ctl *ctl);
 extern int net_open(struct mtr_ctl *ctl, struct hostent *host);
 extern void net_reopen(struct mtr_ctl *ctl, struct hostent *address);
-extern int net_set_interfaceaddress (struct mtr_ctl *ctl);
 extern void net_reset(struct mtr_ctl *ctl);
 extern void net_close(void);
 extern int net_waitfd(void);
@@ -79,4 +76,3 @@ extern int addrcmp( char * a, char * b, int af );
 extern void addrcpy( char * a, char * b, int af );
 
 extern void net_add_fds(fd_set *writefd, int *maxfd);
-extern void net_process_fds(struct mtr_ctl *ctl, fd_set *writefd);

@@ -41,7 +41,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <time.h>
 #include <ctype.h>
 #include <assert.h>
 #include <fcntl.h>
@@ -105,21 +104,21 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
 #ifdef ENABLE_IPV6
   fputs(" -6                         use IPv6 only\n", out);
 #endif
-  fputs(" -u, --udp                  use udp instead of icmp echo\n", out);
-  fputs(" -T, --tcp                  use tcp instead of icmp echo\n", out);
+  fputs(" -u, --udp                  use UDP instead of ICMP echo\n", out);
+  fputs(" -T, --tcp                  use TCP instead of ICMP echo\n", out);
   fputs(" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n", out);
   fputs(" -f, --first-ttl NUMBER     set what TTL to start\n", out);
   fputs(" -m, --max-ttl NUMBER       maximum number of hops\n", out);
   fputs(" -U, --max-unknown NUMBER   maximum unknown host\n", out);
-  fputs(" -P, --port PORT            target port number for tcp, sctp, or udp\n", out);
-  fputs(" -L, --localport LOCALPORT  source port number for udp\n", out);
+  fputs(" -P, --port PORT            target port number for TCP, SCTP, or UDP\n", out);
+  fputs(" -L, --localport LOCALPORT  source port number for UDP\n", out);
   fputs(" -s, --psize PACKETSIZE     set the packet size used for probing\n", out);
   fputs(" -B, --bitpattern NUMBER    set bit pattern to use in payload\n", out);
-  fputs(" -i, --interval SECONDS     icmp echo request interval\n", out);
+  fputs(" -i, --interval SECONDS     ICMP echo request interval\n", out);
   fputs(" -G, --gracetime SECONDS    number of seconds to wait for responses\n", out);
   fputs(" -Q, --tos NUMBER           type of service field in IP header\n", out);
   fputs(" -e, --mpls                 display information from ICMP extensions\n", out);
-  fputs(" -Z, --timeout SECONDS      seconds to keep the TCP socket open\n", out);
+  fputs(" -Z, --timeout SECONDS      seconds to keep probe sockets open\n", out);
 #ifdef SO_MARK
   fputs(" -M, --mark MARK            mark each sent packet\n", out);
 #endif
@@ -142,7 +141,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -b, --show-ips             show IP numbers and host names\n", out);
   fputs(" -o, --order FIELDS         select output fields\n", out);
 #ifdef HAVE_IPINFO
-  fputs(" -y, --ipinfo NUMBER        select ip information in output\n", out);
+  fputs(" -y, --ipinfo NUMBER        select IP information in output\n", out);
   fputs(" -z, --aslookup             display AS number\n", out);
 #endif
   fputs(" -h, --help                 display this help and exit\n", out);
@@ -335,7 +334,7 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
 #endif
     { "port",           1, NULL, 'P' }, /* target port number for TCP/SCTP/UDP */
     { "localport",      1, NULL, 'L' }, /* source port number for UDP */
-    { "timeout",        1, NULL, 'Z' }, /* timeout for TCP sockets */
+    { "timeout",        1, NULL, 'Z' }, /* timeout for probe sockets */
     { "gracetime",      1, NULL, 'G' }, /* gracetime for replies after last probe */
 #ifdef SO_MARK
     { "mark",           1, NULL, 'M' }, /* use SO_MARK */
@@ -541,8 +540,8 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
       }
       break;
     case 'Z':
-      ctl->tcp_timeout = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
-      ctl->tcp_timeout *= 1000000;
+      ctl->probe_timeout = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+      ctl->probe_timeout *= 1000000;
       break;
     case '4':
       ctl->af = AF_INET;
@@ -620,7 +619,6 @@ static void init_rand(void)
 extern int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
-  int               net_preopen_result;
   struct addrinfo       hints, *res;
   int                   gai_error;
   struct hostent        trhost;
@@ -629,7 +627,6 @@ extern int main(int argc, char **argv)
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 * sa6;
 #endif
-  time_t now;
   names_t *names_head = NULL;
   names_t *names_walk;
 
@@ -648,25 +645,18 @@ extern int main(int argc, char **argv)
   ctl.fstTTL = 1;
   ctl.maxTTL = 30;
   ctl.maxUnknown = 12;
-  ctl.tcp_timeout = 10 * 1000000;
+  ctl.probe_timeout = 10 * 1000000;
   ctl.ipinfo_no = -1;
   ctl.ipinfo_max = -1;
   xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
-  /*  Get the raw sockets first thing, so we can drop to user euid immediately  */
-
-  if ( ( net_preopen_result = net_preopen () ) ) {
-    error(EXIT_FAILURE, errno, "Unable to get raw sockets");
-  }
-
-  /*  Now drop to user permissions  */
-  if (setgid(getgid()) || setuid(getuid())) {
-    error(EXIT_FAILURE, errno, "Unable to drop permissions");
-  }
-
-  /*  Double check, just in case  */
+  /*
+    mtr used to be suid root.  It should not be with this version.
+    We'll check so that we can notify people using installation
+    mechanisms with obsolete assumptions.
+  */
   if ((geteuid() != getuid()) || (getegid() != getgid())) {
-    error(EXIT_FAILURE, errno, "Unable to drop permissions");
+    error(EXIT_FAILURE, errno, "mtr should not run suid");
   }
 
   /* This will check if stdout/stderr writing is successful */
@@ -691,11 +681,6 @@ extern int main(int argc, char **argv)
     append_to_names(&names_head, name);
   }
 
-  /* Now that we know mtrtype we can select which socket to use */
-  if (net_selectsocket(&ctl) != 0) {
-    error(EXIT_FAILURE, 0, "Couldn't determine raw socket type");
-  }
-
   /* default: localhost. */
   if (!names_head) append_to_names(&names_head, "localhost");
 
@@ -705,16 +690,6 @@ extern int main(int argc, char **argv)
     ctl.Hostname = names_walk->name;
     if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
       xstrncpy(ctl.LocalHostname, "UNKNOWNHOST", sizeof(ctl.LocalHostname));
-    }
-
-    if (net_preopen_result != 0) {
-      error(0, 0, "Unable to get raw socket.  (Executable not suid?)");
-      if (ctl.Interactive)
-        exit(EXIT_FAILURE);
-      else {
-        names_walk = names_walk->next;
-        continue;
-      }
     }
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
@@ -775,17 +750,6 @@ extern int main(int argc, char **argv)
       }
     }
 
-    if (net_set_interfaceaddress (&ctl) != 0) {
-      error(0, 0, "Couldn't set interface address: %s", ctl.InterfaceAddress);
-      if (ctl.Interactive)
-        exit(EXIT_FAILURE);
-      else {
-        names_walk = names_walk->next;
-        continue;
-      }
-    }
-
-
     lock(stdout);
       dns_open(&ctl);
       display_open(&ctl);
@@ -793,8 +757,7 @@ extern int main(int argc, char **argv)
       display_loop(&ctl);
 
       net_end_transit();
-      now = time(NULL);
-      display_close(&ctl, now);
+      display_close(&ctl);
     unlock(stdout);
 
     if (ctl.Interactive)

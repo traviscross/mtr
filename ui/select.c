@@ -102,9 +102,6 @@ extern void select_loop(struct mtr_ctl *ctl){
     FD_SET(netfd, &readfd);
     if(netfd >= maxfd) maxfd = netfd + 1;
 
-    if (ctl->mtrtype == IPPROTO_TCP)
-      net_add_fds(&writefd, &maxfd);
-
     do {
       if(anyset || paused) {
 	/* Set timeout to 0.1s.
@@ -254,10 +251,6 @@ extern void select_loop(struct mtr_ctl *ctl){
       }
       anyset = 1;
     }
-
-    /* Check for activity on open sockets */
-    if (ctl->mtrtype == IPPROTO_TCP)
-      net_process_fds(ctl, &writefd);
   }
   return;
 }

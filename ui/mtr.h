@@ -101,7 +101,7 @@ struct mtr_ctl {
   int maxUnknown;		/* stop ping threshold */
   int remoteport;		/* target port for TCP tracing */
   int localport;		/* source port for UDP tracing */
-  int tcp_timeout;		/* timeout for TCP connections */
+  int probe_timeout;		/* timeout for probe sockets */
   unsigned char fld_active[2 * MAXFLD];	/* SO_MARK to set for ping packet*/
   int display_mode;		/* display mode selector */
   int fld_index[FLD_INDEX_SZ];	/* default display field (defined by key in net.h) and order */

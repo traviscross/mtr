@@ -57,16 +57,28 @@ INSTALLING
   doing the linking into a terminal window, and add "-lcurses" by hand. 
   Then it will link. Help on how to catch this in autoconf appreciated.
 
-  On Mac OS X the nameserver8_compat.h needs to be included. I put the 
-  include inside an "#if 0" section in the file "dns.c". If someone 
-  knows how to make this automatic using autoconf / the configure script, 
-  please tell me.... 
+  Building on MacOS should not require any special steps.
 
-  This should now also work: 
-  ./configure CFLAGS="-arch i386 -arch x86_64" LIBS="-lresolv" \
-       --without-gtk --disable-endian-check --disable-dependency-tracking
+BUILDING FOR WINDOWS
 
+  Building for Windows requires Cygwin.  To obtain Cygwin, see
+  https://cygwin.com/install.html.  When installing Cygwin, select
+  the 'lynx' package for installation.  lynx is required by apt-cyg.
 
+  Next, install apt-cyg for easy installation of the remaining
+  components.  See https://github.com/transcode-open/apt-cyg.
+
+  Install the packages required for building:
+
+        apt-cyg install automake pkg-config make gcc-core libncurses-devel
+
+  Build as under Unix:
+
+        ./bootstrap.sh && ./configure && make
+
+  Finally, install the built binaries:
+
+        make install
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
 

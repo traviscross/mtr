@@ -1,5 +1,6 @@
 # .gitignore
 *.o
+*.pyc
 
 Makefile
 Makefile.in
@@ -16,12 +17,20 @@ stamp-h1*
 /build-aux/depcomp
 /build-aux/install-sh
 /build-aux/missing
+/build-aux/test-driver
 
 /autom4te.cache/
 /.deps/
+/packet/.deps/
+/packet/.dirstamp
+/packet/testpacket.py.log
+/packet/testpacket.py.trs
+/test-suite.log
 /ChangeLog
 /INSTALL
 /mtr
+/mtr-packet
 /mtr.8
+/mtr-packet.8
 
 /mtr-*.tar.gz

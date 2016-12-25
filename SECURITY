@@ -1,13 +1,14 @@
 SECURITY ISSUES RELATED TO MTR
 
-mtr requires extra privileges to send custom packets, and there are
-security implications from granting this.
+mtr invokes a sub-process, mtr-packet, which requires extra privileges
+to send custom packets, and there are security implications from
+granting this.
 
 There are several different ways to provide the privileges:
 
 1. Add limited privileges on systems that support this. (Preferred.)
 2. Run mtr as the root user.
-3. Make mtr a setuid-root binary.
+3. Make mtr-packet a setuid-root binary.
 
 Details:
 
@@ -18,56 +19,47 @@ of security privileges that are actually needed.
 
 Linux:
 On Linux, privileges are known as capabilities. The only additional
-capability that mtr needs is cap_net_raw. To give this capability
-to the mtr binary, run the following command as root:
+capability that mtr-packet needs is cap_net_raw. To give this
+capability to the mtr-packet binary, run the following command as root:
 
-# setcap cap_net_raw+ep mtr
+# setcap cap_net_raw+ep mtr-packet
 
 
 2. Run mtr as the root user.
 
 You can limit mtr usage to the root user by not putting a setuid bit
-on the mtr binary. In that case, the security implications are
+on the mtr-packet binary. In that case, the security implications are
 minimal.
 
 
-3. Make mtr a setuid-root binary.
+3. Make mtr-packet a setuid-root binary.
 
-The mtr binary can be made setuid-root, which is what "make install"
+The mtr-packet binary can be made setuid-root, which is what "make install"
 does by default.
 
-When mtr is installed as suid-root, some concern over security is
-justified.  Since version 0.21, mtr does the following two things
-after it is launched:
+When mtr-packet is installed as suid-root, some concern over security is
+justified.  mtr-packet does the following two things after it is launched:
 
-*  mtr requests a pair of raw sockets from the kernel.  
-*  mtr drops root privileges by setting the effective uid to match
-   uid or the user calling mtr.
+*  mtr-packet open sockets for sending raw packets and for receiving
+   ICMP packets.
+*  mtr-packet drops root privileges by setting the effective uid to
+   match uid or the user calling mtr.
+*  If capabilities support is availabe, mtr-packet drops all privileged
+   capabilities.
 
-See main() in mtr.c and net_preopen() in net.c for the details of this
-process.  Note that no code from GTK+ or curses is executed before
-dropping root privileges.
+See main() in packet.c and init_net_state_privileged() in probe_unix.c
+for the details of this process.
 
-This should severely limit the possibilities of using mtr to breach
-system security.  This means the worst case scenario is as follows:
+This should limit the possibilities of using mtr to breach system security.
+The worst case scenario is as follows:
 
-Due to some oversight in the mtr code, a malicious user is able to
-overrun one of mtr's internal buffers with binary code that is
+Due to some oversight in the mtr-packet code, a malicious user is able to
+overrun one of mtr-packets's internal buffers with binary code that is
 eventually executed.  The malicious user is still not able to read
-from or write to any system files which they wouldn't normally have
-permission to read or write to, respectively.  The only privilege
-gained is access to the raw socket descriptors, which would allow
-the malicious user to listen to all ICMP packets arriving at the
-system, and to send forged packets with arbitrary contents.
-
-The mtr-code does its best to prevent calling of external library
-code before dropping privileges. It seems that C++ library code has 
-the ability to issue a "please execute me before calling main" to the
-loader/linker.  That would mean that we're still vulnerable to 
-errors in that code. This is why I would prefer to drop the backends, 
-have mtr-core always run in "raw" mode, and have the backends interpret
-the output from the mtr-core. Maybe a nice project for a college-level
-student.
+from or write to any system files other than those normally accessible
+by the user running mtr.  The only privileges gained are access to the raw
+socket, which would allow the malicious user to listen to all ICMP packets
+arriving at the system, and to send forged packets with arbitrary contents.
 
 
 If you have further questions or comments about security issues,

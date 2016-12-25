@@ -3,7 +3,7 @@ AC_INIT([mtr],
   [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
   [R.E.Wolff@BitWizard.nl], [],
   [http://www.BitWizard.nl/mtr/])
-AC_CONFIG_SRCDIR([mtr.c])
+AC_CONFIG_SRCDIR([ui/mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([
@@ -17,6 +17,7 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
+AC_CANONICAL_HOST
 AC_PROG_CC
 
 # Check pkg-config availability.
@@ -28,6 +29,8 @@ try setting the environment variable ACLOCAL_OPTS="-I/other/macro/dir"
 before running ./bootstrap.sh again.])
 ])
 PKG_PROG_PKG_CONFIG
+
+AM_CONDITIONAL([CYGWIN], [test "$host_os" = cygwin])
 
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])
@@ -104,6 +107,10 @@ AS_IF([test "x$with_ncurses" = "xyes"],
     [with_ncurses=no])
 ])
 AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
+
+AC_CHECK_LIB([cap], [cap_set_proc], [],
+  AS_IF([test "$host_os" = linux-gnu],
+    AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
