@@ -108,6 +108,10 @@ AS_IF([test "x$with_ncurses" = "xyes"],
 ])
 AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
 
+AC_CHECK_LIB([cap], [cap_set_proc], [],
+  AS_IF([test "$host_os" = linux-gnu],
+    AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
+
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
   [AS_HELP_STRING([--without-ipinfo], [Do not try to use ipinfo lookup at all])],

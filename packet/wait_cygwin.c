@@ -50,6 +50,6 @@ void wait_for_activity(
 
     if (wait_result == WAIT_FAILED) {
         fprintf(stderr, "SleepEx failure %d\n", GetLastError());
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }

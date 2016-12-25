@@ -51,6 +51,12 @@ typedef struct icmpv6_echo_reply_lh
 */
 struct probe_platform_t
 {
+    /*
+        We need a backpointer to the net_state because of the way
+        IcmpSendEcho2 passes our context.
+    */
+    struct net_state_t *net_state;
+
     /*  IP version (4 or 6) used for the probe  */
     int ip_version;
 

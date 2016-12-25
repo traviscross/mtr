@@ -75,6 +75,7 @@ void set_socket_nonblocking(
     int socket);
 
 void receive_probe(
+    struct net_state_t *net_state,
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,

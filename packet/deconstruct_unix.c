@@ -50,7 +50,8 @@ void find_and_receive_probe(
     }
 
     receive_probe(
-        probe, icmp_type, remote_addr, timestamp, mpls_count, mpls);
+        net_state, probe, icmp_type,
+        remote_addr, timestamp, mpls_count, mpls);
 }
 
 /*
@@ -82,7 +83,8 @@ void handle_inner_udp_packet(
 
     if (probe != NULL) {
         receive_probe(
-            probe, icmp_result, remote_addr, timestamp, mpls_count, mpls);
+            net_state, probe, icmp_result,
+            remote_addr, timestamp, mpls_count, mpls);
     }
 }
 

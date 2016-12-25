@@ -115,57 +115,39 @@ struct probe_t *alloc_probe(
     struct net_state_t *net_state,
     int token)
 {
-    int i;
     struct probe_t *probe;
 
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
-
-        if (!probe->used) {
-            memset(probe, 0, sizeof(struct probe_t));
-
-            probe->used = true;
-            probe->token = token;
-
-            platform_alloc_probe(net_state, probe);
-
-            return probe;
-        }
+    if (net_state->outstanding_probe_count >= MAX_PROBES) {
+        return NULL;
     }
 
-    return NULL;
+    probe = malloc(sizeof(struct probe_t));
+    if (probe == NULL) {
+        return NULL;
+    }
+
+    memset(probe, 0, sizeof(struct probe_t));
+    probe->token = token;
+
+    platform_alloc_probe(net_state, probe);
+
+    net_state->outstanding_probe_count++;
+    LIST_INSERT_HEAD(&net_state->outstanding_probes, probe, probe_list_entry);
+
+    return probe;
 }
 
 /*  Mark a probe tracking structure as unused  */
 void free_probe(
+    struct net_state_t *net_state,
     struct probe_t *probe)
 {
+    LIST_REMOVE(probe, probe_list_entry);
+    net_state->outstanding_probe_count--;
+
     platform_free_probe(probe);
 
-    probe->used = false;
-}
-
-/*
-    Return the number of probes which haven't yet received a reply
-    and haven't yet timed out.
-*/
-int count_in_flight_probes(
-    struct net_state_t *net_state)
-{
-    int i;
-    int count;
-    struct probe_t *probe;
-
-    count = 0;
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
-
-        if (probe->used) {
-            count++;
-        }
-    }
-
-    return count;
+    free(probe);
 }
 
 /*
@@ -178,7 +160,6 @@ struct probe_t *find_probe(
     int id,
     int sequence)
 {
-    int i;
     struct probe_t *probe;
 
     /*
@@ -195,14 +176,9 @@ struct probe_t *find_probe(
         }
     }
 
-
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
-
-        if (probe->used) {
-            if (htons(probe->sequence) == sequence) {
-                return probe;
-            }
+    LIST_FOREACH(probe, &net_state->outstanding_probes, probe_list_entry) {
+        if (htons(probe->sequence) == sequence) {
+            return probe;
         }
     }
 
@@ -251,6 +227,7 @@ void format_mpls_string(
     sent the probe.
 */
 void respond_to_probe(
+    struct net_state_t *net_state,
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
@@ -289,7 +266,7 @@ void respond_to_probe(
             remote_addr->ss_family, addr, ip_text, IP_TEXT_LENGTH) == NULL) {
 
         perror("inet_ntop failure");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     snprintf(
@@ -308,7 +285,7 @@ void respond_to_probe(
     }
 
     puts(response);
-    free_probe(probe);
+    free_probe(net_state, probe);
 }
 
 /*

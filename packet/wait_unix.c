@@ -115,7 +115,7 @@ void wait_for_activity(
         if (errno != EINTR && errno != EAGAIN) {
             /*  We don't expect other errors, so report them  */
             perror("unexpected select error");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 }

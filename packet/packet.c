@@ -16,23 +16,55 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
+#ifdef HAVE_LIBCAP
+#   include <sys/capability.h>
+#endif
 
 #include "wait.h"
 
 /*  Drop SUID privileges.  To be used after accquiring raw sockets.  */
 static
-void drop_suid_permissions(void)
+int drop_elevated_permissions(void)
 {
+#ifdef HAVE_LIBCAP
+    cap_t cap;
+#endif
+
+    /*  Drop any suid permissions granted  */
     if (setgid(getgid()) || setuid(getuid())) {
-        perror("Unable to drop suid permissions");
+        return -1;
     }
 
     if (geteuid() != getuid() || getegid() != getgid()) {
-        perror("Unable to drop suid permissions");
+        return -1;
     }
+
+    /*
+        Drop all process capabilities.
+        This will revoke anything granted by a commandline 'setcap'
+    */
+#ifdef HAVE_LIBCAP
+    cap = cap_get_proc();
+    if (cap == NULL) {
+        return -1;
+    }
+    if (cap_clear(cap)) {
+        return -1;
+    }
+    if (cap_set_proc(cap)) {
+        return -1;
+    }
+#endif
+
+    return 0;
 }
 
 int main(
@@ -49,7 +81,10 @@ int main(
         raw sockets.
     */
     init_net_state_privileged(&net_state);
-    drop_suid_permissions();
+    if (drop_elevated_permissions()) {
+        perror("Unable to drop elevated permissions");
+        exit(EXIT_FAILURE);
+    }
     init_net_state(&net_state);
 
     init_command_buffer(&command_buffer, fileno(stdin));
@@ -93,7 +128,7 @@ int main(
             in-flight probes have reported their status.
         */
         if (!command_pipe_open) {
-            if (count_in_flight_probes(&net_state) == 0) {
+            if (net_state.outstanding_probe_count == 0) {
                 break;
             }
         }

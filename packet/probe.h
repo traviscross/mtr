@@ -25,6 +25,8 @@
 #include <stdbool.h>
 #include <sys/time.h>
 
+#include "portability/queue.h"
+
 #ifdef PLATFORM_CYGWIN
 #include "probe_cygwin.h"
 #else
@@ -82,8 +84,8 @@ struct probe_param_t
 /*  Tracking information for an outstanding probe  */
 struct probe_t
 {
-    /*  true if this entry is in use  */
-    bool used;
+    /*  Our entry in the probe list  */
+    LIST_ENTRY(probe_t) probe_list_entry;
 
     /*
         Also the ICMP sequence ID used to identify the probe.
@@ -106,13 +108,17 @@ struct probe_t
 /*  Global state for interacting with the network  */
 struct net_state_t
 {
+    /*  The number of entries in the outstanding_probes list  */
+    int outstanding_probe_count;
+
     /*  Tracking information for in-flight probes  */
-    struct probe_t probes[MAX_PROBES];
+    LIST_HEAD(probe_list_head_t, probe_t) outstanding_probes;
 
     /*  Platform specific tracking information  */
     struct net_state_platform_t platform;
 };
 
+/*  Multiprotocol Label Switching information  */
 struct mpls_label_t
 {
     uint32_t label;
@@ -146,6 +152,7 @@ void check_probe_timeouts(
     struct net_state_t *net_state);
 
 void respond_to_probe(
+    struct net_state_t *net_state,
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
@@ -167,18 +174,16 @@ struct probe_t *alloc_probe(
     struct net_state_t *net_state,
     int token);
 
+void free_probe(
+    struct net_state_t *net_state,
+    struct probe_t *probe);
+
 void platform_alloc_probe(
     struct net_state_t *net_state,
     struct probe_t *probe);
 
 void platform_free_probe(
     struct probe_t *probe);
-
-void free_probe(
-    struct probe_t *probe);
-
-int count_in_flight_probes(
-    struct net_state_t *net_state);
 
 struct probe_t *find_probe(
     struct net_state_t *net_state,

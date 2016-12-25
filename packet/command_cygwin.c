@@ -48,7 +48,7 @@ void CALLBACK finish_read_command(
         }
 
         fprintf(stderr, "ReadFileEx completion failure %d\n", status);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*  Copy from the overlapped I/O buffer to the incoming command buffer  */
@@ -77,7 +77,7 @@ void queue_empty_apc(void)
     if (QueueUserAPC((PAPCFUNC)empty_apc, GetCurrentThread(), 0) == 0) {
         fprintf(
             stderr, "Unexpected QueueUserAPC failure %d\n", GetLastError());
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -115,7 +115,7 @@ void start_read_command(
         } else if (err != WAIT_IO_COMPLETION) {
             fprintf(
                 stderr, "Unexpected ReadFileEx failure %d\n", GetLastError());
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 

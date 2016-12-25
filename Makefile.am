@@ -1,4 +1,5 @@
 EXTRA_DIST = \
+	BSDCOPYING \
 	SECURITY \
 	mtr.bat \
 	img/mtr_icon.xpm
@@ -97,6 +98,8 @@ mtr_packet_SOURCES = \
 	packet/timeval.c packet/timeval.h \
 	packet/wait.h
 
+mtr_packet_LDADD = $(CAP_LIBS)
+
 
 if CYGWIN
 
@@ -104,11 +107,12 @@ mtr_packet_SOURCES += \
 	packet/command_cygwin.c packet/command_cygwin.h \
 	packet/probe_cygwin.c packet/probe_cygwin.h \
 	packet/wait_cygwin.c
-mtr_packet_LDADD = -lcygwin -liphlpapi -lws2_32
+mtr_packet_LDADD += -lcygwin -liphlpapi -lws2_32
 
 dist_windows_aux = \
 	$(srcdir)/mtr.bat \
 	$(srcdir)/AUTHORS \
+	$(srcdir)/BSDCOPYING \
 	$(srcdir)/COPYING \
 	$(srcdir)/README \
 	$(srcdir)/NEWS

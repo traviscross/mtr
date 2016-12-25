@@ -278,7 +278,7 @@ void send_probe_command(
     param.command_token = command->token;
     param.protocol = IPPROTO_ICMP;
     param.ttl = 255;
-    param.packet_size = 128;
+    param.packet_size = 64;
     param.timeout = 10;
 
     for (i = 0; i < command->argument_count; i++) {

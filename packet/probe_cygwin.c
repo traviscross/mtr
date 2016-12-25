@@ -38,13 +38,13 @@ void init_net_state(
     net_state->platform.icmp4 = IcmpCreateFile();
     if (net_state->platform.icmp4 == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failure opening ICMPv4 %d\n", GetLastError());
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     net_state->platform.icmp6 = Icmp6CreateFile();
     if (net_state->platform.icmp6 == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failure opening ICMPv6 %d\n", GetLastError());
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -60,11 +60,12 @@ bool is_protocol_supported(
     return false;
 }
 
-/*  No special action is required for Cygwin on probe allocation  */
+/*  Set the back pointer to the net_state when a probe is allocated  */
 void platform_alloc_probe(
     struct net_state_t *net_state,
     struct probe_t *probe)
 {
+    probe->platform.net_state = net_state;
 }
 
 /*  Free the reply buffer when the probe is freed  */
@@ -112,6 +113,7 @@ void WINAPI on_icmp_reply(
     ULONG reserved)
 {
     struct probe_t *probe = (struct probe_t *)context;
+    struct net_state_t *net_state = probe->platform.net_state;
     int icmp_type;
     int round_trip_us = 0;
     int reply_count;
@@ -163,7 +165,7 @@ void WINAPI on_icmp_reply(
         err = GetLastError();
 
         report_win_error(probe->token, err);
-        free_probe(probe);
+        free_probe(net_state, probe);
         return;
     }
 
@@ -178,7 +180,8 @@ void WINAPI on_icmp_reply(
     if (icmp_type != -1) {
         /*  Record probe result  */
         respond_to_probe(
-            probe, icmp_type, &remote_addr, round_trip_us, 0, NULL);
+            net_state, probe, icmp_type,
+            &remote_addr, round_trip_us, 0, NULL);
     } else {
         fprintf(stderr, "Unexpected ICMP result %d\n", icmp_type);
     }
@@ -227,7 +230,7 @@ void icmp_send_probe(
     probe->platform.reply4 = malloc(reply_size);
     if (probe->platform.reply4 == NULL) {
         perror("failure to allocate reply buffer");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (param->ip_version == 6) {
@@ -258,7 +261,7 @@ void icmp_send_probe(
         */
         if (err != ERROR_IO_PENDING) {
             report_win_error(probe->token, err);
-            free_probe(probe);
+            free_probe(net_state, probe);
         }
     }
 }
@@ -324,7 +327,7 @@ void send_probe(
     payload_size = fill_payload(param, payload, PACKET_BUFFER_SIZE);
     if (payload_size < 0) {
         perror("Error construction packet");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     icmp_send_probe(

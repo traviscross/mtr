@@ -42,13 +42,13 @@ void init_command_buffer(
     flags = fcntl(command_stream, F_GETFL, 0);
     if (flags == -1) {
         perror("Unexpected command stream error");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*  Set the O_NONBLOCK bit  */
     if (fcntl(command_stream, F_SETFL, flags | O_NONBLOCK)) {
         perror("Unexpected command stream error");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -82,7 +82,7 @@ int read_commands(
         /*  EINTR indicates we received a signal during read  */
         if (errno != EINTR && errno != EAGAIN) {
             perror("Unexpected command buffer read error");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 

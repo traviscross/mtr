@@ -99,7 +99,7 @@ void check_length_order(
 
     if (resolve_probe_addresses(&param, &dest_sockaddr, &src_sockaddr)) {
         fprintf(stderr, "Error decoding localhost address\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*  First attempt to ping the localhost with network byte order  */
@@ -111,7 +111,7 @@ void check_length_order(
         &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     bytes_sent = send_packet(
@@ -129,14 +129,14 @@ void check_length_order(
         &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     bytes_sent = send_packet(
         net_state, &param, packet, packet_size, &dest_sockaddr);
     if (bytes_sent < 0) {
         perror("Unable to send with swapped length");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -171,12 +171,12 @@ void set_socket_nonblocking(
     flags = fcntl(socket, F_GETFL, 0);
     if (flags == -1) {
         perror("Unexpected socket F_GETFL error");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (fcntl(socket, F_SETFL, flags | O_NONBLOCK)) {
         perror("Unexpected socket F_SETFL O_NONBLOCK error");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -192,7 +192,7 @@ void open_ip4_sockets(
     send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (send_socket == -1) {
         perror("Failure opening IPv4 send socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*
@@ -203,7 +203,7 @@ void open_ip4_sockets(
         send_socket, IPPROTO_IP, IP_HDRINCL, &trueopt, sizeof(int))) {
 
         perror("Failure to set IP_HDRINCL");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*
@@ -213,7 +213,7 @@ void open_ip4_sockets(
     recv_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (recv_socket == -1) {
         perror("Failure opening IPv4 receive socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     net_state->platform.ip4_send_socket = send_socket;
@@ -232,19 +232,19 @@ void open_ip6_sockets(
     send_socket_icmp = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
     if (send_socket_icmp == -1) {
         perror("Failure opening ICMPv6 send socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     send_socket_udp = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
     if (send_socket_udp == -1) {
         perror("Failure opening UDPv6 send socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     recv_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
     if (recv_socket == -1) {
         perror("Failure opening IPv6 receive socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     set_socket_nonblocking(recv_socket);
@@ -352,13 +352,13 @@ void send_probe(
 
     if (resolve_probe_addresses(param, &probe->remote_addr, &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
-        free_probe(probe);
+        free_probe(net_state, probe);
         return;
     }
 
     if (gettimeofday(&probe->platform.departure_time, NULL)) {
         perror("gettimeofday failure");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     packet_size = construct_packet(
@@ -375,10 +375,11 @@ void send_probe(
         */
         if (errno == ECONNREFUSED) {
             receive_probe(
-                probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL, 0, NULL);
+                net_state, probe, ICMP_ECHOREPLY,
+                &probe->remote_addr, NULL, 0, NULL);
         } else {
             report_packet_error(param->command_token);
-            free_probe(probe);
+            free_probe(net_state, probe);
         }
 
         return;
@@ -390,7 +391,7 @@ void send_probe(
                 packet, packet_size, &probe->remote_addr) == -1) {
 
             report_packet_error(param->command_token);
-            free_probe(probe);
+            free_probe(net_state, probe);
             return;
         }
     }
@@ -429,6 +430,7 @@ void platform_free_probe(
     to the platform agnostic response handling.
 */
 void receive_probe(
+    struct net_state_t *net_state, 
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
@@ -443,7 +445,7 @@ void receive_probe(
     if (timestamp == NULL) {
         if (gettimeofday(&now, NULL)) {
             perror("gettimeofday failure");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         timestamp = &now;
@@ -454,7 +456,8 @@ void receive_probe(
         timestamp->tv_usec - departure_time->tv_usec;
 
     respond_to_probe(
-        probe, icmp_type, remote_addr, round_trip_us, mpls_count, mpls);
+        net_state, probe, icmp_type,
+        remote_addr, round_trip_us, mpls_count, mpls);
 }
 
 /*
@@ -486,7 +489,7 @@ void receive_replies_from_icmp_socket(
         */
         if (gettimeofday(&timestamp, NULL)) {
             perror("gettimeofday failure");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         if (packet_length == -1) {
@@ -507,7 +510,7 @@ void receive_replies_from_icmp_socket(
             }
 
             perror("Failure receiving replies");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         handle_received_packet(
@@ -547,7 +550,7 @@ void receive_replies_from_probe_socket(
             return;
         } else {
             perror("probe socket select error");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -560,7 +563,7 @@ void receive_replies_from_probe_socket(
 
     if (getsockopt(probe_socket, SOL_SOCKET, SO_ERROR, &err, &err_length)) {
         perror("probe socket SO_ERROR");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /*
@@ -569,11 +572,12 @@ void receive_replies_from_probe_socket(
     */
     if (!err || err == ECONNREFUSED) {
         receive_probe(
-            probe, ICMP_ECHOREPLY, &probe->remote_addr, NULL, 0, NULL);
+            net_state, probe, ICMP_ECHOREPLY,
+            &probe->remote_addr, NULL, 0, NULL);
     } else {
         errno = err;
         report_packet_error(probe->token);
-        free_probe(probe);
+        free_probe(net_state, probe);
     }
 }
 
@@ -581,8 +585,8 @@ void receive_replies_from_probe_socket(
 void receive_replies(
     struct net_state_t *net_state)
 {
-    int i;
     struct probe_t *probe;
+    struct probe_t *probe_safe_iter;
 
     receive_replies_from_icmp_socket(
         net_state, net_state->platform.ip4_recv_socket,
@@ -592,12 +596,11 @@ void receive_replies(
         net_state, net_state->platform.ip6_recv_socket,
         handle_received_ip6_packet);
 
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
+    LIST_FOREACH_SAFE(
+            probe, &net_state->outstanding_probes,
+            probe_list_entry, probe_safe_iter) {
 
-        if (probe->used) {
-            receive_replies_from_probe_socket(net_state, probe);
-        }
+        receive_replies_from_probe_socket(net_state, probe);
     }
 }
 
@@ -609,18 +612,16 @@ int gather_probe_sockets(
     const struct net_state_t *net_state,
     fd_set *write_set)
 {
-    int i;
     int probe_socket;
     int nfds;
     const struct probe_t *probe;
 
     nfds = 0;
 
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
+    LIST_FOREACH(probe, &net_state->outstanding_probes, probe_list_entry) {
         probe_socket = probe->platform.socket;
 
-        if (probe->used && probe_socket) {
+        if (probe_socket) {
             FD_SET(probe_socket, write_set);
             if (probe_socket >= nfds) {
                 nfds = probe_socket + 1;
@@ -641,26 +642,22 @@ void check_probe_timeouts(
 {
     struct timeval now;
     struct probe_t *probe;
-    int i;
+    struct probe_t *probe_safe_iter;
 
     if (gettimeofday(&now, NULL)) {
         perror("gettimeofday failure");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
-
-        /*  Don't check probes which aren't currently outstanding  */
-        if (!probe->used) {
-            continue;
-        }
+    LIST_FOREACH_SAFE(
+            probe, &net_state->outstanding_probes,
+            probe_list_entry, probe_safe_iter) {
 
         if (compare_timeval(probe->platform.timeout_time, now) < 0) {
             /*  Report timeout to the command stream  */
             printf("%d no-reply\n", probe->token);
 
-            free_probe(probe);
+            free_probe(net_state, probe);
         }
     }
 }
@@ -677,7 +674,6 @@ bool get_next_probe_timeout(
     const struct net_state_t *net_state,
     struct timeval *timeout)
 {
-    int i;
     bool have_timeout;
     const struct probe_t *probe;
     struct timeval now;
@@ -685,16 +681,11 @@ bool get_next_probe_timeout(
 
     if (gettimeofday(&now, NULL)) {
         perror("gettimeofday failure");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     have_timeout = false;
-    for (i = 0; i < MAX_PROBES; i++) {
-        probe = &net_state->probes[i];
-        if (!probe->used) {
-            continue;
-        }
-
+    LIST_FOREACH(probe, &net_state->outstanding_probes, probe_list_entry) {
         probe_timeout.tv_sec =
             probe->platform.timeout_time.tv_sec - now.tv_sec;
         probe_timeout.tv_usec =
