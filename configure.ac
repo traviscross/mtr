@@ -3,7 +3,7 @@ AC_INIT([mtr],
   [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
   [R.E.Wolff@BitWizard.nl], [],
   [http://www.BitWizard.nl/mtr/])
-AC_CONFIG_SRCDIR([mtr.c])
+AC_CONFIG_SRCDIR([ui/mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([

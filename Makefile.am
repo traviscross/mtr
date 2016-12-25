@@ -1,7 +1,7 @@
 EXTRA_DIST = \
 	BSDCOPYING \
 	SECURITY \
-	mtr.bat \
+	build-aux/mtr.bat \
 	img/mtr_icon.xpm
 	$(TEST_FILES)
 
@@ -14,6 +14,7 @@ TESTS = \
 TEST_FILES = \
 	test/cmdparse.py \
 	test/mtrpacket.py \
+	test/param.py \
 	test/probe.py \
 	test/lint.sh
 EXTRA_DIST += $(TEST_FILES)
@@ -26,37 +27,37 @@ EXTRA_DIST += $(PATHFILES:=.in)
 #  We would use % pattern matching here, but that is a GNU make
 #  extension and doesn't work on FreeBSD.
 #
-mtr-packet.8: $(srcdir)/mtr-packet.8.in
-	$(AM_V_GEN) $(srcdir)/mangen.sh "$(VERSION)" \
-		$(srcdir)/mtr-packet.8.in $@
+mtr-packet.8: $(srcdir)/man/mtr-packet.8.in
+	$(AM_V_GEN) $(srcdir)/build-aux/mangen.sh "$(VERSION)" \
+		$(srcdir)/man/mtr-packet.8.in $@
 
-mtr.8: $(srcdir)/mtr.8.in
-	$(AM_V_GEN) $(srcdir)/mangen.sh "$(VERSION)" \
-		$(srcdir)/mtr.8.in $@
+mtr.8: $(srcdir)/man/mtr.8.in
+	$(AM_V_GEN) $(srcdir)/build-aux/mangen.sh "$(VERSION)" \
+		$(srcdir)/man/mtr.8.in $@
 
 $(PATHFILES): Makefile
 
 dist_man_MANS = mtr.8 mtr-packet.8
-PATHFILES += mtr.8 mtr-packet.8
+PATHFILES += man/mtr.8 man/mtr-packet.8
 
 install-exec-hook: 
 	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr-packet` \
 	|| chmod u+s $(DESTDIR)$(sbindir)/mtr-packet
 
-mtr_SOURCES = mtr.c mtr.h \
-              net.c net.h \
-              cmdpipe.c cmdpipe.h \
-              dns.c dns.h \
-              raw.c raw.h \
-              split.c split.h \
-              display.c display.h \
-              report.c report.h \
-              select.c select.h \
-              utils.c utils.h \
+mtr_SOURCES = ui/mtr.c ui/mtr.h \
+              ui/net.c ui/net.h \
+              ui/cmdpipe.c ui/cmdpipe.h \
+              ui/dns.c ui/dns.h \
+              ui/raw.c ui/raw.h \
+              ui/split.c ui/split.h \
+              ui/display.c ui/display.h \
+              ui/report.c ui/report.h \
+              ui/select.c ui/select.h \
+              ui/utils.c ui/utils.h \
               packet/cmdparse.c packet/cmdparse.h \
-              mtr-curses.h \
+              ui/mtr-curses.h \
               img/mtr_icon.xpm \
-              mtr-gtk.h
+              ui/mtr-gtk.h
 
 if WITH_ERROR
 mtr_SOURCES += \
@@ -72,15 +73,15 @@ mtr_SOURCES += \
 endif
 
 if WITH_IPINFO
-mtr_SOURCES += asn.c asn.h
+mtr_SOURCES += ui/asn.c ui/asn.h
 endif
 
 if WITH_NCURSES
-mtr_SOURCES += curses.c
+mtr_SOURCES += ui/curses.c
 endif
 
 if WITH_GTK
-mtr_SOURCES += gtk.c
+mtr_SOURCES += ui/gtk.c
 endif
 
 mtr_INCLUDES = $(GLIB_CFLAGS) -I$(top_builddir) -I$(top_srcdir)
@@ -89,6 +90,7 @@ mtr_LDADD = $(GTK_LIBS) $(NCURSES_LIBS) $(RESOLV_LIBS)
 
 
 mtr_packet_SOURCES = \
+	portability/queue.h \
 	packet/packet.c \
 	packet/cmdparse.c packet/cmdparse.h \
 	packet/command.c packet/command.h \
@@ -110,7 +112,7 @@ mtr_packet_SOURCES += \
 mtr_packet_LDADD += -lcygwin -liphlpapi -lws2_32
 
 dist_windows_aux = \
-	$(srcdir)/mtr.bat \
+	$(srcdir)/build-aux/mtr.bat \
 	$(srcdir)/AUTHORS \
 	$(srcdir)/BSDCOPYING \
 	$(srcdir)/COPYING \
