@@ -95,16 +95,7 @@ AC_ARG_WITH([ncurses],
   [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
   [], [with_ncurses=yes])
 AS_IF([test "x$with_ncurses" = "xyes"],
-  [PKG_CHECK_MODULES([NCURSES], [ncurses], [
-      AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses library available])
-      AC_CHECK_LIB([ncurses],
-        [use_default_colors],
-        [AC_DEFINE([HAVE_USE_DEFAULT_COLORS], [1],
-          [Define this if your curses library has the use_default_colors() command.]
-        )
-      ])
-    ],
-    [with_ncurses=no])
+  [AC_CHECK_LIB([ncurses], [initscr], [], [with_ncurses=no])
 ])
 AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
 
