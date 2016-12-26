@@ -713,10 +713,8 @@ extern void mtr_curses_open(struct mtr_ctl *ctl)
   raw();
   noecho(); 
   start_color();
-#ifdef HAVE_USE_DEFAULT_COLORS
   if (use_default_colors() == OK)
     bg_col = -1;
-#endif
   for (i = 0; i < NUM_FACTORS; i++)
       init_pair(i+1, i, bg_col);
 

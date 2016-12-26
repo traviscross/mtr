@@ -36,7 +36,7 @@
 #include "split.h"
 #include "utils.h"
 
-#ifdef HAVE_NCURSES
+#ifdef HAVE_LIBNCURSES
 # if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
 # elif defined(HAVE_NCURSES_CURSES_H)
@@ -149,7 +149,7 @@ extern void split_close(void)
 
 extern int split_keyaction(void) 
 {
-#ifdef HAVE_NCURSES
+#ifdef HAVE_LIBNCURSES
   char c = getch();
 #else
   fd_set readfds;
