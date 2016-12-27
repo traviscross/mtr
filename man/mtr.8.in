@@ -2,114 +2,47 @@
 .SH NAME
 mtr \- a network diagnostic tool
 .SH SYNOPSIS
-.B mtr
-[\c
-.BR \-4 |\c
-.B \-6\c
-]
-[\c
-.BI \-F \ FILENAME\c
-]
-[\c
-.B \-\-report\c
-]
-[\c
-.B \-\-report-wide\c
-]
-[\c
-.B \-\-xml\c
-]
-[\c
-.B \-\-gtk\c
-]
-[\c
-.B \-\-curses\c
-]
-[\c
-.BI \--displaymode \ MODE\c
-]
-[\c
-.B \-\-raw\c
-]
-[\c
-.B \-\-csv\c
-]
-[\c
-.B \-\-json\c
-]
-[\c
-.B \-\-split\c
-]
-[\c
-.B \-\-no-dns\c
-]
-[\c
-.B \-\-show-ips\c
-]
-[\c
-.BI \-o \ FIELDS\c
-]
-[\c
-.BI \-y \ IPINFO\c
-]
-[\c
-.B \-\-aslookup\c
-]
-[\c
-.BI \-i \ INTERVAL\c
-]
-[\c
-.BI \-c \ COUNT\c
-]
-[\c
-.BI \-s \ PACKETSIZE\c
-]
-[\c
-.BI \-B \ BITPATTERN\c
-]
-[\c
-.BI \-G \ GRACEPERIOD\c
-]
-[\c
-.BI \-Q \ TOS\c
-]
-[\c
-.B \-\-mpls\c
-]
-[\c
-.BI \-a \ ADDRESS\c
-]
-[\c
-.BI \-f \ FIRST\-TTL\c
-]
-[\c
-.BI \-m \ MAX\-TTL\c
-]
-[\c
-.BI \-U \ MAX\-UNKNOWN\c
-]
-[\c
-.B \-\-udp\c
-]
-[\c
-.B \-\-tcp\c
-]
-[\c
-.BI \-\-sctp\c
-]
-[\c
-.BI \-P \ PORT\c
-]
-[\c
-.BI \-L \ LOCALPORT\c
-]
-[\c
-.BI \-Z \ TIMEOUT\c
-]
-[\c
-.BI \-M \ MARK\c
-]
-.I HOSTNAME
+.SY mtr
+.OP \-\-help
+.OP \-\-version
+.OP \-\-inet
+.OP \-\-inet6
+.OP \-\-filename file
+.OP \-\-report
+.OP \-\-report-wide
+.OP \-\-xml
+.OP \-\-curses
+.OP \-\-gtk
+.OP \-\-raw
+.OP \-\-csv
+.OP \-\-json
+.OP \-\-displaymode number
+.OP \-\-split
+.OP \-\-no-dns
+.OP \-\-show-ips
+.OP \-\-order fields
+.OP \-\-ipinfo number
+.OP \-\-aslookup
+.OP \-\-interval seconds
+.OP \-\-report-cycles count
+.OP \-\-psize packetsize
+.OP \-\-bitpattern number
+.OP \-\-tos number
+.OP \-\-mpls
+.OP \-\-address address
+.OP \-\-first-ttl number
+.OP \-\-max-ttl number
+.OP \-\-max-unknown number
+.OP \-\-udp
+.OP \-\-tcp
+.OP \-\-sctp
+.OP \-\-port port
+.OP \-\-localport port
+.OP \-\-timeout seconds
+.OP \-\-gracetime seconds
+.OP \-\-mark number
+.I hostname
+.YS
 .SH DESCRIPTION
 .B mtr 
 combines the functionality of the 
@@ -144,10 +77,10 @@ Print the summary of command line argument options.
 .B \-v\fR, \fB\-\-version
 Print the installed version of mtr.  
 .TP
-.B \-4
+.B \-4, \fB\-\-inet\fR
 Use IPv4 only.
 .TP
-.B \-6
+.B \-6, \fB-\-inet6\fR
 Use IPv6 only.  (IPV4 may be used for DNS lookups.)
 .TP
 .B \-F \fIFILENAME\fR, \fB\-\-filename \fIFILENAME
