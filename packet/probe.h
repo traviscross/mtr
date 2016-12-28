@@ -133,6 +133,10 @@ void init_net_state_privileged(
 void init_net_state(
     struct net_state_t *net_state);
 
+bool is_ip_version_supported(
+    struct net_state_t *net_state,
+    int ip_version);
+
 bool is_protocol_supported(
     struct net_state_t *net_state,
     int protocol);

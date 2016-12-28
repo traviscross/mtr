@@ -39,6 +39,12 @@ struct probe_platform_t
 /*  We'll use rack sockets to send and recieve probes on Unix systems  */
 struct net_state_platform_t
 {
+    /*  true if we were successful at opening IPv4 sockets  */
+    bool ip4_present;
+
+    /*  true if we were successful at opening IPv6 sockets  */
+    bool ip6_present;
+
     /*  Socket used to send raw IPv4 packets  */
     int ip4_send_socket;
 

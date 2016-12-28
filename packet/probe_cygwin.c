@@ -36,16 +36,31 @@ void init_net_state(
     memset(net_state, 0, sizeof(struct net_state_t));
 
     net_state->platform.icmp4 = IcmpCreateFile();
-    if (net_state->platform.icmp4 == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Failure opening ICMPv4 %d\n", GetLastError());
+    net_state->platform.icmp6 = Icmp6CreateFile();
+
+    if (net_state->platform.icmp4 == INVALID_HANDLE_VALUE
+            && net_state->platform.icmp6 == INVALID_HANDLE_VALUE)
+    {
+        fprintf(stderr, "Failure opening ICMP %d\n", GetLastError());
         exit(EXIT_FAILURE);
+    }
+}
+
+/*
+    If we succeeded at opening the ICMP file handle, we can
+    assume that IP protocol version is supported.
+*/
+bool is_ip_version_supported(
+    struct net_state_t *net_state,
+    int ip_version)
+{
+    if (ip_version == 4) {
+        return (net_state->platform.icmp4 != INVALID_HANDLE_VALUE);
+    } else if (ip_version == 6) {
+        return (net_state->platform.icmp6 != INVALID_HANDLE_VALUE);
     }
 
-    net_state->platform.icmp6 = Icmp6CreateFile();
-    if (net_state->platform.icmp6 == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Failure opening ICMPv6 %d\n", GetLastError());
-        exit(EXIT_FAILURE);
-    }
+    return false;
 }
 
 /*  On Windows, we only support ICMP probes  */

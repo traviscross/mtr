@@ -67,6 +67,19 @@ const char *check_protocol_support(
     }
 }
 
+/*  Return a feature support string for an IP protocol version  */
+static
+const char *check_ip_version_support(
+    struct net_state_t *net_state,
+    int ip_version)
+{
+    if (is_ip_version_supported(net_state, ip_version)) {
+        return "ok";
+    } else {
+        return "no";
+    }
+}
+
 /*  Given a feature name, return a string for the check-support reply  */
 static
 const char *check_support(
@@ -78,11 +91,11 @@ const char *check_support(
     }
 
     if (!strcmp(feature, "ip-4")) {
-        return "ok";
+        return check_ip_version_support(net_state, 4);
     }
 
     if (!strcmp(feature, "ip-6")) {
-        return "ok";
+        return check_ip_version_support(net_state, 6);
     }
 
     if (!strcmp(feature, "send-probe")) {
@@ -262,6 +275,36 @@ bool decode_probe_argument(
     return true;
 }
 
+/*
+    Check the probe parameters against currently supported features
+    and report and error if there is a problem.
+
+    Return true if everything is okay, false otherwise.
+*/
+static
+bool validate_probe_parameters(
+    struct net_state_t *net_state,
+    struct probe_param_t *param)
+{
+    if (!is_ip_version_supported(net_state, param->ip_version)) {
+        printf(
+            "%d invalid-argument reason ip-version-not-supported\n",
+            param->command_token);
+
+        return false;
+    }
+
+    if (!is_protocol_supported(net_state, param->protocol)) {
+        printf(
+            "%d invalid-argument reason protocol-not-supported\n",
+            param->command_token);
+
+        return false;
+    }
+
+    return true;
+}
+
 /*  Handle "send-probe" commands  */
 static
 void send_probe_command(
@@ -289,6 +332,10 @@ void send_probe_command(
             printf("%d invalid-argument\n", command->token);
             return;
         }
+    }
+
+    if (!validate_probe_parameters(net_state, &param)) {
+        return;
     }
 
     /*  Send the probe using a platform specific mechanism  */

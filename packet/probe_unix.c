@@ -182,7 +182,7 @@ void set_socket_nonblocking(
 
 /*  Open the raw sockets for sending/receiving IPv4 packets  */
 static
-void open_ip4_sockets(
+int open_ip4_sockets(
     struct net_state_t *net_state)
 {
     int send_socket;
@@ -191,8 +191,7 @@ void open_ip4_sockets(
 
     send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (send_socket == -1) {
-        perror("Failure opening IPv4 send socket");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     /*
@@ -202,8 +201,8 @@ void open_ip4_sockets(
     if (setsockopt(
         send_socket, IPPROTO_IP, IP_HDRINCL, &trueopt, sizeof(int))) {
 
-        perror("Failure to set IP_HDRINCL");
-        exit(EXIT_FAILURE);
+        close(send_socket);
+        return -1;
     }
 
     /*
@@ -212,17 +211,20 @@ void open_ip4_sockets(
     */
     recv_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (recv_socket == -1) {
-        perror("Failure opening IPv4 receive socket");
-        exit(EXIT_FAILURE);
+        close(send_socket);
+        return -1;
     }
 
+    net_state->platform.ip4_present = true;
     net_state->platform.ip4_send_socket = send_socket;
     net_state->platform.ip4_recv_socket = recv_socket;
+
+    return 0;
 }
 
 /*  Open the raw sockets for sending/receiving IPv6 packets  */
 static
-void open_ip6_sockets(
+int open_ip6_sockets(
     struct net_state_t *net_state)
 {
     int send_socket_icmp;
@@ -231,27 +233,30 @@ void open_ip6_sockets(
 
     send_socket_icmp = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
     if (send_socket_icmp == -1) {
-        perror("Failure opening ICMPv6 send socket");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     send_socket_udp = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
     if (send_socket_udp == -1) {
-        perror("Failure opening UDPv6 send socket");
-        exit(EXIT_FAILURE);
+        close(send_socket_icmp);
+
+        return -1;
     }
 
     recv_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
     if (recv_socket == -1) {
-        perror("Failure opening IPv6 receive socket");
-        exit(EXIT_FAILURE);
+        close(send_socket_icmp);
+        close(send_socket_udp);
+
+        return -1;
     }
 
-    set_socket_nonblocking(recv_socket);
-
+    net_state->platform.ip6_present = true;
     net_state->platform.icmp6_send_socket = send_socket_icmp;
     net_state->platform.udp6_send_socket = send_socket_udp;
     net_state->platform.ip6_recv_socket = recv_socket;
+
+    return 0;
 }
 
 /*
@@ -262,12 +267,35 @@ void open_ip6_sockets(
 void init_net_state_privileged(
     struct net_state_t *net_state)
 {
+    int ip4_err = 0;
+    int ip6_err = 0;
+
     memset(net_state, 0, sizeof(struct net_state_t));
 
     net_state->platform.next_sequence = MIN_PORT;
 
-    open_ip4_sockets(net_state);
-    open_ip6_sockets(net_state);
+    if (open_ip4_sockets(net_state)) {
+        ip4_err = errno;
+    }
+    if (open_ip6_sockets(net_state)) {
+        ip6_err = errno;
+    }
+
+    /*
+        If we couldn't open either IPv4 or IPv6 sockets, we can't do
+        much, so print errors and exit.
+    */
+    if (!net_state->platform.ip4_present
+            && !net_state->platform.ip6_present) {
+
+        errno = ip4_err;
+        perror("Failure to open IPv4 sockets");
+
+        errno = ip6_err;
+        perror("Failure to open IPv6 sockets");
+
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -280,8 +308,28 @@ void init_net_state(
     set_socket_nonblocking(net_state->platform.ip4_recv_socket);
     set_socket_nonblocking(net_state->platform.ip6_recv_socket);
 
-    check_length_order(net_state);
+    if (net_state->platform.ip4_present) {
+        check_length_order(net_state);
+    }
+
     check_sctp_support(net_state);
+}
+
+/*
+    Returns true if we were able to open sockets for a particular
+    IP protocol version.
+*/
+bool is_ip_version_supported(
+    struct net_state_t *net_state,
+    int ip_version)
+{
+    if (ip_version == 4) {
+        return net_state->platform.ip4_present;
+    } else if (ip_version == 6) {
+        return net_state->platform.ip6_present;
+    } else {
+        return false;
+    }
 }
 
 /*  Returns true if we can transmit probes using the specified protocol  */
@@ -588,13 +636,17 @@ void receive_replies(
     struct probe_t *probe;
     struct probe_t *probe_safe_iter;
 
-    receive_replies_from_icmp_socket(
-        net_state, net_state->platform.ip4_recv_socket,
-        handle_received_ip4_packet);
+    if (net_state->platform.ip4_present) {
+        receive_replies_from_icmp_socket(
+            net_state, net_state->platform.ip4_recv_socket,
+            handle_received_ip4_packet);
+    }
 
-    receive_replies_from_icmp_socket(
-        net_state, net_state->platform.ip6_recv_socket,
-        handle_received_ip6_packet);
+    if (net_state->platform.ip6_present) {
+        receive_replies_from_icmp_socket(
+            net_state, net_state->platform.ip6_recv_socket,
+            handle_received_ip6_packet);
+    }
 
     LIST_FOREACH_SAFE(
             probe, &net_state->outstanding_probes,
