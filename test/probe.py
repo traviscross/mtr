@@ -316,6 +316,9 @@ class TestProbeUDP(mtrpacket.MtrPacketTest):
     def udp_port_test(self, address):  # type: (unicode) -> None
         'Test UDP probes with variations on source port and dest port'
 
+        if not check_feature(self, 'udp'):
+            return
+
         cmd = '80 send-probe protocol udp ' + address
         self.write_command(cmd)
         reply = self.parse_reply()
@@ -356,6 +359,9 @@ class TestProbeTCP(mtrpacket.MtrPacketTest):
 
         test_basic_probe(self, 4, 'tcp')
 
+        if not check_feature(self, 'tcp'):
+            return
+
         #  Probe a local port assumed to be open  (ssh)
         cmd = '80 send-probe ip-4 127.0.0.1 protocol tcp port 22'
         self.write_command(cmd)
@@ -368,6 +374,9 @@ class TestProbeTCP(mtrpacket.MtrPacketTest):
         'Test IPv6 TCP probes'
 
         test_basic_probe(self, 6, 'tcp')
+
+        if not check_feature(self, 'tcp'):
+            return
 
         #  Probe a local port assumed to be open  (ssh)
         cmd = '80 send-probe ip-6 ::1 protocol tcp port 22'

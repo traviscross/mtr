@@ -152,6 +152,21 @@ int check_packet_features(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe)
 {
+    /*  Check the IP protocol version  */
+    if (ctl->af == AF_INET6) {
+        if (check_feature(ctl, cmdpipe, "ip-6")) {
+            return -1;
+        }
+    } else if (ctl->af == AF_INET) {
+        if (check_feature(ctl, cmdpipe, "ip-4")) {
+            return -1;
+        }
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*  Check the transport protocol  */
     if (ctl->mtrtype == IPPROTO_ICMP) {
         if (check_feature(ctl, cmdpipe, "icmp")) {
             return -1;
