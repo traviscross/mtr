@@ -44,6 +44,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -130,7 +131,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out)
   fputs(" -C, --csv                  output comma separated values\n", out);
   fputs(" -l, --raw                  output raw format\n", out);
   fputs(" -p, --split                split output\n", out);
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   fputs(" -t, --curses               use curses terminal interface\n", out);
 #endif
   fputs("     --displaymode MODE     select initial display mode\n", out);
@@ -296,7 +297,7 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
     { "report",         0, NULL, 'r' },
     { "report-wide",    0, NULL, 'w' },
     { "xml",            0, NULL, 'x' },
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
     { "curses",         0, NULL, 't' },
 #endif
 #ifdef HAVE_GTK
@@ -380,7 +381,7 @@ static void parse_arg (struct mtr_ctl *ctl, names_t **names, int argc, char **ar
       ctl->reportwide = 1;
       ctl->DisplayMode = DisplayReport;
       break;
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
     case 't':
       ctl->DisplayMode = DisplayCurses;
       break;

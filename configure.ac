@@ -95,9 +95,12 @@ AC_ARG_WITH([ncurses],
   [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
   [], [with_ncurses=yes])
 AS_IF([test "x$with_ncurses" = "xyes"],
-  [AC_CHECK_LIB([ncurses], [initscr], [], [with_ncurses=no])
+  [AC_SEARCH_LIBS(
+    [initscr], [ncurses curses],
+    [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
+    [with_ncurses=no])
 ])
-AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
+AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 
 AC_CHECK_LIB([cap], [cap_set_proc], [],
   AS_IF([test "$host_os" = linux-gnu],

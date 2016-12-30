@@ -29,7 +29,7 @@ enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay,
 
 enum {
   DisplayReport,
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   DisplayCurses,
 #endif
 #ifdef HAVE_GTK
