@@ -573,6 +573,9 @@ int construct_ip6_packet(
 {
     int send_socket;
     bool is_stream_protocol = false;
+    bool bind_send_socket = true;
+    struct sockaddr_storage current_sockaddr;
+    int current_sockaddr_len;
 
     if (param->protocol == IPPROTO_TCP) {
         is_stream_protocol = true;
@@ -612,9 +615,29 @@ int construct_ip6_packet(
         return 0;
     }
 
-    if (bind(send_socket,
-            (struct sockaddr *)src_sockaddr, sizeof(struct sockaddr_in6))) {
-        return -1;
+    /*
+        Check the current socket address, and if it is the same
+        as the source address we intend, we will skip the bind.
+        This is to accomodate Solaris, which, as of Solaris 11.3,
+        will return an EINVAL error on bind if the socket is already
+        bound, even if the same address is used.
+    */
+    current_sockaddr_len = sizeof(struct sockaddr_in6);
+    if (getsockname(send_socket, (struct sockaddr *)&current_sockaddr,
+            &current_sockaddr_len) == 0) {
+
+        if (memcmp(&current_sockaddr,
+                src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
+            bind_send_socket = false;
+        }
+    }
+
+    /*  Bind to our local address  */
+    if (bind_send_socket) {
+        if (bind(send_socket, (struct sockaddr *)src_sockaddr,
+                sizeof(struct sockaddr_in6))) {
+            return -1;
+        }
     }
 
     /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
