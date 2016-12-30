@@ -91,7 +91,7 @@ static void pwcenter(char *str)
 
   getmaxyx(stdscr, __unused_int, maxx);
   cx = (size_t)(maxx - strlen(str)) / 2;
-  printw("%*s%s", cx, "", str);
+  printw("%*s%s", (int)cx, "", str);
 }
 
 
@@ -360,7 +360,7 @@ extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
 }
 
 
-static void format_field (char *dst, const char *format, int n)
+static void format_field (char *dst, int dst_length, const char *format, int n)
 {
   if (index (format, 'N' ) ) {
     *dst++ = ' ';
@@ -368,10 +368,10 @@ static void format_field (char *dst, const char *format, int n)
   } else if (strchr( format, 'f' ) ) {
     /* this is for fields where we measure integer microseconds but
        display floating point miliseconds. Convert to float here. */
-    sprintf(dst, format, n / 1000.0 ); 
+    snprintf(dst, dst_length, format, n / 1000.0 );
     /* this was marked as a temporary hack over 10 years ago. -- REW */
   } else {
-    sprintf(dst, format, n);
+    snprintf(dst, dst_length, format, n);
   } 
 } 
 
@@ -423,7 +423,9 @@ static void mtr_curses_hosts(struct mtr_ctl *ctl, int startstat)
 	   can't be careful enough. */
 	j = ctl->fld_index[ctl->fld_active[i]];
 	if (j == -1) continue; 
-        format_field (buf+hd_len, data_fields[j].format, data_fields[j].net_xxx(at));
+        format_field (
+          buf+hd_len, sizeof(buf) - hd_len,
+          data_fields[j].format, data_fields[j].net_xxx(at));
 	hd_len +=  data_fields[j].length;
       }
       buf[hd_len] = 0;
@@ -648,8 +650,9 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
 	j = ctl->fld_index[ctl->fld_active[i]];
 	if (j < 0) continue;
 
-	sprintf( fmt, "%%%ds", data_fields[j].length );
-        sprintf( buf + hd_len, fmt, data_fields[j].title );
+	snprintf( fmt, sizeof(fmt), "%%%ds", data_fields[j].length );
+        snprintf(
+            buf + hd_len, sizeof(buf) - hd_len, fmt, data_fields[j].title );
 	hd_len +=  data_fields[j].length;
     }
     attron(A_BOLD);
@@ -673,7 +676,7 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
     max_cols = maxx <= SAVED_PINGS + padding ? maxx-padding : SAVED_PINGS;
     startstat = padding - 2;
 
-    sprintf(msg, " Last %3d pings", max_cols);
+    snprintf(msg, sizeof(msg), " Last %3d pings", max_cols);
     mvprintw(rowstat - 1, startstat, msg);
     
     attroff(A_BOLD);

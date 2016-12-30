@@ -41,7 +41,7 @@ int tokenize_command(
 
     for (i = 0; command_string[i]; i++) {
         if (on_space) {
-            if (!isspace(command_string[i])) {
+            if (!isspace((unsigned char)command_string[i])) {
                 /*  Take care not to exceed the token array length  */
                 if (token_count >= max_tokens) {
                     return -1;
@@ -51,7 +51,7 @@ int tokenize_command(
                 on_space = 0;
             }
         } else {
-            if (isspace(command_string[i])) {
+            if (isspace((unsigned char)command_string[i])) {
                 command_string[i] = 0;
                 on_space = 1;
             }

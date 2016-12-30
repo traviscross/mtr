@@ -110,13 +110,15 @@ void handle_inner_ip4_packet(
         sizeof(struct IPHeader) + sizeof(struct UDPHeader);
     const int ip_tcp_size =
         sizeof(struct IPHeader) + sizeof(struct TCPHeader);
-    const int ip_sctp_size =
-        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
     const struct ICMPHeader *icmp;
     const struct UDPHeader *udp;
     const struct TCPHeader *tcp;
-    const struct SCTPHeader *sctp;
     int udp_length;
+#ifdef IPPROTO_SCTP
+    const int ip_sctp_size =
+        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
+    const struct SCTPHeader *sctp;
+#endif
 
     if (ip->protocol == IPPROTO_ICMP) {
         if (packet_length < ip_icmp_size) {
@@ -185,13 +187,15 @@ void handle_inner_ip6_packet(
         sizeof(struct IP6Header) + sizeof(struct UDPHeader);
     const int ip_tcp_size =
         sizeof(struct IP6Header) + sizeof(struct TCPHeader);
-    const int ip_sctp_size =
-        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
     const struct ICMPHeader *icmp;
     const struct UDPHeader *udp;
     const struct TCPHeader *tcp;
-    const struct SCTPHeader *sctp;
     int udp_length;
+#ifdef IPPROTO_SCTP
+    const int ip_sctp_size =
+        sizeof(struct IPHeader) + sizeof(struct SCTPHeader);
+    const struct SCTPHeader *sctp;
+#endif
 
     if (ip->protocol == IPPROTO_ICMPV6) {
         if (packet_length < ip_icmp_size) {

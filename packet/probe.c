@@ -200,7 +200,8 @@ void format_mpls_string(
     char *append_pos = str;
     const struct mpls_label_t *mpls;
 
-    strcpy(str, "");
+    /*  Start with an empty string  */
+    str[0] = 0;
 
     for (i = 0; i < mpls_count; i++) {
         mpls = &mpls_list[i];
