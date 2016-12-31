@@ -76,7 +76,7 @@ if WITH_IPINFO
 mtr_SOURCES += ui/asn.c ui/asn.h
 endif
 
-if WITH_NCURSES
+if WITH_CURSES
 mtr_SOURCES += ui/curses.c
 endif
 

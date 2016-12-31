@@ -36,7 +36,7 @@
 #include "split.h"
 #include "utils.h"
 
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
 # if defined(HAVE_NCURSES_H)
 #  include <ncurses.h>
 # elif defined(HAVE_NCURSES_CURSES_H)
@@ -106,7 +106,7 @@ extern void split_redraw(struct mtr_ctl *ctl)
                net_best(at) /1000, net_avg(at)/1000,
                net_worst(at)/1000);
     } else {
-      sprintf(newLine, "???");
+      snprintf(newLine, sizeof(newLine), "???");
     }
 
     if (strcmp(newLine, Lines[at]) == 0) {
@@ -149,8 +149,8 @@ extern void split_close(void)
 
 extern int split_keyaction(void) 
 {
-#ifdef HAVE_LIBNCURSES
-  char c = getch();
+#ifdef HAVE_CURSES
+  unsigned char c = getch();
 #else
   fd_set readfds;
   struct timeval tv;

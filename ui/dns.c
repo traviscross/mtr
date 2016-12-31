@@ -179,7 +179,10 @@ extern void dns_open(struct mtr_ctl *ctl)
         rv = getnameinfo  ((struct sockaddr *) &sa, salen, 
 			       hostname, sizeof (hostname), NULL, 0, 0);
         if (rv == 0) {
-          sprintf (result, "%s %s\n", strlongip (ctl, &host), hostname);
+          snprintf (
+            result, sizeof(result),
+            "%s %s\n", strlongip (ctl, &host), hostname);
+
           rv = write (fromdns[1], result, strlen (result));
           if (rv < 0)
             error (0, errno, "write DNS lookup result");

@@ -33,7 +33,11 @@
 #ifndef _SYS_QUEUE_H_
 #define	_SYS_QUEUE_H_
 
+#include "config.h"
+
+#ifdef HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
+#endif
 
 /*
  * This file defines four types of data structures: singly-linked lists,

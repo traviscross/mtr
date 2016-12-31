@@ -46,7 +46,7 @@ extern char *trim(char *str, const char c)
   size_t len;
 
   /* left trim */
-  while (*p && (isspace(*p) || (c && *p == c)))
+  while (*p && (isspace((unsigned char)*p) || (c && *p == c)))
     p++;
   if (str < p) {
     len = strlen(str);
@@ -57,7 +57,7 @@ extern char *trim(char *str, const char c)
   len = strlen(str);
   while (len) {
     len--;
-    if (isspace(str[len]) || (c && str[len] == c)) {
+    if (isspace((unsigned char)str[len]) || (c && str[len] == c)) {
       continue;
     }
     len++;

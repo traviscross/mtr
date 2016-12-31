@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -225,7 +226,7 @@ void execute_packet_child(void)
         First, try to execute using /usr/bin/env, because this
         will search the PATH for mtr-packet
     */
-    execl("/usr/bin/env", "mtr-packet", mtr_packet_path, NULL);
+    execl("/usr/bin/env", "mtr-packet", mtr_packet_path, (char *)NULL);
 
     /*
         If env fails to execute, try to use the MTR_PACKET environment
@@ -236,7 +237,7 @@ void execute_packet_child(void)
         could be executed.  This will only be the case if /usr/bin/env
         doesn't exist.
     */
-    execl(mtr_packet_path, "mtr-packet", NULL);
+    execl(mtr_packet_path, "mtr-packet", (char *)NULL);
 
     /*  Both exec attempts failed, so nothing to do but exit  */
     exit(1);

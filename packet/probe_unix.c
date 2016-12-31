@@ -150,9 +150,9 @@ static
 void check_sctp_support(
     struct net_state_t *net_state)
 {
+#ifdef IPPROTO_SCTP
     int sctp_socket;
 
-#ifdef IPPROTO_SCTP
     sctp_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
     if (sctp_socket != -1) {
         close(sctp_socket);

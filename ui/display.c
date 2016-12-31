@@ -31,7 +31,7 @@
 #include "dns.h"
 #include "asn.h"
 
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
 # include "mtr-curses.h"
 #endif
 
@@ -41,7 +41,7 @@
 
 #include "split.h"
 
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
 # define DEFAULT_DISPLAY DisplayCurses
 #else
 # define DEFAULT_DISPLAY DisplayReport
@@ -85,7 +85,7 @@ extern void display_open(struct mtr_ctl *ctl)
   case DisplayCSV:
     csv_open();
     break;
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   case DisplayCurses:
     mtr_curses_open(ctl);
 # ifdef HAVE_IPINFO
@@ -130,7 +130,7 @@ extern void display_close(struct mtr_ctl *ctl)
   case DisplayCSV:
     csv_close(ctl, now);
     break;
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   case DisplayCurses:
 # ifdef HAVE_IPINFO
     asn_close(ctl);
@@ -154,7 +154,7 @@ extern void display_redraw(struct mtr_ctl *ctl)
 {
   switch(ctl->DisplayMode) {
 
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   case DisplayCurses:
     mtr_curses_redraw(ctl);
     break;
@@ -176,7 +176,7 @@ extern void display_redraw(struct mtr_ctl *ctl)
 extern int display_keyaction(struct mtr_ctl *ctl)
 {
   switch(ctl->DisplayMode) {
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   case DisplayCurses:
     return mtr_curses_keyaction(ctl);
 #endif
@@ -227,7 +227,7 @@ extern void display_loop(struct mtr_ctl *ctl)
 
 extern void display_clear(struct mtr_ctl *ctl)
 {
-#ifdef HAVE_LIBNCURSES
+#ifdef HAVE_CURSES
   if (ctl->DisplayMode == DisplayCurses)
     mtr_curses_clear(ctl);
 #endif

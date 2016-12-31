@@ -31,13 +31,16 @@ INSTALLING
 
 	make install
 
-  Note that mtr must be suid-root because it requires access to raw IP 
-  sockets.  See SECURITY for security information.
+  Note that mtr-packet must be suid-root because it requires access to
+  raw IP sockets.  See SECURITY for security information.
 
   Older versions used to require a non-existent path to GTK for a
   correct build of a non-gtk version while GTK was installed. This is
   no longer necessary. ./configure --without-gtk should now work. 
   If it doesn't, try "make WITHOUT_X11=YES" as the make step. 
+
+  On Solaris, you'll need to use GNU make to build.
+  (Use 'gmake' rather than 'make'.)
 
   On Solaris (and possibly other systems) the "gtk" library may be
   installed in a directory where the dynamic linker refuses to look when
@@ -50,12 +53,6 @@ INSTALLING
   and /usr/lib is trusted, and you trust the gtk libs enough to want them
   in a setuid program, then there is something to say for moving them
   to the "trusted" directory.)
-
-  On Solaris, linking usually fails to find "wattr" or something like that.
-  Somehow, I can't seem to be able to automate "configure" finding the right
-  libs on Solaris. So, the solution is that you cut-and-paste the line
-  doing the linking into a terminal window, and add "-lcurses" by hand. 
-  Then it will link. Help on how to catch this in autoconf appreciated.
 
   Building on MacOS should not require any special steps.
 

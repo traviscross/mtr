@@ -50,6 +50,7 @@ AC_CHECK_HEADERS([ \
   ncurses/curses.h \
   netinet/in.h \
   socket.h \
+  sys/cdefs.h \
   sys/limits.h \
   sys/socket.h \
   stdio_ext.h \
@@ -95,9 +96,15 @@ AC_ARG_WITH([ncurses],
   [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
   [], [with_ncurses=yes])
 AS_IF([test "x$with_ncurses" = "xyes"],
-  [AC_CHECK_LIB([ncurses], [initscr], [], [with_ncurses=no])
+
+  # Prefer ncurses over curses, if both are available.
+  # (On Solaris 11.3, ncurses builds and links for us, but curses does not.)
+  [AC_SEARCH_LIBS(
+    [initscr], [ncurses curses],
+    [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
+    [with_ncurses=no])
 ])
-AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
+AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 
 AC_CHECK_LIB([cap], [cap_set_proc], [],
   AS_IF([test "$host_os" = linux-gnu],
@@ -116,12 +123,9 @@ AC_ARG_ENABLE([ipv6],
   [AS_HELP_STRING([--disable-ipv6], [Do not enable IPv6])],
   [WANTS_IPV6=$enableval], [WANTS_IPV6=yes])
 
-USES_IPV6=
-AC_CHECK_FUNC([getaddrinfo], [
-  AS_IF([test "x$WANTS_IPV6" = "xyes"], [
-    AC_DEFINE([ENABLE_IPV6], [1], [Define to enable IPv6])
-    USES_IPV6=yes
-  ])
+AS_IF([test "x$WANTS_IPV6" = "xyes"], [
+  AC_DEFINE([ENABLE_IPV6], [1], [Define to enable IPv6])
+  USES_IPV6=yes
 ])
 
 AC_CHECK_FUNC([socket], [],

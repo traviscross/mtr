@@ -190,11 +190,14 @@ static char* split_txtrec(struct mtr_ctl *ctl, char *txt_rec) {
 
 #ifdef ENABLE_IPV6
 /* from dns.c:addr2ip6arpa() */
-static void reverse_host6(struct in6_addr *addr, char *buff) {
+static void reverse_host6(struct in6_addr *addr, char *buff, int buff_length) {
     int i;
     char *b = buff;
     for (i=(sizeof(*addr)/2-1); i>=0; i--, b+=4) /* 64b portion */
-        sprintf(b, "%x.%x.", addr->s6_addr[i] & 0xf, addr->s6_addr[i] >> 4);
+        snprintf(
+            b, buff_length,
+            "%x.%x.", addr->s6_addr[i] & 0xf, addr->s6_addr[i] >> 4);
+
     buff[strlen(buff) - 1] = '\0';
 }
 #endif
@@ -210,7 +213,7 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
 
     if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
-        reverse_host6(addr, key);
+        reverse_host6(addr, key, NAMELEN);
         if (snprintf(lookup_key, NAMELEN, "%s.origin6.asn.cymru.com", key) >= NAMELEN)
             return NULL;
 #else
@@ -243,7 +246,7 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
             DEB_syslog(LOG_INFO, "Looked up: %s", key);
             if (iihash)
                 if ((item.key = xstrdup(key))) {
-                    item.data = items;
+                    item.data = (void *)items;
                     hsearch(item, ENTER);
                     DEB_syslog(LOG_INFO, "Insert into hash: %s", key);
                 }
