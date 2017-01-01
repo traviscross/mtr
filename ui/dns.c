@@ -48,9 +48,9 @@ struct dns_results {
   struct dns_results *next;
 };
 
-struct dns_results *results;
+static struct dns_results *results;
 
-extern char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
+char *strlongip(struct mtr_ctl *ctl, ip_t * ip)
 {
 #ifdef ENABLE_IPV6
   static char addrstr[INET6_ADDRSTRLEN];
@@ -81,7 +81,7 @@ static int longipstr( char *s, ip_t *dst, int family UNUSED_IF_NO_IPV6)
 }
 
 
-extern struct hostent * dns_forward(const char *name)
+struct hostent * dns_forward(const char *name)
 {
   struct hostent *host;
 
@@ -124,7 +124,7 @@ static void set_sockaddr_ip (struct mtr_ctl *ctl, struct sockaddr_storage *sa, i
   }
 }
 
-extern void dns_open(struct mtr_ctl *ctl)
+void dns_open(struct mtr_ctl *ctl)
 {
   int pid; 
  
@@ -205,13 +205,13 @@ extern void dns_open(struct mtr_ctl *ctl)
   }
 }
 
-extern int dns_waitfd (void)
+int dns_waitfd (void)
 {
   return fromdns[0];
 }
 
 
-extern void dns_ack(struct mtr_ctl *ctl)
+void dns_ack(struct mtr_ctl *ctl)
 {
   char buf[2048], host[NI_MAXHOST], name[NI_MAXHOST];  
   ip_t hostip; 
@@ -233,12 +233,12 @@ extern void dns_ack(struct mtr_ctl *ctl)
 
 #ifdef ENABLE_IPV6
 
-extern int dns_waitfd6 (void)
+int dns_waitfd6 (void)
 {
   return  -1;
 }
 
-extern void dns_ack6(void)
+void dns_ack6(void)
 {
   return;
 }
@@ -246,7 +246,7 @@ extern void dns_ack6(void)
 #endif
 
 
-extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
+char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
 {
   struct dns_results *r;
   char buf[INET6_ADDRSTRLEN + 1];
@@ -274,7 +274,7 @@ extern char *dns_lookup2(struct mtr_ctl *ctl, ip_t * ip)
 }
 
 
-extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
+char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
 {
   char *t;
 
@@ -287,7 +287,7 @@ extern char *dns_lookup(struct mtr_ctl *ctl, ip_t * ip)
 /* XXX check if necessary/exported. */
 
 /* Resolve an IP address to a hostname. */ 
-extern struct hostent *addr2host( const char *addr, int family ) {
+struct hostent *addr2host( const char *addr, int family ) {
   int len = 0;
   switch ( family ) {
   case AF_INET:

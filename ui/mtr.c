@@ -617,7 +617,7 @@ static void init_rand(void)
   srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
-extern int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   struct hostent *  host                = NULL;
   struct addrinfo       hints, *res;

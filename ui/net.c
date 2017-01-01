@@ -114,7 +114,7 @@ static int numhosts = 10;
 
 /* return the number of microseconds to wait before sending the next
    ping */
-extern int calc_deltatime (float waittime)
+int calc_deltatime (float waittime)
 {
   waittime /= numhosts;
   return 1000000 * waittime;
@@ -262,79 +262,79 @@ static void net_process_ping(
     Invoked when the read pipe from the mtr-packet subprocess is readable.
     If we have received a complete reply, process it.
 */
-extern void net_process_return(struct mtr_ctl *ctl)
+void net_process_return(struct mtr_ctl *ctl)
 {
   handle_command_replies(ctl, &packet_command_pipe, net_process_ping);
 }
 
 
-extern ip_t *net_addr(int at) 
+ip_t *net_addr(int at)
 {
   return (ip_t *)&(host[at].addr);
 }
 
 
-extern ip_t *net_addrs(int at, int i) 
+ip_t *net_addrs(int at, int i)
 {
   return (ip_t *)&(host[at].addrs[i]);
 }
 
-extern void *net_mpls(int at)
+void *net_mpls(int at)
 {
   return (struct mplslen *)&(host[at].mplss);
 }
 
-extern void *net_mplss(int at, int i)
+void *net_mplss(int at, int i)
 {
   return (struct mplslen *)&(host[at].mplss[i]);
 }
 
-extern int net_loss(int at) 
+int net_loss(int at)
 {
-  if ((host[at].xmit - host[at].transit) == 0) 
+  if ((host[at].xmit - host[at].transit) == 0)
     return 0;
   /* times extra 1000 */
   return 1000*(100 - (100.0 * host[at].returned / (host[at].xmit - host[at].transit)) );
 }
 
 
-extern int net_drop(int at) 
+int net_drop(int at)
 {
   return (host[at].xmit - host[at].transit) - host[at].returned;
 }
 
 
-extern int net_last(int at) 
+int net_last(int at)
 {
   return (host[at].last);
 }
 
 
-extern int net_best(int at) 
+int net_best(int at)
 {
   return (host[at].best);
 }
 
 
-extern int net_worst(int at) 
+int net_worst(int at)
 {
   return (host[at].worst);
 }
 
 
-extern int net_avg(int at) 
+int net_avg(int at)
 {
   return (host[at].avg);
 }
 
 
-extern int net_gmean(int at) 
+int net_gmean(int at)
 {
   return (host[at].gmean);
 }
 
 
-extern int net_stdev(int at) 
+int net_stdev(int at)
 {
   if( host[at].returned > 1 ) {
     return ( sqrt( host[at].ssd/(host[at].returned -1.0) ) );
@@ -344,31 +344,31 @@ extern int net_stdev(int at)
 }
 
 
-extern int net_jitter(int at) 
+int net_jitter(int at)
 { 
   return (host[at].jitter); 
 }
 
 
-extern int net_jworst(int at) 
+int net_jworst(int at)
 { 
   return (host[at].jworst); 
 }
 
 
-extern int net_javg(int at) 
+int net_javg(int at)
 { 
   return (host[at].javg); 
 }
 
 
-extern int net_jinta(int at) 
+int net_jinta(int at)
 { 
   return (host[at].jinta); 
 }
 
 
-extern int net_max(struct mtr_ctl *ctl)
+int net_max(struct mtr_ctl *ctl)
 {
   int at;
   int max;
@@ -388,37 +388,37 @@ extern int net_max(struct mtr_ctl *ctl)
 }
 
 
-extern int net_min (struct mtr_ctl *ctl)
+int net_min (struct mtr_ctl *ctl)
 {
   return ( ctl->fstTTL - 1 );
 }
 
 
-extern int net_returned(int at) 
+int net_returned(int at)
 { 
   return host[at].returned;
 }
 
 
-extern int net_xmit(int at) 
+int net_xmit(int at)
 { 
   return host[at].xmit;
 }
 
 
-extern int net_up(int at) 
+int net_up(int at)
 {
    return host[at].up;
 }
 
 
-extern char * net_localaddr (void)
+char * net_localaddr (void)
 {
   return localaddr;
 }
 
 
-extern void net_end_transit(void) 
+void net_end_transit(void)
 {
   int at;
   
@@ -427,7 +427,7 @@ extern void net_end_transit(void)
   }
 }
 
-extern int net_send_batch(struct mtr_ctl *ctl)
+int net_send_batch(struct mtr_ctl *ctl)
 {
   int n_unknown=0, i;
 
@@ -556,7 +556,7 @@ static void net_find_local_address(void)
 }
 
 
-extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
+int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 {
   int err;
 
@@ -597,7 +597,7 @@ extern int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 }
 
 
-extern void net_reopen(struct mtr_ctl *ctl, struct hostent * addr)
+void net_reopen(struct mtr_ctl *ctl, struct hostent * addr)
 {
   int at;
 
@@ -626,7 +626,7 @@ extern void net_reopen(struct mtr_ctl *ctl, struct hostent * addr)
 }
 
 
-extern void net_reset(struct mtr_ctl *ctl)
+void net_reset(struct mtr_ctl *ctl)
 {
   static struct nethost template = {
     .saved_seq_offset = 2 - SAVED_PINGS
@@ -652,19 +652,19 @@ extern void net_reset(struct mtr_ctl *ctl)
 
 
 /*  Close the pipe to the packet generator process, and kill the process  */
-extern void net_close(void)
+void net_close(void)
 {
   close_command_pipe(&packet_command_pipe);
 }
 
 
-extern int net_waitfd(void)
+int net_waitfd(void)
 {
   return packet_command_pipe.read_fd;
 }
 
 
-extern int* net_saved_pings(int at)
+int* net_saved_pings(int at)
 {
   return host[at].saved;
 }
@@ -681,15 +681,15 @@ static void net_save_increment(void)
 }
 
 
-extern void net_save_xmit(int at)
+void net_save_xmit(int at)
 {
-  if (host[at].saved[SAVED_PINGS-1] != -2) 
+  if (host[at].saved[SAVED_PINGS-1] != -2)
     net_save_increment();
   host[at].saved[SAVED_PINGS-1] = -1;
 }
 
 
-extern void net_save_return(int at, int seq, int ms)
+void net_save_return(int at, int seq, int ms)
 {
   int idx;
   idx = seq - host[at].saved_seq_offset;
@@ -727,7 +727,7 @@ static void sockaddrtop( struct sockaddr * saddr, char * strptr, size_t len ) {
 
 
 /* Address comparison. */
-extern int addrcmp( char * a, char * b, int family ) {
+int addrcmp( char * a, char * b, int family ) {
   int rc = -1;
 
   switch ( family ) {
@@ -745,7 +745,7 @@ extern int addrcmp( char * a, char * b, int family ) {
 }
 
 /* Address copy. */
-extern void addrcpy( char * a, char * b, int family ) {
+void addrcpy( char * a, char * b, int family ) {
 
   switch ( family ) {
   case AF_INET:
@@ -760,7 +760,7 @@ extern void addrcpy( char * a, char * b, int family ) {
 }
 
 /* for GTK frontend */
-extern void net_harvest_fds(struct mtr_ctl *ctl)
+void net_harvest_fds(struct mtr_ctl *ctl)
 {
   fd_set writefd;
   int maxfd = 0;

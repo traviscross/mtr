@@ -76,7 +76,7 @@ static void gtk_do_init(int *argc, char ***argv)
 }
 
 
-extern int gtk_detect(ATTRIBUTE_UNUSED int *argc, ATTRIBUTE_UNUSED char ***argv)
+int gtk_detect(ATTRIBUTE_UNUSED int *argc, ATTRIBUTE_UNUSED char ***argv)
 {
   if(getenv("DISPLAY") != NULL) {
     /* If we do this here, gtk_init exits on an error. This happens
@@ -504,7 +504,7 @@ static void update_tree_row(struct mtr_ctl *ctl, int row, GtkTreeIter *iter)
 #endif
 }
 
-extern void gtk_redraw(struct mtr_ctl *ctl)
+void gtk_redraw(struct mtr_ctl *ctl)
 {
   int max = net_max(ctl);
   
@@ -555,7 +555,7 @@ static void Window_fill(struct mtr_ctl *ctl, GtkWidget *Window)
 }
 
 
-extern void gtk_open(struct mtr_ctl *ctl)
+void gtk_open(struct mtr_ctl *ctl)
 {
   GdkPixbuf *icon;
   int argc = 1;
@@ -586,12 +586,12 @@ extern void gtk_open(struct mtr_ctl *ctl)
 }
 
 
-extern void gtk_close(void)
+void gtk_close(void)
 {
 }
 
 
-extern int gtk_keyaction(void)
+int gtk_keyaction(void)
 {
   return 0;
 }
@@ -642,7 +642,7 @@ static gboolean gtk_dns_data6(ATTRIBUTE_UNUSED GIOChannel *channel,
 #endif
 
 
-extern void gtk_loop(struct mtr_ctl *ctl)
+void gtk_loop(struct mtr_ctl *ctl)
 {
   GIOChannel *net_iochannel, *dns_iochannel;
 

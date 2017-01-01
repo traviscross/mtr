@@ -38,7 +38,7 @@
 #define MAX_FORMAT_STR 81
 
 
-extern void report_open(void)
+void report_open(void)
 {
   const time_t now = time(NULL);
   const char *t = iso_time (&now);
@@ -66,7 +66,7 @@ static void print_mpls(struct mplslen *mpls) {
 }
 #endif
 
-extern void report_close(struct mtr_ctl *ctl)
+void report_close(struct mtr_ctl *ctl)
 {
   int i, j, at, max, z, w;
   struct mplslen *mpls, *mplss;
@@ -233,23 +233,23 @@ extern void report_close(struct mtr_ctl *ctl)
 }
 
 
-extern void txt_open(void)
+void txt_open(void)
 {
 }
 
 
-extern void txt_close(struct mtr_ctl *ctl)
+void txt_close(struct mtr_ctl *ctl)
 {
   report_close(ctl);
 }
 
 
-extern void json_open(void)
+void json_open(void)
 {
 }
 
 
-extern void json_close(struct mtr_ctl *ctl)
+void json_close(struct mtr_ctl *ctl)
 {
   int i, j, at, first, max;
   ip_t *addr;
@@ -338,12 +338,12 @@ extern void json_close(struct mtr_ctl *ctl)
 
 
 
-extern void xml_open(void)
+void xml_open(void)
 {
 }
 
 
-extern void xml_close(struct mtr_ctl *ctl)
+void xml_close(struct mtr_ctl *ctl)
 {
   int i, j, at, max;
   ip_t *addr;
@@ -404,11 +404,11 @@ extern void xml_close(struct mtr_ctl *ctl)
 }
 
 
-extern void csv_open(void)
+void csv_open(void)
 {
 }
 
-extern void csv_close(struct mtr_ctl *ctl, time_t now)
+void csv_close(struct mtr_ctl *ctl, time_t now)
 {
   int i, j, at, max;
   ip_t *addr;

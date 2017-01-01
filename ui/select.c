@@ -41,7 +41,7 @@
 #include "display.h"
 #include "select.h"
 
-extern void select_loop(struct mtr_ctl *ctl){
+void select_loop(struct mtr_ctl *ctl){
   fd_set readfd;
   fd_set writefd;
   int anyset = 0;

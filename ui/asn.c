@@ -256,11 +256,11 @@ static char *get_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     return val;
 }
 
-extern ATTRIBUTE_CONST size_t get_iiwidth_len(void) {
+ATTRIBUTE_CONST size_t get_iiwidth_len(void) {
     return (sizeof(iiwidth) / sizeof((iiwidth)[0]));
 }
 
-extern ATTRIBUTE_CONST int get_iiwidth(int ipinfo_no) {
+ATTRIBUTE_CONST int get_iiwidth(int ipinfo_no) {
     static const int len = (sizeof(iiwidth) / sizeof((iiwidth)[0]));
 
     if (ipinfo_no < len)
@@ -268,7 +268,7 @@ extern ATTRIBUTE_CONST int get_iiwidth(int ipinfo_no) {
     return iiwidth[ipinfo_no % len];
 }
 
-extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
+char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     char *ipinfo = get_ipinfo(ctl, addr);
     char fmt[8];
     snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no?"":"AS", get_iiwidth(ctl->ipinfo_no));
@@ -276,11 +276,11 @@ extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr){
     return fmtinfo;
 }
 
-extern int is_printii(struct mtr_ctl *ctl) {
+int is_printii(struct mtr_ctl *ctl) {
     return ((ctl->ipinfo_no >= 0) && (ctl->ipinfo_no != ctl->ipinfo_max));
 }
 
-extern void asn_open(struct mtr_ctl *ctl) {
+void asn_open(struct mtr_ctl *ctl) {
     if (ctl->ipinfo_no >= 0) {
         DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
@@ -288,7 +288,7 @@ extern void asn_open(struct mtr_ctl *ctl) {
     }
 }
 
-extern void asn_close(struct mtr_ctl *ctl) {
+void asn_close(struct mtr_ctl *ctl) {
     if ((ctl->ipinfo_no >= 0) && iihash) {
         DEB_syslog(LOG_INFO, "hdestroy()");
         hdestroy();

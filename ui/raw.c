@@ -35,14 +35,14 @@
 
 
 /* Log an echo request, or a "ping" */
-extern void raw_rawxmit (int host, int seq)
+void raw_rawxmit (int host, int seq)
 {
   printf ("x %d %d\n", host, seq);
   fflush (stdout);
 }
 
 /* Log an echo reply, or a "pong" */
-extern void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
+void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
 {
   static int havename[MaxHost];
   char *name;
@@ -59,7 +59,7 @@ extern void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
 }
 
 
-extern void raw_rawhost (struct mtr_ctl *ctl, int host, ip_t * ip_addr)
+void raw_rawhost (struct mtr_ctl *ctl, int host, ip_t * ip_addr)
 {
   printf ("h %d %s\n", host, strlongip(ctl, ip_addr));
   fflush (stdout); 

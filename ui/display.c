@@ -53,7 +53,7 @@
 # define UNUSED_IF_NO_GTK ATTRIBUTE_UNUSED
 #endif
 
-extern void display_detect(struct mtr_ctl *ctl, int *argc UNUSED_IF_NO_GTK,
+void display_detect(struct mtr_ctl *ctl, int *argc UNUSED_IF_NO_GTK,
 			   char ***argv UNUSED_IF_NO_GTK)
 {
   ctl->DisplayMode = DEFAULT_DISPLAY;
@@ -66,7 +66,7 @@ extern void display_detect(struct mtr_ctl *ctl, int *argc UNUSED_IF_NO_GTK,
 }
 
 
-extern void display_open(struct mtr_ctl *ctl)
+void display_open(struct mtr_ctl *ctl)
 {
   switch(ctl->DisplayMode) {
 
@@ -108,7 +108,7 @@ extern void display_open(struct mtr_ctl *ctl)
 }
 
 
-extern void display_close(struct mtr_ctl *ctl)
+void display_close(struct mtr_ctl *ctl)
 {
   time_t now;
 
@@ -150,7 +150,7 @@ extern void display_close(struct mtr_ctl *ctl)
 }
 
 
-extern void display_redraw(struct mtr_ctl *ctl)
+void display_redraw(struct mtr_ctl *ctl)
 {
   switch(ctl->DisplayMode) {
 
@@ -173,7 +173,7 @@ extern void display_redraw(struct mtr_ctl *ctl)
 }
 
 
-extern int display_keyaction(struct mtr_ctl *ctl)
+int display_keyaction(struct mtr_ctl *ctl)
 {
   switch(ctl->DisplayMode) {
 #ifdef HAVE_CURSES
@@ -193,28 +193,28 @@ extern int display_keyaction(struct mtr_ctl *ctl)
 }
 
 
-extern void display_rawxmit(struct mtr_ctl *ctl, int host, int seq)
+void display_rawxmit(struct mtr_ctl *ctl, int host, int seq)
 {
   if (ctl->DisplayMode == DisplayRaw)
     raw_rawxmit (host, seq);
 }
 
 
-extern void display_rawping(struct mtr_ctl *ctl, int host, int msec, int seq)
+void display_rawping(struct mtr_ctl *ctl, int host, int msec, int seq)
 {
   if (ctl->DisplayMode == DisplayRaw)
     raw_rawping (ctl, host, msec, seq);
 }
 
 
-extern void display_rawhost(struct mtr_ctl *ctl, int host, ip_t *ip_addr)
+void display_rawhost(struct mtr_ctl *ctl, int host, ip_t *ip_addr)
 {
   if (ctl->DisplayMode == DisplayRaw)
     raw_rawhost (ctl, host, ip_addr);
 }
 
 
-extern void display_loop(struct mtr_ctl *ctl)
+void display_loop(struct mtr_ctl *ctl)
 {
 #ifdef HAVE_GTK
   if (ctl->DisplayMode == DisplayGTK)
@@ -225,7 +225,7 @@ extern void display_loop(struct mtr_ctl *ctl)
 }
 
 
-extern void display_clear(struct mtr_ctl *ctl)
+void display_clear(struct mtr_ctl *ctl)
 {
 #ifdef HAVE_CURSES
   if (ctl->DisplayMode == DisplayCurses)

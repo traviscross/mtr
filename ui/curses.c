@@ -117,7 +117,7 @@ static char *format_number (int n, int w, char *buf)
 }
 
 
-extern int mtr_curses_keyaction(struct mtr_ctl *ctl)
+int mtr_curses_keyaction(struct mtr_ctl *ctl)
 {
   int c = getch();
   int i = 0;
@@ -608,7 +608,7 @@ static void mtr_curses_graph(struct mtr_ctl *ctl, int startstat, int cols)
 }
 
 
-extern void mtr_curses_redraw(struct mtr_ctl *ctl)
+void mtr_curses_redraw(struct mtr_ctl *ctl)
 {
   int maxx;
   int startstat;
@@ -707,7 +707,7 @@ extern void mtr_curses_redraw(struct mtr_ctl *ctl)
 }
 
 
-extern void mtr_curses_open(struct mtr_ctl *ctl)
+void mtr_curses_open(struct mtr_ctl *ctl)
 {
   int bg_col = 0;
   int i;
@@ -726,14 +726,14 @@ extern void mtr_curses_open(struct mtr_ctl *ctl)
 }
 
 
-extern void mtr_curses_close(void)
+void mtr_curses_close(void)
 {  
   printw("\n");
   endwin();
 }
 
 
-extern void mtr_curses_clear(struct mtr_ctl *ctl)
+void mtr_curses_clear(struct mtr_ctl *ctl)
 {
   mtr_curses_close();
   mtr_curses_open(ctl);
