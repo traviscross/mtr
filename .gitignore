@@ -30,7 +30,15 @@ stamp-h1*
 /INSTALL
 /mtr
 /mtr-packet
+/mtr-packet-listen
 /mtr.8
 /mtr-packet.8
+/test/.deps/
+/test/.dirstamp
+/ui/.deps/
+/ui/.dirstamp
+
+/test/*.py.log
+/test/*.py.trs
 
 /mtr-*.tar.gz
