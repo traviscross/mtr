@@ -19,7 +19,10 @@
 #ifndef CMDPARSE_H
 #define CMDPARSE_H
 
-#define MAX_COMMAND_ARGUMENTS 16
+enum {
+    MAX_COMMAND_ARGUMENTS = 16,
+    MAX_COMMAND_TOKENS = MAX_COMMAND_ARGUMENTS * 2 + 2
+};
 
 /*  Parsed commands, or command replies, ready for semantic interpretation  */
 struct command_t
