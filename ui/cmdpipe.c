@@ -210,34 +210,26 @@ int check_packet_features(
 static
 void execute_packet_child(void)
 {
-    char *mtr_packet_path;
-
     /*
-        Allow the MTR_PACKET environment variable to overrride
+        Allow the MTR_PACKET environment variable to override
         the path to the mtr-packet executable.  This is necessary
         for debugging changes for mtr-packet.
     */
-    mtr_packet_path = getenv("MTR_PACKET");
+    char *mtr_packet_path = getenv("MTR_PACKET");
     if (mtr_packet_path == NULL) {
         mtr_packet_path = "mtr-packet";
     }
 
     /*
-        First, try to execute using /usr/bin/env, because this
-        will search the PATH for mtr-packet
+        First, try to execute mtr-packet from PATH
+        or MTR_PACKET environment variable.
     */
-    execl("/usr/bin/env", "mtr-packet", mtr_packet_path, (char *)NULL);
+    execlp(mtr_packet_path, "mtr-packet", (char *)NULL);
 
     /*
-        If env fails to execute, try to use the MTR_PACKET environment
-        as a full path to the executable.  This is necessary because on
-        Windows, minimal mtr binary distributions will lack /usr/bin/env.
-
-        Note: A side effect is that an mtr-packet in the current directory
-        could be executed.  This will only be the case if /usr/bin/env
-        doesn't exist.
+        If mtr-packet is not found, try to use mtr-packet from current directory
     */
-    execl(mtr_packet_path, "mtr-packet", (char *)NULL);
+    execl("./mtr-packet", "./mtr-packet", (char *)NULL);
 
     /*  Both exec attempts failed, so nothing to do but exit  */
     exit(1);
