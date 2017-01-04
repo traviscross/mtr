@@ -18,6 +18,7 @@
 
 #include "command.h"
 
+#include <errno.h>
 #include <io.h>
 #include <stdio.h>
 
