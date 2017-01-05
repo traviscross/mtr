@@ -18,6 +18,7 @@
 
 #include "probe.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <winternl.h>
 
