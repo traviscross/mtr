@@ -18,15 +18,15 @@ rem  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 rem
 
 rem Assume the path of this batch file is the mtr installation location
-set MTR_DIR=%~dp0
+set "MTR_DIR=%~dp0"
 
-set MTR_BIN=%MTR_DIR%\bin
+set "MTR_BIN=%MTR_DIR%\bin"
 
 rem ncurses needs to locate the cygwin terminfo file
-set TERMINFO=%MTR_DIR%\terminfo
+set "TERMINFO=%MTR_DIR%\terminfo"
 
 rem mtr needs to know the location to the packet generator
-set MTR_PACKET=%MTR_BIN%\mtr-packet.exe
+set "MTR_PACKET=%MTR_BIN%\mtr-packet.exe"
 
 rem Pass along commandline arguments
-%MTR_BIN%\mtr %*
+"%MTR_BIN%\mtr" %*
