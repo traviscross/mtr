@@ -64,7 +64,7 @@ static int  LineCount;
 #define DEBUG 0
 
 
-extern void split_redraw(struct mtr_ctl *ctl)
+void split_redraw(struct mtr_ctl *ctl)
 {
   int   max;
   int   at;
@@ -126,7 +126,7 @@ extern void split_redraw(struct mtr_ctl *ctl)
 }
 
 
-extern void split_open(void)
+void split_open(void)
 {
   int i;
 #if DEBUG
@@ -139,7 +139,7 @@ extern void split_open(void)
 }
 
 
-extern void split_close(void)
+void split_close(void)
 {
 #if DEBUG
   printf("split_close()\n");
@@ -147,7 +147,7 @@ extern void split_close(void)
 }
 
 
-extern int split_keyaction(void) 
+int split_keyaction(void) 
 {
 #ifdef HAVE_CURSES
   unsigned char c = getch();

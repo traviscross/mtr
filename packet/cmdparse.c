@@ -76,15 +76,14 @@ int parse_command(
     struct command_t *command,
     char *command_string)
 {
-    const int max_tokens = MAX_COMMAND_ARGUMENTS * 2 + 2;
-    char *tokens[max_tokens];
+    char *tokens[MAX_COMMAND_TOKENS];
     int token_count;
     int i;
 
     memset(command, 0, sizeof(struct command_t));
 
     /*  Tokenize the string using whitespace  */
-    token_count = tokenize_command(tokens, max_tokens, command_string);
+    token_count = tokenize_command(tokens, MAX_COMMAND_TOKENS, command_string);
     if (token_count < 2) {
         errno = EINVAL;
         return -1;

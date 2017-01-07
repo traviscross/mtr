@@ -40,7 +40,7 @@
 
 #include "utils.h"
 
-extern char *trim(char *str, const char c)
+char *trim(char *str, const char c)
 {
   char *p = str;
   size_t len;
@@ -68,7 +68,7 @@ extern char *trim(char *str, const char c)
 }
 
 /* Parse string, and return positive signed int. */
-extern int strtonum_or_err(const char *str, const char *errmesg, const int type)
+int strtonum_or_err(const char *str, const char *errmesg, const int type)
 {
   unsigned long int num;
   char *end = NULL;
@@ -93,7 +93,7 @@ extern int strtonum_or_err(const char *str, const char *errmesg, const int type)
   return 0;
 }
 
-extern float strtofloat_or_err(const char *str, const char *errmesg)
+float strtofloat_or_err(const char *str, const char *errmesg)
 {
   double num;
   char *end = NULL;
@@ -112,7 +112,7 @@ extern float strtofloat_or_err(const char *str, const char *errmesg)
   return 0;
 }
 
-extern void *xmalloc(const size_t size)
+void *xmalloc(const size_t size)
 {
   void *ret = malloc(size);
 
@@ -121,7 +121,7 @@ extern void *xmalloc(const size_t size)
   return ret;
 }
 
-extern char *xstrdup(const char *str)
+char *xstrdup(const char *str)
 {
   char *ret;
 
@@ -153,7 +153,7 @@ static inline int close_stream(FILE *stream)
   return 0;
 }
 /* Meant to be used atexit(close_stdout); */
-extern void close_stdout(void)
+void close_stdout(void)
 {
   if (close_stream(stdout) != 0 && !(errno == EPIPE)) {
     error(0, errno, "write error");
@@ -165,7 +165,7 @@ extern void close_stdout(void)
 
 /* ctime() replacement that will reteturn ISO-8601 timestamp string such as:
  * 2016-08-29T19:25:02+01:00 */
-extern const char *iso_time(const time_t *t)
+const char *iso_time(const time_t *t)
 {
   static char s[32];
   struct tm *tm;
