@@ -101,12 +101,17 @@ void report_win_error(
     int err)
 {
     /*  It could be that we got no reply because of timeout  */
-    if (err == IP_REQ_TIMED_OUT) {
+    if (err == IP_REQ_TIMED_OUT
+            || err == IP_SOURCE_QUENCH) {
         printf("%d no-reply\n", command_token);
     } else if (err == IP_DEST_HOST_UNREACHABLE
+            || err == IP_DEST_PORT_UNREACHABLE
+            || err == IP_DEST_PROT_UNREACHABLE
             || err == IP_DEST_NET_UNREACHABLE
             || err == IP_DEST_UNREACHABLE
-            || err == IP_DEST_NO_ROUTE) {
+            || err == IP_DEST_NO_ROUTE
+            || err == IP_BAD_ROUTE
+            || err == IP_BAD_DESTINATION) {
         printf("%d no-route\n", command_token);
     } else if (err == ERROR_INVALID_NETNAME) {
         printf("%d address-not-available\n", command_token);
@@ -134,7 +139,6 @@ void WINAPI on_icmp_reply(
     int round_trip_us = 0;
     int reply_count;
     int reply_status = 0;
-    int err;
     struct sockaddr_storage remote_addr;
     struct sockaddr_in *remote_addr4;
     struct sockaddr_in6 *remote_addr6;
@@ -178,18 +182,14 @@ void WINAPI on_icmp_reply(
     }
 
     if (reply_count == 0) {
-        err = GetLastError();
-
-        report_win_error(probe->token, err);
-        free_probe(net_state, probe);
-        return;
+        reply_status = GetLastError();
     }
-
 
     icmp_type = -1;
     if (reply_status == IP_SUCCESS) {
         icmp_type = ICMP_ECHOREPLY;
-    } else if (reply_status == IP_TTL_EXPIRED_TRANSIT) {
+    } else if (reply_status == IP_TTL_EXPIRED_TRANSIT
+            || reply_status == IP_TTL_EXPIRED_REASSEM) {
         icmp_type = ICMP_TIME_EXCEEDED;
     }
 
@@ -199,7 +199,8 @@ void WINAPI on_icmp_reply(
             net_state, probe, icmp_type,
             &remote_addr, round_trip_us, 0, NULL);
     } else {
-        fprintf(stderr, "Unexpected ICMP result %d\n", icmp_type);
+        report_win_error(probe->token, reply_status);
+        free_probe(net_state, probe);
     }
 }
 
