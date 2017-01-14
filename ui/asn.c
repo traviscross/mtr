@@ -136,8 +136,7 @@ static char *ipinfo_lookup(const char *domain) {
         txt = (char*)txtrec;
 
     pt++;
-    xstrncpy(txt, (char*) pt, txtlen);
-    txt[txtlen] = 0;
+    xstrncpy(txt, (char*) pt, txtlen + 1);
 
     if (iihash)
         DEB_syslog(LOG_INFO, "Malloc-txt(%p): %s", txt, txt);
