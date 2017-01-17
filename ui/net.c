@@ -528,11 +528,13 @@ static void net_find_local_address(void)
     to succeed.
   */
   if (remotesockaddr->sa_family == AF_INET6) {
+#ifdef ENABLE_IPV6
     addr_length = sizeof(struct sockaddr_in6);
 
     memcpy(&remote_sockaddr, rsa6, addr_length);
     remote6 = (struct sockaddr_in6 *)&remote_sockaddr;
     remote6->sin6_port = htons(1);
+#endif
   } else {
     addr_length = sizeof(struct sockaddr_in);
 
