@@ -131,8 +131,11 @@ static void save_sequence(struct mtr_ctl *ctl, int index, int seq)
   memset(&sequence[seq].time, 0, sizeof(sequence[seq].time));
   
   host[index].transit = 1;
-  if (host[index].sent)
+
+  if (host[index].sent) {
     host[index].up = 0;
+  }
+
   host[index].sent = 1;
   net_save_xmit(index);
 }
@@ -143,8 +146,9 @@ static int new_sequence(struct mtr_ctl *ctl, int index)
   int seq;
 
   seq = next_sequence++;
-  if (next_sequence >= MaxSequence)
+  if (next_sequence >= MaxSequence) {
     next_sequence = MinSequence;
+  }
 
   save_sequence(ctl, index, seq);
 
@@ -185,11 +189,13 @@ static void net_process_ping(
 
   addrcpy( (void *) &addrcopy, (char *)addr, ctl->af );
 
-  if (seq < 0 || seq >= MaxSequence)
+  if (seq < 0 || seq >= MaxSequence) {
     return;
+  }
 
-  if (!sequence[seq].transit)
+  if (!sequence[seq].transit) {
     return;
+  }
   sequence[seq].transit = 0;
 
   index = sequence[seq].index;
@@ -201,19 +207,21 @@ static void net_process_ping(
     host[index].mpls = *mpls;
     display_rawhost(ctl, index, (void *) &(host[index].addr));
 
-  /* multi paths */
+    /* multi paths */
     addrcpy( (void *) &(host[index].addrs[0]), addrcopy, ctl->af );
     host[index].mplss[0] = *mpls;
   } else {
-    for( i=0; i<MAXPATH; ) {
-      if( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addrcopy,
-                   ctl->af ) == 0 ||
-          addrcmp( (void *) &(host[index].addrs[i]),
-                   (void *) &ctl->unspec_addr, ctl->af ) == 0 ) break;
+    for ( i=0; i<MAXPATH; ) {
+      if ( addrcmp( (void *) &(host[index].addrs[i]), (void *) &addrcopy,
+                    ctl->af ) == 0 ||
+           addrcmp( (void *) &(host[index].addrs[i]),
+                    (void *) &ctl->unspec_addr, ctl->af ) == 0 ) {
+        break;
+      } 
       i++;
     }
-    if( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, ctl->af ) != 0 && 
-        i<MAXPATH ) {
+
+    if ( addrcmp( (void *) &(host[index].addrs[i]), addrcopy, ctl->af ) != 0 && i<MAXPATH ) {
       addrcpy( (void *) &(host[index].addrs[i]), addrcopy, ctl->af );
       host[index].mplss[i] = *mpls;
       display_rawhost(ctl, index, (void *) &(host[index].addrs[i]));
@@ -221,7 +229,10 @@ static void net_process_ping(
   }
 
   host[index].jitter = totusec - host[index].last;
-  if (host[index].jitter < 0 ) host[index].jitter = - host[index].jitter;
+  if (host[index].jitter < 0 ) {
+    host[index].jitter = - host[index].jitter;
+  }
+
   host[index].last = totusec;
 
   if (host[index].returned < 1) {
@@ -231,11 +242,16 @@ static void net_process_ping(
     host[index].jitter = host[index].jworst = host[index].jinta= 0;
   }
 
-  if (totusec < host[index].best ) host[index].best  = totusec;
-  if (totusec > host[index].worst) host[index].worst = totusec;
+  if (totusec < host[index].best ) {
+    host[index].best  = totusec;
+  }
+  if (totusec > host[index].worst) {
+    host[index].worst = totusec;
+  }
 
-  if (host[index].jitter > host[index].jworst)
+  if (host[index].jitter > host[index].jworst) {
     host[index].jworst = host[index].jitter;
+  }
 
   host[index].returned++;
   oldavg = host[index].avg;
@@ -247,9 +263,11 @@ static void net_process_ping(
   /* below algorithm is from rfc1889, A.8 */
   host[index].jinta += host[index].jitter - ((host[index].jinta + 8) >> 4);
 
-  if ( host[index].returned > 1 )
+  if ( host[index].returned > 1 ) {
     host[index].gmean = pow( (double) host[index].gmean, (host[index].returned-1.0)/host[index].returned )
                           * pow( (double) totusec, 1.0/host[index].returned );
+  }
+
   host[index].sent = 0;
   host[index].up = 1;
   host[index].transit = 0;
@@ -291,8 +309,10 @@ void *net_mplss(int at, int i)
 
 int net_loss(int at)
 {
-  if ((host[at].xmit - host[at].transit) == 0)
+  if ((host[at].xmit - host[at].transit) == 0) {
     return 0;
+  }
+
   /* times extra 1000 */
   return 1000*(100 - (100.0 * host[at].returned / (host[at].xmit - host[at].transit)) );
 }
@@ -336,7 +356,7 @@ int net_gmean(int at)
 
 int net_stdev(int at)
 {
-  if( host[at].returned > 1 ) {
+  if ( host[at].returned > 1 ) {
     return ( sqrt( host[at].ssd/(host[at].returned -1.0) ) );
   } else {
     return( 0 );
@@ -449,7 +469,7 @@ int net_send_batch(struct mtr_ctl *ctl)
     } else {
       packetsize = ctl->cpacketsize;
     }
-    if(ctl->bitpattern < 0 ) {
+    if (ctl->bitpattern < 0 ) {
       ctl->bitpattern = - (int)(256 + 255*(rand()/(RAND_MAX+0.1)));
     }
   }
