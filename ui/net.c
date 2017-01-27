@@ -132,7 +132,7 @@ static void save_sequence(struct mtr_ctl *ctl, int index, int seq)
   
   host[index].transit = 1;
 
-  if (host[index].sent) {
+  if ( host[index].sent ) {
     host[index].up = 0;
   }
 
@@ -146,7 +146,7 @@ static int new_sequence(struct mtr_ctl *ctl, int index)
   int seq;
 
   seq = next_sequence++;
-  if (next_sequence >= MaxSequence) {
+  if ( next_sequence >= MaxSequence ) {
     next_sequence = MinSequence;
   }
 
@@ -189,11 +189,11 @@ static void net_process_ping(
 
   addrcpy( (void *) &addrcopy, (char *)addr, ctl->af );
 
-  if (seq < 0 || seq >= MaxSequence) {
+  if ( (seq < 0) || (seq >= MaxSequence) ) {
     return;
   }
 
-  if (!sequence[seq].transit) {
+  if ( !sequence[seq].transit) {
     return;
   }
   sequence[seq].transit = 0;
@@ -229,27 +229,27 @@ static void net_process_ping(
   }
 
   host[index].jitter = totusec - host[index].last;
-  if (host[index].jitter < 0 ) {
+  if ( host[index].jitter < 0 ) {
     host[index].jitter = - host[index].jitter;
   }
 
   host[index].last = totusec;
 
-  if (host[index].returned < 1) {
+  if ( host[index].returned < 1 ) {
     host[index].best = host[index].worst = host[index].gmean = totusec;
     host[index].avg  = host[index].ssd  = 0;
 
     host[index].jitter = host[index].jworst = host[index].jinta= 0;
   }
 
-  if (totusec < host[index].best ) {
+  if ( totusec < host[index].best ) {
     host[index].best  = totusec;
   }
-  if (totusec > host[index].worst) {
+  if ( totusec > host[index].worst ) {
     host[index].worst = totusec;
   }
 
-  if (host[index].jitter > host[index].jworst) {
+  if ( host[index].jitter > host[index].jworst ) {
     host[index].jworst = host[index].jitter;
   }
 
@@ -309,7 +309,7 @@ void *net_mplss(int at, int i)
 
 int net_loss(int at)
 {
-  if ((host[at].xmit - host[at].transit) == 0) {
+  if ( (host[at].xmit - host[at].transit) == 0 ) {
     return 0;
   }
 
@@ -469,7 +469,7 @@ int net_send_batch(struct mtr_ctl *ctl)
     } else {
       packetsize = ctl->cpacketsize;
     }
-    if (ctl->bitpattern < 0 ) {
+    if ( ctl->bitpattern < 0 ) {
       ctl->bitpattern = - (int)(256 + 255*(rand()/(RAND_MAX+0.1)));
     }
   }
@@ -511,15 +511,12 @@ int net_send_batch(struct mtr_ctl *ctl)
 static void net_validate_interface_address(
   int address_family, char *interface_address)
 {
-  if (inet_pton(
-      address_family, interface_address, sourceaddress) != 1) {
-
+  if ( inet_pton(address_family, interface_address, sourceaddress) != 1) {
     error(EXIT_FAILURE, errno, "invalid local address");
   }
 
-  if (inet_ntop(
-      address_family, sourceaddress, localaddr, sizeof(localaddr)) == NULL) {
-
+  if ( inet_ntop(
+       address_family, sourceaddress, localaddr, sizeof(localaddr)) == NULL) {
     error(EXIT_FAILURE, errno, "invalid local address");
   }
 }
@@ -539,7 +536,7 @@ static void net_find_local_address(void)
   struct sockaddr_in6 *remote6;
 
   udp_socket = socket(remotesockaddr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
-  if (udp_socket == -1) {
+  if ( udp_socket == -1 ) {
     error(EXIT_FAILURE, errno, "udp socket creation failed");
   }
 
@@ -547,7 +544,7 @@ static void net_find_local_address(void)
     We need to set the port to a non-zero value for the connect
     to succeed.
   */
-  if (remotesockaddr->sa_family == AF_INET6) {
+  if ( remotesockaddr->sa_family == AF_INET6 ) {
 #ifdef ENABLE_IPV6
     addr_length = sizeof(struct sockaddr_in6);
 
@@ -563,11 +560,11 @@ static void net_find_local_address(void)
     remote4->sin_port = htons(1);
   }
 
-  if (connect(udp_socket, (struct sockaddr *)&remote_sockaddr, addr_length)) {
+  if ( connect(udp_socket, (struct sockaddr *)&remote_sockaddr, addr_length) ) {
     error(EXIT_FAILURE, errno, "udp socket connect failed");
   }
 
-  if (getsockname(udp_socket, sourcesockaddr, &addr_length)) {
+  if ( getsockname(udp_socket, sourcesockaddr, &addr_length) ) {
 
     error(EXIT_FAILURE, errno, "local address determination failed");
   }
@@ -584,7 +581,7 @@ int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
 
   /*  Spawn the mtr-packet child process  */
   err = open_command_pipe(ctl, &packet_command_pipe);
-  if (err) {
+  if ( err ) {
     return err;
   }
 
@@ -609,7 +606,7 @@ int net_open(struct mtr_ctl *ctl, struct hostent * hostent)
     error(EXIT_FAILURE, 0, "net_open bad address type");
   }
 
-  if (ctl->InterfaceAddress) {
+  if ( ctl->InterfaceAddress ) {
     net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
   } else {
     net_find_local_address();
@@ -705,7 +702,7 @@ static void net_save_increment(void)
 
 void net_save_xmit(int at)
 {
-  if (host[at].saved[SAVED_PINGS-1] != -2)
+  if ( host[at].saved[SAVED_PINGS-1] != -2 )
     net_save_increment();
   host[at].saved[SAVED_PINGS-1] = -1;
 }
@@ -715,7 +712,7 @@ void net_save_return(int at, int seq, int ms)
 {
   int idx;
   idx = seq - host[at].saved_seq_offset;
-  if (idx < 0 || idx >= SAVED_PINGS) {
+  if ( (idx < 0) || (idx >= SAVED_PINGS) ) {
     return;
   }
   host[at].saved[idx] = ms;
