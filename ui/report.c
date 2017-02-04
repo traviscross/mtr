@@ -185,7 +185,7 @@ void report_close(struct mtr_ctl *ctl)
           printf("     %s%s\n", fmt_ipinfo(ctl, addr2), name);
           if (ctl->enablempls)
             print_mpls(mplss);
-        } else {
+        }
 #else
         int k;
         if (mpls->labels && z == 1 && ctl->enablempls) {
@@ -206,9 +206,6 @@ void report_close(struct mtr_ctl *ctl)
           }
         }
 #endif
-#ifdef HAVE_IPINFO
-        }
-#endif
       }
     }
 
@@ -217,16 +214,13 @@ void report_close(struct mtr_ctl *ctl)
     if (is_printii(ctl)) {
       if (mpls->labels && z == 1 && ctl->enablempls)
         print_mpls(mpls);
-    } else {
+    }
 #else
     if(mpls->labels && z == 1 && ctl->enablempls) {
       int k;
       for (k=0; k < mpls->labels; k++) {
         printf("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n", mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
       }
-    }
-#endif
-#ifdef HAVE_IPINFO
     }
 #endif
   }
