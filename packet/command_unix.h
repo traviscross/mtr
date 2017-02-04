@@ -20,8 +20,7 @@
 #define COMMAND_UNIX_H
 
 /*  No platform specific data is required for Unix command streams  */
-struct command_buffer_platform_t
-{
+struct command_buffer_platform_t {
 };
 
 #endif

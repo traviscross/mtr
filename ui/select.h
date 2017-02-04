@@ -16,4 +16,5 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-extern void select_loop(struct mtr_ctl *ctl);
+extern void select_loop(
+    struct mtr_ctl *ctl);

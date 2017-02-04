@@ -18,13 +18,24 @@
 
 /*  Prototypes for report.h  */
 
-extern void report_open(void);
-extern void report_close(struct mtr_ctl *ctl);
-extern void txt_open(void);
-extern void txt_close(struct mtr_ctl *ctl);
-extern void json_open(void);
-extern void json_close(struct mtr_ctl *ctl);
-extern void xml_open(void);
-extern void xml_close(struct mtr_ctl *ctl);
-extern void csv_open(void);
-extern void csv_close(struct mtr_ctl *ctl, time_t now);
+extern void report_open(
+    void);
+extern void report_close(
+    struct mtr_ctl *ctl);
+extern void txt_open(
+    void);
+extern void txt_close(
+    struct mtr_ctl *ctl);
+extern void json_open(
+    void);
+extern void json_close(
+    struct mtr_ctl *ctl);
+extern void xml_open(
+    void);
+extern void xml_close(
+    struct mtr_ctl *ctl);
+extern void csv_open(
+    void);
+extern void csv_close(
+    struct mtr_ctl *ctl,
+    time_t now);

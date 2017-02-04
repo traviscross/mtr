@@ -27,8 +27,7 @@
 #include "protocols.h"
 
 /*  A source of data for computing a checksum  */
-struct checksum_source_t
-{
+struct checksum_source_t {
     const void *data;
     size_t size;
 };
@@ -39,7 +38,7 @@ uint16_t compute_checksum(
     const void *packet,
     int size)
 {
-    const uint8_t *packet_bytes = (uint8_t *)packet;
+    const uint8_t *packet_bytes = (uint8_t *) packet;
     uint32_t sum = 0;
     int i;
 
@@ -52,17 +51,17 @@ uint16_t compute_checksum(
     }
 
     /*
-        Sums which overflow a 16-bit value have the high bits
-        added back into the low 16 bits.
-    */
+       Sums which overflow a 16-bit value have the high bits
+       added back into the low 16 bits.
+     */
     while (sum >> 16) {
         sum = (sum >> 16) + (sum & 0xffff);
     }
 
     /*
-        The value stored is the one's complement of the
-        mathematical sum.
-    */
+       The value stored is the one's complement of the
+       mathematical sum.
+     */
     return (~sum & 0xffff);
 }
 
@@ -92,10 +91,10 @@ void construct_addr_port(
     memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
 
     if (addr->ss_family == AF_INET6) {
-        addr6 = (struct sockaddr_in6 *)addr_with_port;
+        addr6 = (struct sockaddr_in6 *) addr_with_port;
         addr6->sin6_port = htons(port);
     } else {
-        addr4 = (struct sockaddr_in *)addr_with_port;
+        addr4 = (struct sockaddr_in *) addr_with_port;
         addr4->sin_port = htons(port);
     }
 }
@@ -111,10 +110,10 @@ void construct_ip4_header(
     const struct probe_param_t *param)
 {
     struct IPHeader *ip;
-    struct sockaddr_in *srcaddr4 = (struct sockaddr_in *)srcaddr;
-    struct sockaddr_in *destaddr4 = (struct sockaddr_in *)destaddr;
+    struct sockaddr_in *srcaddr4 = (struct sockaddr_in *) srcaddr;
+    struct sockaddr_in *destaddr4 = (struct sockaddr_in *) destaddr;
 
-    ip = (struct IPHeader *)&packet_buffer[0];
+    ip = (struct IPHeader *) &packet_buffer[0];
 
     memset(ip, 0, sizeof(struct IPHeader));
 
@@ -139,7 +138,7 @@ void construct_icmp4_header(
     struct ICMPHeader *icmp;
     int icmp_size;
 
-    icmp = (struct ICMPHeader *)&packet_buffer[sizeof(struct IPHeader)];
+    icmp = (struct ICMPHeader *) &packet_buffer[sizeof(struct IPHeader)];
     icmp_size = packet_size - sizeof(struct IPHeader);
 
     memset(icmp, 0, sizeof(struct ICMPHeader));
@@ -161,7 +160,7 @@ int construct_icmp6_packet(
 {
     struct ICMPHeader *icmp;
 
-    icmp = (struct ICMPHeader *)packet_buffer;
+    icmp = (struct ICMPHeader *) packet_buffer;
 
     memset(icmp, 0, sizeof(struct ICMPHeader));
 
@@ -225,7 +224,7 @@ void construct_udp4_header(
     struct UDPHeader *udp;
     int udp_size;
 
-    udp = (struct UDPHeader *)&packet_buffer[sizeof(struct IPHeader)];
+    udp = (struct UDPHeader *) &packet_buffer[sizeof(struct IPHeader)];
     udp_size = packet_size - sizeof(struct IPHeader);
 
     memset(udp, 0, sizeof(struct UDPHeader));
@@ -247,7 +246,7 @@ int construct_udp6_packet(
     struct UDPHeader *udp;
     int udp_size;
 
-    udp = (struct UDPHeader *)packet_buffer;
+    udp = (struct UDPHeader *) packet_buffer;
     udp_size = packet_size;
 
     memset(udp, 0, sizeof(struct UDPHeader));
@@ -256,13 +255,12 @@ int construct_udp6_packet(
     udp->length = htons(udp_size);
 
     /*
-        Instruct the kernel to put the pseudoheader checksum into the
-        UDP header.
-    */
-    int chksum_offset = (char *)&udp->checksum - (char *)udp;
-    if (setsockopt(
-            udp_socket, IPPROTO_IPV6,
-            IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
+       Instruct the kernel to put the pseudoheader checksum into the
+       UDP header.
+     */
+    int chksum_offset = (char *) &udp->checksum - (char *) udp;
+    if (setsockopt(udp_socket, IPPROTO_IPV6,
+                   IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
         return -1;
     }
 
@@ -285,20 +283,18 @@ int set_stream_socket_options(
     /*  Allow binding to a local port previously in use  */
 #ifdef SO_REUSEPORT
     /*
-        FreeBSD wants SO_REUSEPORT in addition to SO_REUSEADDR to
-        bind to the same port
-    */
-    if (setsockopt(
-            stream_socket, SOL_SOCKET, SO_REUSEPORT,
-            &reuse, sizeof(int)) == -1) {
+       FreeBSD wants SO_REUSEPORT in addition to SO_REUSEADDR to
+       bind to the same port
+     */
+    if (setsockopt(stream_socket, SOL_SOCKET, SO_REUSEPORT,
+                   &reuse, sizeof(int)) == -1) {
 
         return -1;
     }
 #endif
 
-    if (setsockopt(
-            stream_socket, SOL_SOCKET, SO_REUSEADDR,
-            &reuse, sizeof(int)) == -1) {
+    if (setsockopt(stream_socket, SOL_SOCKET, SO_REUSEADDR,
+                   &reuse, sizeof(int)) == -1) {
 
         return -1;
     }
@@ -312,8 +308,8 @@ int set_stream_socket_options(
         opt = IP_TTL;
     }
 
-    if (setsockopt(
-            stream_socket, level, opt, &param->ttl, sizeof(int)) == -1) {
+    if (setsockopt(stream_socket, level, opt, &param->ttl, sizeof(int)) ==
+        -1) {
 
         return -1;
     }
@@ -327,18 +323,15 @@ int set_stream_socket_options(
         opt = IP_TOS;
     }
 
-    if (setsockopt(
-            stream_socket, level, opt,
-            &param->type_of_service, sizeof(int)) == -1) {
+    if (setsockopt(stream_socket, level, opt,
+                   &param->type_of_service, sizeof(int)) == -1) {
 
         return -1;
     }
-
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(
-                stream_socket, SOL_SOCKET,
-                SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (setsockopt(stream_socket, SOL_SOCKET,
+                       SO_MARK, &param->routing_mark, sizeof(int))) {
             return -1;
         }
     }
@@ -389,11 +382,11 @@ int open_stream_socket(
     }
 
     /*
-        Bind to a known local port so we can identify which probe
-        causes a TTL expiration.
-    */
+       Bind to a known local port so we can identify which probe
+       causes a TTL expiration.
+     */
     construct_addr_port(&src_port_addr, src_sockaddr, port);
-    if (bind(stream_socket, (struct sockaddr *)&src_port_addr, addr_len)) {
+    if (bind(stream_socket, (struct sockaddr *) &src_port_addr, addr_len)) {
         close(stream_socket);
         return -1;
     }
@@ -407,8 +400,8 @@ int open_stream_socket(
 
     /*  Attempt a connection  */
     construct_addr_port(&dest_port_addr, dest_sockaddr, dest_port);
-    if (connect(
-            stream_socket, (struct sockaddr *)&dest_port_addr, addr_len)) {
+    if (connect
+        (stream_socket, (struct sockaddr *) &dest_port_addr, addr_len)) {
 
         /*  EINPROGRESS simply means the connection is in progress  */
         if (errno != EINPROGRESS) {
@@ -437,7 +430,6 @@ int compute_packet_size(
     if (param->protocol == IPPROTO_TCP) {
         return 0;
     }
-
 #ifdef IPPROTO_SCTP
     if (param->protocol == IPPROTO_SCTP) {
         return 0;
@@ -467,17 +459,17 @@ int compute_packet_size(
     }
 
     /*
-        If the requested size from send-probe is greater, extend the
-        packet size.
-    */
+       If the requested size from send-probe is greater, extend the
+       packet size.
+     */
     if (param->packet_size > packet_size) {
         packet_size = param->packet_size;
     }
 
     /*
-        Since we don't explicitly construct the IPv6 header, we
-        need to account for it in our transmitted size.
-    */
+       Since we don't explicitly construct the IPv6 header, we
+       need to account for it in our transmitted size.
+     */
     if (param->ip_version == 6) {
         packet_size -= sizeof(struct IP6Header);
     }
@@ -507,16 +499,15 @@ int construct_ip4_packet(
         is_stream_protocol = true;
 #endif
     } else {
-        construct_ip4_header(
-            net_state, packet_buffer, packet_size,
-            src_sockaddr, dest_sockaddr, param);
+        construct_ip4_header(net_state, packet_buffer, packet_size,
+                             src_sockaddr, dest_sockaddr, param);
 
         if (param->protocol == IPPROTO_ICMP) {
-            construct_icmp4_header(
-                net_state, sequence, packet_buffer, packet_size, param);
+            construct_icmp4_header(net_state, sequence, packet_buffer,
+                                   packet_size, param);
         } else if (param->protocol == IPPROTO_UDP) {
-            construct_udp4_header(
-                net_state, sequence, packet_buffer, packet_size, param);
+            construct_udp4_header(net_state, sequence, packet_buffer,
+                                  packet_size, param);
         } else {
             errno = EINVAL;
             return -1;
@@ -524,9 +515,9 @@ int construct_ip4_packet(
     }
 
     if (is_stream_protocol) {
-        send_socket = open_stream_socket(
-            net_state, param->protocol, sequence,
-            src_sockaddr, dest_sockaddr, param);
+        send_socket =
+            open_stream_socket(net_state, param->protocol, sequence,
+                               src_sockaddr, dest_sockaddr, param);
 
         if (send_socket == -1) {
             return -1;
@@ -537,20 +528,19 @@ int construct_ip4_packet(
     }
 
     /*
-        The routing mark requires CAP_NET_ADMIN, as opposed to the
-        CAP_NET_RAW which we are sometimes explicitly given.
-        If we don't have CAP_NET_ADMIN, this will fail, so we'll 
-        only set the mark if the user has explicitly requested it.
+       The routing mark requires CAP_NET_ADMIN, as opposed to the
+       CAP_NET_RAW which we are sometimes explicitly given.
+       If we don't have CAP_NET_ADMIN, this will fail, so we'll 
+       only set the mark if the user has explicitly requested it.
 
-        Unfortunately, this means that once the mark is set, it won't
-        be set on the socket again until a new mark is explicitly
-        specified.
-    */
+       Unfortunately, this means that once the mark is set, it won't
+       be set on the socket again until a new mark is explicitly
+       specified.
+     */
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(
-                send_socket, SOL_SOCKET,
-                SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (setsockopt(send_socket, SOL_SOCKET,
+                       SO_MARK, &param->routing_mark, sizeof(int))) {
             return -1;
         }
     }
@@ -586,15 +576,15 @@ int construct_ip6_packet(
     } else if (param->protocol == IPPROTO_ICMP) {
         send_socket = net_state->platform.icmp6_send_socket;
 
-        if (construct_icmp6_packet(
-                net_state, sequence, packet_buffer, packet_size, param)) {
+        if (construct_icmp6_packet
+            (net_state, sequence, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else if (param->protocol == IPPROTO_UDP) {
         send_socket = net_state->platform.udp6_send_socket;
 
-        if (construct_udp6_packet(
-                net_state, sequence, packet_buffer, packet_size, param)) {
+        if (construct_udp6_packet
+            (net_state, sequence, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else {
@@ -603,9 +593,9 @@ int construct_ip6_packet(
     }
 
     if (is_stream_protocol) {
-        send_socket = open_stream_socket(
-            net_state, param->protocol, sequence,
-            src_sockaddr, dest_sockaddr, param);
+        send_socket =
+            open_stream_socket(net_state, param->protocol, sequence,
+                               src_sockaddr, dest_sockaddr, param);
 
         if (send_socket == -1) {
             return -1;
@@ -616,49 +606,46 @@ int construct_ip6_packet(
     }
 
     /*
-        Check the current socket address, and if it is the same
-        as the source address we intend, we will skip the bind.
-        This is to accomodate Solaris, which, as of Solaris 11.3,
-        will return an EINVAL error on bind if the socket is already
-        bound, even if the same address is used.
-    */
+       Check the current socket address, and if it is the same
+       as the source address we intend, we will skip the bind.
+       This is to accomodate Solaris, which, as of Solaris 11.3,
+       will return an EINVAL error on bind if the socket is already
+       bound, even if the same address is used.
+     */
     current_sockaddr_len = sizeof(struct sockaddr_in6);
-    if (getsockname(send_socket, (struct sockaddr *)&current_sockaddr,
-            &current_sockaddr_len) == 0) {
+    if (getsockname(send_socket, (struct sockaddr *) &current_sockaddr,
+                    &current_sockaddr_len) == 0) {
 
         if (memcmp(&current_sockaddr,
-                src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
+                   src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
             bind_send_socket = false;
         }
     }
 
     /*  Bind to our local address  */
     if (bind_send_socket) {
-        if (bind(send_socket, (struct sockaddr *)src_sockaddr,
-                sizeof(struct sockaddr_in6))) {
+        if (bind(send_socket, (struct sockaddr *) src_sockaddr,
+                 sizeof(struct sockaddr_in6))) {
             return -1;
         }
     }
 
     /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
-    if (setsockopt(
-            send_socket, IPPROTO_IPV6,
-            IPV6_TCLASS, &param->type_of_service, sizeof(int))) {
+    if (setsockopt(send_socket, IPPROTO_IPV6,
+                   IPV6_TCLASS, &param->type_of_service, sizeof(int))) {
         return -1;
     }
 
     /*  Set the time-to-live  */
-    if (setsockopt(
-            send_socket, IPPROTO_IPV6,
-            IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
+    if (setsockopt(send_socket, IPPROTO_IPV6,
+                   IPV6_UNICAST_HOPS, &param->ttl, sizeof(int))) {
         return -1;
     }
-
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(
-                send_socket,
-                SOL_SOCKET, SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (setsockopt(send_socket,
+                       SOL_SOCKET, SO_MARK, &param->routing_mark,
+                       sizeof(int))) {
             return -1;
         }
     }
@@ -693,17 +680,15 @@ int construct_packet(
     memset(packet_buffer, param->bit_pattern, packet_size);
 
     if (param->ip_version == 6) {
-        if (construct_ip6_packet(
-                net_state, packet_socket, sequence,
-                packet_buffer, packet_size,
-                src_sockaddr, dest_sockaddr, param)) {
+        if (construct_ip6_packet(net_state, packet_socket, sequence,
+                                 packet_buffer, packet_size,
+                                 src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else if (param->ip_version == 4) {
-        if (construct_ip4_packet(
-                net_state, packet_socket, sequence,
-                packet_buffer, packet_size,
-                src_sockaddr, dest_sockaddr, param)) {
+        if (construct_ip4_packet(net_state, packet_socket, sequence,
+                                 packet_buffer, packet_size,
+                                 src_sockaddr, dest_sockaddr, param)) {
             return -1;
         }
     } else {

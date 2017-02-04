@@ -31,9 +31,9 @@
 #include <unistd.h>
 
 #ifdef HAVE_ERROR_H
-# include <error.h>
+#include <error.h>
 #else
-# include "portability/error.h"
+#include "portability/error.h"
 #endif
 
 #include "packet/cmdparse.h"
@@ -94,7 +94,8 @@ int send_synchronous_command(
     }
 
     /*  Read the reply to our query  */
-    read_length = read(cmdpipe->read_fd, reply, PACKET_REPLY_BUFFER_SIZE - 1);
+    read_length =
+        read(cmdpipe->read_fd, reply, PACKET_REPLY_BUFFER_SIZE - 1);
 
     if (read_length < 0) {
         return -1;
@@ -120,19 +121,19 @@ int check_feature(
     char check_command[COMMAND_BUFFER_SIZE];
     struct command_t reply;
 
-    snprintf(
-        check_command, COMMAND_BUFFER_SIZE,
-        "1 check-support feature %s\n", feature);
+    snprintf(check_command, COMMAND_BUFFER_SIZE,
+             "1 check-support feature %s\n", feature);
 
-    if (send_synchronous_command(ctl, cmdpipe, check_command, &reply) == -1) {
+    if (send_synchronous_command(ctl, cmdpipe, check_command, &reply) ==
+        -1) {
         return -1;
     }
 
     /*  Check that the feature is supported  */
     if (!strcmp(reply.command_name, "feature-support")
-            && reply.argument_count >= 1
-            && !strcmp(reply.argument_name[0], "support")
-            && !strcmp(reply.argument_value[0], "ok")) {
+        && reply.argument_count >= 1
+        && !strcmp(reply.argument_name[0], "support")
+        && !strcmp(reply.argument_value[0], "ok")) {
 
         /*  Looks good  */
         return 0;
@@ -194,7 +195,7 @@ int check_packet_features(
 #ifdef SO_MARK
     if (ctl->mark) {
         if (check_feature(ctl, cmdpipe, "mark")) {
-        return -1;
+            return -1;
         }
     }
 #endif
@@ -208,28 +209,29 @@ int check_packet_features(
     the PATH when locating the executable.
 */
 static
-void execute_packet_child(void)
+void execute_packet_child(
+    void)
 {
     /*
-        Allow the MTR_PACKET environment variable to override
-        the path to the mtr-packet executable.  This is necessary
-        for debugging changes for mtr-packet.
-    */
+       Allow the MTR_PACKET environment variable to override
+       the path to the mtr-packet executable.  This is necessary
+       for debugging changes for mtr-packet.
+     */
     char *mtr_packet_path = getenv("MTR_PACKET");
     if (mtr_packet_path == NULL) {
         mtr_packet_path = "mtr-packet";
     }
 
     /*
-        First, try to execute mtr-packet from PATH
-        or MTR_PACKET environment variable.
-    */
-    execlp(mtr_packet_path, "mtr-packet", (char *)NULL);
+       First, try to execute mtr-packet from PATH
+       or MTR_PACKET environment variable.
+     */
+    execlp(mtr_packet_path, "mtr-packet", (char *) NULL);
 
     /*
-        If mtr-packet is not found, try to use mtr-packet from current directory
-    */
-    execl("./mtr-packet", "./mtr-packet", (char *)NULL);
+       If mtr-packet is not found, try to use mtr-packet from current directory
+     */
+    execl("./mtr-packet", "./mtr-packet", (char *) NULL);
 
     /*  Both exec attempts failed, so nothing to do but exit  */
     exit(1);
@@ -247,9 +249,9 @@ int open_command_pipe(
     int i;
 
     /*
-        We actually need two Unix pipes.  One for stdin and one for
-        stdout on the new process.
-    */
+       We actually need two Unix pipes.  One for stdin and one for
+       stdout on the new process.
+     */
     if (pipe(stdin_pipe) || pipe(stdout_pipe)) {
         return errno;
     }
@@ -261,9 +263,9 @@ int open_command_pipe(
 
     if (child_pid == 0) {
         /*
-            In the child process, attach our created pipes to stdin
-            and stdout
-        */
+           In the child process, attach our created pipes to stdin
+           and stdout
+         */
         dup2(stdin_pipe[0], STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
 
@@ -277,9 +279,9 @@ int open_command_pipe(
         memset(cmdpipe, 0, sizeof(struct packet_command_pipe_t));
 
         /*
-            In the parent process, save the opposite ends of the pipes
-            attached as stdin and stdout in the child.
-        */
+           In the parent process, save the opposite ends of the pipes
+           attached as stdin and stdout in the child.
+         */
         cmdpipe->pid = child_pid;
         cmdpipe->read_fd = stdout_pipe[0];
         cmdpipe->write_fd = stdin_pipe[1];
@@ -289,9 +291,9 @@ int open_command_pipe(
         close(stdin_pipe[0]);
 
         /*
-            Check that we can communicate with the client.  If we failed to
-            execute the mtr-packet binary, we will discover that here.
-        */
+           Check that we can communicate with the client.  If we failed to
+           execute the mtr-packet binary, we will discover that here.
+         */
         if (check_feature(ctl, cmdpipe, "send-probe")) {
             error(EXIT_FAILURE, errno, "Failure to start mtr-packet");
         }
@@ -333,8 +335,8 @@ void construct_base_command(
     char *command,
     int buffer_size,
     int command_token,
-    ip_t *address,
-    ip_t *localaddress)
+    ip_t * address,
+    ip_t * localaddress)
 {
     char ip_string[INET6_ADDRSTRLEN];
     char local_ip_string[INET6_ADDRSTRLEN];
@@ -343,17 +345,14 @@ void construct_base_command(
     const char *protocol = NULL;
 
     /*  Conver the remote IP address to a string  */
-    if (inet_ntop(
-            ctl->af, address,
-            ip_string, INET6_ADDRSTRLEN) == NULL) {
+    if (inet_ntop(ctl->af, address, ip_string, INET6_ADDRSTRLEN) == NULL) {
 
         display_close(ctl);
         error(EXIT_FAILURE, errno, "invalid remote IP address");
     }
 
-    if (inet_ntop(
-            ctl->af, localaddress,
-            local_ip_string, INET6_ADDRSTRLEN) == NULL) {
+    if (inet_ntop(ctl->af, localaddress,
+                  local_ip_string, INET6_ADDRSTRLEN) == NULL) {
 
         display_close(ctl);
         error(EXIT_FAILURE, errno, "invalid local IP address");
@@ -379,15 +378,14 @@ void construct_base_command(
 #endif
     } else {
         display_close(ctl);
-        error(EXIT_FAILURE, 0, "protocol unsupported by mtr-packet interface");
+        error(EXIT_FAILURE, 0,
+              "protocol unsupported by mtr-packet interface");
     }
 
-    snprintf(
-        command, buffer_size,
-        "%d send-probe %s %s %s %s protocol %s",
-        command_token,
-        ip_type, ip_string, local_ip_type, local_ip_string,
-        protocol);
+    snprintf(command, buffer_size,
+             "%d send-probe %s %s %s %s protocol %s",
+             command_token,
+             ip_type, ip_string, local_ip_type, local_ip_string, protocol);
 }
 
 
@@ -413,8 +411,8 @@ void append_command_argument(
 void send_probe_command(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe,
-    ip_t *address,
-    ip_t *localaddress,
+    ip_t * address,
+    ip_t * localaddress,
     int packet_size,
     int sequence,
     int time_to_live)
@@ -423,39 +421,37 @@ void send_probe_command(
     int remaining_size;
     int timeout;
 
-    construct_base_command(
-        ctl, command, COMMAND_BUFFER_SIZE, sequence, address, localaddress);
+    construct_base_command(ctl, command, COMMAND_BUFFER_SIZE, sequence,
+                           address, localaddress);
 
-    append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "size", packet_size);
+    append_command_argument(command, COMMAND_BUFFER_SIZE, "size",
+                            packet_size);
 
-    append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "bit-pattern", ctl->bitpattern);
+    append_command_argument(command, COMMAND_BUFFER_SIZE, "bit-pattern",
+                            ctl->bitpattern);
 
-    append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "tos", ctl->tos);
+    append_command_argument(command, COMMAND_BUFFER_SIZE, "tos", ctl->tos);
 
-    append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "ttl", time_to_live);
+    append_command_argument(command, COMMAND_BUFFER_SIZE, "ttl",
+                            time_to_live);
 
     timeout = ctl->probe_timeout / 1000000;
-    append_command_argument(
-        command, COMMAND_BUFFER_SIZE, "timeout", timeout);
+    append_command_argument(command, COMMAND_BUFFER_SIZE, "timeout",
+                            timeout);
 
     if (ctl->remoteport) {
-        append_command_argument(
-            command, COMMAND_BUFFER_SIZE, "port", ctl->remoteport);
+        append_command_argument(command, COMMAND_BUFFER_SIZE, "port",
+                                ctl->remoteport);
     }
 
     if (ctl->localport) {
-        append_command_argument(
-            command, COMMAND_BUFFER_SIZE, "local-port", ctl->localport);
+        append_command_argument(command, COMMAND_BUFFER_SIZE, "local-port",
+                                ctl->localport);
     }
-
 #ifdef SO_MARK
     if (ctl->mark) {
-        append_command_argument(
-            command, COMMAND_BUFFER_SIZE, "mark", ctl->mark);
+        append_command_argument(command, COMMAND_BUFFER_SIZE, "mark",
+                                ctl->mark);
     }
 #endif
 
@@ -465,7 +461,8 @@ void send_probe_command(
     /*  Send a probe using the mtr-packet subprocess  */
     if (write(cmdpipe->write_fd, command, strlen(command)) == -1) {
         display_close(ctl);
-        error(EXIT_FAILURE, errno, "mtr-packet command pipe write failure");
+        error(EXIT_FAILURE, errno,
+              "mtr-packet command pipe write failure");
     }
 }
 
@@ -494,7 +491,7 @@ void parse_mpls_values(
         }
 
         /*  If the next character is not a comma or a NUL, we have
-            an invalid string  */
+           an invalid string  */
         if (*end_of_value == ',') {
             next_value = end_of_value + 1;
         } else if (*end_of_value == 0) {
@@ -504,9 +501,9 @@ void parse_mpls_values(
         }
 
         /*
-            Store the converted value in the next field of the MPLS
-            structure.
-        */
+           Store the converted value in the next field of the MPLS
+           structure.
+         */
         if (label_field == 0) {
             mpls->label[label_count] = value;
         } else if (label_field == 1) {
@@ -524,9 +521,9 @@ void parse_mpls_values(
         }
 
         /*
-            If we've used up all MPLS labels in the structure, return with
-            what we've got
-        */
+           If we've used up all MPLS labels in the structure, return with
+           what we've got
+         */
         if (label_count >= MAXLABELS) {
             break;
         }
@@ -544,7 +541,7 @@ static
 bool parse_reply_arguments(
     struct mtr_ctl *ctl,
     struct command_t *reply,
-    ip_t *fromaddress,
+    ip_t * fromaddress,
     int *round_trip_time,
     struct mplslen *mpls)
 {
@@ -677,10 +674,10 @@ void handle_command_reply(
     /*  Parse the reply string  */
     if (parse_command(&reply, reply_str)) {
         /*
-            If the reply isn't well structured, something is fundamentally
-            wrong, as we might as well exit.  Even if the reply is of an
-            unknown type, it should still parse.
-        */
+           If the reply isn't well structured, something is fundamentally
+           wrong, as we might as well exit.  Even if the reply is of an
+           unknown type, it should still parse.
+         */
         display_close(ctl);
         error(EXIT_FAILURE, errno, "reply parse failure");
         return;
@@ -697,14 +694,14 @@ void handle_command_reply(
     }
 
     /*
-        If the reply had an IP address and a round trip time, we can
-        record the result.
-    */
-    if (parse_reply_arguments(
-            ctl, &reply, &fromaddress, &round_trip_time, &mpls)) {
+       If the reply had an IP address and a round trip time, we can
+       record the result.
+     */
+    if (parse_reply_arguments
+        (ctl, &reply, &fromaddress, &round_trip_time, &mpls)) {
 
-        reply_func(
-            ctl, seq_num, &mpls, (void *) &fromaddress, round_trip_time);
+        reply_func(ctl, seq_num, &mpls, (void *) &fromaddress,
+                   round_trip_time);
     }
 }
 
@@ -734,9 +731,9 @@ void consume_reply_buffer(
     reply_start = reply_buffer;
 
     /*
-        We may have multiple completed replies.  Loop until we don't
-        have any more newlines termininating replies.
-    */
+       We may have multiple completed replies.  Loop until we don't
+       have any more newlines termininating replies.
+     */
     while (true) {
         /*  If no newline is found, our reply isn't yet complete  */
         end_of_reply = index(reply_start, '\n');
@@ -746,10 +743,10 @@ void consume_reply_buffer(
         }
 
         /*
-            Terminate the reply string at the newline, which
-            is necessary in the case where we are able to read
-            mulitple replies arriving simultaneously.
-        */
+           Terminate the reply string at the newline, which
+           is necessary in the case where we are able to read
+           mulitple replies arriving simultaneously.
+         */
         *end_of_reply = 0;
 
         /*  Parse and record the reply results  */
@@ -759,10 +756,10 @@ void consume_reply_buffer(
     }
 
     /*
-        After replies have been processed, free the space used
-        by the replies, and move any remaining partial reply text
-        to the start of the reply buffer.
-    */
+       After replies have been processed, free the space used
+       by the replies, and move any remaining partial reply text
+       to the start of the reply buffer.
+     */
     used_size = reply_start - reply_buffer;
     move_size = cmdpipe->reply_buffer_used - used_size;
     memmove(reply_buffer, reply_start, move_size);
@@ -770,10 +767,10 @@ void consume_reply_buffer(
 
     if (cmdpipe->reply_buffer_used >= PACKET_REPLY_BUFFER_SIZE - 1) {
         /*
-            We've overflowed the reply buffer without a complete reply.
-            There's not much we can do about it but discard the data
-            we've got and hope new data coming in fits.
-        */
+           We've overflowed the reply buffer without a complete reply.
+           There's not much we can do about it but discard the data
+           we've got and hope new data coming in fits.
+         */
         cmdpipe->reply_buffer_used = 0;
     }
 }
@@ -796,20 +793,19 @@ void handle_command_replies(
     reply_buffer = cmdpipe->reply_buffer;
 
     /*
-        Read the available reply text, up to the the remaining
-        buffer space.  (Minus one for the terminating NUL.)
-    */
+       Read the available reply text, up to the the remaining
+       buffer space.  (Minus one for the terminating NUL.)
+     */
     read_buffer = &reply_buffer[cmdpipe->reply_buffer_used];
     buffer_remaining =
         PACKET_REPLY_BUFFER_SIZE - cmdpipe->reply_buffer_used;
-    read_count = read(
-        cmdpipe->read_fd, read_buffer, buffer_remaining - 1);
+    read_count = read(cmdpipe->read_fd, read_buffer, buffer_remaining - 1);
 
     if (read_count < 0) {
         /*
-            EAGAIN simply indicates that there is no data currently
-            available on our non-blocking pipe.
-        */
+           EAGAIN simply indicates that there is no data currently
+           available on our non-blocking pipe.
+         */
         if (errno == EAGAIN) {
             return;
         }

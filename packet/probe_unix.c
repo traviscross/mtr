@@ -64,9 +64,8 @@ int send_packet(
         return -1;
     }
 
-    return sendto(
-        send_socket, packet, packet_size, 0,
-        (struct sockaddr *)sockaddr, sockaddr_length);
+    return sendto(send_socket, packet, packet_size, 0,
+                  (struct sockaddr *) sockaddr, sockaddr_length);
 }
 
 /*
@@ -105,17 +104,17 @@ void check_length_order(
     /*  First attempt to ping the localhost with network byte order  */
     net_state->platform.ip_length_host_order = false;
 
-    packet_size = construct_packet(
-        net_state, NULL, MIN_PORT,
-        packet, PACKET_BUFFER_SIZE,
-        &dest_sockaddr, &src_sockaddr, &param);
+    packet_size = construct_packet(net_state, NULL, MIN_PORT,
+                                   packet, PACKET_BUFFER_SIZE,
+                                   &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(EXIT_FAILURE);
     }
 
-    bytes_sent = send_packet(
-        net_state, &param, packet, packet_size, &dest_sockaddr);
+    bytes_sent =
+        send_packet(net_state, &param, packet, packet_size,
+                    &dest_sockaddr);
     if (bytes_sent > 0) {
         return;
     }
@@ -123,17 +122,17 @@ void check_length_order(
     /*  Since network byte order failed, try host byte order  */
     net_state->platform.ip_length_host_order = true;
 
-    packet_size = construct_packet(
-        net_state, NULL, MIN_PORT,
-        packet, PACKET_BUFFER_SIZE,
-        &dest_sockaddr, &src_sockaddr, &param);
+    packet_size = construct_packet(net_state, NULL, MIN_PORT,
+                                   packet, PACKET_BUFFER_SIZE,
+                                   &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(EXIT_FAILURE);
     }
 
-    bytes_sent = send_packet(
-        net_state, &param, packet, packet_size, &dest_sockaddr);
+    bytes_sent =
+        send_packet(net_state, &param, packet, packet_size,
+                    &dest_sockaddr);
     if (bytes_sent < 0) {
         perror("Unable to send with swapped length");
         exit(EXIT_FAILURE);
@@ -195,20 +194,20 @@ int open_ip4_sockets(
     }
 
     /*
-        We will be including the IP header in transmitted packets.
-        Linux doesn't require this, but BSD derived network stacks do.
-    */
-    if (setsockopt(
-        send_socket, IPPROTO_IP, IP_HDRINCL, &trueopt, sizeof(int))) {
+       We will be including the IP header in transmitted packets.
+       Linux doesn't require this, but BSD derived network stacks do.
+     */
+    if (setsockopt
+        (send_socket, IPPROTO_IP, IP_HDRINCL, &trueopt, sizeof(int))) {
 
         close(send_socket);
         return -1;
     }
 
     /*
-        Open a second socket with IPPROTO_ICMP because we are only
-        interested in receiving ICMP packets, not all packets.
-    */
+       Open a second socket with IPPROTO_ICMP because we are only
+       interested in receiving ICMP packets, not all packets.
+     */
     recv_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (recv_socket == -1) {
         close(send_socket);
@@ -282,11 +281,11 @@ void init_net_state_privileged(
     }
 
     /*
-        If we couldn't open either IPv4 or IPv6 sockets, we can't do
-        much, so print errors and exit.
-    */
+       If we couldn't open either IPv4 or IPv6 sockets, we can't do
+       much, so print errors and exit.
+     */
     if (!net_state->platform.ip4_present
-            && !net_state->platform.ip6_present) {
+        && !net_state->platform.ip6_present) {
 
         errno = ip4_err;
         perror("Failure to open IPv4 sockets");
@@ -334,7 +333,7 @@ bool is_ip_version_supported(
 
 /*  Returns true if we can transmit probes using the specified protocol  */
 bool is_protocol_supported(
-    struct net_state_t *net_state,
+    struct net_state_t * net_state,
     int protocol)
 {
     if (protocol == IPPROTO_ICMP) {
@@ -348,7 +347,6 @@ bool is_protocol_supported(
     if (protocol == IPPROTO_TCP) {
         return true;
     }
-
 #ifdef IPPROTO_SCTP
     if (protocol == IPPROTO_SCTP) {
         return net_state->platform.sctp_support;
@@ -409,22 +407,21 @@ void send_probe(
         exit(EXIT_FAILURE);
     }
 
-    packet_size = construct_packet(
-        net_state, &probe->platform.socket, probe->sequence,
-        packet, PACKET_BUFFER_SIZE,
-        &probe->remote_addr, &src_sockaddr, param);
+    packet_size =
+        construct_packet(net_state, &probe->platform.socket,
+                         probe->sequence, packet, PACKET_BUFFER_SIZE,
+                         &probe->remote_addr, &src_sockaddr, param);
 
     if (packet_size < 0) {
         /*
-            When using a stream protocol, FreeBSD will return ECONNREFUSED
-            when connecting to localhost if the port doesn't exist,
-            even if the socket is non-blocking, so we should be
-            prepared for that.
-        */
+           When using a stream protocol, FreeBSD will return ECONNREFUSED
+           when connecting to localhost if the port doesn't exist,
+           even if the socket is non-blocking, so we should be
+           prepared for that.
+         */
         if (errno == ECONNREFUSED) {
-            receive_probe(
-                net_state, probe, ICMP_ECHOREPLY,
-                &probe->remote_addr, NULL, 0, NULL);
+            receive_probe(net_state, probe, ICMP_ECHOREPLY,
+                          &probe->remote_addr, NULL, 0, NULL);
         } else {
             report_packet_error(param->command_token);
             free_probe(net_state, probe);
@@ -434,9 +431,8 @@ void send_probe(
     }
 
     if (packet_size > 0) {
-        if (send_packet(
-                net_state, param,
-                packet, packet_size, &probe->remote_addr) == -1) {
+        if (send_packet(net_state, param,
+                        packet, packet_size, &probe->remote_addr) == -1) {
 
             report_packet_error(param->command_token);
             free_probe(net_state, probe);
@@ -478,7 +474,7 @@ void platform_free_probe(
     to the platform agnostic response handling.
 */
 void receive_probe(
-    struct net_state_t *net_state, 
+    struct net_state_t *net_state,
     struct probe_t *probe,
     int icmp_type,
     const struct sockaddr_storage *remote_addr,
@@ -503,9 +499,8 @@ void receive_probe(
         (timestamp->tv_sec - departure_time->tv_sec) * 1000000 +
         timestamp->tv_usec - departure_time->tv_usec;
 
-    respond_to_probe(
-        net_state, probe, icmp_type,
-        remote_addr, round_trip_us, mpls_count, mpls);
+    respond_to_probe(net_state, probe, icmp_type,
+                     remote_addr, round_trip_us, mpls_count, mpls);
 }
 
 /*
@@ -527,14 +522,14 @@ void receive_replies_from_icmp_socket(
     /*  Read until no more packets are available  */
     while (true) {
         sockaddr_length = sizeof(struct sockaddr_storage);
-        packet_length = recvfrom(
-            socket, packet, PACKET_BUFFER_SIZE, 0,
-            (struct sockaddr *)&remote_addr, &sockaddr_length);
+        packet_length = recvfrom(socket, packet, PACKET_BUFFER_SIZE, 0,
+                                 (struct sockaddr *) &remote_addr,
+                                 &sockaddr_length);
 
         /*
-            Get the time immediately after reading the packet to
-            keep the timing as precise as we can.
-        */
+           Get the time immediately after reading the packet to
+           keep the timing as precise as we can.
+         */
         if (gettimeofday(&timestamp, NULL)) {
             perror("gettimeofday failure");
             exit(EXIT_FAILURE);
@@ -542,17 +537,17 @@ void receive_replies_from_icmp_socket(
 
         if (packet_length == -1) {
             /*
-                EAGAIN will be returned if there is no current packet
-                available.
-            */
+               EAGAIN will be returned if there is no current packet
+               available.
+             */
             if (errno == EAGAIN) {
                 return;
             }
 
             /*
-                EINTER will be returned if we received a signal during
-                receive.
-            */
+               EINTER will be returned if we received a signal during
+               receive.
+             */
             if (errno == EINTR) {
                 continue;
             }
@@ -561,8 +556,8 @@ void receive_replies_from_icmp_socket(
             exit(EXIT_FAILURE);
         }
 
-        handle_received_packet(
-            net_state, &remote_addr, packet, packet_length, &timestamp);
+        handle_received_packet(net_state, &remote_addr, packet,
+                               packet_length, &timestamp);
     }
 }
 
@@ -603,8 +598,8 @@ void receive_replies_from_probe_socket(
     }
 
     /*
-        If the socket is writable, the connection attempt has completed.
-    */
+       If the socket is writable, the connection attempt has completed.
+     */
     if (!FD_ISSET(probe_socket, &write_set)) {
         return;
     }
@@ -615,13 +610,12 @@ void receive_replies_from_probe_socket(
     }
 
     /*
-        If the connection complete successfully, or was refused, we can
-        assume our probe arrived at the destination.
-    */
+       If the connection complete successfully, or was refused, we can
+       assume our probe arrived at the destination.
+     */
     if (!err || err == ECONNREFUSED) {
-        receive_probe(
-            net_state, probe, ICMP_ECHOREPLY,
-            &probe->remote_addr, NULL, 0, NULL);
+        receive_probe(net_state, probe, ICMP_ECHOREPLY,
+                      &probe->remote_addr, NULL, 0, NULL);
     } else {
         errno = err;
         report_packet_error(probe->token);
@@ -637,20 +631,21 @@ void receive_replies(
     struct probe_t *probe_safe_iter;
 
     if (net_state->platform.ip4_present) {
-        receive_replies_from_icmp_socket(
-            net_state, net_state->platform.ip4_recv_socket,
-            handle_received_ip4_packet);
+        receive_replies_from_icmp_socket(net_state,
+                                         net_state->platform.
+                                         ip4_recv_socket,
+                                         handle_received_ip4_packet);
     }
 
     if (net_state->platform.ip6_present) {
-        receive_replies_from_icmp_socket(
-            net_state, net_state->platform.ip6_recv_socket,
-            handle_received_ip6_packet);
+        receive_replies_from_icmp_socket(net_state,
+                                         net_state->platform.
+                                         ip6_recv_socket,
+                                         handle_received_ip6_packet);
     }
 
-    LIST_FOREACH_SAFE(
-            probe, &net_state->outstanding_probes,
-            probe_list_entry, probe_safe_iter) {
+    LIST_FOREACH_SAFE(probe, &net_state->outstanding_probes,
+                      probe_list_entry, probe_safe_iter) {
 
         receive_replies_from_probe_socket(net_state, probe);
     }
@@ -662,7 +657,7 @@ void receive_replies(
 */
 int gather_probe_sockets(
     const struct net_state_t *net_state,
-    fd_set *write_set)
+    fd_set * write_set)
 {
     int probe_socket;
     int nfds;
@@ -701,9 +696,8 @@ void check_probe_timeouts(
         exit(EXIT_FAILURE);
     }
 
-    LIST_FOREACH_SAFE(
-            probe, &net_state->outstanding_probes,
-            probe_list_entry, probe_safe_iter) {
+    LIST_FOREACH_SAFE(probe, &net_state->outstanding_probes,
+                      probe_list_entry, probe_safe_iter) {
 
         if (compare_timeval(probe->platform.timeout_time, now) < 0) {
             /*  Report timeout to the command stream  */

@@ -49,9 +49,8 @@ void find_and_receive_probe(
         return;
     }
 
-    receive_probe(
-        net_state, probe, icmp_type,
-        remote_addr, timestamp, mpls_count, mpls);
+    receive_probe(net_state, probe, icmp_type,
+                  remote_addr, timestamp, mpls_count, mpls);
 }
 
 /*
@@ -82,9 +81,8 @@ void handle_inner_udp_packet(
     }
 
     if (probe != NULL) {
-        receive_probe(
-            net_state, probe, icmp_result,
-            remote_addr, timestamp, mpls_count, mpls);
+        receive_probe(net_state, probe, icmp_result,
+                      remote_addr, timestamp, mpls_count, mpls);
     }
 }
 
@@ -125,43 +123,42 @@ void handle_inner_ip4_packet(
             return;
         }
 
-        icmp = (struct ICMPHeader *)(ip + 1);
+        icmp = (struct ICMPHeader *) (ip + 1);
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_ICMP, icmp->id, icmp->sequence, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_ICMP, icmp->id,
+                               icmp->sequence, mpls_count, mpls);
     } else if (ip->protocol == IPPROTO_UDP) {
         if (packet_length < ip_udp_size) {
             return;
         }
 
-        udp = (struct UDPHeader *)(ip + 1);
+        udp = (struct UDPHeader *) (ip + 1);
         udp_length = packet_length - sizeof(struct IPHeader);
 
-        handle_inner_udp_packet(
-            net_state, remote_addr, icmp_result, udp, udp_length,
-            timestamp, mpls_count, mpls);
+        handle_inner_udp_packet(net_state, remote_addr, icmp_result, udp,
+                                udp_length, timestamp, mpls_count, mpls);
     } else if (ip->protocol == IPPROTO_TCP) {
         if (packet_length < ip_tcp_size) {
             return;
         }
 
-        tcp = (struct TCPHeader *)(ip + 1);
+        tcp = (struct TCPHeader *) (ip + 1);
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_TCP, 0, tcp->srcport, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_TCP, 0, tcp->srcport,
+                               mpls_count, mpls);
 #ifdef IPPROTO_SCTP
     } else if (ip->protocol == IPPROTO_SCTP) {
         if (packet_length < ip_sctp_size) {
             return;
         }
 
-        sctp = (struct SCTPHeader *)(ip + 1);
+        sctp = (struct SCTPHeader *) (ip + 1);
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_SCTP, 0, sctp->srcport, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_SCTP, 0, sctp->srcport,
+                               mpls_count, mpls);
 #endif
     }
 }
@@ -202,42 +199,41 @@ void handle_inner_ip6_packet(
             return;
         }
 
-        icmp = (struct ICMPHeader *)(ip + 1);
+        icmp = (struct ICMPHeader *) (ip + 1);
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_ICMP, icmp->id, icmp->sequence, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_ICMP, icmp->id,
+                               icmp->sequence, mpls_count, mpls);
     } else if (ip->protocol == IPPROTO_UDP) {
         if (packet_length < ip_udp_size) {
             return;
         }
 
-        udp = (struct UDPHeader *)(ip + 1);
+        udp = (struct UDPHeader *) (ip + 1);
         udp_length = packet_length - sizeof(struct IP6Header);
 
-        handle_inner_udp_packet(
-            net_state, remote_addr, icmp_result, udp, udp_length,
-            timestamp, mpls_count, mpls);
+        handle_inner_udp_packet(net_state, remote_addr, icmp_result, udp,
+                                udp_length, timestamp, mpls_count, mpls);
     } else if (ip->protocol == IPPROTO_TCP) {
         if (packet_length < ip_tcp_size) {
             return;
         }
 
-        tcp = (struct TCPHeader *)(ip + 1);
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_TCP, 0, tcp->srcport, mpls_count, mpls);
+        tcp = (struct TCPHeader *) (ip + 1);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_TCP, 0, tcp->srcport,
+                               mpls_count, mpls);
 #ifdef IPPROTO_SCTP
     } else if (ip->protocol == IPPROTO_SCTP) {
         if (packet_length < ip_sctp_size) {
             return;
         }
 
-        sctp = (struct SCTPHeader *)(ip + 1);
+        sctp = (struct SCTPHeader *) (ip + 1);
 
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, icmp_result,
-            IPPROTO_SCTP, 0, sctp->srcport, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               icmp_result, IPPROTO_SCTP, 0, sctp->srcport,
+                               mpls_count, mpls);
 #endif
     }
 }
@@ -260,7 +256,7 @@ int decode_mpls_object(
     label_bytes = obj_len - sizeof(struct ICMPExtensionObject);
     labels_present = label_bytes / sizeof(struct ICMPExtMPLSLabel);
 
-    ext_mpls = (struct ICMPExtMPLSLabel *)(icmp_obj + 1);
+    ext_mpls = (struct ICMPExtMPLSLabel *) (icmp_obj + 1);
     for (i = 0; i < mpls_count && i < labels_present; i++) {
         ext_label = &ext_mpls[i];
         label = &mpls[i];
@@ -269,8 +265,7 @@ int decode_mpls_object(
 
         label->label =
             ext_label->label[0] << 12 |
-            ext_label->label[1] << 4 |
-            ext_label->label[2] >> 4;
+            ext_label->label[1] << 4 | ext_label->label[2] >> 4;
         label->experimental_use = (ext_label->label[2] & 0x0E) >> 1;
         label->bottom_of_stack = ext_label->label[2] & 0x01;
         label->ttl = ext_label->ttl;
@@ -297,12 +292,11 @@ int decode_mpls_labels(
     int remaining_size;
     int obj_len;
 
-    if (packet_length < icmp_orig_icmp_ext_size)
-    {
+    if (packet_length < icmp_orig_icmp_ext_size) {
         return 0;
     }
 
-    inner_packet = (char *)(icmp + 1);
+    inner_packet = (char *) (icmp + 1);
     icmp_ext = (struct ICMPExtensionHeader *)
         (inner_packet + ICMP_ORIGINAL_DATAGRAM_MIN_SIZE);
 
@@ -311,15 +305,14 @@ int decode_mpls_labels(
     }
 
     remaining_size = packet_length - icmp_orig_icmp_ext_size;
-    icmp_object_bytes = (char *)(icmp_ext + 1);
+    icmp_object_bytes = (char *) (icmp_ext + 1);
 
     /*
-        Iterate through the chain of extension objects, looking for
-        an MPLS label extension.
-    */
-    while (remaining_size >= sizeof(struct ICMPExtensionObject))
-    {
-        icmp_obj = (struct ICMPExtensionObject *)icmp_object_bytes;
+       Iterate through the chain of extension objects, looking for
+       an MPLS label extension.
+     */
+    while (remaining_size >= sizeof(struct ICMPExtensionObject)) {
+        icmp_obj = (struct ICMPExtensionObject *) icmp_object_bytes;
         obj_len = ntohs(icmp_obj->len);
 
         if (obj_len > remaining_size) {
@@ -330,7 +323,7 @@ int decode_mpls_labels(
         }
 
         if (icmp_obj->classnum == ICMP_EXT_MPLS_CLASSNUM &&
-                icmp_obj->ctype == ICMP_EXT_MPLS_CTYPE) {
+            icmp_obj->ctype == ICMP_EXT_MPLS_CTYPE) {
 
             return decode_mpls_object(icmp_obj, obj_len, mpls, mpls_count);
         }
@@ -361,49 +354,46 @@ void handle_received_icmp4_packet(
     int mpls_count;
     struct mpls_label_t mpls[MAX_MPLS_LABELS];
 
-    mpls_count = decode_mpls_labels(
-        icmp, packet_length, mpls, MAX_MPLS_LABELS);
+    mpls_count =
+        decode_mpls_labels(icmp, packet_length, mpls, MAX_MPLS_LABELS);
 
     /*  If we get an echo reply, our probe reached the destination host  */
     if (icmp->type == ICMP_ECHOREPLY) {
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp,
-            ICMP_ECHOREPLY, IPPROTO_ICMP, icmp->id, icmp->sequence,
-            mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               ICMP_ECHOREPLY, IPPROTO_ICMP, icmp->id,
+                               icmp->sequence, mpls_count, mpls);
     }
 
     if (packet_length < icmp_ip_size) {
         return;
     }
-    inner_ip = (struct IPHeader *)(icmp + 1);
+    inner_ip = (struct IPHeader *) (icmp + 1);
 
     /*
-        If we get a time exceeded, we got a response from an intermediate
-        host along the path to our destination.
-    */
+       If we get a time exceeded, we got a response from an intermediate
+       host along the path to our destination.
+     */
     if (icmp->type == ICMP_TIME_EXCEEDED) {
         /*
-            The IP packet inside the ICMP response contains our original
-            IP header.  That's where we can get our original ID and
-            sequence number.
-        */
-        handle_inner_ip4_packet(
-            net_state, remote_addr,
-            ICMP_TIME_EXCEEDED, inner_ip, inner_size, timestamp,
-            mpls_count, mpls);
+           The IP packet inside the ICMP response contains our original
+           IP header.  That's where we can get our original ID and
+           sequence number.
+         */
+        handle_inner_ip4_packet(net_state, remote_addr,
+                                ICMP_TIME_EXCEEDED, inner_ip, inner_size,
+                                timestamp, mpls_count, mpls);
     }
 
     if (icmp->type == ICMP_DEST_UNREACH) {
         /*
-            We'll get a ICMP_PORT_UNREACH when a non-ICMP probe
-            reaches its final destination.  (Assuming that port isn't
-            open on the destination host.)
-        */
+           We'll get a ICMP_PORT_UNREACH when a non-ICMP probe
+           reaches its final destination.  (Assuming that port isn't
+           open on the destination host.)
+         */
         if (icmp->code == ICMP_PORT_UNREACH) {
-            handle_inner_ip4_packet(
-                net_state, remote_addr,
-                ICMP_ECHOREPLY, inner_ip, inner_size, timestamp,
-                mpls_count, mpls);
+            handle_inner_ip4_packet(net_state, remote_addr,
+                                    ICMP_ECHOREPLY, inner_ip, inner_size,
+                                    timestamp, mpls_count, mpls);
         }
     }
 }
@@ -428,33 +418,31 @@ void handle_received_icmp6_packet(
     int mpls_count;
     struct mpls_label_t mpls[MAX_MPLS_LABELS];
 
-    mpls_count = decode_mpls_labels(
-        icmp, packet_length, mpls, MAX_MPLS_LABELS);
+    mpls_count =
+        decode_mpls_labels(icmp, packet_length, mpls, MAX_MPLS_LABELS);
 
     if (icmp->type == ICMP6_ECHOREPLY) {
-        find_and_receive_probe(
-            net_state, remote_addr, timestamp, ICMP_ECHOREPLY,
-            IPPROTO_ICMP, icmp->id, icmp->sequence, mpls_count, mpls);
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               ICMP_ECHOREPLY, IPPROTO_ICMP, icmp->id,
+                               icmp->sequence, mpls_count, mpls);
     }
 
     if (packet_length < icmp_ip_size) {
         return;
     }
-    inner_ip = (struct IP6Header *)(icmp + 1);
+    inner_ip = (struct IP6Header *) (icmp + 1);
 
     if (icmp->type == ICMP6_TIME_EXCEEDED) {
-        handle_inner_ip6_packet(
-            net_state, remote_addr,
-            ICMP_TIME_EXCEEDED, inner_ip, inner_size, timestamp,
-            mpls_count, mpls);
+        handle_inner_ip6_packet(net_state, remote_addr,
+                                ICMP_TIME_EXCEEDED, inner_ip, inner_size,
+                                timestamp, mpls_count, mpls);
     }
 
     if (icmp->type == ICMP6_DEST_UNREACH) {
         if (icmp->code == ICMP6_PORT_UNREACH) {
-            handle_inner_ip6_packet(
-                net_state, remote_addr,
-                ICMP_ECHOREPLY, inner_ip, inner_size, timestamp,
-                mpls_count, mpls);
+            handle_inner_ip6_packet(net_state, remote_addr,
+                                    ICMP_ECHOREPLY, inner_ip, inner_size,
+                                    timestamp, mpls_count, mpls);
         }
     }
 }
@@ -482,16 +470,16 @@ void handle_received_ip4_packet(
         return;
     }
 
-    ip = (struct IPHeader *)packet;
+    ip = (struct IPHeader *) packet;
     if (ip->protocol != IPPROTO_ICMP) {
         return;
     }
 
-    icmp = (struct ICMPHeader *)(ip + 1);
+    icmp = (struct ICMPHeader *) (ip + 1);
     icmp_length = packet_length - sizeof(struct IPHeader);
 
-    handle_received_icmp4_packet(
-        net_state, remote_addr, icmp, icmp_length, timestamp);
+    handle_received_icmp4_packet(net_state, remote_addr, icmp, icmp_length,
+                                 timestamp);
 }
 
 /*
@@ -508,8 +496,8 @@ void handle_received_ip6_packet(
 {
     const struct ICMPHeader *icmp;
 
-    icmp = (struct ICMPHeader *)packet;
+    icmp = (struct ICMPHeader *) packet;
 
-    handle_received_icmp6_packet(
-        net_state, remote_addr, icmp, packet_length, timestamp);
+    handle_received_icmp6_packet(net_state, remote_addr, icmp,
+                                 packet_length, timestamp);
 }

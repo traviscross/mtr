@@ -19,45 +19,65 @@
 #include <netinet/in.h>
 
 /* Don't put a trailing comma in enumeration lists. Some compilers 
-   (notably the one on Irix 5.2) do not like that. */ 
-enum { ActionNone,  ActionQuit,  ActionReset,  ActionDisplay, 
-       ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS, 
+   (notably the one on Irix 5.2) do not like that. */
+enum { ActionNone, ActionQuit, ActionReset, ActionDisplay,
+    ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS,
 #ifdef HAVE_IPINFO
-       ActionII, ActionAS,
+    ActionII, ActionAS,
 #endif
-       ActionScrollDown, ActionScrollUp  };
-
-enum {
-  DisplayReport,
-#ifdef HAVE_CURSES
-  DisplayCurses,
-#endif
-#ifdef HAVE_GTK
-  DisplayGTK,
-#endif
-  DisplaySplit,
-  DisplayRaw,
-  DisplayXML,
-  DisplayCSV,
-  DisplayTXT,
-  DisplayJSON
+    ActionScrollDown, ActionScrollUp
 };
 
 enum {
-  DisplayModeDefault,
-  DisplayModeBlockmap,
-  DisplayModeBlockmapScale,
-  DisplayModeMAX	/* this must be the last DisplayMode entry */
+    DisplayReport,
+#ifdef HAVE_CURSES
+    DisplayCurses,
+#endif
+#ifdef HAVE_GTK
+    DisplayGTK,
+#endif
+    DisplaySplit,
+    DisplayRaw,
+    DisplayXML,
+    DisplayCSV,
+    DisplayTXT,
+    DisplayJSON
+};
+
+enum {
+    DisplayModeDefault,
+    DisplayModeBlockmap,
+    DisplayModeBlockmapScale,
+    DisplayModeMAX              /* this must be the last DisplayMode entry */
 };
 
 /*  Prototypes for display.c  */
-extern void display_detect(struct mtr_ctl *ctl, int *argc, char ***argv);
-extern void display_open(struct mtr_ctl *ctl);
-extern void display_close(struct mtr_ctl *ctl);
-extern void display_redraw(struct mtr_ctl *ctl);
-extern void display_rawxmit(struct mtr_ctl *ctl, int hostnum, int seq);
-extern void display_rawping(struct mtr_ctl *ctl, int hostnum, int msec, int seq);
-extern void display_rawhost(struct mtr_ctl *ctl, int hostnum, ip_t *ip_addr);
-extern int display_keyaction(struct mtr_ctl *ctl);
-extern void display_loop(struct mtr_ctl *ctl);
-extern void display_clear(struct mtr_ctl *ctl);
+extern void display_detect(
+    struct mtr_ctl *ctl,
+    int *argc,
+    char ***argv);
+extern void display_open(
+    struct mtr_ctl *ctl);
+extern void display_close(
+    struct mtr_ctl *ctl);
+extern void display_redraw(
+    struct mtr_ctl *ctl);
+extern void display_rawxmit(
+    struct mtr_ctl *ctl,
+    int hostnum,
+    int seq);
+extern void display_rawping(
+    struct mtr_ctl *ctl,
+    int hostnum,
+    int msec,
+    int seq);
+extern void display_rawhost(
+    struct mtr_ctl *ctl,
+    int hostnum,
+    ip_t * ip_addr);
+extern int display_keyaction(
+    struct mtr_ctl *ctl);
+extern void display_loop(
+    struct mtr_ctl *ctl);
+extern void display_clear(
+    struct mtr_ctl *ctl);

@@ -25,14 +25,15 @@
 #include <unistd.h>
 
 #ifdef HAVE_LIBCAP
-#   include <sys/capability.h>
+#include <sys/capability.h>
 #endif
 
 #include "wait.h"
 
 /*  Drop SUID privileges.  To be used after accquiring raw sockets.  */
 static
-int drop_elevated_permissions(void)
+int drop_elevated_permissions(
+    void)
 {
 #ifdef HAVE_LIBCAP
     cap_t cap;
@@ -48,9 +49,9 @@ int drop_elevated_permissions(void)
     }
 
     /*
-        Drop all process capabilities.
-        This will revoke anything granted by a commandline 'setcap'
-    */
+       Drop all process capabilities.
+       This will revoke anything granted by a commandline 'setcap'
+     */
 #ifdef HAVE_LIBCAP
     cap = cap_get_proc();
     if (cap == NULL) {
@@ -76,10 +77,10 @@ int main(
     struct net_state_t net_state;
 
     /*
-        To minimize security risk, the only thing done prior to 
-        dropping SUID should be opening the network state for
-        raw sockets.
-    */
+       To minimize security risk, the only thing done prior to 
+       dropping SUID should be opening the network state for
+       raw sockets.
+     */
     init_net_state_privileged(&net_state);
     if (drop_elevated_permissions()) {
         perror("Unable to drop elevated permissions");
@@ -92,24 +93,23 @@ int main(
     command_pipe_open = true;
 
     /*
-        Dispatch commands and respond to probe replies until the
-        command stream is closed.
-    */
+       Dispatch commands and respond to probe replies until the
+       command stream is closed.
+     */
     while (true) {
         /*  Ensure any responses are written before waiting  */
         fflush(stdout);
         wait_for_activity(&command_buffer, &net_state);
 
         /*
-            Receive replies first so that the timestamps are as
-            close to the response arrival time as possible.
-        */
+           Receive replies first so that the timestamps are as
+           close to the response arrival time as possible.
+         */
         receive_replies(&net_state);
 
         if (command_pipe_open) {
             if (read_commands(&command_buffer)) {
-                if (errno == EPIPE)
-                {
+                if (errno == EPIPE) {
                     command_pipe_open = false;
                 }
             }
@@ -118,15 +118,15 @@ int main(
         check_probe_timeouts(&net_state);
 
         /*
-            Dispatch commands late so that the window between probe
-            departure and arriving replies is as small as possible.
-        */
+           Dispatch commands late so that the window between probe
+           departure and arriving replies is as small as possible.
+         */
         dispatch_buffer_commands(&command_buffer, &net_state);
 
         /*
-            If the command pipe has been closed, exit after all
-            in-flight probes have reported their status.
-        */
+           If the command pipe has been closed, exit after all
+           in-flight probes have reported their status.
+         */
         if (!command_pipe_open) {
             if (net_state.outstanding_probe_count == 0) {
                 break;

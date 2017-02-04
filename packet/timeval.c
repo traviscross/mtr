@@ -28,9 +28,9 @@ void normalize_timeval(
     int full_sec;
 
     /*
-        If tv_usec has overflowed a full second, convert the overflow
-        to tv_sec.
-    */
+       If tv_usec has overflowed a full second, convert the overflow
+       to tv_sec.
+     */
     full_sec = timeval->tv_usec / 1000000;
     timeval->tv_sec += full_sec;
     timeval->tv_usec -= 1000000 * full_sec;

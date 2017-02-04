@@ -40,8 +40,7 @@
 #define PACKET_BUFFER_SIZE 9000
 
 /*  Parameters for sending a new probe  */
-struct probe_param_t
-{
+struct probe_param_t {
     /*  The version of the Internet Protocol to use.  (4 or 6)  */
     int ip_version;
 
@@ -83,17 +82,17 @@ struct probe_param_t
 };
 
 /*  Tracking information for an outstanding probe  */
-struct probe_t
-{
+struct probe_t {
     /*  Our entry in the probe list  */
-    LIST_ENTRY(probe_t) probe_list_entry;
+    LIST_ENTRY(
+    probe_t) probe_list_entry;
 
     /*
-        Also the ICMP sequence ID used to identify the probe.
+       Also the ICMP sequence ID used to identify the probe.
 
-        Also used as the port number to use when binding stream protocol
-        sockets for this probe.  (i.e. TCP or SCTP)
-    */
+       Also used as the port number to use when binding stream protocol
+       sockets for this probe.  (i.e. TCP or SCTP)
+     */
     int sequence;
 
     /*  Command token of the probe request  */
@@ -107,21 +106,21 @@ struct probe_t
 };
 
 /*  Global state for interacting with the network  */
-struct net_state_t
-{
+struct net_state_t {
     /*  The number of entries in the outstanding_probes list  */
     int outstanding_probe_count;
 
     /*  Tracking information for in-flight probes  */
-    LIST_HEAD(probe_list_head_t, probe_t) outstanding_probes;
+     LIST_HEAD(
+    probe_list_head_t,
+    probe_t) outstanding_probes;
 
     /*  Platform specific tracking information  */
     struct net_state_platform_t platform;
 };
 
 /*  Multiprotocol Label Switching information  */
-struct mpls_label_t
-{
+struct mpls_label_t {
     uint32_t label;
     uint8_t experimental_use;
     uint8_t bottom_of_stack;

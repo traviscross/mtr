@@ -25,9 +25,8 @@ enum {
 };
 
 /*  Parsed commands, or command replies, ready for semantic interpretation  */
-struct command_t
-{
-	/*  A unique value for matching command requests with replies  */
+struct command_t {
+    /*  A unique value for matching command requests with replies  */
     int token;
 
     /*  Text indiciating the command type, or reply type  */

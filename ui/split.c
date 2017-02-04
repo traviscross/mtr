@@ -37,19 +37,19 @@
 #include "utils.h"
 
 #ifdef HAVE_CURSES
-# if defined(HAVE_NCURSES_H)
-#  include <ncurses.h>
-# elif defined(HAVE_NCURSES_CURSES_H)
-#  include <ncurses/curses.h>
-# elif defined(HAVE_CURSES_H)
-#  include <curses.h>
-# else
-#  error No curses header file available
-# endif
+#if defined(HAVE_NCURSES_H)
+#include <ncurses.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
+#include <ncurses/curses.h>
+#elif defined(HAVE_CURSES_H)
+#include <curses.h>
 #else
-# include <sys/time.h>
-# include <sys/types.h>
-# include <unistd.h>
+#error No curses header file available
+#endif
+#else
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 
@@ -58,124 +58,128 @@
 #define MAX_LINE_SIZE  256
 
 static char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
-static int  LineCount;
+static int LineCount;
 
 
 #define DEBUG 0
 
 
-void split_redraw(struct mtr_ctl *ctl)
+void split_redraw(
+    struct mtr_ctl *ctl)
 {
-  int   max;
-  int   at;
-  ip_t *addr;
-  char  newLine[MAX_LINE_SIZE];
-  int   i;
+    int max;
+    int at;
+    ip_t *addr;
+    char newLine[MAX_LINE_SIZE];
+    int i;
 
 #if DEBUG
-  fprintf(stderr, "split_redraw()\n"); 
+    fprintf(stderr, "split_redraw()\n");
 #endif
 
-  /* 
-   * If there is less lines than last time, we delete them
-   * TEST THIS PLEASE
-   */
-  max = net_max(ctl);
-  for (i=LineCount; i>max; i--) {
-    printf("-%d\n", i);
-    LineCount--;
-  }
-
-  /*
-   * For each line, we compute the new one and we compare it to the old one
-   */
-  for(at = 0; at < max; at++) {
-    addr = net_addr(at);
-    if(addrcmp((void*)addr, (void*)&ctl->unspec_addr, ctl->af)) {
-      char str[256], *name;
-      if (!(name = dns_lookup(ctl, addr)))
-        name = strlongip(ctl, addr);
-      if (ctl->show_ips) {
-        snprintf(str, sizeof(str), "%s %s", name, strlongip(ctl, addr));
-        name = str;
-      }
-      /* May be we should test name's length */
-      snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d", name,
-               net_loss(at),
-               net_returned(at), net_xmit(at),
-               net_best(at) /1000, net_avg(at)/1000,
-               net_worst(at)/1000);
-    } else {
-      snprintf(newLine, sizeof(newLine), "???");
+    /* 
+     * If there is less lines than last time, we delete them
+     * TEST THIS PLEASE
+     */
+    max = net_max(ctl);
+    for (i = LineCount; i > max; i--) {
+        printf("-%d\n", i);
+        LineCount--;
     }
 
-    if (strcmp(newLine, Lines[at]) == 0) {
-      /* The same, so do nothing */
+    /*
+     * For each line, we compute the new one and we compare it to the old one
+     */
+    for (at = 0; at < max; at++) {
+        addr = net_addr(at);
+        if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+            char str[256], *name;
+            if (!(name = dns_lookup(ctl, addr)))
+                name = strlongip(ctl, addr);
+            if (ctl->show_ips) {
+                snprintf(str, sizeof(str), "%s %s", name,
+                         strlongip(ctl, addr));
+                name = str;
+            }
+            /* May be we should test name's length */
+            snprintf(newLine, sizeof(newLine), "%s %d %d %d %d %d %d",
+                     name, net_loss(at), net_returned(at), net_xmit(at),
+                     net_best(at) / 1000, net_avg(at) / 1000,
+                     net_worst(at) / 1000);
+        } else {
+            snprintf(newLine, sizeof(newLine), "???");
+        }
+
+        if (strcmp(newLine, Lines[at]) == 0) {
+            /* The same, so do nothing */
 #if DEBUG
-      printf("SAME LINE\n");
+            printf("SAME LINE\n");
 #endif
-    } else {
-      printf("%d %s\n", at+1, newLine);
-      fflush(stdout);
-      xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
-      if (LineCount < (at+1)) {
-	LineCount = at+1;
-      }
+        } else {
+            printf("%d %s\n", at + 1, newLine);
+            fflush(stdout);
+            xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
+            if (LineCount < (at + 1)) {
+                LineCount = at + 1;
+            }
+        }
     }
-  }
 }
 
 
-void split_open(void)
+void split_open(
+    void)
 {
-  int i;
+    int i;
 #if DEBUG
-  printf("split_open()\n");
+    printf("split_open()\n");
 #endif
-  LineCount = -1;
-  for (i=0; i<MAX_LINE_COUNT; i++) {
-    xstrncpy(Lines[i], "???", MAX_LINE_SIZE);
-  }
+    LineCount = -1;
+    for (i = 0; i < MAX_LINE_COUNT; i++) {
+        xstrncpy(Lines[i], "???", MAX_LINE_SIZE);
+    }
 }
 
 
-void split_close(void)
+void split_close(
+    void)
 {
 #if DEBUG
-  printf("split_close()\n");
+    printf("split_close()\n");
 #endif
 }
 
 
-int split_keyaction(void) 
+int split_keyaction(
+    void)
 {
 #ifdef HAVE_CURSES
-  unsigned char c = getch();
+    unsigned char c = getch();
 #else
-  fd_set readfds;
-  struct timeval tv;
-  char c;
+    fd_set readfds;
+    struct timeval tv;
+    char c;
 
-  FD_ZERO (&readfds);
-  FD_SET (0, &readfds);
-  tv.tv_sec = 0;
-  tv.tv_usec = 0;
+    FD_ZERO(&readfds);
+    FD_SET(0, &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
 
-  if (select (1, &readfds, NULL, NULL, &tv) > 0) {
-    read (0, &c, 1);
-  } else 
-    return 0;
+    if (select(1, &readfds, NULL, NULL, &tv) > 0) {
+        read(0, &c, 1);
+    } else
+        return 0;
 #endif
 
 #if DEBUG
-  printf("split_keyaction()\n");
+    printf("split_keyaction()\n");
 #endif
-  if(tolower(c) == 'q')
-    return ActionQuit;
-  if(c==3)
-    return ActionQuit;
-  if(tolower(c) == 'r')
-    return ActionReset;
-  
-  return 0;
+    if (tolower(c) == 'q')
+        return ActionQuit;
+    if (c == 3)
+        return ActionQuit;
+    if (tolower(c) == 'r')
+        return ActionReset;
+
+    return 0;
 }

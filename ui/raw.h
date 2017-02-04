@@ -19,6 +19,15 @@
 */
 
 /*  Prototypes for raw.c  */
-extern void raw_rawxmit(int host, int seq);
-extern void raw_rawping(struct mtr_ctl *ctl, int host, int msec, int seq);
-extern void raw_rawhost(struct mtr_ctl *ctl, int host, ip_t * addr);
+extern void raw_rawxmit(
+    int host,
+    int seq);
+extern void raw_rawping(
+    struct mtr_ctl *ctl,
+    int host,
+    int msec,
+    int seq);
+extern void raw_rawhost(
+    struct mtr_ctl *ctl,
+    int host,
+    ip_t * addr);
