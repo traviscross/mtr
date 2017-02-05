@@ -37,12 +37,12 @@ void wait_for_activity(
     DWORD wait_result;
 
     /*
-        Start the command read overlapped I/O just prior to sleeping.
-        During development of the Cygwin port, there was a bug where the
-        overlapped I/O was started earlier in the mtr-packet loop, and
-        an intermediate alertable wait could leave us in this Sleep
-        without an active command read.  So now we do this here, instead.
-    */
+       Start the command read overlapped I/O just prior to sleeping.
+       During development of the Cygwin port, there was a bug where the
+       overlapped I/O was started earlier in the mtr-packet loop, and
+       an intermediate alertable wait could leave us in this Sleep
+       without an active command read.  So now we do this here, instead.
+     */
     start_read_command(command_buffer);
 
     /*  Sleep until an I/O completion routine runs  */

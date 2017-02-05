@@ -18,9 +18,16 @@
 
 #include "mtr.h"
 
-extern void asn_open(struct mtr_ctl *ctl);
-extern void asn_close(struct mtr_ctl *ctl);
-extern char *fmt_ipinfo(struct mtr_ctl *ctl, ip_t *addr);
-extern ATTRIBUTE_CONST size_t get_iiwidth_len(void);
-extern ATTRIBUTE_CONST int get_iiwidth(int ipinfo_no);
-extern int is_printii(struct mtr_ctl *ctl);
+extern void asn_open(
+    struct mtr_ctl *ctl);
+extern void asn_close(
+    struct mtr_ctl *ctl);
+extern char *fmt_ipinfo(
+    struct mtr_ctl *ctl,
+    ip_t * addr);
+extern ATTRIBUTE_CONST size_t get_iiwidth_len(
+    void);
+extern ATTRIBUTE_CONST int get_iiwidth(
+    int ipinfo_no);
+extern int is_printii(
+    struct mtr_ctl *ctl);

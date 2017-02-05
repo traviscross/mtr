@@ -114,7 +114,6 @@ const char *check_support(
     if (!strcmp(feature, "tcp")) {
         return check_protocol_support(net_state, IPPROTO_TCP);
     }
-
 #ifdef IPPROTO_SCTP
     if (!strcmp(feature, "sctp")) {
         return check_protocol_support(net_state, IPPROTO_SCTP);
@@ -216,9 +215,9 @@ bool decode_probe_argument(
         }
 
         /*
-            Don't allow using a local port which requires
-            privileged binding.
-        */
+           Don't allow using a local port which requires
+           privileged binding.
+         */
         if (param->local_port < 1024) {
             param->local_port = 0;
             return false;
@@ -288,17 +287,15 @@ bool validate_probe_parameters(
     struct probe_param_t *param)
 {
     if (!is_ip_version_supported(net_state, param->ip_version)) {
-        printf(
-            "%d invalid-argument reason ip-version-not-supported\n",
-            param->command_token);
+        printf("%d invalid-argument reason ip-version-not-supported\n",
+               param->command_token);
 
         return false;
     }
 
     if (!is_protocol_supported(net_state, param->protocol)) {
-        printf(
-            "%d invalid-argument reason protocol-not-supported\n",
-            param->command_token);
+        printf("%d invalid-argument reason protocol-not-supported\n",
+               param->command_token);
 
         return false;
     }
@@ -386,24 +383,26 @@ void dispatch_buffer_commands(
         end_of_command = index(buffer->incoming_buffer, '\n');
         if (end_of_command == NULL) {
             /*
-                No newlines found, so any data we've read so far is
-                not yet complete.
-            */
+               No newlines found, so any data we've read so far is
+               not yet complete.
+             */
             break;
         }
 
         command_length = end_of_command - buffer->incoming_buffer;
-        remaining_count = buffer->incoming_read_position - command_length - 1;
+        remaining_count =
+            buffer->incoming_read_position - command_length - 1;
 
         /*  Copy the completed command  */
         memmove(full_command, buffer->incoming_buffer, command_length);
         full_command[command_length] = 0;
 
         /*
-            Free the space used by the completed command by advancing the
-            remaining requests within the buffer.
-        */
-        memmove(buffer->incoming_buffer, end_of_command + 1, remaining_count);
+           Free the space used by the completed command by advancing the
+           remaining requests within the buffer.
+         */
+        memmove(buffer->incoming_buffer, end_of_command + 1,
+                remaining_count);
         buffer->incoming_read_position -= command_length + 1;
 
         if (parse_command(&command, full_command)) {
@@ -416,10 +415,10 @@ void dispatch_buffer_commands(
 
     if (buffer->incoming_read_position >= COMMAND_BUFFER_SIZE - 1) {
         /*
-            If we've filled the buffer without a complete command, the
-            only thing we can do is discard what we've read and hope that 
-            new data is better formatted.
-        */
+           If we've filled the buffer without a complete command, the
+           only thing we can do is discard what we've read and hope that 
+           new data is better formatted.
+         */
         printf("0 command-buffer-overflow\n");
         buffer->incoming_read_position = 0;
     }

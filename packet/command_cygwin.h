@@ -30,9 +30,8 @@
 */
 
 /*  Overlapped I/O manament for Windows command buffer reads  */
-struct command_buffer_platform_t
-{
-	/*  true if an overlapped I/O read is active  */
+struct command_buffer_platform_t {
+    /*  true if an overlapped I/O read is active  */
     bool read_active;
 
     /*  true if the command pipe is still open  */

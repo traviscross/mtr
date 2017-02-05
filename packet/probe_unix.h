@@ -24,8 +24,7 @@
 #define MAX_PORT 65535
 
 /*  We need to track the transmission and timeouts on Unix systems  */
-struct probe_platform_t
-{
+struct probe_platform_t {
     /*  The socket for the outgoing connection  (used by TCP probes)  */
     int socket;
 
@@ -37,8 +36,7 @@ struct probe_platform_t
 };
 
 /*  We'll use rack sockets to send and recieve probes on Unix systems  */
-struct net_state_platform_t
-{
+struct net_state_platform_t {
     /*  true if we were successful at opening IPv4 sockets  */
     bool ip4_present;
 
@@ -61,9 +59,9 @@ struct net_state_platform_t
     int ip6_recv_socket;
 
     /*
-        true if we should encode the IP header length in host order.
-        (as opposed to network order)
-    */
+       true if we should encode the IP header length in host order.
+       (as opposed to network order)
+     */
     bool ip_length_host_order;
 
     /*  true if the operating system supports SCTP sockets  */
@@ -91,6 +89,6 @@ void receive_probe(
 
 int gather_probe_sockets(
     const struct net_state_t *net_state,
-    fd_set *write_set);
+    fd_set * write_set);
 
 #endif

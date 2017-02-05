@@ -40,8 +40,7 @@ void init_net_state(
     net_state->platform.icmp6 = Icmp6CreateFile();
 
     if (net_state->platform.icmp4 == INVALID_HANDLE_VALUE
-            && net_state->platform.icmp6 == INVALID_HANDLE_VALUE)
-    {
+        && net_state->platform.icmp6 == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failure opening ICMP %d\n", GetLastError());
         exit(EXIT_FAILURE);
     }
@@ -66,7 +65,7 @@ bool is_ip_version_supported(
 
 /*  On Windows, we only support ICMP probes  */
 bool is_protocol_supported(
-    struct net_state_t *net_state,
+    struct net_state_t * net_state,
     int protocol)
 {
     if (protocol == IPPROTO_ICMP) {
@@ -101,17 +100,15 @@ void report_win_error(
     int err)
 {
     /*  It could be that we got no reply because of timeout  */
-    if (err == IP_REQ_TIMED_OUT
-            || err == IP_SOURCE_QUENCH) {
+    if (err == IP_REQ_TIMED_OUT || err == IP_SOURCE_QUENCH) {
         printf("%d no-reply\n", command_token);
     } else if (err == IP_DEST_HOST_UNREACHABLE
-            || err == IP_DEST_PORT_UNREACHABLE
-            || err == IP_DEST_PROT_UNREACHABLE
-            || err == IP_DEST_NET_UNREACHABLE
-            || err == IP_DEST_UNREACHABLE
-            || err == IP_DEST_NO_ROUTE
-            || err == IP_BAD_ROUTE
-            || err == IP_BAD_DESTINATION) {
+               || err == IP_DEST_PORT_UNREACHABLE
+               || err == IP_DEST_PROT_UNREACHABLE
+               || err == IP_DEST_NET_UNREACHABLE
+               || err == IP_DEST_UNREACHABLE
+               || err == IP_DEST_NO_ROUTE
+               || err == IP_BAD_ROUTE || err == IP_BAD_DESTINATION) {
         printf("%d no-route\n", command_token);
     } else if (err == ERROR_INVALID_NETNAME) {
         printf("%d address-not-available\n", command_token);
@@ -133,7 +130,7 @@ void WINAPI on_icmp_reply(
     PIO_STATUS_BLOCK status,
     ULONG reserved)
 {
-    struct probe_t *probe = (struct probe_t *)context;
+    struct probe_t *probe = (struct probe_t *) context;
     struct net_state_t *net_state = probe->platform.net_state;
     int icmp_type;
     int round_trip_us = 0;
@@ -155,13 +152,12 @@ void WINAPI on_icmp_reply(
             /*  Unfortunately, ICMP.DLL only has millisecond precision  */
             round_trip_us = reply6->RoundTripTime * 1000;
 
-            remote_addr6 = (struct sockaddr_in6 *)&remote_addr;
+            remote_addr6 = (struct sockaddr_in6 *) &remote_addr;
             remote_addr6->sin6_family = AF_INET6;
             remote_addr6->sin6_port = 0;
             remote_addr6->sin6_flowinfo = 0;
-            memcpy(
-                &remote_addr6->sin6_addr, reply6->AddressBits,
-                sizeof(struct in6_addr));
+            memcpy(&remote_addr6->sin6_addr, reply6->AddressBits,
+                   sizeof(struct in6_addr));
             remote_addr6->sin6_scope_id = 0;
         }
     } else {
@@ -174,7 +170,7 @@ void WINAPI on_icmp_reply(
             /*  Unfortunately, ICMP.DLL only has millisecond precision  */
             round_trip_us = reply4->RoundTripTime * 1000;
 
-            remote_addr4 = (struct sockaddr_in *)&remote_addr;
+            remote_addr4 = (struct sockaddr_in *) &remote_addr;
             remote_addr4->sin_family = AF_INET;
             remote_addr4->sin_port = 0;
             remote_addr4->sin_addr.s_addr = reply4->Address;
@@ -189,15 +185,14 @@ void WINAPI on_icmp_reply(
     if (reply_status == IP_SUCCESS) {
         icmp_type = ICMP_ECHOREPLY;
     } else if (reply_status == IP_TTL_EXPIRED_TRANSIT
-            || reply_status == IP_TTL_EXPIRED_REASSEM) {
+               || reply_status == IP_TTL_EXPIRED_REASSEM) {
         icmp_type = ICMP_TIME_EXCEEDED;
     }
 
     if (icmp_type != -1) {
         /*  Record probe result  */
-        respond_to_probe(
-            net_state, probe, icmp_type,
-            &remote_addr, round_trip_us, 0, NULL);
+        respond_to_probe(net_state, probe, icmp_type,
+                         &remote_addr, round_trip_us, 0, NULL);
     } else {
         report_win_error(probe->token, reply_status);
         free_probe(net_state, probe);
@@ -228,10 +223,10 @@ void icmp_send_probe(
         timeout = 1000 * param->timeout;
     } else {
         /*
-            IcmpSendEcho2 will return invalid argument on a timeout of 
-            zero.  Our Unix implementation allows it.  Bump up the timeout
-            to 1 millisecond.
-        */
+           IcmpSendEcho2 will return invalid argument on a timeout of 
+           zero.  Our Unix implementation allows it.  Bump up the timeout
+           to 1 millisecond.
+         */
         timeout = 1;
     }
 
@@ -251,31 +246,33 @@ void icmp_send_probe(
     }
 
     if (param->ip_version == 6) {
-        src_sockaddr6 = (struct sockaddr_in6 *)src_sockaddr;
-        dest_sockaddr6 = (struct sockaddr_in6 *)dest_sockaddr;
+        src_sockaddr6 = (struct sockaddr_in6 *) src_sockaddr;
+        dest_sockaddr6 = (struct sockaddr_in6 *) dest_sockaddr;
 
-        send_result = Icmp6SendEcho2(
-            net_state->platform.icmp6, NULL,
-            (FARPROC)on_icmp_reply, probe,
-            src_sockaddr6, dest_sockaddr6, payload, payload_size, &option,
-            probe->platform.reply6, reply_size, timeout);
+        send_result = Icmp6SendEcho2(net_state->platform.icmp6, NULL,
+                                     (FARPROC) on_icmp_reply, probe,
+                                     src_sockaddr6, dest_sockaddr6,
+                                     payload, payload_size, &option,
+                                     probe->platform.reply6, reply_size,
+                                     timeout);
     } else {
-        dest_sockaddr4 = (struct sockaddr_in *)dest_sockaddr;
+        dest_sockaddr4 = (struct sockaddr_in *) dest_sockaddr;
 
-        send_result = IcmpSendEcho2(
-            net_state->platform.icmp4, NULL,
-            (FARPROC)on_icmp_reply, probe,
-            dest_sockaddr4->sin_addr.s_addr, payload, payload_size, &option,
-            probe->platform.reply4, reply_size, timeout);
+        send_result = IcmpSendEcho2(net_state->platform.icmp4, NULL,
+                                    (FARPROC) on_icmp_reply, probe,
+                                    dest_sockaddr4->sin_addr.s_addr,
+                                    payload, payload_size, &option,
+                                    probe->platform.reply4, reply_size,
+                                    timeout);
     }
 
     if (send_result == 0) {
         err = GetLastError();
 
         /*
-            ERROR_IO_PENDING is expected for asynchronous probes,
-            but any other error is unexpected.
-        */
+           ERROR_IO_PENDING is expected for asynchronous probes,
+           but any other error is unexpected.
+         */
         if (err != ERROR_IO_PENDING) {
             report_win_error(probe->token, err);
             free_probe(net_state, probe);
@@ -294,7 +291,8 @@ int fill_payload(
     int payload_size;
 
     if (param->ip_version == 6) {
-        ip_icmp_size = sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
+        ip_icmp_size =
+            sizeof(struct IP6Header) + sizeof(struct ICMPHeader);
     } else if (param->ip_version == 4) {
         ip_icmp_size = sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
     } else {
@@ -347,9 +345,8 @@ void send_probe(
         exit(EXIT_FAILURE);
     }
 
-    icmp_send_probe(
-        net_state, probe, param,
-        &src_sockaddr, &dest_sockaddr, payload, payload_size);
+    icmp_send_probe(net_state, probe, param,
+                    &src_sockaddr, &dest_sockaddr, payload, payload_size);
 }
 
 /*

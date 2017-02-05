@@ -43,11 +43,12 @@ struct packet_command_pipe_t {
 };
 
 typedef
-void (*probe_reply_func_t)(
-    struct mtr_ctl *ctl,
+void (
+    *probe_reply_func_t) (
+    struct mtr_ctl * ctl,
     int sequence,
-    struct mplslen *mpls,
-    ip_t *addr,
+    struct mplslen * mpls,
+    ip_t * addr,
     int round_trip_time);
 
 int open_command_pipe(
@@ -60,8 +61,8 @@ void close_command_pipe(
 void send_probe_command(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe,
-    ip_t *address,
-    ip_t *localaddress,
+    ip_t * address,
+    ip_t * localaddress,
     int packet_size,
     int sequence,
     int time_to_live);

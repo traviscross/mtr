@@ -41,7 +41,7 @@ int tokenize_command(
 
     for (i = 0; command_string[i]; i++) {
         if (on_space) {
-            if (!isspace((unsigned char)command_string[i])) {
+            if (!isspace((unsigned char) command_string[i])) {
                 /*  Take care not to exceed the token array length  */
                 if (token_count >= max_tokens) {
                     return -1;
@@ -51,7 +51,7 @@ int tokenize_command(
                 on_space = 0;
             }
         } else {
-            if (isspace((unsigned char)command_string[i])) {
+            if (isspace((unsigned char) command_string[i])) {
                 command_string[i] = 0;
                 on_space = 1;
             }
@@ -83,7 +83,8 @@ int parse_command(
     memset(command, 0, sizeof(struct command_t));
 
     /*  Tokenize the string using whitespace  */
-    token_count = tokenize_command(tokens, MAX_COMMAND_TOKENS, command_string);
+    token_count =
+        tokenize_command(tokens, MAX_COMMAND_TOKENS, command_string);
     if (token_count < 2) {
         errno = EINVAL;
         return -1;
@@ -99,9 +100,9 @@ int parse_command(
     command->command_name = tokens[1];
 
     /*
-        The tokens beyond the command name are expected to be in
-        name, value pairs.
-    */
+       The tokens beyond the command name are expected to be in
+       name, value pairs.
+     */
     i = 2;
     command->argument_count = 0;
     while (i < token_count) {

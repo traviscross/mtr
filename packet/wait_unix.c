@@ -34,8 +34,8 @@ static
 int gather_read_fds(
     const struct command_buffer_t *command_buffer,
     const struct net_state_t *net_state,
-    fd_set *read_set,
-    fd_set *write_set)
+    fd_set * read_set,
+    fd_set * write_set)
 {
     int nfds;
     int probe_nfds;
@@ -84,7 +84,8 @@ void wait_for_activity(
     struct timeval *select_timeout;
     int ready_count;
 
-    nfds = gather_read_fds(command_buffer, net_state, &read_set, &write_set);
+    nfds =
+        gather_read_fds(command_buffer, net_state, &read_set, &write_set);
 
     while (true) {
         select_timeout = NULL;
@@ -95,24 +96,24 @@ void wait_for_activity(
             select_timeout = &probe_timeout;
         }
 
-        ready_count = select(
-            nfds, &read_set, &write_set, NULL, select_timeout);
+        ready_count =
+            select(nfds, &read_set, &write_set, NULL, select_timeout);
 
         /*
-            If we didn't have an error, either one of our descriptors is
-            readable, or we timed out.  So we can now return.
-        */
+           If we didn't have an error, either one of our descriptors is
+           readable, or we timed out.  So we can now return.
+         */
         if (ready_count != -1) {
             break;
         }
 
         /*
-            We will get EINTR if we received a signal during the select, so
-            retry in that case.  We may get EAGAIN if "the kernel was
-            (perhaps temporarily) unable to allocate the requested number of
-            file descriptors."  I haven't seen this in practice, but selecting
-            again seems like the right thing to do.
-        */
+           We will get EINTR if we received a signal during the select, so
+           retry in that case.  We may get EAGAIN if "the kernel was
+           (perhaps temporarily) unable to allocate the requested number of
+           file descriptors."  I haven't seen this in practice, but selecting
+           again seems like the right thing to do.
+         */
         if (errno != EINTR && errno != EAGAIN) {
             /*  We don't expect other errors, so report them  */
             perror("unexpected select error");

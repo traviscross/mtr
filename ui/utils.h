@@ -18,24 +18,38 @@
 */
 
 enum {
-  STRTO_INT,
-  STRTO_U32INT
+    STRTO_INT,
+    STRTO_U32INT
 };
 
-extern char *trim(char *s, const char c);
-extern int strtonum_or_err(const char *str, const char *errmesg, const int type);
-extern float strtofloat_or_err(const char *str, const char *errmesg);
+extern char *trim(
+    char *s,
+    const char c);
+extern int strtonum_or_err(
+    const char *str,
+    const char *errmesg,
+    const int type);
+extern float strtofloat_or_err(
+    const char *str,
+    const char *errmesg);
 
 /* Like strncpy(3) but ensure null termination. */
-static inline void xstrncpy(char *dest, const char *src, size_t n)
+static inline void xstrncpy(
+    char *dest,
+    const char *src,
+    size_t n)
 {
-  strncpy(dest, src, n - 1);
-  dest[n - 1] = 0;
+    strncpy(dest, src, n - 1);
+    dest[n - 1] = 0;
 }
 
-extern void *xmalloc(const size_t size);
-extern char *xstrdup(const char *str);
+extern void *xmalloc(
+    const size_t size);
+extern char *xstrdup(
+    const char *str);
 
-extern void close_stdout(void);
+extern void close_stdout(
+    void);
 
-extern const char *iso_time(const time_t *t);
+extern const char *iso_time(
+    const time_t * t);

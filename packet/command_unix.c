@@ -66,8 +66,7 @@ int read_commands(
     read_count = read(command_stream, read_position, space_remaining);
 
     /*  If the command stream has been closed, read will return zero.  */
-    if (read_count == 0)
-    {
+    if (read_count == 0) {
         errno = EPIPE;
         return -1;
     }

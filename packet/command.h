@@ -31,9 +31,8 @@
 #endif
 
 /*  Storage for incoming commands, prior to command parsing  */
-struct command_buffer_t
-{
-	/*  The file descriptor of the incoming command stream  */
+struct command_buffer_t {
+    /*  The file descriptor of the incoming command stream  */
     int command_stream;
 
     /*  Storage to read commands into  */

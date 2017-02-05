@@ -28,14 +28,13 @@
     This should be in the Windows headers, but is missing from
     Cygwin's Windows headers.
 */
-typedef struct icmpv6_echo_reply_lh
-{
+typedef struct icmpv6_echo_reply_lh {
     /*
-        Although Windows uses an IPV6_ADDRESS_EX here, we are using uint8_t
-        fields to avoid structure padding differences between gcc and
-        Visual C++.  (gcc wants to align the flow info to a 4 byte boundary,
-        and Windows uses it unaligned.)
-    */
+       Although Windows uses an IPV6_ADDRESS_EX here, we are using uint8_t
+       fields to avoid structure padding differences between gcc and
+       Visual C++.  (gcc wants to align the flow info to a 4 byte boundary,
+       and Windows uses it unaligned.)
+     */
     uint8_t PortBits[2];
     uint8_t FlowInfoBits[4];
     uint8_t AddressBits[16];
@@ -43,18 +42,18 @@ typedef struct icmpv6_echo_reply_lh
 
     ULONG Status;
     unsigned int RoundTripTime;
-} ICMPV6_ECHO_REPLY, *PICMPV6_ECHO_REPLY;
+} ICMPV6_ECHO_REPLY,
+*PICMPV6_ECHO_REPLY;
 
 /*
 	Windows requires an echo reply structure for each in-flight
 	ICMP probe.
 */
-struct probe_platform_t
-{
+struct probe_platform_t {
     /*
-        We need a backpointer to the net_state because of the way
-        IcmpSendEcho2 passes our context.
-    */
+       We need a backpointer to the net_state because of the way
+       IcmpSendEcho2 passes our context.
+     */
     struct net_state_t *net_state;
 
     /*  IP version (4 or 6) used for the probe  */
@@ -67,8 +66,7 @@ struct probe_platform_t
 };
 
 /*  A Windows HANDLE for the ICMP session  */
-struct net_state_platform_t
-{
+struct net_state_platform_t {
     HANDLE icmp4;
     HANDLE icmp6;
 };

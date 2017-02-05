@@ -30,16 +30,16 @@ static
 void CALLBACK finish_read_command(
     DWORD status,
     DWORD size_read,
-    OVERLAPPED *overlapped)
+    OVERLAPPED * overlapped)
 {
     struct command_buffer_t *buffer;
     char *read_position;
 
     /*
-        hEvent is unusuaed by ReadFileEx, so we use it to pass
-        our command_buffer structure.
-    */
-    buffer = (struct command_buffer_t *)overlapped->hEvent;
+       hEvent is unusuaed by ReadFileEx, so we use it to pass
+       our command_buffer structure.
+     */
+    buffer = (struct command_buffer_t *) overlapped->hEvent;
 
     if (status) {
         /*  When the stream is closed ERROR_BROKEN_PIPE will be the result  */
@@ -53,7 +53,8 @@ void CALLBACK finish_read_command(
     }
 
     /*  Copy from the overlapped I/O buffer to the incoming command buffer  */
-    read_position = &buffer->incoming_buffer[buffer->incoming_read_position];
+    read_position =
+        &buffer->incoming_buffer[buffer->incoming_read_position];
     memcpy(read_position, buffer->platform.overlapped_buffer, size_read);
 
     /*  Account for the newly read data  */
@@ -67,17 +68,18 @@ void CALLBACK finish_read_command(
 */
 static
 void CALLBACK empty_apc(
-    ULONG *param)
+    ULONG * param)
 {
 }
 
 /*  Wake from the next alertable wait without waiting for newly read data  */
 static
-void queue_empty_apc(void)
+void queue_empty_apc(
+    void)
 {
-    if (QueueUserAPC((PAPCFUNC)empty_apc, GetCurrentThread(), 0) == 0) {
-        fprintf(
-            stderr, "Unexpected QueueUserAPC failure %d\n", GetLastError());
+    if (QueueUserAPC((PAPCFUNC) empty_apc, GetCurrentThread(), 0) == 0) {
+        fprintf(stderr, "Unexpected QueueUserAPC failure %d\n",
+                GetLastError());
         exit(EXIT_FAILURE);
     }
 }
@@ -86,9 +88,8 @@ void queue_empty_apc(void)
 void start_read_command(
     struct command_buffer_t *buffer)
 {
-    HANDLE command_stream =
-        (HANDLE)get_osfhandle(buffer->command_stream);
-    int space_remaining = 
+    HANDLE command_stream = (HANDLE) get_osfhandle(buffer->command_stream);
+    int space_remaining =
         COMMAND_BUFFER_SIZE - buffer->incoming_read_position - 1;
     int err;
 
@@ -98,24 +99,25 @@ void start_read_command(
     }
 
     memset(&buffer->platform.overlapped, 0, sizeof(OVERLAPPED));
-    buffer->platform.overlapped.hEvent = (HANDLE)buffer;
+    buffer->platform.overlapped.hEvent = (HANDLE) buffer;
 
-    if (!ReadFileEx(
-        command_stream, buffer->platform.overlapped_buffer, space_remaining,
-        &buffer->platform.overlapped, finish_read_command)) {
+    if (!ReadFileEx
+        (command_stream, buffer->platform.overlapped_buffer,
+         space_remaining, &buffer->platform.overlapped,
+         finish_read_command)) {
 
         err = GetLastError();
 
         if (err == ERROR_BROKEN_PIPE) {
             /*  If the command stream has been closed, we need to wake from
-                the next altertable wait to exit the main loop  */
+               the next altertable wait to exit the main loop  */
             buffer->platform.pipe_open = false;
             queue_empty_apc();
 
             return;
         } else if (err != WAIT_IO_COMPLETION) {
-            fprintf(
-                stderr, "Unexpected ReadFileEx failure %d\n", GetLastError());
+            fprintf(stderr, "Unexpected ReadFileEx failure %d\n",
+                    GetLastError());
             exit(EXIT_FAILURE);
         }
     }

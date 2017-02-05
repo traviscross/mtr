@@ -30,49 +30,98 @@
 
 #include "mtr.h"
 
-extern int net_open(struct mtr_ctl *ctl, struct hostent *host);
-extern void net_reopen(struct mtr_ctl *ctl, struct hostent *address);
-extern void net_reset(struct mtr_ctl *ctl);
-extern void net_close(void);
-extern int net_waitfd(void);
-extern void net_process_return(struct mtr_ctl *ctl);
-extern void net_harvest_fds(struct mtr_ctl *ctl);
+extern int net_open(
+    struct mtr_ctl *ctl,
+    struct hostent *host);
+extern void net_reopen(
+    struct mtr_ctl *ctl,
+    struct hostent *address);
+extern void net_reset(
+    struct mtr_ctl *ctl);
+extern void net_close(
+    void);
+extern int net_waitfd(
+    void);
+extern void net_process_return(
+    struct mtr_ctl *ctl);
+extern void net_harvest_fds(
+    struct mtr_ctl *ctl);
 
-extern int net_max(struct mtr_ctl *ctl);
-extern int net_min(struct mtr_ctl *ctl);
-extern int net_last(int at);
-extern ip_t * net_addr(int at);
-extern void * net_mpls(int at);
-extern void * net_mplss(int, int);
-extern int net_loss(int at);
-extern int net_drop(int at);
-extern int net_best(int at);
-extern int net_worst(int at);
-extern int net_avg(int at);
-extern int net_gmean(int at);
-extern int net_stdev(int at);
-extern int net_jitter(int at);
-extern int net_jworst(int at);
-extern int net_javg(int at);
-extern int net_jinta(int at);
-extern ip_t * net_addrs(int at, int i);
-extern char *net_localaddr(void); 
+extern int net_max(
+    struct mtr_ctl *ctl);
+extern int net_min(
+    struct mtr_ctl *ctl);
+extern int net_last(
+    int at);
+extern ip_t *net_addr(
+    int at);
+extern void *net_mpls(
+    int at);
+extern void *net_mplss(
+    int,
+    int);
+extern int net_loss(
+    int at);
+extern int net_drop(
+    int at);
+extern int net_best(
+    int at);
+extern int net_worst(
+    int at);
+extern int net_avg(
+    int at);
+extern int net_gmean(
+    int at);
+extern int net_stdev(
+    int at);
+extern int net_jitter(
+    int at);
+extern int net_jworst(
+    int at);
+extern int net_javg(
+    int at);
+extern int net_jinta(
+    int at);
+extern ip_t *net_addrs(
+    int at,
+    int i);
+extern char *net_localaddr(
+    void);
 
-extern int net_send_batch(struct mtr_ctl *ctl);
-extern void net_end_transit(void);
+extern int net_send_batch(
+    struct mtr_ctl *ctl);
+extern void net_end_transit(
+    void);
 
-extern int calc_deltatime (float WaitTime);
+extern int calc_deltatime(
+    float WaitTime);
 
-extern int net_returned(int at);
-extern int net_xmit(int at);
+extern int net_returned(
+    int at);
+extern int net_xmit(
+    int at);
 
-extern int net_up(int at);
+extern int net_up(
+    int at);
 
-extern int* net_saved_pings(int at);
-extern void net_save_xmit(int at);
-extern void net_save_return(int at, int seq, int ms);
+extern int *net_saved_pings(
+    int at);
+extern void net_save_xmit(
+    int at);
+extern void net_save_return(
+    int at,
+    int seq,
+    int ms);
 
-extern int addrcmp( char * a, char * b, int af );
-extern void addrcpy( char * a, char * b, int af );
+extern int addrcmp(
+    char *a,
+    char *b,
+    int af);
+extern void addrcpy(
+    char *a,
+    char *b,
+    int af);
 
-extern void net_add_fds(fd_set *writefd, int *maxfd);
+extern void net_add_fds(
+    fd_set * writefd,
+    int *maxfd);

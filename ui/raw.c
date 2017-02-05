@@ -35,32 +35,41 @@
 
 
 /* Log an echo request, or a "ping" */
-void raw_rawxmit (int host, int seq)
+void raw_rawxmit(
+    int host,
+    int seq)
 {
-  printf ("x %d %d\n", host, seq);
-  fflush (stdout);
+    printf("x %d %d\n", host, seq);
+    fflush(stdout);
 }
 
 /* Log an echo reply, or a "pong" */
-void raw_rawping (struct mtr_ctl *ctl, int host, int msec, int seq)
+void raw_rawping(
+    struct mtr_ctl *ctl,
+    int host,
+    int msec,
+    int seq)
 {
-  static int havename[MaxHost];
-  char *name;
+    static int havename[MaxHost];
+    char *name;
 
-  if (ctl->dns && !havename[host]) {
-    name = dns_lookup2(ctl, net_addr(host));
-    if (name) {
-      havename[host]++;
-      printf ("d %d %s\n", host, name);
+    if (ctl->dns && !havename[host]) {
+        name = dns_lookup2(ctl, net_addr(host));
+        if (name) {
+            havename[host]++;
+            printf("d %d %s\n", host, name);
+        }
     }
-  }
-  printf ("p %d %d %d\n", host, msec, seq);
-  fflush (stdout); 
+    printf("p %d %d %d\n", host, msec, seq);
+    fflush(stdout);
 }
 
 
-void raw_rawhost (struct mtr_ctl *ctl, int host, ip_t * ip_addr)
+void raw_rawhost(
+    struct mtr_ctl *ctl,
+    int host,
+    ip_t * ip_addr)
 {
-  printf ("h %d %s\n", host, strlongip(ctl, ip_addr));
-  fflush (stdout); 
+    printf("h %d %s\n", host, strlongip(ctl, ip_addr));
+    fflush(stdout);
 }
