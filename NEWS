@@ -50,7 +50,7 @@ R.E. Wolff (9):
       removed warning about IPV6 socket when IPV6 is not available at runtime
       fix for printing space field in XML.
       modified name of timeout variable to prevent warning on solaris.
-      changed the name of the ping timout timer from 'tag' to 'ping timeout timer'
+      changed the name of the ping timeout timer from 'tag' to 'ping timeout timer'
       net.c fix from AQ.
       issue 128: compile should be in .gitignore
       The release script bumped the version number
@@ -142,7 +142,7 @@ V0.87
          removed warning about IPV6 socket when IPV6 is not available at runtime
          fix for printing space field in XML.
          modified name of timeout variable to prevent warning on solaris.
-         changed the name of the ping timout timer from 'tag' to 'ping timeout timer'
+         changed the name of the ping timeout timer from 'tag' to 'ping timeout timer'
          net.c fix from AQ.
          issue 128: compile should be in .gitignore
          The release script bumped the version number

@@ -44,7 +44,7 @@ justified.  mtr-packet does the following two things after it is launched:
    ICMP packets.
 *  mtr-packet drops root privileges by setting the effective uid to
    match uid or the user calling mtr.
-*  If capabilities support is availabe, mtr-packet drops all privileged
+*  If capabilities support is available, mtr-packet drops all privileged
    capabilities.
 
 See main() in packet.c and init_net_state_privileged() in probe_unix.c
