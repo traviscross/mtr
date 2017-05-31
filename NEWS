@@ -4,6 +4,7 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.
 
 V0.87
 Antonio Querubin (1):

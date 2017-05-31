@@ -1,5 +1,5 @@
 AC_PREREQ([2.59])
-AC_INIT([mtr],
+AC_INIT([mtr], [0.88])
   [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
   [R.E.Wolff@BitWizard.nl], [],
   [http://www.BitWizard.nl/mtr/])
