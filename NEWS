@@ -4,6 +4,10 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.91
+   only made the tag point to the proper commit.  --REW
+   script now handles that situation (aborted release script) better. 
+
 V0.90
    only fixed the release script. Should now contain fmaxullo's 
    patch. --rew
