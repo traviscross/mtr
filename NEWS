@@ -5,7 +5,11 @@ the commit messages here.
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
 V0.90
-   only fixed the release script. Should now contain
+   only fixed the release script. Should now contain fmaxullo's 
+   patch. --rew
+   fmazullo (1):
+         Add AS number to json output
+   
 V0.89
    only made the tag point to the proper commit.  --REW
 
