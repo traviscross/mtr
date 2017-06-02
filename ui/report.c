@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -319,6 +319,13 @@ void json_close(
         }
         printf("      \"count\": \"%d\",\n", at + 1);
         printf("      \"host\": \"%s\",\n", name);
+#ifdef HAVE_IPINFO
+        if(!ctl->ipinfo_no) {
+          char* fmtinfo = fmt_ipinfo(addr);
+          if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
+          printf("      \"ASN\": \"%s\",\n", fmtinfo);
+        }
+#endif
         for (i = 0; i < MAXFLD; i++) {
             const char *format;
 
