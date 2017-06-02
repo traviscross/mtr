@@ -4,6 +4,9 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.89
+   only made the tag point to the proper commit.  --REW
+
 V0.88
    Antonio Querubin (3):
          Merge remote-tracking branch 'origin/master' into newdns
