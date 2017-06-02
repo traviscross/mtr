@@ -321,8 +321,8 @@ void json_close(
         printf("      \"host\": \"%s\",\n", name);
 #ifdef HAVE_IPINFO
         if(!ctl->ipinfo_no) {
-          char* fmtinfo = fmt_ipinfo(addr);
-          if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
+          char* fmtinfo = fmt_ipinfo(ctl, addr);
+          if (fmtinfo != NULL) fmtinfo = trim(fmtinfo, '\0');
           printf("      \"ASN\": \"%s\",\n", fmtinfo);
         }
 #endif
