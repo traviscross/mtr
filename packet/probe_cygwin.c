@@ -139,7 +139,7 @@ void WINAPI on_icmp_reply(
     struct sockaddr_storage remote_addr;
     struct sockaddr_in *remote_addr4;
     struct sockaddr_in6 *remote_addr6;
-    ICMP_ECHO_REPLY32 *reply4;
+    ICMP_ECHO_REPLY *reply4;
     ICMPV6_ECHO_REPLY *reply6;
 
     if (probe->platform.ip_version == 6) {
@@ -230,13 +230,13 @@ void icmp_send_probe(
         timeout = 1;
     }
 
-    memset(&option, 0, sizeof(IP_OPTION_INFORMATION32));
+    memset(&option, 0, sizeof(IP_OPTION_INFORMATION));
     option.Ttl = param->ttl;
 
     if (param->ip_version == 6) {
         reply_size = sizeof(ICMPV6_ECHO_REPLY) + payload_size;
     } else {
-        reply_size = sizeof(ICMP_ECHO_REPLY32) + payload_size;
+        reply_size = sizeof(ICMP_ECHO_REPLY) + payload_size;
     }
 
     probe->platform.reply4 = malloc(reply_size);

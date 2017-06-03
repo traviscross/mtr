@@ -60,7 +60,7 @@ struct probe_platform_t {
     int ip_version;
 
     union {
-        ICMP_ECHO_REPLY32 *reply4;
+        ICMP_ECHO_REPLY *reply4;
         ICMPV6_ECHO_REPLY *reply6;
     };
 };
