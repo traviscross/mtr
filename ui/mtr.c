@@ -70,6 +70,8 @@
 #endif
 
 
+char *myname;
+
 const struct fields data_fields[MAXFLD] = {
     /* key, Remark, Header, Format, Width, CallBackFunc */
     {' ', "<sp>: Space between fields", " ", " ", 1, &net_drop},
@@ -697,6 +699,7 @@ int main(
     names_t *names_head = NULL;
     names_t *names_walk;
 
+    myname = argv[0];
     struct mtr_ctl ctl;
     memset(&ctl, 0, sizeof(ctl));
     /* initialize non-null values */

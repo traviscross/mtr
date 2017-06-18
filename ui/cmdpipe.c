@@ -204,6 +204,7 @@ int check_packet_features(
 }
 
 
+extern char *myname;
 /*
     Execute mtr-packet, allowing the MTR_PACKET evironment to override
     the PATH when locating the executable.
@@ -212,6 +213,7 @@ static
 void execute_packet_child(
     void)
 {
+    char buf[256];
     /*
        Allow the MTR_PACKET environment variable to override
        the path to the mtr-packet executable.  This is necessary
@@ -227,6 +229,14 @@ void execute_packet_child(
        or MTR_PACKET environment variable.
      */
     execlp(mtr_packet_path, "mtr-packet", (char *) NULL);
+
+    /* 
+       Then try to find it where WE were executed from.  
+     */
+    strncpy (buf, myname, 240);
+    strcat (buf, "-packet");
+    mtr_packet_path = buf;
+    execl(mtr_packet_path, "mtr-packet", (char *) NULL);
 
     /*
        If mtr-packet is not found, try to use mtr-packet from current directory
