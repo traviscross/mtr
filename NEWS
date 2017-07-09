@@ -4,6 +4,245 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.92
+   added a few arguments to calls added by fmazu. Allows it to compile.
+
+V0.91
+   only made the tag point to the proper commit.  --REW
+   script now handles that situation (aborted release script) better. 
+
+V0.90
+   only fixed the release script. Should now contain fmaxullo's 
+   patch. --rew
+   fmazullo (1):
+         Add AS number to json output
+   
+V0.89
+   only made the tag point to the proper commit.  --REW
+
+V0.88
+   Antonio Querubin (3):
+         Merge remote-tracking branch 'origin/master' into newdns
+         Need to error check getnameinfo().
+         Merge remote-tracking branch 'origin/master' into newdns
+   
+   David Hill (1):
+         include <sys/select.h> for fd_set
+   
+   Jakub Wilk (1):
+         Fix typos
+   
+   Joe Bruggeman (2):
+         Replace all tabs tabs in net.c with spaces
+         cleanup the if blocks in net.c to improve readability
+   
+   Jürgen Weigert (1):
+         Mention + and - keys in the man page
+   
+   Kacper Michajłow (2):
+         Relax mtr-packet search rules.
+         Add missing errno.h include.
+   
+   Matt Kimball (20):
+         Added mtr-packet subprocess
+         test: Fix mtr-packet tests for Python 3
+         cmdline: multiple host names dropped all but one host  (issue #168)
+         mtr-packet: IPv6 support
+         mtr-packet: UDP probe support
+         mtr-packet: packet customization options (size, fill, mark, tos)
+         mtr-packet: TCP and SCTP probes
+         mtr-packet: MPLS decoding and local UDP port usage
+         mtr-packet: allow local address binding
+         Merge branch mtr-packet into 'master'
+         mtr-packet: drop capabilities + using BSD's linked lists for probes
+         build: moved front-end source into ui subdir
+         build: use AC_CHECK_LIB for ncurses, rather than pkg-tool
+         mtr-packet: Fall back to IPv4 only support if IPv6 sockets fail to open
+         build: if linking with ncurses fails, try curses  (for NetBSD)
+         build: Fix Solaris build issues
+         build: fix compiler warnings when for OpenBSD, NetBSD and Solaris
+         mtr-packet: Report probe status on host unreachable (Cygwin)
+         cleanup: Fix #ifdef structure which confuses 'ident'
+         cleanup: reindented C source with GNU indent
+   
+   Narthorn (2):
+         Initialize dns process before opening display
+         Add displaymode 2 back in
+   
+   R.E. Wolff (19):
+         Merge branch 'newdns' of https://github.com/traviscross/mtr into newdns
+         Merge branch 'newdns'
+         fixed double printout of start time, issue 131
+         Updated NEWS as in v0.87.1
+         format sent and rcvd fields correctly for big numbers #66
+         increased default unknownhosts #92 #132 #130     (I give in).
+         Merge branch 'master' of github.com:traviscross/mtr
+         fixed no-gtk build bug introduced with e2d898cc
+         more cleanup
+         Partial reverse of 6bb5b6b3b.
+         re-initialize ipinfo_no and -max. Fixes #161.
+         Merge branch 'master' of github.com:traviscross/mtr
+         fixed dynamic DNS on/off switch. Fixed #160
+         header alignment issue found&fixed by meingtsla. Fixes #164
+         Merge branch 'master' of github.com:traviscross/mtr
+         asn fix from meingtsla, fixes #163. Pong!
+         put ifdefs around IPV6 only part. Fixes #184
+         More whitespace mangling for consistency in net.c
+         The release script bumped the version number
+   
+   Roger Wolff (22):
+         New DNS works for IPV4....
+         moved towards IPV6 compatibilty...
+         removed the include mess...
+         merged antonios's bufsize fixes
+         Merge branch 'master' of github.com:traviscross/mtr into newdns
+         AQ: Added include for redhat, and fixed salen for BSD
+         removed last debug output from dns.c
+         One more patch to fix a getnameinfo corruption problem. -- AQ
+   
+   Rogier Wolff (5):
+         removed AC check for features newdns doesn't use
+         Fixed pull #133 another way....
+         fixed #27 and #35 where the fix was tested a long time ago.
+         fixed #141 compile without SCTP if not available
+         fixed typo.
+   
+   Sami Kerola (122):
+         warnings: remove unnecessary file
+         usage: add short and long options and descriptions to usage()
+         warnings: stop variable shadowing
+         dns: remove unnecessary dns_events() function
+         posix: replace bzero() and index() with modern equivelants
+         warnings: stop reassigning a value before the old one has been used
+         warnings: remove code that cannot be reached
+         warnings: fix printf data types
+         cleanup: remove unnecessary null check
+         build-sys; do not use subdirectory object
+         man: use url macro to urls and fix reference manual notations
+         build-sys: default to ,/configure --enable-silent-rules
+         warnings: do not take abs() when data type is unsigned
+         warnings: mark unused function input variables
+         warnings: fix couple unsigned vs signed variable comparisions
+         warnings: multiply timeval seconds only when the value is small
+         warnings: fix some missed unsigned vs signed variable comparisions
+         comment: add value range note to initialization
+         cast: do not downgrade to float when double should be used
+         warnings: remove dead code
+         build-sys: fix make distcheck
+         build-sys: remove old dist Makefile kludge
+         build-sys: use build version script from gnulib
+         build-sys: improve configure.am
+         build-sys: require automake 1.11.6 or newer
+         warnings: fix unused variable when ./configure --without-gtk is used
+         readability: always use EXIT_* definitions from stdlib.h
+         cleanup: remove unnecessary function
+         warnigns: add void to functions that do not take any arguments
+         build-sys: fix --without-ipinfo regressions
+         build-sys: fix ./configure --disable-ipv6
+         warnings: fix --disable-ipv6 --without-ipinfo compilation warnings
+         build-sys: check pkg-config availability
+         build-sys: use pkg-config to find gtk+-2.0
+         build-sys: use pkg-config to find ncurses
+         build-sys: get rid of double negative ipinfo autotools settings
+         cleanup: remove NO_SPLIT preprocessor check
+         build-sys: simplify finding resolver library
+         build-sys: remove unused autoconf check values
+         cleanup: remove obsolete herror() function
+         usage: reflect ./configure choices in available command line options
+         cleanup: remove preprocessor missing functions go-arounds
+         usage: be careful when parsing numeric user input
+         usage: use error(3) error-reporting function
+         cleanup: move max port number to be a define in net.h
+         build-sys: use system getopt_long() when it is available
+         build-sys: tell function locality explicitly
+         portability: fix float max check from values.h
+         portability: MacOS does not have error() function
+         portability: fix MacOS libresolv usage
+         data types: set static strings to be read-only
+         cleanup: remove redundant redeclaration
+         data types: move variable declaration from header to .c file
+         data types: check with smatch everything is in resonable scope
+         warnings: fix use of uninitialized warning
+         data types: get rid of all globals that are easy to remove
+         usability: fix --mark documentation
+         docs: make manual page versioning automatic
+         data types: move global data to control structures
+         data types: make control structure smaller
+         data types: move rest of the global variables to control structures
+         crash fix: make --xml not to dump core
+         warnings: correct function pointer prototype argument
+         warnings: do not use zero as NULL
+         warnings: avoid vla when malloc() is more appropriate
+         usability: print usage() if unknown options are used
+         cleanup: use definition for a magic value appearing twice in code
+         cleanup: remove commented out includes in dns.c
+         cleanup: avoid duplicating stdint.h
+         cleanup: use ICMP definitions from linux/icmp.h when possible
+         cleanup: move generic utility functions to a separate file
+         reliability: ensure string copy results to a null determined string
+         reliability: further removal of unsave string operation
+         reliability: always check malloc() return value
+         reliability: always check strdup() return value
+         reliability: check writing to stdout and stderr was successful
+         usability: use ISO-8601 timestamp
+         posix: do not use time(2) input argument
+         usability: add bash-completion file
+         bug fix: long option --gracetime is correct, --graceperiod is not
+         performance: use fewer printw() calls to center text
+         cleanup: merge two trim functions to one
+         crash fix: add ctl structure to gtk Pause_clicked() handler
+         crash fix: never return const string as address
+         crash fix: ctl->iiwidth_len was not initialized correctly
+         cleanup: make unused and const attributes to look the same
+         performance: make get_iiwidth() to be const function
+         cleanup: remove more/bottom labels header separation from mpls
+         cleanup: set variable only if it is used
+         cleanup: correct display_offset variable usage
+         cleanup: remove message duplicate
+         performance: set few variables read-only
+         docs: add Sami Kerola to authors
+         performance: make reset in net.c more effective
+         portability: fix bsd build
+         warnings: ensure printf will not overflow
+         misc: improve random initialization
+         net: fix net_reopen() initialization
+         warnings: fix warnings when everything possible is turned on
+         curses: simplify format_number()
+         curses: use switch case in mtr_curses_keyaction()
+         cleanup: remove dead code
+         style: convert c++ comment style to c style
+         display: avoid unnecessary switch case clauses
+         curses: convert magic numbers to an enum list
+         data types: move variables from a file to a function scope
+         cleanup: move file scope variables to the beginning of file
+         data types: move names list away from global scope
+         cleanup: move definitions and struct declarations to mtr.h
+         cleanup: clarify preprocessor nesting
+         build-sys: use proper check to find if time_t is defined
+         build-sys: enable all system extensions
+         regression: fix --displaymode=2 argument
+         user interface: do not allow out of range --ipinfo arguments
+         cleanup: use single logic to handle conditional options
+         docs: add very basic --sctp documentation to manual page
+         docs: improve mtr-packet(8) manual page
+         build-sys: update .gitignore file
+         smatch: extern keyword is needed only in header
+         smatch: fix couple warnings
+         build-sys: update .gitignore file
+         docs: FSF moved back in 2005
+   
+   Vlad Glagolev (1):
+         respect theme foreground color
+   
+   aquerubin (5):
+         Correct psize for IPv6.
+         Merge updates from branch 'master' into newdns
+         Merge branch 'master' into newdns
+         Merge branch 'newdns' of https://github.com/aquerubin/mtr into newdns
+         Fix standard deviation calculation.
+   
+   rewolff (22):
+   
 
 V0.87
 Antonio Querubin (1):
@@ -50,7 +289,7 @@ R.E. Wolff (9):
       removed warning about IPV6 socket when IPV6 is not available at runtime
       fix for printing space field in XML.
       modified name of timeout variable to prevent warning on solaris.
-      changed the name of the ping timout timer from 'tag' to 'ping timeout timer'
+      changed the name of the ping timeout timer from 'tag' to 'ping timeout timer'
       net.c fix from AQ.
       issue 128: compile should be in .gitignore
       The release script bumped the version number
@@ -142,7 +381,7 @@ V0.87
          removed warning about IPV6 socket when IPV6 is not available at runtime
          fix for printing space field in XML.
          modified name of timeout variable to prevent warning on solaris.
-         changed the name of the ping timout timer from 'tag' to 'ping timeout timer'
+         changed the name of the ping timeout timer from 'tag' to 'ping timeout timer'
          net.c fix from AQ.
          issue 128: compile should be in .gitignore
          The release script bumped the version number

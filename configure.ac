@@ -3,7 +3,7 @@ AC_INIT([mtr],
   [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
   [R.E.Wolff@BitWizard.nl], [],
   [http://www.BitWizard.nl/mtr/])
-AC_CONFIG_SRCDIR([mtr.c])
+AC_CONFIG_SRCDIR([ui/mtr.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([
@@ -17,6 +17,7 @@ m4_ifdef([AM_SILENT_RULES],
   [AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
+AC_CANONICAL_HOST
 AC_PROG_CC
 
 # Check pkg-config availability.
@@ -28,6 +29,8 @@ try setting the environment variable ACLOCAL_OPTS="-I/other/macro/dir"
 before running ./bootstrap.sh again.])
 ])
 PKG_PROG_PKG_CONFIG
+
+AM_CONDITIONAL([CYGWIN], [test "$host_os" = cygwin])
 
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])
@@ -47,6 +50,7 @@ AC_CHECK_HEADERS([ \
   ncurses/curses.h \
   netinet/in.h \
   socket.h \
+  sys/cdefs.h \
   sys/limits.h \
   sys/socket.h \
   stdio_ext.h \
@@ -92,18 +96,19 @@ AC_ARG_WITH([ncurses],
   [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
   [], [with_ncurses=yes])
 AS_IF([test "x$with_ncurses" = "xyes"],
-  [PKG_CHECK_MODULES([NCURSES], [ncurses], [
-      AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses library available])
-      AC_CHECK_LIB([ncurses],
-        [use_default_colors],
-        [AC_DEFINE([HAVE_USE_DEFAULT_COLORS], [1],
-          [Define this if your curses library has the use_default_colors() command.]
-        )
-      ])
-    ],
+
+  # Prefer ncurses over curses, if both are available.
+  # (On Solaris 11.3, ncurses builds and links for us, but curses does not.)
+  [AC_SEARCH_LIBS(
+    [initscr], [ncurses curses],
+    [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
     [with_ncurses=no])
 ])
-AM_CONDITIONAL([WITH_NCURSES], [test "x$with_ncurses" = xyes])
+AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
+
+AC_CHECK_LIB([cap], [cap_set_proc], [],
+  AS_IF([test "$host_os" = linux-gnu],
+    AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
@@ -118,12 +123,9 @@ AC_ARG_ENABLE([ipv6],
   [AS_HELP_STRING([--disable-ipv6], [Do not enable IPv6])],
   [WANTS_IPV6=$enableval], [WANTS_IPV6=yes])
 
-USES_IPV6=
-AC_CHECK_FUNC([getaddrinfo], [
-  AS_IF([test "x$WANTS_IPV6" = "xyes"], [
-    AC_DEFINE([ENABLE_IPV6], [1], [Define to enable IPv6])
-    USES_IPV6=yes
-  ])
+AS_IF([test "x$WANTS_IPV6" = "xyes"], [
+  AC_DEFINE([ENABLE_IPV6], [1], [Define to enable IPv6])
+  USES_IPV6=yes
 ])
 
 AC_CHECK_FUNC([socket], [],
