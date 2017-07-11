@@ -248,6 +248,8 @@ void respond_to_probe(
 
     if (icmp_type == ICMP_TIME_EXCEEDED) {
         result = "ttl-expired";
+    } else if (icmp_type == ICMP_DEST_UNREACH) {
+        result = "no-route";
     } else {
         assert(icmp_type == ICMP_ECHOREPLY);
         result = "reply";
