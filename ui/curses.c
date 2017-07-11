@@ -404,6 +404,8 @@ static void mtr_curses_hosts(
     int at;
     struct mplslen *mpls, *mplss;
     ip_t *addr, *addrs;
+    int addrcmp_result;
+    int err;
     int y;
     char *name;
 
@@ -416,11 +418,14 @@ static void mtr_curses_hosts(
 
     for (at = net_min(ctl) + ctl->display_offset; at < max; at++) {
         printw("%2d. ", at + 1);
+        err = net_err(at);
         addr = net_addr(at);
         mpls = net_mpls(at);
 
-        if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af) !=
-            0) {
+        addrcmp_result = addrcmp(
+            (void *) addr, (void *) &ctl->unspec_addr, ctl->af);
+
+        if (err == 0 && addrcmp_result != 0) {
             name = dns_lookup(ctl, addr);
             if (!net_up(at))
                 attron(A_BOLD);
@@ -498,9 +503,10 @@ static void mtr_curses_hosts(
                 }
                 attroff(A_BOLD);
             }
-
         } else {
-            printw("???");
+            attron(A_BOLD);
+            printw("(%s)", host_error_to_string(err));
+            attroff(A_BOLD);
         }
 
         printw("\n");
@@ -618,7 +624,7 @@ static void mtr_curses_graph(
     int startstat,
     int cols)
 {
-    int max, at, y;
+    int max, at, y, err;
     ip_t *addr;
     char *name;
     int __unused_int ATTRIBUTE_UNUSED;
@@ -629,22 +635,31 @@ static void mtr_curses_graph(
         printw("%2d. ", at + 1);
 
         addr = net_addr(at);
+        err = net_err(at);
+
         if (!addr) {
-            printw("???\n");
+            printw("(%s)", host_error_to_string(err));
             continue;
         }
 
-        if (!net_up(at))
-            attron(A_BOLD);
-        if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+        if (err == 0
+            && addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+
+            if (!net_up(at)) {
+                attron(A_BOLD);
+            }
+
 #ifdef HAVE_IPINFO
             if (is_printii(ctl))
                 printw(fmt_ipinfo(ctl, addr));
 #endif
             name = dns_lookup(ctl, addr);
             printw("%s", name ? name : strlongip(ctl, addr));
-        } else
-            printw("???");
+        } else {
+            attron(A_BOLD);
+            printw("(%s)", host_error_to_string(err));
+        }
+
         attroff(A_BOLD);
 
         getyx(stdscr, y, __unused_int);

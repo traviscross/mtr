@@ -18,8 +18,10 @@
 
 #include "config.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 
@@ -249,4 +251,27 @@ void display_clear(
     if (ctl->DisplayMode == DisplayCurses)
         mtr_curses_clear(ctl);
 #endif
+}
+
+
+/*
+    Given an errno error code corresponding to a host entry, return a
+    user readable error string.
+*/
+char *host_error_to_string(
+    int err)
+{
+    if (err == ENETUNREACH) {
+        return "no route to host";
+    }
+
+    if (err == ENETDOWN) {
+        return "network down";
+    }
+
+    if (err == 0) {
+        return "waiting for reply";
+    }
+
+    return strerror(err);
 }

@@ -56,6 +56,8 @@ extern int net_last(
     int at);
 extern ip_t *net_addr(
     int at);
+extern int net_err(
+    int at);
 extern void *net_mpls(
     int at);
 extern void *net_mplss(

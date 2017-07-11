@@ -47,6 +47,7 @@ void (
     *probe_reply_func_t) (
     struct mtr_ctl * ctl,
     int sequence,
+    int err,
     struct mplslen * mpls,
     ip_t * addr,
     int round_trip_time);

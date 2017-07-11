@@ -81,3 +81,5 @@ extern void display_loop(
     struct mtr_ctl *ctl);
 extern void display_clear(
     struct mtr_ctl *ctl);
+extern char *host_error_to_string(
+    int err);

@@ -621,16 +621,6 @@ void handle_reply_errors(
 
     reply_name = reply->command_name;
 
-    if (!strcmp(reply_name, "no-route")) {
-        display_close(ctl);
-        error(EXIT_FAILURE, 0, "No route to host");
-    }
-
-    if (!strcmp(reply_name, "network-down")) {
-        display_close(ctl);
-        error(EXIT_FAILURE, 0, "Network down");
-    }
-
     if (!strcmp(reply_name, "probes-exhausted")) {
         display_close(ctl);
         error(EXIT_FAILURE, 0, "Probes exhausted");
@@ -677,6 +667,7 @@ void handle_command_reply(
     struct command_t reply;
     ip_t fromaddress;
     int seq_num;
+    int err;
     int round_trip_time;
     char *reply_name;
     struct mplslen mpls;
@@ -698,8 +689,16 @@ void handle_command_reply(
     seq_num = reply.token;
     reply_name = reply.command_name;
 
-    /*  If the reply type is unknown, ignore it for future compatibility  */
-    if (strcmp(reply_name, "reply") && strcmp(reply_name, "ttl-expired")) {
+    /*  Check for known reply types.  */
+    if (!strcmp(reply_name, "reply")
+            || !strcmp(reply_name, "ttl-expired")) {
+        err = 0;
+    } else if (!strcmp(reply_name, "no-route")) {
+        err = ENETUNREACH;
+    } else if (!strcmp(reply_name, "network-down")) {
+        err = ENETDOWN;
+    } else {
+        /*  If the reply type is unknown, ignore it  */
         return;
     }
 
@@ -710,7 +709,7 @@ void handle_command_reply(
     if (parse_reply_arguments
         (ctl, &reply, &fromaddress, &round_trip_time, &mpls)) {
 
-        reply_func(ctl, seq_num, &mpls, (void *) &fromaddress,
+        reply_func(ctl, seq_num, err, &mpls, (void *) &fromaddress,
                    round_trip_time);
     }
 }
