@@ -364,11 +364,12 @@ void json_close(
             }
         }
         if (at + 1 == max) {
-            printf("    }]\n");
+            printf("    }");
         } else {
             printf("    },\n");
         }
     }
+    printf("]\n");
     printf("  }\n");
     printf("}\n");
 }
