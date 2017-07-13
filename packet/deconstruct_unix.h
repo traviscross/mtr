@@ -43,4 +43,13 @@ void handle_received_ip6_packet(
     int packet_length,
     struct timeval *timestamp);
 
+void handle_error_queue_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    int icmp_result,
+    int proto,
+    char *packet,
+    int packet_length,
+    struct timeval *timestamp);
+
 #endif

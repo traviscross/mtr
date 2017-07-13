@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/errqueue.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,7 @@ static
 int send_packet(
     const struct net_state_t *net_state,
     const struct probe_param_t *param,
+    int sequence,
     const char *packet,
     int packet_size,
     const struct sockaddr_storage *sockaddr)
@@ -49,14 +51,48 @@ int send_packet(
         sockaddr_length = sizeof(struct sockaddr_in6);
 
         if (param->protocol == IPPROTO_ICMP) {
-            send_socket = net_state->platform.icmp6_send_socket;
+            if (net_state->platform.ip6_socket_raw) {
+                send_socket = net_state->platform.icmp6_send_socket;
+            } else {
+                send_socket = net_state->platform.ip6_txrx_icmp_socket;
+            }
         } else if (param->protocol == IPPROTO_UDP) {
-            send_socket = net_state->platform.udp6_send_socket;
+            if (net_state->platform.ip6_socket_raw) {
+                send_socket = net_state->platform.udp6_send_socket;
+            } else {
+                struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)sockaddr;
+
+                send_socket = net_state->platform.ip6_txrx_udp_socket;
+                if (param->dest_port) {
+                    addr_in6->sin6_port = htons(param->dest_port);
+                } else {
+                    addr_in6->sin6_port = sequence;
+                }
+            }
         }
     } else if (sockaddr->ss_family == AF_INET) {
         sockaddr_length = sizeof(struct sockaddr_in);
 
-        send_socket = net_state->platform.ip4_send_socket;
+        if (net_state->platform.ip4_socket_raw) {
+            send_socket = net_state->platform.ip4_send_socket;
+        } else {
+            if (param->protocol == IPPROTO_ICMP) {
+                if (param->is_probing_byte_order) {
+                    send_socket = net_state->platform.ip4_tmp_icmp_socket;;
+                } else {
+                    send_socket = net_state->platform.ip4_txrx_icmp_socket;
+                }
+            } else if (param->protocol == IPPROTO_UDP) {
+                struct sockaddr_in *addr_in = (struct sockaddr_in *)sockaddr;
+
+                send_socket = net_state->platform.ip4_txrx_udp_socket;
+                if (param->dest_port) {
+                    addr_in->sin_port = htons(param->dest_port);
+                } else {
+                    addr_in->sin_port = sequence;
+                }
+            }
+        }
     }
 
     if (send_socket == 0) {
@@ -95,8 +131,10 @@ void check_length_order(
     param.protocol = IPPROTO_ICMP;
     param.ttl = 255;
     param.remote_address = "127.0.0.1";
+    param.is_probing_byte_order = true;
 
-    if (resolve_probe_addresses(&param, &dest_sockaddr, &src_sockaddr)) {
+    if (resolve_probe_addresses(net_state, &param, &dest_sockaddr,
+                &src_sockaddr)) {
         fprintf(stderr, "Error decoding localhost address\n");
         exit(EXIT_FAILURE);
     }
@@ -113,7 +151,7 @@ void check_length_order(
     }
 
     bytes_sent =
-        send_packet(net_state, &param, packet, packet_size,
+        send_packet(net_state, &param, MIN_PORT, packet, packet_size,
                     &dest_sockaddr);
     if (bytes_sent > 0) {
         return;
@@ -131,7 +169,7 @@ void check_length_order(
     }
 
     bytes_sent =
-        send_packet(net_state, &param, packet, packet_size,
+        send_packet(net_state, &param, MIN_PORT, packet, packet_size,
                     &dest_sockaddr);
     if (bytes_sent < 0) {
         perror("Unable to send with swapped length");
@@ -181,7 +219,7 @@ void set_socket_nonblocking(
 
 /*  Open the raw sockets for sending/receiving IPv4 packets  */
 static
-int open_ip4_sockets(
+int open_ip4_sockets_raw(
     struct net_state_t *net_state)
 {
     int send_socket;
@@ -215,15 +253,60 @@ int open_ip4_sockets(
     }
 
     net_state->platform.ip4_present = true;
+    net_state->platform.ip4_socket_raw = true;
     net_state->platform.ip4_send_socket = send_socket;
     net_state->platform.ip4_recv_socket = recv_socket;
 
     return 0;
 }
 
+/*  Open DGRAM sockets for sending/receiving IPv4 packets  */
+static
+int open_ip4_sockets_dgram(
+    struct net_state_t *net_state)
+{
+    int udp_socket;
+    int icmp_socket, icmp_tmp_socket;
+    int val = 1;
+
+    icmp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+    if (icmp_socket == -1) {
+        return -1;
+    }
+    if (setsockopt(icmp_socket, SOL_IP, IP_RECVERR, &val, sizeof(val)) < 0) {
+        return -1;
+    }
+
+    udp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp_socket == -1) {
+        close(icmp_socket);
+        return -1;
+    }
+    if (setsockopt(udp_socket, SOL_IP, IP_RECVERR, &val, sizeof(val)) < 0) {
+        close(icmp_socket);
+        close(udp_socket);
+        return -1;
+    }
+
+    icmp_tmp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+    if (icmp_tmp_socket == -1) {
+        close(icmp_socket);
+        close(udp_socket);
+        return -1;
+    }
+
+    net_state->platform.ip4_present = true;
+    net_state->platform.ip4_socket_raw = false;
+    net_state->platform.ip4_txrx_icmp_socket = icmp_socket;
+    net_state->platform.ip4_tmp_icmp_socket = icmp_tmp_socket;
+    net_state->platform.ip4_txrx_udp_socket = udp_socket;
+
+    return 0;
+}
+
 /*  Open the raw sockets for sending/receiving IPv6 packets  */
 static
-int open_ip6_sockets(
+int open_ip6_sockets_raw(
     struct net_state_t *net_state)
 {
     int send_socket_icmp;
@@ -251,9 +334,46 @@ int open_ip6_sockets(
     }
 
     net_state->platform.ip6_present = true;
+    net_state->platform.ip6_socket_raw = true;
     net_state->platform.icmp6_send_socket = send_socket_icmp;
     net_state->platform.udp6_send_socket = send_socket_udp;
     net_state->platform.ip6_recv_socket = recv_socket;
+
+    return 0;
+}
+
+/*  Open DGRAM sockets for sending/receiving IPv6 packets  */
+static
+int open_ip6_sockets_dgram(
+    struct net_state_t *net_state)
+{
+    int icmp_socket;
+    int udp_socket;
+    int val = 1;
+
+    icmp_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6);
+    if (icmp_socket == -1) {
+        return -1;
+    }
+    if (setsockopt(icmp_socket, SOL_IPV6, IPV6_RECVERR, &val, sizeof(val)) < 0) {
+        return -1;
+    }
+
+    udp_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp_socket == -1) {
+        close(icmp_socket);
+        return -1;
+    }
+    if (setsockopt(udp_socket, SOL_IPV6, IPV6_RECVERR, &val, sizeof(val)) < 0) {
+        close(icmp_socket);
+        close(udp_socket);
+        return -1;
+    }
+
+    net_state->platform.ip6_present = true;
+    net_state->platform.ip6_socket_raw = false;
+    net_state->platform.ip6_txrx_icmp_socket = icmp_socket;
+    net_state->platform.ip6_txrx_udp_socket = udp_socket;
 
     return 0;
 }
@@ -273,11 +393,17 @@ void init_net_state_privileged(
 
     net_state->platform.next_sequence = MIN_PORT;
 
-    if (open_ip4_sockets(net_state)) {
-        ip4_err = errno;
+    if (open_ip4_sockets_raw(net_state)) {
+        /* fall back to using unprivileged sockets */
+        if (open_ip4_sockets_dgram(net_state)) {
+            ip4_err = errno;
+        }
     }
-    if (open_ip6_sockets(net_state)) {
-        ip6_err = errno;
+    if (open_ip6_sockets_raw(net_state)) {
+        /* fall back to using unprivileged sockets */
+        if (open_ip6_sockets_dgram(net_state)) {
+            ip6_err = errno;
+        }
     }
 
     /*
@@ -304,8 +430,18 @@ void init_net_state_privileged(
 void init_net_state(
     struct net_state_t *net_state)
 {
-    set_socket_nonblocking(net_state->platform.ip4_recv_socket);
-    set_socket_nonblocking(net_state->platform.ip6_recv_socket);
+    if (net_state->platform.ip4_socket_raw) {
+        set_socket_nonblocking(net_state->platform.ip4_recv_socket);
+    } else {
+        set_socket_nonblocking(net_state->platform.ip4_txrx_icmp_socket);
+        set_socket_nonblocking(net_state->platform.ip4_txrx_udp_socket);
+    }
+    if (net_state->platform.ip4_socket_raw) {
+        set_socket_nonblocking(net_state->platform.ip6_recv_socket);
+    } else {
+        set_socket_nonblocking(net_state->platform.ip6_txrx_icmp_socket);
+        set_socket_nonblocking(net_state->platform.ip6_txrx_udp_socket);
+    }
 
     if (net_state->platform.ip4_present) {
         check_length_order(net_state);
@@ -396,7 +532,8 @@ void send_probe(
         return;
     }
 
-    if (resolve_probe_addresses(param, &probe->remote_addr, &src_sockaddr)) {
+    if (resolve_probe_addresses(net_state, param, &probe->remote_addr,
+                &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
         free_probe(net_state, probe);
         return;
@@ -431,7 +568,7 @@ void send_probe(
     }
 
     if (packet_size > 0) {
-        if (send_packet(net_state, param,
+        if (send_packet(net_state, param, probe->sequence,
                         packet, packet_size, &probe->remote_addr) == -1) {
 
             report_packet_error(param->command_token);
@@ -508,7 +645,7 @@ void receive_probe(
     handle any responses to probes we have preivously sent.
 */
 static
-void receive_replies_from_icmp_socket(
+void receive_replies_from_recv_socket(
     struct net_state_t *net_state,
     int socket,
     received_packet_func_t handle_received_packet)
@@ -516,15 +653,30 @@ void receive_replies_from_icmp_socket(
     char packet[PACKET_BUFFER_SIZE];
     int packet_length;
     struct sockaddr_storage remote_addr;
-    socklen_t sockaddr_length;
     struct timeval timestamp;
+    int flag = 0;
+    struct cmsghdr *cm;
+    struct sock_extended_err *ee = NULL;
+    bool icmp_connrefused_received = false;
+    bool icmp_hostunreach_received = false;
 
     /*  Read until no more packets are available  */
     while (true) {
-        sockaddr_length = sizeof(struct sockaddr_storage);
-        packet_length = recvfrom(socket, packet, PACKET_BUFFER_SIZE, 0,
-                                 (struct sockaddr *) &remote_addr,
-                                 &sockaddr_length);
+        struct iovec iov;
+        struct msghdr msg;
+        char control[1024];
+
+        memset(&msg, 0, sizeof(msg));
+        memset(&iov, 0, sizeof(iov));
+        iov.iov_base = packet;
+        iov.iov_len = sizeof(packet);
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
+        msg.msg_name = (struct sockaddr*) &remote_addr;
+        msg.msg_namelen = sizeof(remote_addr);
+        msg.msg_control = control;
+        msg.msg_controllen = sizeof(control);
+        packet_length = recvmsg(socket, &msg, flag);
 
         /*
            Get the time immediately after reading the packet to
@@ -549,6 +701,29 @@ void receive_replies_from_icmp_socket(
                receive.
              */
             if (errno == EINTR) {
+                /* clear error */
+                int so_err;
+                socklen_t so_err_size = sizeof(so_err);
+                int err;
+
+                do {
+                  err = getsockopt(socket, SOL_SOCKET, SO_ERROR, &so_err, &so_err_size);
+                } while (err < 0 && errno == EINTR);
+                continue;
+            }
+
+            /* handle error received in error queue */
+            if (errno == EHOSTUNREACH) {
+                /* potential error caused by ttl, read inner icmp hdr from err queue */
+                icmp_hostunreach_received = true;
+                flag |= MSG_ERRQUEUE;
+                continue;
+            }
+
+            if (errno == ECONNREFUSED) {
+                /* udp packet reached dst, read inner udp hdr from err queue */
+                icmp_connrefused_received = true;
+                flag |= MSG_ERRQUEUE;
                 continue;
             }
 
@@ -556,8 +731,46 @@ void receive_replies_from_icmp_socket(
             exit(EXIT_FAILURE);
         }
 
-        handle_received_packet(net_state, &remote_addr, packet,
-                               packet_length, &timestamp);
+        /* get src ip for packets read from err queue */
+        if (flag & MSG_ERRQUEUE) {
+            for (cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
+                if (cm->cmsg_level == SOL_IP) {
+                    if (cm->cmsg_type == IP_RECVERR) {
+                        ee = (struct sock_extended_err *) CMSG_DATA(cm);
+                    }
+                }
+                else if (cm->cmsg_level == SOL_IPV6) {
+                    if (cm->cmsg_type == IPV6_RECVERR) {
+                        ee = (struct sock_extended_err *) CMSG_DATA(cm);
+                    }
+                }
+            }
+            if (ee) {
+                memcpy(&remote_addr, SO_EE_OFFENDER(ee), sizeof(remote_addr));
+            }
+        }
+
+        if (icmp_connrefused_received) {
+            /* using ICMP type ICMP_ECHOREPLY is not a bug, it is an
+               indication of successfully reaching dst host.
+             */
+            handle_error_queue_packet(net_state, &remote_addr, ICMP_ECHOREPLY, IPPROTO_UDP,
+                    packet, packet_length, &timestamp);
+        } else if (icmp_hostunreach_received) {
+            /* handle packet based on send socket protocol */
+            int proto, length = sizeof(int);
+
+            if (getsockopt(socket, SOL_SOCKET, SO_PROTOCOL, &proto, &length) < 0) {
+                perror("getsockopt SO_PROTOCOL error");
+                exit(EXIT_FAILURE);
+            }
+            handle_error_queue_packet(net_state, &remote_addr, ICMP_TIME_EXCEEDED, proto,
+                    packet, packet_length, &timestamp);
+        } else {
+            /* ICMP packets received from raw socket */
+            handle_received_packet(net_state, &remote_addr, packet,
+                                   packet_length, &timestamp);
+        }
     }
 }
 
@@ -631,17 +844,39 @@ void receive_replies(
     struct probe_t *probe_safe_iter;
 
     if (net_state->platform.ip4_present) {
-        receive_replies_from_icmp_socket(net_state,
-                                         net_state->platform.
-                                         ip4_recv_socket,
-                                         handle_received_ip4_packet);
+        if (net_state->platform.ip4_socket_raw) {
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip4_recv_socket,
+                                             handle_received_ip4_packet);
+        } else {
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip4_txrx_icmp_socket,
+                                             handle_received_ip4_packet);
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip4_txrx_udp_socket,
+                                             handle_received_ip4_packet);
+        }
     }
 
     if (net_state->platform.ip6_present) {
-        receive_replies_from_icmp_socket(net_state,
-                                         net_state->platform.
-                                         ip6_recv_socket,
-                                         handle_received_ip6_packet);
+        if (net_state->platform.ip6_socket_raw) {
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip6_recv_socket,
+                                             handle_received_ip6_packet);
+        } else {
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip6_txrx_icmp_socket,
+                                             handle_received_ip6_packet);
+            receive_replies_from_recv_socket(net_state,
+                                             net_state->platform.
+                                             ip6_txrx_udp_socket,
+                                             handle_received_ip6_packet);
+        }
     }
 
     LIST_FOREACH_SAFE(probe, &net_state->outstanding_probes,

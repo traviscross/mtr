@@ -329,7 +329,8 @@ void send_probe(
     char payload[PACKET_BUFFER_SIZE];
     int payload_size;
 
-    if (resolve_probe_addresses(param, &dest_sockaddr, &src_sockaddr)) {
+    if (resolve_probe_addresses(net_state, param, &dest_sockaddr,
+                &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
         return;
     }

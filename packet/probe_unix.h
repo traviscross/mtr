@@ -43,11 +43,26 @@ struct net_state_platform_t {
     /*  true if we were successful at opening IPv6 sockets  */
     bool ip6_present;
 
+    /* true if ipv4 socket is raw socket */
+    bool ip4_socket_raw;
+
+    /* true if ipv6 socket is raw socket */
+    bool ip6_socket_raw;
+
     /*  Socket used to send raw IPv4 packets  */
     int ip4_send_socket;
 
     /*  Socket used to receive IPv4 ICMP replies  */
     int ip4_recv_socket;
+
+    /*  Socket used to probe byte order */
+    int ip4_tmp_icmp_socket;
+
+    /*  Socket used to tx & rx non-raw IPv4 icmp packets */
+    int ip4_txrx_icmp_socket;
+
+    /*  Socket used to send IPv4 udp packets and receive icmp err packets */
+    int ip4_txrx_udp_socket;
 
     /*  Send socket for ICMPv6 packets  */
     int icmp6_send_socket;
@@ -57,6 +72,12 @@ struct net_state_platform_t {
 
     /*  Receive socket for IPv6 packets  */
     int ip6_recv_socket;
+
+    /*  Socket used to tx & rx non-raw IPv6 icmp packets */
+    int ip6_txrx_icmp_socket;
+
+    /*  Socket used to send IPv6 udp packets and receive icmp err packets */
+    int ip6_txrx_udp_socket;
 
     /*
        true if we should encode the IP header length in host order.

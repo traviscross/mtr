@@ -138,8 +138,13 @@ void construct_icmp4_header(
     struct ICMPHeader *icmp;
     int icmp_size;
 
-    icmp = (struct ICMPHeader *) &packet_buffer[sizeof(struct IPHeader)];
-    icmp_size = packet_size - sizeof(struct IPHeader);
+    if (net_state->platform.ip4_socket_raw) {
+        icmp = (struct ICMPHeader *) &packet_buffer[sizeof(struct IPHeader)];
+        icmp_size = packet_size - sizeof(struct IPHeader);
+    } else {
+        icmp = (struct ICMPHeader *) &packet_buffer[0];
+        icmp_size = packet_size;
+    }
 
     memset(icmp, 0, sizeof(struct ICMPHeader));
 
@@ -224,8 +229,13 @@ void construct_udp4_header(
     struct UDPHeader *udp;
     int udp_size;
 
-    udp = (struct UDPHeader *) &packet_buffer[sizeof(struct IPHeader)];
-    udp_size = packet_size - sizeof(struct IPHeader);
+    if (net_state->platform.ip4_socket_raw) {
+        udp = (struct UDPHeader *) &packet_buffer[sizeof(struct IPHeader)];
+        udp_size = packet_size - sizeof(struct IPHeader);
+    } else {
+        udp = (struct UDPHeader *) &packet_buffer[0];
+        udp_size = packet_size;
+    }
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
@@ -254,14 +264,16 @@ int construct_udp6_packet(
     set_udp_ports(udp, sequence, param);
     udp->length = htons(udp_size);
 
-    /*
-       Instruct the kernel to put the pseudoheader checksum into the
-       UDP header.
-     */
-    int chksum_offset = (char *) &udp->checksum - (char *) udp;
-    if (setsockopt(udp_socket, IPPROTO_IPV6,
-                   IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
-        return -1;
+    if (net_state->platform.ip6_socket_raw) {
+        /*
+           Instruct the kernel to put the pseudoheader checksum into the
+           UDP header, this is only needed when using RAW socket.
+         */
+        int chksum_offset = (char *) &udp->checksum - (char *) udp;
+        if (setsockopt(udp_socket, IPPROTO_IPV6,
+                       IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
+            return -1;
+        }
     }
 
     return 0;
@@ -425,7 +437,7 @@ int compute_packet_size(
     const struct net_state_t *net_state,
     const struct probe_param_t *param)
 {
-    int packet_size;
+    int packet_size = 0;
 
     if (param->protocol == IPPROTO_TCP) {
         return 0;
@@ -438,9 +450,13 @@ int compute_packet_size(
 
     /*  Start by determining the full size, including omitted headers  */
     if (param->ip_version == 6) {
-        packet_size = sizeof(struct IP6Header);
+        if (net_state->platform.ip6_socket_raw) {
+            packet_size += sizeof(struct IP6Header);
+        }
     } else if (param->ip_version == 4) {
-        packet_size = sizeof(struct IPHeader);
+        if (net_state->platform.ip4_socket_raw) {
+            packet_size += sizeof(struct IPHeader);
+        }
     } else {
         errno = EINVAL;
         return -1;
@@ -470,7 +486,7 @@ int compute_packet_size(
        Since we don't explicitly construct the IPv6 header, we
        need to account for it in our transmitted size.
      */
-    if (param->ip_version == 6) {
+    if (param->ip_version == 6 && net_state->platform.ip6_socket_raw) {
         packet_size -= sizeof(struct IP6Header);
     }
 
@@ -491,6 +507,10 @@ int construct_ip4_packet(
 {
     int send_socket = net_state->platform.ip4_send_socket;
     bool is_stream_protocol = false;
+    int tos, ttl, socket;
+    bool bind_send_socket = false;
+    struct sockaddr_storage current_sockaddr;
+    int current_sockaddr_len;
 
     if (param->protocol == IPPROTO_TCP) {
         is_stream_protocol = true;
@@ -499,9 +519,10 @@ int construct_ip4_packet(
         is_stream_protocol = true;
 #endif
     } else {
-        construct_ip4_header(net_state, packet_buffer, packet_size,
-                             src_sockaddr, dest_sockaddr, param);
-
+        if (net_state->platform.ip4_socket_raw) {
+            construct_ip4_header(net_state, packet_buffer, packet_size,
+                                 src_sockaddr, dest_sockaddr, param);
+        }
         if (param->protocol == IPPROTO_ICMP) {
             construct_icmp4_header(net_state, sequence, packet_buffer,
                                    packet_size, param);
@@ -546,6 +567,55 @@ int construct_ip4_packet(
     }
 #endif
 
+    /*
+       Bind src port when not using raw socket to pass in ICMP id, kernel
+       get ICMP id from src_port when using DGRAM socket.
+     */
+    if (!net_state->platform.ip4_socket_raw &&
+            param->protocol == IPPROTO_ICMP &&
+            !param->is_probing_byte_order) {
+        current_sockaddr_len = sizeof(struct sockaddr_in);
+        bind_send_socket = true;
+        socket = net_state->platform.ip4_txrx_icmp_socket;
+        if (getsockname(socket, (struct sockaddr *) &current_sockaddr,
+                        &current_sockaddr_len)) {
+            return -1;
+        }
+        struct sockaddr_in *sin_cur =
+            (struct sockaddr_in *) &current_sockaddr;
+
+        /* avoid double bind */
+        if (sin_cur->sin_port) {
+            bind_send_socket = false;
+        }
+    }
+
+    /*  Bind to our local address  */
+    if (bind_send_socket && bind(socket, (struct sockaddr *)src_sockaddr,
+                sizeof(struct sockaddr_in))) {
+        return -1;
+    }
+
+    /* set TOS and TTL for non-raw socket */
+    if (!net_state->platform.ip4_socket_raw && !param->is_probing_byte_order) {
+        if (param->protocol == IPPROTO_ICMP) {
+            socket = net_state->platform.ip4_txrx_icmp_socket;
+        } else if (param->protocol == IPPROTO_UDP) {
+            socket = net_state->platform.ip4_txrx_udp_socket;
+        } else {
+            return 0;
+        }
+        tos = param->type_of_service;
+        if (setsockopt(socket, SOL_IP, IP_TOS, &tos, sizeof(int))) {
+            return -1;
+        }
+        ttl = param->ttl;
+        if (setsockopt(socket, SOL_IP, IP_TTL,
+                       &ttl, sizeof(int)) == -1) {
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -574,14 +644,22 @@ int construct_ip6_packet(
         is_stream_protocol = true;
 #endif
     } else if (param->protocol == IPPROTO_ICMP) {
-        send_socket = net_state->platform.icmp6_send_socket;
+        if (net_state->platform.ip6_socket_raw) {
+            send_socket = net_state->platform.icmp6_send_socket;
+        } else {
+            send_socket = net_state->platform.ip6_txrx_icmp_socket;
+        }
 
         if (construct_icmp6_packet
             (net_state, sequence, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else if (param->protocol == IPPROTO_UDP) {
-        send_socket = net_state->platform.udp6_send_socket;
+        if (net_state->platform.ip6_socket_raw) {
+            send_socket = net_state->platform.udp6_send_socket;
+        } else {
+            send_socket = net_state->platform.ip6_txrx_udp_socket;
+        }
 
         if (construct_udp6_packet
             (net_state, sequence, packet_buffer, packet_size, param)) {
@@ -615,10 +693,18 @@ int construct_ip6_packet(
     current_sockaddr_len = sizeof(struct sockaddr_in6);
     if (getsockname(send_socket, (struct sockaddr *) &current_sockaddr,
                     &current_sockaddr_len) == 0) {
+        struct sockaddr_in6 *sin6_cur = (struct sockaddr_in6 *) &current_sockaddr;
 
-        if (memcmp(&current_sockaddr,
-                   src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
-            bind_send_socket = false;
+        if (net_state->platform.ip6_socket_raw) {
+            if (memcmp(&current_sockaddr,
+                       src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
+                bind_send_socket = false;
+            }
+        } else {
+            /* avoid double bind for DGRAM socket */
+            if (sin6_cur->sin6_port) {
+                bind_send_socket = false;
+            }
         }
     }
 

@@ -321,6 +321,7 @@ void send_probe_command(
     param.ttl = 255;
     param.packet_size = 64;
     param.timeout = 10;
+    param.is_probing_byte_order = false;
 
     for (i = 0; i < command->argument_count; i++) {
         name = command->argument_name[i];
