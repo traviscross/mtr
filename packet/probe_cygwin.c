@@ -102,14 +102,6 @@ void report_win_error(
     /*  It could be that we got no reply because of timeout  */
     if (err == IP_REQ_TIMED_OUT || err == IP_SOURCE_QUENCH) {
         printf("%d no-reply\n", command_token);
-    } else if (err == IP_DEST_HOST_UNREACHABLE
-               || err == IP_DEST_PORT_UNREACHABLE
-               || err == IP_DEST_PROT_UNREACHABLE
-               || err == IP_DEST_NET_UNREACHABLE
-               || err == IP_DEST_UNREACHABLE
-               || err == IP_DEST_NO_ROUTE
-               || err == IP_BAD_ROUTE || err == IP_BAD_DESTINATION) {
-        printf("%d no-route\n", command_token);
     } else if (err == ERROR_INVALID_NETNAME) {
         printf("%d address-not-available\n", command_token);
     } else if (err == ERROR_INVALID_PARAMETER) {
@@ -186,7 +178,18 @@ void WINAPI on_icmp_reply(
         icmp_type = ICMP_ECHOREPLY;
     } else if (reply_status == IP_TTL_EXPIRED_TRANSIT
                || reply_status == IP_TTL_EXPIRED_REASSEM) {
+
         icmp_type = ICMP_TIME_EXCEEDED;
+    } else if (reply_status == IP_DEST_HOST_UNREACHABLE
+               || reply_status == IP_DEST_PORT_UNREACHABLE
+               || reply_status == IP_DEST_PROT_UNREACHABLE
+               || reply_status == IP_DEST_NET_UNREACHABLE
+               || reply_status == IP_DEST_UNREACHABLE
+               || reply_status == IP_DEST_NO_ROUTE
+               || reply_status == IP_BAD_ROUTE
+               || reply_status == IP_BAD_DESTINATION) {
+
+        icmp_type = ICMP_DEST_UNREACH;
     }
 
     if (icmp_type != -1) {

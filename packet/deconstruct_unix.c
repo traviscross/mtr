@@ -394,6 +394,15 @@ void handle_received_icmp4_packet(
             handle_inner_ip4_packet(net_state, remote_addr,
                                     ICMP_ECHOREPLY, inner_ip, inner_size,
                                     timestamp, mpls_count, mpls);
+        } else {
+            /*
+                ICMP_DEST_UNREACH subtypes other than port unreachable
+                indicate an exceptional condition, and will be reported
+                as a "no route to host" probe response.
+            */
+            handle_inner_ip4_packet(net_state, remote_addr,
+                                    ICMP_DEST_UNREACH, inner_ip, inner_size,
+                                    timestamp, mpls_count, mpls);
         }
     }
 }
@@ -442,6 +451,10 @@ void handle_received_icmp6_packet(
         if (icmp->code == ICMP6_PORT_UNREACH) {
             handle_inner_ip6_packet(net_state, remote_addr,
                                     ICMP_ECHOREPLY, inner_ip, inner_size,
+                                    timestamp, mpls_count, mpls);
+        } else {
+            handle_inner_ip6_packet(net_state, remote_addr,
+                                    ICMP_DEST_UNREACH, inner_ip, inner_size,
                                     timestamp, mpls_count, mpls);
         }
     }

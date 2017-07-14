@@ -51,6 +51,7 @@ static void sockaddrtop(
 struct nethost {
     ip_t addr;
     ip_t addrs[MAXPATH];        /* for multi paths byMin */
+    int err;
     int xmit;
     int returned;
     int sent;
@@ -185,11 +186,37 @@ static void net_send_query(
 }
 
 
-/* We got a return on something we sent out.  Record the address and
-   time.  */
+/*
+    Mark a sequence entry as completed and return the host index
+    being probed.
+
+    Returns -1 in the case of an invalid sequence number.
+*/
+static int mark_sequence_complete(
+    int seq)
+{
+    if ((seq < 0) || (seq >= MaxSequence)) {
+        return -1;
+    }
+
+    if (!sequence[seq].transit) {
+        return -1;
+    }
+    sequence[seq].transit = 0;
+
+    return sequence[seq].index;
+}
+
+
+/*
+    A probe has successfully completed.
+
+    Record the round trip time and address of the responding host.
+*/
 static void net_process_ping(
     struct mtr_ctl *ctl,
     int seq,
+    int err,
     struct mplslen *mpls,
     ip_t * addr,
     int totusec)
@@ -206,16 +233,12 @@ static void net_process_ping(
 
     addrcpy((void *) &addrcopy, (char *) addr, ctl->af);
 
-    if ((seq < 0) || (seq >= MaxSequence)) {
+    index = mark_sequence_complete(seq);
+    if (index < 0) {
         return;
     }
 
-    if (!sequence[seq].transit) {
-        return;
-    }
-    sequence[seq].transit = 0;
-
-    index = sequence[seq].index;
+    host[index].err = err;
 
     if (addrcmp((void *) &(host[index].addr),
                 (void *) &ctl->unspec_addr, ctl->af) == 0) {
@@ -323,6 +346,15 @@ ip_t *net_addrs(
     int i)
 {
     return (ip_t *) & (host[at].addrs[i]);
+}
+
+/*
+    Get the error code corresponding to a host entry.
+*/
+int net_err(
+    int at)
+{
+    return host[at].err;
 }
 
 void *net_mpls(
@@ -443,6 +475,13 @@ int net_max(
     for (at = 0; at < ctl->maxTTL - 1; at++) {
         if (addrcmp((void *) &(host[at].addr),
                     (void *) remoteaddress, ctl->af) == 0) {
+            return at + 1;
+        } else if (host[at].err != 0) {
+            /*
+                If a hop has returned an ICMP error
+                (such as "no route to host") then we'll consider that the
+                final hop.
+            */
             return at + 1;
         } else if (addrcmp((void *) &(host[at].addr),
                            (void *) &ctl->unspec_addr, ctl->af) != 0) {
