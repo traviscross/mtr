@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include <errno.h>
+#include <ifaddrs.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -621,6 +622,61 @@ static void net_validate_interface_address(
 
 
 /*
+    Given the name of a network interface and a preferred address
+    family (IPv4 or IPv6), find the source IP address for sending
+    probes from that interface.
+*/
+static void net_find_interface_address_from_name(
+    struct sockaddr_storage *addr,
+    int address_family,
+    const char *interface_name)
+{
+    struct ifaddrs *ifaddrs;
+    struct ifaddrs *interface;
+    int found_interface_name = 0;
+
+    if (getifaddrs(&ifaddrs) != 0) {
+        error(EXIT_FAILURE, errno, "getifaddrs failure");
+    }
+
+    interface = ifaddrs;
+    while (interface != NULL) {
+        if (!strcmp(interface->ifa_name, interface_name)) {
+            found_interface_name = 1;
+
+            if (interface->ifa_addr->sa_family == address_family) {
+                if (address_family == AF_INET) {
+                    memcpy(addr,
+                        interface->ifa_addr, sizeof(struct sockaddr_in));
+                    freeifaddrs(ifaddrs);
+
+                    return;
+                } else if (address_family == AF_INET6) {
+                    memcpy(addr,
+                        interface->ifa_addr, sizeof(struct sockaddr_in6));
+                    freeifaddrs(ifaddrs);
+
+                    return;
+                }
+            }
+        }
+
+        interface = interface->ifa_next;
+    }
+
+    if (!found_interface_name) {
+        error(EXIT_FAILURE, 0, "no such interface");
+    } else if (address_family == AF_INET) {
+        error(EXIT_FAILURE, 0, "interface missing IPv4 address");
+    } else if (address_family == AF_INET6) {
+        error(EXIT_FAILURE, 0, "interface missing IPv6 address");
+    } else {
+        error(EXIT_FAILURE, 0, "interface missing address");
+    }
+}
+
+
+/*
   Find the local address we will use to sent to the remote
   host by connecting a UDP socket and checking the address
   the socket is bound to.
@@ -711,6 +767,11 @@ int net_open(
 
     if (ctl->InterfaceAddress) {
         net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
+    } else if (ctl->InterfaceName) {
+        net_find_interface_address_from_name(
+            &sourcesockaddr_struct, ctl->af, ctl->InterfaceName);
+
+        sockaddrtop(sourcesockaddr, localaddr, sizeof(localaddr));
     } else {
         net_find_local_address();
     }

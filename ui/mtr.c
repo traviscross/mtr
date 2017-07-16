@@ -112,6 +112,8 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
           out);
     fputs(" -T, --tcp                  use TCP instead of ICMP echo\n",
           out);
+    fputs(" -I, --interface NAME       use named network interface\n",
+         out);
     fputs
         (" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n",
          out);
@@ -365,6 +367,7 @@ static void parse_arg(
         {"bitpattern", 1, NULL, 'B'},   /* overload B>255, ->rand(0,255) */
         {"tos", 1, NULL, 'Q'},  /* typeof service (0,255) */
         {"mpls", 0, NULL, 'e'},
+        {"interface", 1, NULL, 'I'},
         {"address", 1, NULL, 'a'},
         {"first-ttl", 1, NULL, 'f'},    /* -f & -m are borrowed from traceroute */
         {"max-ttl", 1, NULL, 'm'},
@@ -463,6 +466,9 @@ static void parse_arg(
         case 's':
             ctl->cpacketsize =
                 strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+            break;
+        case 'I':
+            ctl->InterfaceName = optarg;
             break;
         case 'a':
             ctl->InterfaceAddress = optarg;
@@ -683,19 +689,79 @@ static void init_rand(
     srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
+
+/*
+    For historical reasons, we need a hostent structure to represent
+    our remote target for probing.  The obsolete way of doing this
+    would be to use gethostbyname().  We'll use getaddrinfo() instead
+    to generate the hostent.
+*/
+static int get_hostent_from_name(
+    struct mtr_ctl *ctl,
+    struct hostent *host,
+    const char *name,
+    char **alptr)
+{
+    int gai_error;
+    struct addrinfo hints, *res;
+    struct sockaddr_in *sa4;
+#ifdef ENABLE_IPV6
+    struct sockaddr_in6 *sa6;
+#endif
+
+    /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = ctl->af;
+    hints.ai_socktype = SOCK_DGRAM;
+    gai_error = getaddrinfo(name, NULL, &hints, &res);
+    if (gai_error) {
+        if (gai_error == EAI_SYSTEM)
+            error(0, 0, "Failed to resolve host: %s", name);
+        else
+            error(0, 0, "Failed to resolve host: %s: %s", name,
+                  gai_strerror(gai_error));
+
+        return -1;
+    }
+
+    /* Convert the first addrinfo into a hostent. */
+    memset(host, 0, sizeof(struct hostent));
+    host->h_name = res->ai_canonname;
+    host->h_aliases = NULL;
+    host->h_addrtype = res->ai_family;
+    ctl->af = res->ai_family;
+    host->h_length = res->ai_addrlen;
+    host->h_addr_list = alptr;
+    switch (ctl->af) {
+    case AF_INET:
+        sa4 = (struct sockaddr_in *) res->ai_addr;
+        alptr[0] = (void *) &(sa4->sin_addr);
+        break;
+#ifdef ENABLE_IPV6
+    case AF_INET6:
+        sa6 = (struct sockaddr_in6 *) res->ai_addr;
+        alptr[0] = (void *) &(sa6->sin6_addr);
+        break;
+#endif
+    default:
+        error(0, 0, "unknown address type");
+
+        errno = EINVAL;
+        return -1;
+    }
+    alptr[1] = NULL;
+
+    return 0;
+}
+
+
 int main(
     int argc,
     char **argv)
 {
     struct hostent *host = NULL;
-    struct addrinfo hints, *res;
-    int gai_error;
     struct hostent trhost;
     char *alptr[2];
-    struct sockaddr_in *sa4;
-#ifdef ENABLE_IPV6
-    struct sockaddr_in6 *sa6;
-#endif
     names_t *names_head = NULL;
     names_t *names_walk;
 
@@ -764,47 +830,8 @@ int main(
                      sizeof(ctl.LocalHostname));
         }
 
-        /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = ctl.af;
-        hints.ai_socktype = SOCK_DGRAM;
-        gai_error = getaddrinfo(ctl.Hostname, NULL, &hints, &res);
-        if (gai_error) {
-            if (gai_error == EAI_SYSTEM)
-                error(0, 0, "Failed to resolve host: %s", ctl.Hostname);
-            else
-                error(0, 0, "Failed to resolve host: %s: %s", ctl.Hostname,
-                      gai_strerror(gai_error));
-
-            if (ctl.Interactive)
-                exit(EXIT_FAILURE);
-            else {
-                names_walk = names_walk->next;
-                continue;
-            }
-        }
-        /* Convert the first addrinfo into a hostent. */
         host = &trhost;
-        memset(host, 0, sizeof trhost);
-        host->h_name = res->ai_canonname;
-        host->h_aliases = NULL;
-        host->h_addrtype = res->ai_family;
-        ctl.af = res->ai_family;
-        host->h_length = res->ai_addrlen;
-        host->h_addr_list = alptr;
-        switch (ctl.af) {
-        case AF_INET:
-            sa4 = (struct sockaddr_in *) res->ai_addr;
-            alptr[0] = (void *) &(sa4->sin_addr);
-            break;
-#ifdef ENABLE_IPV6
-        case AF_INET6:
-            sa6 = (struct sockaddr_in6 *) res->ai_addr;
-            alptr[0] = (void *) &(sa6->sin6_addr);
-            break;
-#endif
-        default:
-            error(0, 0, "unknown address type");
+        if (get_hostent_from_name(&ctl, host, ctl.Hostname, alptr) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
@@ -812,7 +839,6 @@ int main(
                 continue;
             }
         }
-        alptr[1] = NULL;
 
         if (net_open(&ctl, host) != 0) {
             error(0, 0, "Unable to start net module");
