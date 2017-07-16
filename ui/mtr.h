@@ -83,6 +83,7 @@ struct mtr_ctl {
     float WaitTime;
     float GraceTime;
     char *Hostname;
+    char *InterfaceName;
     char *InterfaceAddress;
     char LocalHostname[128];
     int ipinfo_no;

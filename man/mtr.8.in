@@ -77,6 +77,9 @@ mtr \- a network diagnostic tool
 .B \-\-mpls\c
 ]
 [\c
+.BI \-I \ NAME\c
+]
+[\c
 .BI \-a \ ADDRESS\c
 ]
 [\c
@@ -376,6 +379,12 @@ Use this option to tell
 .B mtr 
 to display information from ICMP extensions for MPLS (RFC 4950)
 that are encoded in the response packets.
+.TP
+.B \-I \fINAME\fR, \fB\-\-interface \fINAME
+Use the network interface with a specific name for sending network probes.
+This can be useful when you have multiple network interfaces with routes
+to your destination, for example both wired Ethernet and WiFi, and wish
+to test a particular interface.
 .TP
 .B \-a \fIADDRESS\fR, \fB\-\-address \fIADDRESS
 Use this option to bind the outgoing socket to
