@@ -294,8 +294,12 @@ static void Toolbar_fill(
 
     /* allow root only to set zero delay */
     Adjustment = (GtkAdjustment *) gtk_adjustment_new(ctl->WaitTime,
+#ifndef USING_CYGWIN
                                                       getuid() ==
                                                       0 ? 0.01 : 1.00,
+#else
+                                                      0.01,
+#endif
                                                       999.99, 1.0, 10.0,
                                                       0.0);
     Button = gtk_spin_button_new(Adjustment, 0.5, 2);
