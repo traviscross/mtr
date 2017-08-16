@@ -31,6 +31,9 @@ before running ./bootstrap.sh again.])
 PKG_PROG_PKG_CONFIG
 
 AM_CONDITIONAL([CYGWIN], [test "$host_os" = cygwin])
+AM_COND_IF([CYGWIN],
+           [AC_DEFINE([USING_CYGWIN], [1], [Building Under Cygwin.])],
+           [])
 
 # Check bytes in types.
 AC_CHECK_SIZEOF([unsigned char], [1])

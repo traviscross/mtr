@@ -235,8 +235,10 @@ int mtr_curses_keyaction(
 
         if (f <= 0.0)
             return ActionNone;
+#ifndef USING_CYGWIN
         if (getuid() != 0 && f < 1.0)
             return ActionNone;
+#endif
         ctl->WaitTime = f;
 
         return ActionNone;
