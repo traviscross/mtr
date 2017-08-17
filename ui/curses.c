@@ -235,7 +235,7 @@ int mtr_curses_keyaction(
 
         if (f <= 0.0)
             return ActionNone;
-        if (getuid() != 0 && f < 1.0)
+        if (!running_as_root() && (f < 1.0))
             return ActionNone;
         ctl->WaitTime = f;
 

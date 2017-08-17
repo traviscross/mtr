@@ -139,4 +139,11 @@ struct mplslen {
     char labels;                /* how many labels did we get? */
 };
 
+
+#ifdef USING_CYGWIN
+#define running_as_root() 1
+#else
+#define running_as_root() (getuid() != 0)
+#endif
+
 #endif                          /* MTR_MTR_H */

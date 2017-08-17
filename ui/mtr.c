@@ -484,7 +484,7 @@ static void parse_arg(
             if (ctl->WaitTime <= 0.0) {
                 error(EXIT_FAILURE, 0, "wait time must be positive");
             }
-            if (getuid() != 0 && ctl->WaitTime < 1.0) {
+            if (!running_as_root() && ctl->WaitTime < 1.0) {
                 error(EXIT_FAILURE, 0,
                       "non-root users cannot request an interval < 1.0 seconds");
             }
