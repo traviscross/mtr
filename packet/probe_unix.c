@@ -21,7 +21,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef HAVE_LINUX_ERRQUEUE_H
 #include <linux/errqueue.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -260,6 +262,7 @@ int open_ip4_sockets_raw(
     return 0;
 }
 
+#ifdef HAVE_LINUX_ERRQUEUE_H
 /*  Open DGRAM sockets for sending/receiving IPv4 packets  */
 static
 int open_ip4_sockets_dgram(
@@ -267,26 +270,32 @@ int open_ip4_sockets_dgram(
 {
     int udp_socket;
     int icmp_socket, icmp_tmp_socket;
+#ifdef HAVE_LINUX_ERRQUEUE_H
     int val = 1;
+#endif
 
     icmp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
     if (icmp_socket == -1) {
         return -1;
     }
+#ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(icmp_socket, SOL_IP, IP_RECVERR, &val, sizeof(val)) < 0) {
         return -1;
     }
+#endif
 
     udp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udp_socket == -1) {
         close(icmp_socket);
         return -1;
     }
+#ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(udp_socket, SOL_IP, IP_RECVERR, &val, sizeof(val)) < 0) {
         close(icmp_socket);
         close(udp_socket);
         return -1;
     }
+#endif
 
     icmp_tmp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
     if (icmp_tmp_socket == -1) {
@@ -303,6 +312,7 @@ int open_ip4_sockets_dgram(
 
     return 0;
 }
+#endif
 
 /*  Open the raw sockets for sending/receiving IPv6 packets  */
 static
@@ -342,6 +352,7 @@ int open_ip6_sockets_raw(
     return 0;
 }
 
+#ifdef HAVE_LINUX_ERRQUEUE_H
 /*  Open DGRAM sockets for sending/receiving IPv6 packets  */
 static
 int open_ip6_sockets_dgram(
@@ -349,26 +360,32 @@ int open_ip6_sockets_dgram(
 {
     int icmp_socket;
     int udp_socket;
+#ifdef HAVE_LINUX_ERRQUEUE_H
     int val = 1;
+#endif
 
     icmp_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6);
     if (icmp_socket == -1) {
         return -1;
     }
+#ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(icmp_socket, SOL_IPV6, IPV6_RECVERR, &val, sizeof(val)) < 0) {
         return -1;
     }
+#endif
 
     udp_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
     if (udp_socket == -1) {
         close(icmp_socket);
         return -1;
     }
+#ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(udp_socket, SOL_IPV6, IPV6_RECVERR, &val, sizeof(val)) < 0) {
         close(icmp_socket);
         close(udp_socket);
         return -1;
     }
+#endif
 
     net_state->platform.ip6_present = true;
     net_state->platform.ip6_socket_raw = false;
@@ -377,6 +394,7 @@ int open_ip6_sockets_dgram(
 
     return 0;
 }
+#endif
 
 /*
     The first half of the net state initialization.  Since this
@@ -394,16 +412,20 @@ void init_net_state_privileged(
     net_state->platform.next_sequence = MIN_PORT;
 
     if (open_ip4_sockets_raw(net_state)) {
+#ifdef HAVE_LINUX_ERRQUEUE_H
         /* fall back to using unprivileged sockets */
         if (open_ip4_sockets_dgram(net_state)) {
             ip4_err = errno;
         }
+#endif
     }
     if (open_ip6_sockets_raw(net_state)) {
+#ifdef HAVE_LINUX_ERRQUEUE_H
         /* fall back to using unprivileged sockets */
         if (open_ip6_sockets_dgram(net_state)) {
             ip6_err = errno;
         }
+#endif
     }
 
     /*
@@ -655,10 +677,12 @@ void receive_replies_from_recv_socket(
     struct sockaddr_storage remote_addr;
     struct timeval timestamp;
     int flag = 0;
+#ifdef HAVE_LINUX_ERRQUEUE_H
     struct cmsghdr *cm;
     struct sock_extended_err *ee = NULL;
     bool icmp_connrefused_received = false;
     bool icmp_hostunreach_received = false;
+#endif
 
     /*  Read until no more packets are available  */
     while (true) {
@@ -715,15 +739,19 @@ void receive_replies_from_recv_socket(
             /* handle error received in error queue */
             if (errno == EHOSTUNREACH) {
                 /* potential error caused by ttl, read inner icmp hdr from err queue */
+#ifdef HAVE_LINUX_ERRQUEUE_H
                 icmp_hostunreach_received = true;
                 flag |= MSG_ERRQUEUE;
+#endif
                 continue;
             }
 
             if (errno == ECONNREFUSED) {
                 /* udp packet reached dst, read inner udp hdr from err queue */
+#ifdef HAVE_LINUX_ERRQUEUE_H
                 icmp_connrefused_received = true;
                 flag |= MSG_ERRQUEUE;
+#endif
                 continue;
             }
 
@@ -731,6 +759,7 @@ void receive_replies_from_recv_socket(
             exit(EXIT_FAILURE);
         }
 
+#ifdef HAVE_LINUX_ERRQUEUE_H
         /* get src ip for packets read from err queue */
         if (flag & MSG_ERRQUEUE) {
             for (cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
@@ -749,7 +778,9 @@ void receive_replies_from_recv_socket(
                 memcpy(&remote_addr, SO_EE_OFFENDER(ee), sizeof(remote_addr));
             }
         }
+#endif
 
+#ifdef SO_PROTOCOL
         if (icmp_connrefused_received) {
             /* using ICMP type ICMP_ECHOREPLY is not a bug, it is an
                indication of successfully reaching dst host.
@@ -767,10 +798,13 @@ void receive_replies_from_recv_socket(
             handle_error_queue_packet(net_state, &remote_addr, ICMP_TIME_EXCEEDED, proto,
                     packet, packet_length, &timestamp);
         } else {
+#endif
             /* ICMP packets received from raw socket */
             handle_received_packet(net_state, &remote_addr, packet,
                                    packet_length, &timestamp);
+#ifdef SO_PROTOCOL
         }
+#endif
     }
 }
 

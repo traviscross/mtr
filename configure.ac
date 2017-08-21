@@ -46,6 +46,7 @@ AC_CHECK_HEADERS([ \
   error.h \
   fcntl.h \
   linux/icmp.h \
+  linux/errqueue.h \
   ncurses.h \
   ncurses/curses.h \
   netinet/in.h \

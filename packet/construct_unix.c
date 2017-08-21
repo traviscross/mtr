@@ -26,6 +26,11 @@
 
 #include "protocols.h"
 
+/* For Mac OS X and FreeBSD */
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
 /*  A source of data for computing a checksum  */
 struct checksum_source_t {
     const void *data;
