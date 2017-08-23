@@ -44,6 +44,8 @@ void init_net_state(
         fprintf(stderr, "Failure opening ICMP %d\n", GetLastError());
         exit(EXIT_FAILURE);
     }
+    net_state->platform.ip4_socket_raw = false;
+    net_state->platform.ip6_socket_raw = false;
 }
 
 /*
