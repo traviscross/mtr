@@ -12,9 +12,9 @@ rem  but WITHOUT ANY WARRANTY; without even the implied warranty of
 rem  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 rem  GNU General Public License for more details.
 rem
-rem  You should have received a copy of the GNU General Public License
-rem  along with this program; if not, write to the Free Software
-rem  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+rem  You should have received a copy of the GNU General Public License along
+rem  with this program; if not, write to the Free Software Foundation, Inc.,
+rem  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 rem
 
 rem Assume the path of this batch file is the mtr installation location
