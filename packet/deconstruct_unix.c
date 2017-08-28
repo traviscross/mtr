@@ -86,6 +86,27 @@ void handle_inner_udp_packet(
     }
 }
 
+void handle_error_queue_packet(
+    struct net_state_t *net_state,
+    const struct sockaddr_storage *remote_addr,
+    int icmp_result,
+    int proto,
+    char *packet,
+    int packet_length,
+    struct timeval *timestamp)
+{
+    if (proto == IPPROTO_UDP) {
+        handle_inner_udp_packet(net_state, remote_addr, ICMP_TIME_EXCEEDED,
+                (struct UDPHeader *)packet, packet_length, timestamp, 0, NULL);
+    } else if (proto == IPPROTO_ICMP || proto == IPPROTO_ICMPV6) {
+        const struct ICMPHeader *icmp = (struct ICMPHeader *)packet;
+        find_and_receive_probe(net_state, remote_addr, timestamp,
+                               ICMP_TIME_EXCEEDED, IPPROTO_ICMP, icmp->id,
+                               icmp->sequence, 0, NULL);
+    }
+
+}
+
 /*
     We've received an ICMP message with an embedded IP packet.
     We will try to determine which of our outgoing probes
@@ -347,13 +368,16 @@ void handle_received_icmp4_packet(
     int packet_length,
     struct timeval *timestamp)
 {
-    const int icmp_ip_size =
-        sizeof(struct ICMPHeader) + sizeof(struct IPHeader);
+    int icmp_ip_size = 0;
     const struct IPHeader *inner_ip;
     int inner_size = packet_length - sizeof(struct ICMPHeader);
     int mpls_count;
     struct mpls_label_t mpls[MAX_MPLS_LABELS];
 
+    if (net_state->platform.ip4_socket_raw) {
+        icmp_ip_size += sizeof(struct IPHeader);
+    }
+    icmp_ip_size += sizeof(struct ICMPHeader);
     mpls_count =
         decode_mpls_labels(icmp, packet_length, mpls, MAX_MPLS_LABELS);
 
@@ -472,24 +496,33 @@ void handle_received_ip4_packet(
     int packet_length,
     struct timeval *timestamp)
 {
-    const int ip_icmp_size =
-        sizeof(struct IPHeader) + sizeof(struct ICMPHeader);
+    int ip_icmp_size = 0;
     const struct IPHeader *ip;
     const struct ICMPHeader *icmp;
     int icmp_length;
+
+    if (net_state->platform.ip4_socket_raw) {
+        ip_icmp_size += sizeof(struct IPHeader);
+    }
+    ip_icmp_size += sizeof(struct ICMPHeader);
 
     /*  Ensure that we don't access memory beyond the bounds of the packet  */
     if (packet_length < ip_icmp_size) {
         return;
     }
 
-    ip = (struct IPHeader *) packet;
-    if (ip->protocol != IPPROTO_ICMP) {
-        return;
-    }
+    if (net_state->platform.ip4_socket_raw) {
+        ip = (struct IPHeader *) packet;
+        if (ip->protocol != IPPROTO_ICMP) {
+            return;
+        }
 
-    icmp = (struct ICMPHeader *) (ip + 1);
-    icmp_length = packet_length - sizeof(struct IPHeader);
+        icmp = (struct ICMPHeader *) (ip + 1);
+        icmp_length = packet_length - sizeof(struct IPHeader);
+    } else {
+        icmp = (struct ICMPHeader *) packet;
+        icmp_length = packet_length;
+    }
 
     handle_received_icmp4_packet(net_state, remote_addr, icmp, icmp_length,
                                  timestamp);

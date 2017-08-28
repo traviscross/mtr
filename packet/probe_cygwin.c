@@ -44,6 +44,8 @@ void init_net_state(
         fprintf(stderr, "Failure opening ICMP %d\n", GetLastError());
         exit(EXIT_FAILURE);
     }
+    net_state->platform.ip4_socket_raw = false;
+    net_state->platform.ip6_socket_raw = false;
 }
 
 /*
@@ -329,7 +331,8 @@ void send_probe(
     char payload[PACKET_BUFFER_SIZE];
     int payload_size;
 
-    if (resolve_probe_addresses(param, &dest_sockaddr, &src_sockaddr)) {
+    if (resolve_probe_addresses(net_state, param, &dest_sockaddr,
+                &src_sockaddr)) {
         printf("%d invalid-argument\n", param->command_token);
         return;
     }

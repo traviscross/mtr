@@ -39,8 +39,8 @@ int gather_read_fds(
 {
     int nfds;
     int probe_nfds;
-    int ip4_socket = net_state->platform.ip4_recv_socket;
-    int ip6_socket = net_state->platform.ip6_recv_socket;
+    int ip4_socket;
+    int ip6_socket;
     int command_stream = command_buffer->command_stream;
 
     FD_ZERO(read_set);
@@ -49,14 +49,42 @@ int gather_read_fds(
     FD_SET(command_stream, read_set);
     nfds = command_stream + 1;
 
-    FD_SET(ip4_socket, read_set);
-    if (ip4_socket >= nfds) {
-        nfds = ip4_socket + 1;
+    if (net_state->platform.ip4_socket_raw) {
+        ip4_socket = net_state->platform.ip4_recv_socket;
+        FD_SET(ip4_socket, read_set);
+        if (ip4_socket >= nfds) {
+            nfds = ip4_socket + 1;
+        }
+    } else {
+        ip4_socket = net_state->platform.ip4_txrx_icmp_socket;
+        FD_SET(ip4_socket, read_set);
+        if (ip4_socket >= nfds) {
+            nfds = ip4_socket + 1;
+        }
+        ip4_socket = net_state->platform.ip4_txrx_udp_socket;
+        FD_SET(ip4_socket, read_set);
+        if (ip4_socket >= nfds) {
+            nfds = ip4_socket + 1;
+        }
     }
 
-    FD_SET(ip6_socket, read_set);
-    if (ip6_socket >= nfds) {
-        nfds = ip6_socket + 1;
+    if (net_state->platform.ip6_socket_raw) {
+        ip6_socket = net_state->platform.ip6_recv_socket;
+        FD_SET(ip6_socket, read_set);
+        if (ip6_socket >= nfds) {
+            nfds = ip6_socket + 1;
+        }
+    } else {
+        ip6_socket = net_state->platform.ip6_txrx_icmp_socket;
+        FD_SET(ip6_socket, read_set);
+        if (ip6_socket >= nfds) {
+            nfds = ip6_socket + 1;
+        }
+        ip6_socket = net_state->platform.ip6_txrx_udp_socket;
+        FD_SET(ip6_socket, read_set);
+        if (ip6_socket >= nfds) {
+            nfds = ip6_socket + 1;
+        }
     }
 
     probe_nfds = gather_probe_sockets(net_state, write_set);

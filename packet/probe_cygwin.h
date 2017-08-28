@@ -69,6 +69,8 @@ struct probe_platform_t {
 struct net_state_platform_t {
     HANDLE icmp4;
     HANDLE icmp6;
+    bool ip4_socket_raw;
+    bool ip6_socket_raw;
 };
 
 #endif
