@@ -458,7 +458,7 @@ void init_net_state(
         set_socket_nonblocking(net_state->platform.ip4_txrx_icmp_socket);
         set_socket_nonblocking(net_state->platform.ip4_txrx_udp_socket);
     }
-    if (net_state->platform.ip4_socket_raw) {
+    if (net_state->platform.ip6_socket_raw) {
         set_socket_nonblocking(net_state->platform.ip6_recv_socket);
     } else {
         set_socket_nonblocking(net_state->platform.ip6_txrx_icmp_socket);
