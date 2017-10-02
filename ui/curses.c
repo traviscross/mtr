@@ -157,6 +157,7 @@ int mtr_curses_keyaction(
 
     switch (c) {
     case 'q':
+    case -1:
     case 3:
         return ActionQuit;
     case 12:
