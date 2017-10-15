@@ -438,9 +438,9 @@ for full description of this socket option.
 recognizes a few environment variables.
 .TP
 .B MTR_OPTIONS
-This environment variable allows to specify options, as if they were
-passed on the command line.  It is parsed before reading the actual
-command line options, so that options specified in
+This environment variable allows one to specify options, as if they
+were passed on the command line.  It is parsed before reading the
+actual command line options, so that options specified in
 .B MTR_OPTIONS
 are overridden by command-line options.
 
