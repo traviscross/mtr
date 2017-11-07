@@ -156,3 +156,7 @@ endif  # if CYGWIN
 if BUILD_BASH_COMPLETION
 dist_bashcompletion_DATA = bash-completion/mtr
 endif
+
+dist-hook:
+	$(AM_V_GEN)echo $(VERSION) > $(distdir)/.tarball-version
+
