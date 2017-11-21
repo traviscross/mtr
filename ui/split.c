@@ -166,7 +166,7 @@ int split_keyaction(
     tv.tv_usec = 0;
 
     if (select(1, &readfds, NULL, NULL, &tv) > 0) {
-        if (read(0, &c, 1) < 0) 
+        if (read(0, &c, 1) <= 0) 
           return ActionQuit;
     } else
         return 0;
