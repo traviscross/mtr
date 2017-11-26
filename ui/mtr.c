@@ -165,7 +165,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
 #ifdef HAVE_GTK
     fputs(" -g, --gtk                  use GTK+ xwindow interface\n", out);
 #endif
-    fputs(" -n, --no-dns               do not resove host names\n", out);
+    fputs(" -n, --no-dns               do not resolve host names\n", out);
     fputs(" -b, --show-ips             show IP numbers and host names\n",
           out);
     fputs(" -o, --order FIELDS         select output fields\n", out);
