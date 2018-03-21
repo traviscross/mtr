@@ -312,7 +312,7 @@ of four.  The first four values in the list correspond to the
 first MPLS label, the next four values correspond to the second MPLS
 label, and so on.  The values are provided in this order:
 .IR label ,
-.IR experimental-use ,
+.IR traffic-class ,
 .IR bottom-of-stack ,
 .IR ttl .
 .HP 7
