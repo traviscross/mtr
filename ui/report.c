@@ -74,8 +74,8 @@ static void print_mpls(
 {
     int k;
     for (k = 0; k < mpls->labels; k++)
-        printf("       [MPLS: Lbl %lu Exp %u S %cu TTL %u]\n",
-               mpls->label[k], mpls->exp[k], mpls->s[k], mpls->ttl[k]);
+        printf("       [MPLS: Lbl %lu TC %u S %cu TTL %u]\n",
+               mpls->label[k], mpls->tc[k], mpls->s[k], mpls->ttl[k]);
 }
 #endif
 
@@ -210,8 +210,8 @@ void report_close(
                 if (mpls->labels && z == 1 && ctl->enablempls) {
                     for (k = 0; k < mpls->labels; k++) {
                         printf
-                            ("    |  |+-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n",
-                             mpls->label[k], mpls->exp[k], mpls->s[k],
+                            ("    |  |+-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
+                             mpls->label[k], mpls->tc[k], mpls->s[k],
                              mpls->ttl[k]);
                     }
                 }
@@ -220,16 +220,16 @@ void report_close(
                     printf("    |  `|-- %s\n", strlongip(ctl, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
-                            ("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->exp[k], mplss->s[k],
+                            ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
+                             mplss->label[k], mplss->tc[k], mplss->s[k],
                              mplss->ttl[k]);
                     }
                 } else {
                     printf("    |   |-- %s\n", strlongip(ctl, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
-                            ("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->exp[k], mplss->s[k],
+                            ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
+                             mplss->label[k], mplss->tc[k], mplss->s[k],
                              mplss->ttl[k]);
                     }
                 }
@@ -247,8 +247,8 @@ void report_close(
         if (mpls->labels && z == 1 && ctl->enablempls) {
             int k;
             for (k = 0; k < mpls->labels; k++) {
-                printf("    |   +-- [MPLS: Lbl %lu Exp %u S %u TTL %u]\n",
-                       mpls->label[k], mpls->exp[k], mpls->s[k],
+                printf("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
+                       mpls->label[k], mpls->tc[k], mpls->s[k],
                        mpls->ttl[k]);
             }
         }
