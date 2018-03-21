@@ -232,7 +232,7 @@ void format_mpls_string(
         }
 
         snprintf(append_pos, buffer_size, "%d,%d,%d,%d",
-                 mpls->label, mpls->experimental_use,
+                 mpls->label, mpls->traffic_class,
                  mpls->bottom_of_stack, mpls->ttl);
 
         buffer_size -= strlen(append_pos);
