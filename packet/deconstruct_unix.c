@@ -287,7 +287,7 @@ int decode_mpls_object(
         label->label =
             ext_label->label[0] << 12 |
             ext_label->label[1] << 4 | ext_label->label[2] >> 4;
-        label->experimental_use = (ext_label->label[2] & 0x0E) >> 1;
+        label->traffic_class = (ext_label->label[2] & 0x0E) >> 1;
         label->bottom_of_stack = ext_label->label[2] & 0x01;
         label->ttl = ext_label->ttl;
     }
