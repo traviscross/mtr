@@ -465,8 +465,8 @@ static void mtr_curses_hosts(
             printw("%s", buf);
 
             for (k = 0; k < mpls->labels && ctl->enablempls; k++) {
-                printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]",
-                       mpls->label[k], mpls->exp[k], mpls->s[k],
+                printw("\n    [MPLS: Lbl %lu TC %u S %u TTL %u]",
+                       mpls->label[k], mpls->tc[k], mpls->s[k],
                        mpls->ttl[k]);
             }
 
@@ -498,8 +498,8 @@ static void mtr_curses_hosts(
                     printw("%s", strlongip(ctl, addrs));
                 }
                 for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
-                    printw("\n    [MPLS: Lbl %lu Exp %u S %u TTL %u]",
-                           mplss->label[k], mplss->exp[k], mplss->s[k],
+                    printw("\n    [MPLS: Lbl %lu TC %u S %u TTL %u]",
+                           mplss->label[k], mplss->tc[k], mplss->s[k],
                            mplss->ttl[k]);
                 }
                 attroff(A_BOLD);
