@@ -125,7 +125,7 @@ struct net_state_t {
 /*  Multiprotocol Label Switching information  */
 struct mpls_label_t {
     uint32_t label;
-    uint8_t experimental_use;
+    uint8_t traffic_class;
     uint8_t bottom_of_stack;
     uint8_t ttl;
 };
