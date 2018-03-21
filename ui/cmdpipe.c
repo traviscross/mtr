@@ -517,7 +517,7 @@ void parse_mpls_values(
         if (label_field == 0) {
             mpls->label[label_count] = value;
         } else if (label_field == 1) {
-            mpls->exp[label_count] = value;
+            mpls->tc[label_count] = value;
         } else if (label_field == 2) {
             mpls->s[label_count] = value;
         } else if (label_field == 3) {
