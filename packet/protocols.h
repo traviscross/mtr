@@ -78,7 +78,7 @@ struct ICMPExtensionObject {
 /*  An MPLS label included in an ICMP extension  */
 /*  See RFC 4950  */
 struct ICMPExtMPLSLabel {
-    uint8_t label[3];           // Low 4 bits are Experimental Use, Stack
+    uint8_t label[3];           // Low 4 bits are Traffic Class Use, Stack
     uint8_t ttl;
 };
 
