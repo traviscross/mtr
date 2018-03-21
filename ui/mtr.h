@@ -133,7 +133,7 @@ extern const struct fields data_fields[MAXFLD];
 /* MPLS label object */
 struct mplslen {
     unsigned long label[MAXLABELS];     /* label value */
-    uint8_t exp[MAXLABELS];     /* experimental bits */
+    uint8_t tc[MAXLABELS];     /* Traffic Class bits */
     uint8_t ttl[MAXLABELS];     /* MPLS TTL */
     char s[MAXLABELS];          /* bottom of stack */
     char labels;                /* how many labels did we get? */
