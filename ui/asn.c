@@ -307,7 +307,7 @@ char *fmt_ipinfo(
 int is_printii(
     struct mtr_ctl *ctl)
 {
-    return ((ctl->ipinfo_no >= 0) && (ctl->ipinfo_no != ctl->ipinfo_max));
+    return (ctl->ipinfo_no >= 0);
 }
 
 void asn_open(
