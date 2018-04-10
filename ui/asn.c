@@ -193,8 +193,6 @@ static char *split_txtrec(
     if (i > ctl->ipinfo_max)
         ctl->ipinfo_max = i;
     if (ctl->ipinfo_no >= i) {
-        if (ctl->ipinfo_no >= ctl->ipinfo_max)
-            ctl->ipinfo_no = 0;
         return (*items)[0];
     } else
         return (*items)[ctl->ipinfo_no];
