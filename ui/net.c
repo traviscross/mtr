@@ -473,7 +473,7 @@ int net_max(
     int max;
 
     max = 0;
-    for (at = 0; at < ctl->maxTTL - 1; at++) {
+    for (at = 0; at < ctl->maxTTL; at++) {
         if (addrcmp((void *) &(host[at].addr),
                     (void *) remoteaddress, ctl->af) == 0) {
             return at + 1;
@@ -490,6 +490,8 @@ int net_max(
         }
     }
 
+    if (max > ctl->maxTTL)
+        max = ctl->maxTTL;
     return max;
 }
 
