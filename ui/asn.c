@@ -47,6 +47,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <syslog.h>
 
 #include "mtr.h"
 #include "asn.h"
@@ -139,13 +140,13 @@ static void query_callback (
     unsigned char *abuf,
     int aslen)
 {
-    struct ares_txt_ext *txt_out = NULL;
+    struct ares_txt_reply *txt_out = NULL;
     struct comparm *parm = (struct comparm *)arg;
     items_t *items_tmp = NULL;
     char *retstr = NULL;
     ENTRY item;
 
-    if (ARES_SUCCESS != ares_parse_txt_reply_ext(abuf, aslen, &txt_out)) {
+    if (ARES_SUCCESS != ares_parse_txt_reply(abuf, aslen, &txt_out)) {
         retstr = split_txtrec(parm->ctl, unknown_txt, &items_tmp);
     } else {
         retstr = split_txtrec(parm->ctl, txt_out->txt, &items_tmp);
