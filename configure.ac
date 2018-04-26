@@ -137,20 +137,15 @@ AC_CHECK_FUNC([socket], [],
 
 AC_CHECK_FUNC([gethostbyname], [],
   [AC_CHECK_LIB([nsl], [gethostbyname], [], [AC_MSG_ERROR([No nameservice library found])])])
+	   
+AC_CHECK_FUNC([pthread_create], [],
+  [AC_CHECK_LIB([pthread], [pthread_create], [], [AC_MSG_ERROR([No pthread library found])])])
 
 # Find resolver library.
-AC_CHECK_FUNC([res_query], [RESOLV_LIBS=""], [
-  AC_CHECK_LIB([resolv], [__res_query], [RESOLV_LIBS="-lresolv"], [
-    AC_CHECK_LIB([resolv], [res_query], [RESOLV_LIBS="-lresolv"], [
-      AC_CHECK_LIB([bind], [res_query], [RESOLV_LIBS="-lbind"], [
-        AC_MSG_ERROR([No resolver library found])
-      ])
-    ])
+AC_CHECK_FUNC([ares_query], [RESOLV_LIBS=""], [
+  AC_CHECK_LIB([cares], [ares_query], [RESOLV_LIBS="-lcares -lpthread"], [
+    AC_MSG_ERROR([No cares library found])
   ])
-])
-dnl MacOS has res_query in libc, but needs libresolv for dn_expand().
-AS_IF([test "x" = "x$RESOLV_LIBS"], [
-  AC_CHECK_LIB([resolv], [dn_expand], [RESOLV_LIBS="-lresolv"])
 ])
 AC_SUBST([RESOLV_LIBS])
 

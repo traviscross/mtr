@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #else
@@ -42,10 +43,15 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <search.h>
+#include <ares.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <fcntl.h>
 
 #include "mtr.h"
 #include "asn.h"
 #include "utils.h"
+#include "display.h"
 
 /* #define IIDEBUG */
 #ifdef IIDEBUG
@@ -55,120 +61,45 @@
 #define DEB_syslog(...) do {} while (0)
 #endif
 
-#define IIHASH_HI	128
-#define ITEMSMAX	15
-#define ITEMSEP	'|'
-#define NAMELEN	127
-#define UNKN	"???"
+#define IIHASH_HI   128
+#define ITEMSMAX    15
+#define ITEMSEP '|'
+#define NAMELEN 127
+#define UNKN    "???"
+#define SEMPATH "sem"
+
+typedef char *items_t[ITEMSMAX + 1];
+struct comparm {
+    struct mtr_ctl *ctl;
+    char key[NAMELEN];
+};
 
 static int iihash = 0;
-static char fmtinfo[32];
-
+static int loopmode = 0;    // mark DisplayCurses and DisplayGTK
+static pthread_t tid;
+static ares_channel channel;
+static char syncstr[20];
+static items_t items_a;
+static sem_t sem;
+static volatile sig_atomic_t sigstat = 0;
 /* items width: ASN, Route, Country, Registry, Allocated */
 static const int iiwidth[] = { 7, 19, 4, 8, 11 };       /* item len + space */
 
-typedef char *items_t[ITEMSMAX + 1];
-static items_t items_a;         /* without hash: items */
-static char txtrec[NAMELEN + 1];        /* without hash: txtrec */
-static items_t *items = &items_a;
 
-
-static char *ipinfo_lookup(
-    const char *domain)
-{
-    unsigned char answer[PACKETSZ], *pt;
-    char host[128];
-    char *txt;
-    int len, exp, size, txtlen, type;
-
-
-    if (res_init() < 0) {
-        error(0, 0, "@res_init failed");
-        return NULL;
-    }
-
-    memset(answer, 0, PACKETSZ);
-    if ((len = res_query(domain, C_IN, T_TXT, answer, PACKETSZ)) < 0) {
-        if (iihash)
-            DEB_syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
-        return xstrdup(UNKN);
-    }
-
-    pt = answer + sizeof(HEADER);
-
-    if ((exp =
-         dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-        printf("@dn_expand failed\n");
-        return NULL;
-    }
-
-    pt += exp;
-
-    GETSHORT(type, pt);
-    if (type != T_TXT) {
-        printf("@Broken DNS reply.\n");
-        return NULL;
-    }
-
-    pt += INT16SZ;              /* class */
-
-    if ((exp =
-         dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-        printf("@second dn_expand failed\n");
-        return NULL;
-    }
-
-    pt += exp;
-    GETSHORT(type, pt);
-    if (type != T_TXT) {
-        printf("@Not a TXT record\n");
-        return NULL;
-    }
-
-    pt += INT16SZ;              /* class */
-    pt += INT32SZ;              /* ttl */
-    GETSHORT(size, pt);
-    txtlen = *pt;
-
-
-    if (txtlen >= size || !txtlen) {
-        printf("@Broken TXT record (txtlen = %d, size = %d)\n", txtlen,
-               size);
-        return NULL;
-    }
-
-    if (txtlen > NAMELEN)
-        txtlen = NAMELEN;
-
-    if (iihash) {
-        txt = xmalloc(txtlen + 1);
-    } else
-        txt = (char *) txtrec;
-
-    pt++;
-    xstrncpy(txt, (char *) pt, txtlen + 1);
-
-    if (iihash)
-        DEB_syslog(LOG_INFO, "Malloc-txt(%p): %s", txt, txt);
-
-    return txt;
-}
-
-/* originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated */
 static char *split_txtrec(
     struct mtr_ctl *ctl,
-    char *txt_rec)
+    char *txt_rec,
+    items_t **p_items)
 {
     char *prev;
     char *next;
     int i = 0, j;
+    items_t *items = &items_a;
 
     if (!txt_rec)
         return NULL;
     if (iihash) {
-        DEB_syslog(LOG_INFO, "Malloc-tbl: %s", txt_rec);
         if (!(items = malloc(sizeof(*items)))) {
-            DEB_syslog(LOG_INFO, "Free-txt(%p)", txt_rec);
             free(txt_rec);
             return NULL;
         }
@@ -190,12 +121,113 @@ static char *split_txtrec(
     for (j = i; j <= ITEMSMAX; j++)
         (*items)[j] = NULL;
 
+    *p_items = items;
     if (i > ctl->ipinfo_max)
         ctl->ipinfo_max = i;
     if (ctl->ipinfo_no >= i) {
         return (*items)[0];
-    } else
+    } else {
         return (*items)[ctl->ipinfo_no];
+    }
+}
+
+static void query_callback (
+    void* arg,
+    int status,
+    int timeouts,
+    unsigned char *abuf,
+    int aslen)
+{
+    struct ares_txt_reply *txt_out = NULL;
+    struct comparm *parm = (struct comparm *)arg;
+    items_t *items_tmp = NULL;
+    char *retstr = NULL;
+    char *unknown_txt = NULL;
+    ENTRY item;
+
+    if (ARES_SUCCESS != ares_parse_txt_reply(abuf, aslen, &txt_out)) {
+        ares_free_data(txt_out);
+        unknown_txt = (char *)malloc(strlen(UNKN) + 1);
+        if (unknown_txt == NULL) {
+            return;
+        }
+        strcpy(unknown_txt, UNKN);
+        retstr = split_txtrec(parm->ctl, unknown_txt, &items_tmp);
+    } else {
+        retstr = split_txtrec(parm->ctl, txt_out->txt, &items_tmp);
+    }
+    strncpy(syncstr, retstr, sizeof(syncstr)-1);
+
+    if (retstr && iihash) {
+        if ((item.key = xstrdup(parm->key))) {
+            item.data = (void *) items_tmp;
+            hsearch(item, ENTER);
+            DEB_syslog(LOG_INFO, "Insert into hash: %s", parm->key);
+        }
+    } else if (iihash) {
+        free(items_tmp);
+    }
+
+    /*  cannot free, hash use it!
+    if (txt_out) {
+        ares_free_data(txt_out);
+    }*/
+
+    free(parm);
+}
+
+void *wait_loop(
+    void *arg)
+{
+    int nfds;
+    fd_set readers, writers;
+    ares_channel channel = (ares_channel)arg;
+
+    while (1) {
+        if (sigstat == 1)
+            break;
+
+        FD_ZERO(&readers);
+        FD_ZERO(&writers);
+        nfds = ares_fds(channel, &readers, &writers);
+        if (nfds == 0) {
+            if (!loopmode) {
+                break;
+            } else {
+                sem_wait(&sem);
+                continue;
+            }
+        }
+        if (select(nfds, &readers, &writers, NULL, NULL) > 0) {
+            ares_process(channel, &readers, &writers);
+        }
+     }
+
+     return NULL;
+}
+
+static void ipinfo_lookup(
+    struct mtr_ctl *ctl,
+    const char *domain,
+    struct comparm *parm)
+{
+    if (!loopmode) {
+        if(ares_init(&channel) != ARES_SUCCESS) {
+            error(0, 0, "ares_init failed");
+            free(parm);
+            return;
+        }
+        memset(syncstr, 0, sizeof(syncstr));
+    }
+
+    ares_query(channel, domain, C_IN, T_TXT, query_callback, parm);
+    if (loopmode == 1) {
+        sem_post(&sem);
+    }
+
+    if (!loopmode) {
+        wait_loop(channel);
+    }
 }
 
 #ifdef ENABLE_IPV6
@@ -222,6 +254,7 @@ static char *get_ipinfo(
     char key[NAMELEN];
     char lookup_key[NAMELEN];
     char *val = NULL;
+    struct comparm *parm;
     ENTRY item;
 
     if (!addr)
@@ -252,7 +285,7 @@ static char *get_ipinfo(
         ENTRY *found_item;
 
         DEB_syslog(LOG_INFO, ">> Search: %s", key);
-        item.key = key;;
+        item.key = key;
         if ((found_item = hsearch(item, FIND))) {
             if (!(val = (*((items_t *) found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t *) found_item->data))[0];
@@ -261,15 +294,15 @@ static char *get_ipinfo(
     }
 
     if (!val) {
-        DEB_syslog(LOG_INFO, "Lookup: %s", key);
-        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
-            DEB_syslog(LOG_INFO, "Looked up: %s", key);
-            if (iihash)
-                if ((item.key = xstrdup(key))) {
-                    item.data = (void *) items;
-                    hsearch(item, ENTER);
-                    DEB_syslog(LOG_INFO, "Insert into hash: %s", key);
-                }
+        parm = (struct comparm *)malloc(sizeof(struct comparm));
+        if (parm == NULL) {
+            return NULL;
+        }
+        parm->ctl = ctl;
+        strncpy(parm->key, key, sizeof(parm->key)-1);
+        ipinfo_lookup(ctl, lookup_key, parm);
+        if (!loopmode) {
+            return syncstr;
         }
     }
 
@@ -296,11 +329,15 @@ char *fmt_ipinfo(
     struct mtr_ctl *ctl,
     ip_t * addr)
 {
-    char *ipinfo = get_ipinfo(ctl, addr);
     char fmt[8];
+    static char fmtinfo[32];
+    char *ipinfo = NULL;
+
+    ipinfo = get_ipinfo(ctl, addr);
     snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no ? "" : "AS",
              get_iiwidth(ctl->ipinfo_no));
     snprintf(fmtinfo, sizeof(fmtinfo), fmt, ipinfo ? ipinfo : UNKN);
+
     return fmtinfo;
 }
 
@@ -313,10 +350,37 @@ int is_printii(
 void asn_open(
     struct mtr_ctl *ctl)
 {
+    #ifdef HAVE_CURSES
+    if (ctl->DisplayMode == DisplayCurses) {
+        loopmode = 1;
+    }
+    #endif
+    #ifdef HAVE_GTK
+    if (ctl->DisplayMode == DisplayGTK) {
+        loopmode = 1;
+    }
+    #endif
+
     if (ctl->ipinfo_no >= 0) {
         DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
         if (!(iihash = hcreate(IIHASH_HI)))
             error(0, errno, "ipinfo hash");
+
+        if(ares_init(&channel) != ARES_SUCCESS) {
+            error(0, 0, "ares_init failed");
+            return;
+        }
+
+        if (sem_open(SEMPATH, O_CREAT|O_RDWR, 0666, 0) == SEM_FAILED) {
+            error(0, 0, "sem_open failed");
+            return ;
+        }
+
+        if (pthread_create(&tid, NULL, wait_loop, channel)) {
+            error(0, 0, "pthread_create failed");
+            tid = pthread_self();
+        }
+        pthread_detach(tid);
     }
 }
 
@@ -327,5 +391,15 @@ void asn_close(
         DEB_syslog(LOG_INFO, "hdestroy()");
         hdestroy();
         iihash = 0;
+    }
+
+    if (ctl->ipinfo_no >= 0) {
+        ares_destroy(channel);
+        if (pthread_equal(tid, pthread_self()) == 0) {
+            sigstat = 1;
+            sem_post(&sem);
+        }
+        sem_close(&sem);
+        sem_unlink(SEMPATH);
     }
 }
