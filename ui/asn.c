@@ -47,7 +47,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <fcntl.h>
-#include <syslog.h>
 
 #include "mtr.h"
 #include "asn.h"
@@ -80,7 +79,6 @@ static int loopmode = 0;    // mark DisplayCurses and DisplayGTK
 static pthread_t tid;
 static ares_channel channel;
 static char syncstr[20];
-static char unknown_txt[10] = {UNKN};
 static items_t items_a;
 static sem_t sem;
 static volatile sig_atomic_t sigstat = 0;
@@ -144,9 +142,16 @@ static void query_callback (
     struct comparm *parm = (struct comparm *)arg;
     items_t *items_tmp = NULL;
     char *retstr = NULL;
+    char *unknown_txt = NULL;
     ENTRY item;
 
     if (ARES_SUCCESS != ares_parse_txt_reply(abuf, aslen, &txt_out)) {
+        ares_free_data(txt_out);
+        unknown_txt = (char *)malloc(strlen(UNKN) + 1);
+        if (unknown_txt == NULL) {
+            return;
+        }
+        strcpy(unknown_txt, UNKN);
         retstr = split_txtrec(parm->ctl, unknown_txt, &items_tmp);
     } else {
         retstr = split_txtrec(parm->ctl, txt_out->txt, &items_tmp);
@@ -175,8 +180,7 @@ void *wait_loop(
     void *arg)
 {
     int nfds;
-    fd_set readers;
-    struct timeval tv;
+    fd_set readers, writers;
     ares_channel channel = (ares_channel)arg;
 
     while (1) {
@@ -184,7 +188,8 @@ void *wait_loop(
             break;
 
         FD_ZERO(&readers);
-        nfds = ares_fds(channel, &readers, NULL);
+        FD_ZERO(&writers);
+        nfds = ares_fds(channel, &readers, &writers);
         if (nfds == 0) {
             if (!loopmode) {
                 break;
@@ -193,9 +198,8 @@ void *wait_loop(
                 continue;
             }
         }
-        if (select(nfds, &readers, NULL, NULL,
-                    ares_timeout(channel, NULL, &tv)) > 0) {
-            ares_process(channel, &readers, NULL);
+        if (select(nfds, &readers, &writers, NULL, NULL) > 0) {
+            ares_process(channel, &readers, &writers);
         }
      }
 
@@ -291,8 +295,9 @@ static char *get_ipinfo(
 
     if (!val) {
         parm = (struct comparm *)malloc(sizeof(struct comparm));
-        if (parm == NULL)
+        if (parm == NULL) {
             return NULL;
+        }
         parm->ctl = ctl;
         strncpy(parm->key, key, sizeof(parm->key)-1);
         ipinfo_lookup(ctl, lookup_key, parm);
