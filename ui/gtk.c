@@ -4,7 +4,7 @@
     Changes/additions Copyright (C) 1998 R.E.Wolff@BitWizard.nl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -94,7 +94,7 @@ int gtk_detect(
 {
     if (getenv("DISPLAY") != NULL) {
         /* If we do this here, gtk_init exits on an error. This happens
-           BEFORE the user has had a chance to tell us not to use the 
+           BEFORE the user has had a chance to tell us not to use the
            display... */
         return TRUE;
     } else {
@@ -693,11 +693,24 @@ static gboolean gtk_dns_data6(
 }
 #endif
 
+#ifdef HAVE_IPINFO
+static gboolean gtk_res_data(
+    ATTRIBUTE_UNUSED GIOChannel * channel,
+    ATTRIBUTE_UNUSED GIOCondition cond,
+    gpointer data)
+{
+    struct mtr_ctl *ctl = (struct mtr_ctl *) data;
+
+    res_ack(ctl);
+    gtk_redraw(ctl);
+    return TRUE;
+}
+#endif
 
 void gtk_loop(
     struct mtr_ctl *ctl)
 {
-    GIOChannel *net_iochannel, *dns_iochannel;
+    GIOChannel *net_iochannel, *dns_iochannel, *res_iochannel;
 
     gtk_add_ping_timeout(ctl);
 
@@ -711,6 +724,13 @@ void gtk_loop(
 #endif
     dns_iochannel = g_io_channel_unix_new(dns_waitfd());
     g_io_add_watch(dns_iochannel, G_IO_IN, gtk_dns_data, ctl);
+
+#ifdef HAVE_IPINFO
+    if (res_waitfd() >= 0) {
+        res_iochannel = g_io_channel_unix_new(res_waitfd());
+        g_io_add_watch(res_iochannel, G_IO_IN, gtk_res_data, ctl);
+    }
+#endif
 
     gtk_main();
 }

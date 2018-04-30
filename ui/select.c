@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -48,7 +48,7 @@ void select_loop(
     fd_set writefd;
     int anyset = 0;
     int maxfd = 0;
-    int dnsfd, netfd;
+    int dnsfd, resfd, netfd;
 #ifdef ENABLE_IPV6
     int dnsfd6;
 #endif
@@ -100,6 +100,15 @@ void select_loop(
                 maxfd = dnsfd + 1;
         } else
             dnsfd = 0;
+
+#ifdef HAVE_IPINFO
+        resfd = res_waitfd();
+        if (resfd >= 0) {
+            FD_SET(resfd, &readfd);
+            if (resfd >= maxfd)
+                maxfd = resfd + 1;
+        }
+#endif
 
         netfd = net_waitfd();
         FD_SET(netfd, &readfd);
@@ -210,6 +219,13 @@ void select_loop(
             dns_ack(ctl);
             anyset = 1;
         }
+
+#ifdef HAVE_IPINFO
+        if ((resfd >= 0) && FD_ISSET(resfd, &readfd)) {
+            res_ack(ctl);
+            anyset = 1;
+        }
+#endif
 
         /*  Has a key been pressed?  */
         if (FD_ISSET(0, &readfd)) {

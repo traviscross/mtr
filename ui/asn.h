@@ -31,3 +31,7 @@ extern ATTRIBUTE_CONST int get_iiwidth(
     int ipinfo_no);
 extern int is_printii(
     struct mtr_ctl *ctl);
+extern int res_waitfd(
+    void);
+extern void res_ack(
+    struct mtr_ctl *ctl);
