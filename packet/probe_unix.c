@@ -546,7 +546,7 @@ void send_probe(
     char packet[PACKET_BUFFER_SIZE];
     struct probe_t *probe;
     struct sockaddr_storage src_sockaddr;
-    int trytimes = 0;
+    int trytimes;
     int packet_size;
 
     probe = alloc_probe(net_state, param->command_token);
@@ -567,29 +567,27 @@ void send_probe(
         exit(EXIT_FAILURE);
     }
 
-	while (1) {
-		if (trytimes >= (MAX_PORT - MIN_PORT + 1))
-			break;
+    // there might be an off-by-one in the number of tries here. 
+    // this is intentional.  It is no use exhausting the very last
+    // open port. Max 10 retries would've been acceptable too I think. 
+    for (trytimes=MIN_PORT; trytimes < MAX_PORT; try_times++) {
 			
-		packet_size = construct_packet(net_state, &probe->platform.socket,
+        packet_size = construct_packet(net_state, &probe->platform.socket,
                          probe->sequence, packet, PACKET_BUFFER_SIZE,
                          &probe->remote_addr, &src_sockaddr, param);
         
-        if ((packet_size < 0) &&
-        	(param->protocol == IPPROTO_TCP || param->protocol == IPPROTO_SCTP) &&
-        	(errno == EADDRINUSE)) {
+        if (packet_size > 0) break; // no retry if we succeed.
+
+        if ((param->protocol != IPPROTO_TCP) && 
+            (param->protocol != IPPROTO_SCTP)) break; // no retry if not TCP/SCTP
+        if (errno != EADDRINUSE) break; // no retry if not addrinuse.
         	
-        	probe->sequence = net_state->platform.next_sequence++;
+     	probe->sequence = net_state->platform.next_sequence++;
         	
-        	if (net_state->platform.next_sequence > MAX_PORT) {
-                net_state->platform.next_sequence = MIN_PORT;
-            }
-            
-            trytimes++;
-        } else {
-        	break;
+       	if (net_state->platform.next_sequence > MAX_PORT) {
+            net_state->platform.next_sequence = MIN_PORT;
         }
-	}
+    }
 
     if (packet_size < 0) {
         /*
