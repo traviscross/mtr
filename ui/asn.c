@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #ifdef HAVE_ERROR_H
 #include <error.h>
@@ -63,6 +64,10 @@
 
 static int iihash = 0;
 static char fmtinfo[32];
+
+static int tores[2] = {-1, -1};
+static int fromres[2] = {-1, -1};
+static FILE *fromresfp;
 
 /* items width: ASN, Route, Country, Registry, Allocated */
 static const int iiwidth[] = { 7, 19, 4, 8, 11 };       /* item len + space */
@@ -219,6 +224,7 @@ static char *get_ipinfo(
     struct mtr_ctl *ctl,
     ip_t * addr)
 {
+    int rv;
     char key[NAMELEN];
     char lookup_key[NAMELEN];
     char *val = NULL;
@@ -254,26 +260,71 @@ static char *get_ipinfo(
         DEB_syslog(LOG_INFO, ">> Search: %s", key);
         item.key = key;;
         if ((found_item = hsearch(item, FIND))) {
+            if (found_item->data == NULL) {
+                return NULL;
+            }
+
             if (!(val = (*((items_t *) found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t *) found_item->data))[0];
             DEB_syslog(LOG_INFO, "Found (hashed): %s", val);
         }
+    } else {
+        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
+            DEB_syslog(LOG_INFO, "Looked up: %s", key);
+        }
+
+        return val;
     }
 
     if (!val) {
+        char buf[NAMELEN + 1];
+
+        if ((item.key = xstrdup(key))) {
+            item.data = NULL;
+            hsearch(item, ENTER);
+        }
+
         DEB_syslog(LOG_INFO, "Lookup: %s", key);
-        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
-            DEB_syslog(LOG_INFO, "Looked up: %s", key);
-            if (iihash)
-                if ((item.key = xstrdup(key))) {
-                    item.data = (void *) items;
-                    hsearch(item, ENTER);
-                    DEB_syslog(LOG_INFO, "Insert into hash: %s", key);
-                }
+        snprintf(buf, sizeof(buf), "%s\n", key);
+        rv = write(tores[1], buf, strlen(buf));
+        if (rv < 0) {
+            error(0, errno, "couldn't write to ipinfo process");
         }
     }
 
     return val;
+}
+
+static void do_ipinfo_lookup(
+    struct mtr_ctl *ctl,
+    const char *key)
+{
+    int rv;
+    char *txtrec = NULL;
+    char lookup_key[NAMELEN] = {0};
+    char result[NAMELEN + PACKETSZ + 1] = {0};
+
+    if (ctl->af == AF_INET6) {
+#ifdef ENABLE_IPV6
+        if (snprintf(lookup_key, NAMELEN, "%s.origin6.asn.cymru.com", key)
+            >= NAMELEN)
+            exit(EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif
+    } else {
+        if (snprintf(lookup_key, NAMELEN, "%s.origin.asn.cymru.com", key)
+            >= NAMELEN)
+            exit(EXIT_FAILURE);
+    }
+
+    txtrec = ipinfo_lookup(lookup_key);
+    snprintf(result, sizeof(result), "%s %s\n", key, txtrec);
+
+     rv = write(fromres[1], result, strlen(result));
+     if (rv < 0) {
+         error(0, errno, "write ipinfo lookup result");
+     }
 }
 
 ATTRIBUTE_CONST size_t get_iiwidth_len(
@@ -290,6 +341,46 @@ ATTRIBUTE_CONST int get_iiwidth(
     if (ipinfo_no < len)
         return iiwidth[ipinfo_no];
     return iiwidth[ipinfo_no % len];
+}
+
+int res_waitfd(
+    void)
+{
+    return fromres[0];
+}
+
+void res_ack(
+    struct mtr_ctl *ctl)
+{
+    char key[NAMELEN];
+    char buf[NAMELEN + PACKETSZ + 1];
+    char *txtrec = NULL;
+    char *pstr = NULL;
+    ENTRY item;
+    ENTRY *found_item;
+
+    while (fgets(buf, sizeof(buf), fromresfp)) {
+        buf[strlen(buf) - 1] = 0;
+
+        sscanf(buf, "%s", key);
+        txtrec = buf + strlen(key) + 1;
+
+        pstr = xstrdup(txtrec);
+        split_txtrec(ctl, pstr);
+
+        item.key = key;
+        if ((found_item = hsearch(item, FIND))) {
+        	if (found_item->data == NULL) {
+        		found_item->data = (void *)items;
+        	}
+        } else {
+        	if ((item.key = xstrdup(key))) {
+                item.data = (void *) items;
+                hsearch(item, ENTER);
+                DEB_syslog(LOG_INFO, "Insert into hash: %s", key);
+            }
+        }
+    }
 }
 
 char *fmt_ipinfo(
@@ -313,10 +404,67 @@ int is_printii(
 void asn_open(
     struct mtr_ctl *ctl)
 {
-    if (ctl->ipinfo_no >= 0) {
-        DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
-        if (!(iihash = hcreate(IIHASH_HI)))
-            error(0, errno, "ipinfo hash");
+    int pid;
+
+    if (ctl->ipinfo_no < 0) {
+        return ;
+    }
+
+    DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
+    if (!(iihash = hcreate(IIHASH_HI))) {
+        error(EXIT_FAILURE, errno, "can't hcreate for ipinfo process");
+    }
+
+    if (pipe(tores) < 0) {
+        error(EXIT_FAILURE, errno, "can't make a pipe for ipinfo process");
+    }
+
+    if (pipe(fromres) < 0) {
+        error(EXIT_FAILURE, errno, "can't make a pipe for ipinfo process");
+    }
+    fflush(stdout);
+
+    pid = fork();
+    if (pid < 0) {
+        error(EXIT_FAILURE, errno, "can't fork for ipinfo process");
+    } else if (pid == 0) {
+        int i;
+        FILE *infp = NULL;
+        char buf[64];
+
+        if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
+            error(EXIT_FAILURE, errno, "signal");
+        }
+
+        for (i = 3; i < fromres[1]; i++) {
+            if (i == tores[0])
+                continue;
+            if (i == fromres[1])
+                continue;
+            close(i);
+        }
+
+        infp = fdopen(tores[0], "r");
+        while (fgets(buf, sizeof(buf), infp)) {
+            if (!fork()) {
+                buf[strlen(buf) - 1] = 0;
+                do_ipinfo_lookup(ctl, buf);
+
+                exit(EXIT_SUCCESS);
+            }
+        }
+        fclose(infp);
+
+        exit(EXIT_SUCCESS);
+    } else {
+        int flags;
+
+        close(tores[0]);
+        close(fromres[1]);
+        fromresfp = fdopen(fromres[0], "r");
+        flags = fcntl(fromres[0], F_GETFL, 0);
+        flags |= O_NONBLOCK;
+        fcntl(fromres[0], F_SETFL, flags);
     }
 }
 
@@ -328,4 +476,10 @@ void asn_close(
         hdestroy();
         iihash = 0;
     }
+
+    if (fromresfp != NULL) {
+        fclose(fromresfp);
+    }
+    close(tores[1]);
+    close(fromres[0]);
 }
