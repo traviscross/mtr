@@ -545,8 +545,9 @@ void send_probe(
 {
     char packet[PACKET_BUFFER_SIZE];
     struct probe_t *probe;
-    int packet_size;
     struct sockaddr_storage src_sockaddr;
+    int trytimes = 0;
+    int packet_size;
 
     probe = alloc_probe(net_state, param->command_token);
     if (probe == NULL) {
@@ -566,10 +567,29 @@ void send_probe(
         exit(EXIT_FAILURE);
     }
 
-    packet_size =
-        construct_packet(net_state, &probe->platform.socket,
+	while (1) {
+		if (trytimes >= (MAX_PORT - MIN_PORT + 1))
+			break;
+			
+		packet_size = construct_packet(net_state, &probe->platform.socket,
                          probe->sequence, packet, PACKET_BUFFER_SIZE,
                          &probe->remote_addr, &src_sockaddr, param);
+        
+        if ((packet_size < 0) &&
+        	(param->protocol == IPPROTO_TCP || param->protocol == IPPROTO_SCTP) &&
+        	(errno == EADDRINUSE)) {
+        	
+        	probe->sequence = net_state->platform.next_sequence++;
+        	
+        	if (net_state->platform.next_sequence > MAX_PORT) {
+                net_state->platform.next_sequence = MIN_PORT;
+            }
+            
+            trytimes++;
+        } else {
+        	break;
+        }
+	}
 
     if (packet_size < 0) {
         /*
