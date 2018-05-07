@@ -570,7 +570,7 @@ void send_probe(
     // there might be an off-by-one in the number of tries here. 
     // this is intentional.  It is no use exhausting the very last
     // open port. Max 10 retries would've been acceptable too I think. 
-    for (trytimes=MIN_PORT; trytimes < MAX_PORT; try_times++) {
+    for (trytimes=MIN_PORT; trytimes < MAX_PORT; trytimes++) {
 			
         packet_size = construct_packet(net_state, &probe->platform.socket,
                          probe->sequence, packet, PACKET_BUFFER_SIZE,
