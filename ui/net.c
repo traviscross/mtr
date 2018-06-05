@@ -720,6 +720,16 @@ static void net_find_local_address(
 
     if (connect
         (udp_socket, (struct sockaddr *) &remote_sockaddr, addr_length)) {
+#ifdef __linux__
+        /* Linux doesn't require source address, so we can support
+         * a case when mtr is run against unreachable host (that can become
+         * reachable) */
+        if (errno == EHOSTUNREACH) {
+            close(udp_socket);
+            localaddr[0] = '\0';
+            return;
+        }
+#endif
         error(EXIT_FAILURE, errno, "udp socket connect failed");
     }
 
