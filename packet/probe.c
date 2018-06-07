@@ -356,14 +356,32 @@ int find_source_addr(
         return -1;
     }
 
-    if (connect(sock, (struct sockaddr *) &dest_with_port, len)) {
-        close(sock);
-        return -1;
-    }
+    if (connect(sock, (struct sockaddr *) &dest_with_port, len) == 0) {
+        if (getsockname(sock, (struct sockaddr *) srcaddr, &len)) {
+            close(sock);
+            return -1;
+        }
+    } else {
+#ifdef __linux__
+        /* Linux doesn't require source address, so we can support
+         * a case when mtr is run against unreachable host (that can become
+         * reachable) */
+        if (errno != EHOSTUNREACH) {
+            close(sock);
+            return -1;
+        }
 
-    if (getsockname(sock, (struct sockaddr *) srcaddr, &len)) {
+        if (destaddr->ss_family == AF_INET6) {
+            srcaddr6 = (struct sockaddr_in6 *) srcaddr;
+            srcaddr6->sin6_addr = in6addr_any;
+        } else {
+            srcaddr4 = (struct sockaddr_in *) srcaddr;
+            srcaddr4->sin_addr.s_addr = INADDR_ANY;
+        }
+#else
         close(sock);
         return -1;
+#endif
     }
 
     close(sock);
