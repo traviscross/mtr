@@ -128,6 +128,12 @@ void check_length_order(
     ssize_t bytes_sent;
     int packet_size;
 
+#ifdef __linux__
+    /*  Linux will accept either byte order and check below fails to work
+     *  in some cases due to sendto() returning EPERM. */
+    return;
+#endif
+
     memset(&param, 0, sizeof(struct probe_param_t));
     param.ip_version = 4;
     param.protocol = IPPROTO_ICMP;
@@ -230,7 +236,10 @@ int open_ip4_sockets_raw(
 
     send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (send_socket == -1) {
-        return -1;
+        send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+        if (send_socket == -1) {
+            return -1;
+        }
     }
 
     /*
