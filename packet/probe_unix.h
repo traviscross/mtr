@@ -19,6 +19,11 @@
 #ifndef PROBE_UNIX_H
 #define PROBE_UNIX_H
 
+#ifndef IPPROTO_SCTP
+// Needed for Netbsd. 
+#define IPPROTO_SCTP           132             /* SCTP */
+#endif
+
 /*  The range of local port numbers to use for probes  */
 #define MIN_PORT 33000
 #define MAX_PORT 65535
