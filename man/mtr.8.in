@@ -475,6 +475,28 @@ executable.
 .TP
 .B DISPLAY
 Specifies an X11 server for the GTK+ frontend.
+.SH NOTES
+.B mtr
+can be controlled while it is running with the following keys.
+  ?|h     help
+  p       pause (SPACE to resume)
+  d       switching display mode
+  e       toggle MPLS information on/off
+  n       toggle DNS on/off
+  r       reset all counters
+  o str   set the columns to display, default str='LRS N BAWV'
+  j       toggle latency(LS NABWV)/jitter(DR AGJMXI) stats
+  c <n>   report cycle n, default n=infinite
+  i <n>   set the ping interval to n seconds, default n=1
+  f <n>   set the initial time-to-live(ttl), default n=1
+  m <n>   set the max time-to-live, default n= # of hops
+  s <n>   set the packet size to n or random(n<0)
+  b <c>   set ping bit pattern to c(0..255) or random(c<0)
+  Q <t>   set ping packet's TOS to t
+  u       switch between ICMP ECHO and UDP datagrams
+  y       switching IP info
+  z       toggle ASN info on/off
+  q       exit
 .SH BUGS
 Some modern routers give a lower priority to ICMP ECHO packets than 
 to other network traffic.  Consequently, the reliability of these
