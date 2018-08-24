@@ -475,9 +475,9 @@ executable.
 .TP
 .B DISPLAY
 Specifies an X11 server for the GTK+ frontend.
-.SH NOTES
+.SH INTERACTIVE CONTROL
 .B mtr
-can be controlled while it is running with the following keys.
+can be controlled while it is running with the following keys:
   ?|h     help
   p       pause (SPACE to resume)
   d       switching display mode
