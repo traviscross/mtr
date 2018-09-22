@@ -114,6 +114,7 @@ struct mtr_ctl {
         use_dns:1,
         show_ips:1,
         enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5;
+    int fstMASK                 /* first whitout masking IP address */
 };
 
 /* dynamic field drawing */
