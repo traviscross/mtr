@@ -12,6 +12,8 @@ confinc
 confmf
 conftest.*
 stamp-h1*
+tags
+cscope.out
 
 /build-aux/compile
 /build-aux/depcomp
