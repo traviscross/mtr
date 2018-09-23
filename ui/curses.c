@@ -387,6 +387,8 @@ int mtr_curses_keyaction(
         printw("  y       switching IP info\n");
         printw("  z       toggle ASN info on/off\n");
 #endif
+        printw
+            ("  0 <n>   masks first #n IPs in the TTL list (0 = masking off)\n");
         printw("\n");
         printw(" press any key to go back...");
         getch();                /* read and ignore 'any key' */
@@ -730,7 +732,7 @@ void mtr_curses_redraw(
     if (ctl->fstMASK == 0) {
         mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
     } else {
-        mvprintw(1, 0, "hostname masked (ip addr masked)", ctl->LocalHostname, net_localaddr());
+        mvprintw(1, 0, "hostname masked (ip masked)", ctl->LocalHostname, net_localaddr());
     }
     t = time(NULL);
     mvprintw(1, maxx - 25, iso_time(&t));
