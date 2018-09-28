@@ -67,15 +67,11 @@ INSTALLING
 BUILDING FOR WINDOWS
 
   Building for Windows requires Cygwin.  To obtain Cygwin, see
-  https://cygwin.com/install.html.  When installing Cygwin, select
-  the 'lynx' package for installation.  lynx is required by apt-cyg.
+  https://cygwin.com/install.html. 
+  Next, re-run cygwin's setup.exe (or setup-x86_64.exe if you're using 64bit cygwin) with the following arguments,   
+  which will install the packages required for building:
 
-  Next, install apt-cyg for easy installation of the remaining
-  components.  See https://github.com/transcode-open/apt-cyg.
-
-  Install the packages required for building:
-
-        apt-cyg install automake pkg-config make gcc-core libncurses-devel
+        setup.exe --package-manager --wait --packages automake,pkg-config,make,gcc-core,libncurses-devel
 
   Build as under Unix:
 
