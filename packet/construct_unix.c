@@ -219,6 +219,25 @@ void set_udp_ports(
     }
 }
 
+/* Prepend pseudoheader to the udp datagram and calculate checksum */
+static
+int udp4_checksum(void *pheader, void *udata, int psize, int dsize,
+                  int alt_checksum)
+{
+    unsigned int totalsize = psize + dsize;
+    unsigned char csumpacket[totalsize];
+
+    memcpy(csumpacket, pheader, psize); /* pseudo header */
+    memcpy(csumpacket+psize, udata, dsize);   /* udp header & payload */
+
+    if (alt_checksum && dsize >= sizeof(struct UDPHeader) + 2) {
+        csumpacket[psize + sizeof(struct UDPHeader)] = 0;
+        csumpacket[psize + sizeof(struct UDPHeader) + 1] = 0;
+    }
+
+    return compute_checksum(csumpacket, totalsize);
+}
+
 /*
     Construct a header for UDP probes, using the port number associated
     with the probe.
@@ -229,6 +248,8 @@ void construct_udp4_header(
     int sequence,
     char *packet_buffer,
     int packet_size,
+    const struct sockaddr_in *src_addr,
+    const struct sockaddr_in *dst_addr,
     const struct probe_param_t *param)
 {
     struct UDPHeader *udp;
@@ -246,6 +267,29 @@ void construct_udp4_header(
 
     set_udp_ports(udp, sequence, param);
     udp->length = htons(udp_size);
+
+    /* calculate udp checksum */
+    struct UDPPseudoHeader udph = {
+        .saddr = src_addr->sin_addr.s_addr,
+        .daddr = dst_addr->sin_addr.s_addr,
+        .zero = 0,
+        .protocol = 17,
+        .len = udp->length
+    };
+
+    /* get position to write checksum */
+    uint16_t *checksum_off = &udp->checksum;
+
+    if (udp->checksum != 0)
+    { /* checksum is sequence number - correct the payload to match the checksum
+         checksum_off is udp payload */
+        checksum_off = (uint16_t *)&packet_buffer[packet_size -
+                                                  udp_size +
+                                                  sizeof(struct UDPHeader)];
+    }
+    *checksum_off = htons(udp4_checksum(&udph, udp,
+                                        sizeof(struct UDPPseudoHeader),
+                                        udp_size, udp->checksum != 0));
 }
 
 /*  Construct a header for UDPv6 probes  */
@@ -533,7 +577,10 @@ int construct_ip4_packet(
                                    packet_size, param);
         } else if (param->protocol == IPPROTO_UDP) {
             construct_udp4_header(net_state, sequence, packet_buffer,
-                                  packet_size, param);
+                                  packet_size,
+                                  (struct sockaddr_in *)src_sockaddr,
+                                  (struct sockaddr_in *)dest_sockaddr,
+                                  param);
         } else {
             errno = EINVAL;
             return -1;
