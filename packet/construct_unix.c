@@ -99,15 +99,12 @@ void construct_addr_port(
 static
 void construct_ip4_header(
     const struct net_state_t *net_state,
+    const struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
-    const struct sockaddr_storage *srcaddr,
-    const struct sockaddr_storage *destaddr,
     const struct probe_param_t *param)
 {
     struct IPHeader *ip;
-    struct sockaddr_in *srcaddr4 = (struct sockaddr_in *) srcaddr;
-    struct sockaddr_in *destaddr4 = (struct sockaddr_in *) destaddr;
 
     ip = (struct IPHeader *) &packet_buffer[0];
 
@@ -118,15 +115,20 @@ void construct_ip4_header(
     ip->len = length_byte_swap(net_state, packet_size);
     ip->ttl = param->ttl;
     ip->protocol = param->protocol;
-    memcpy(&ip->saddr, &srcaddr4->sin_addr, sizeof(uint32_t));
-    memcpy(&ip->daddr, &destaddr4->sin_addr, sizeof(uint32_t));
+//    ip->id = htons(getpid());
+    memcpy(&ip->saddr,
+           sockaddr_addr_offset(&probe->local_addr),
+           sockaddr_addr_size(&probe->local_addr));
+    memcpy(&ip->daddr,
+           sockaddr_addr_offset(&probe->remote_addr),
+           sockaddr_addr_size(&probe->remote_addr));
 }
 
 /*  Construct an ICMP header for IPv4  */
 static
 void construct_icmp4_header(
     const struct net_state_t *net_state,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -146,7 +148,7 @@ void construct_icmp4_header(
 
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(sequence);
+    icmp->sequence = htons(probe->sequence);
     icmp->checksum = htons(compute_checksum(icmp, icmp_size));
 }
 
@@ -154,7 +156,7 @@ void construct_icmp4_header(
 static
 int construct_icmp6_packet(
     const struct net_state_t *net_state,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -167,7 +169,7 @@ int construct_icmp6_packet(
 
     icmp->type = ICMP6_ECHO;
     icmp->id = htons(getpid());
-    icmp->sequence = htons(sequence);
+    icmp->sequence = htons(probe->sequence);
 
     return 0;
 }
@@ -184,7 +186,7 @@ int construct_icmp6_packet(
 static
 void set_udp_ports(
     struct UDPHeader *udp,
-    int sequence,
+    struct probe_t *probe,
     const struct probe_param_t *param)
 {
     if (param->dest_port) {
@@ -192,13 +194,13 @@ void set_udp_ports(
 
         if (param->local_port) {
             udp->srcport = htons(param->local_port);
-            udp->checksum = htons(sequence);
+            udp->checksum = htons(probe->sequence);
         } else {
-            udp->srcport = htons(sequence);
+            udp->srcport = htons(probe->sequence);
             udp->checksum = 0;
         }
     } else {
-        udp->dstport = htons(sequence);
+        udp->dstport = htons(probe->sequence);
 
         if (param->local_port) {
             udp->srcport = htons(param->local_port);
@@ -208,6 +210,8 @@ void set_udp_ports(
 
         udp->checksum = 0;
     }
+    *(uint16_t *)sockaddr_port_offset(&probe->local_addr) = udp->srcport;
+    *(uint16_t *)sockaddr_port_offset(&probe->remote_addr) = udp->dstport;
 }
 
 /* Prepend pseudoheader to the udp datagram and calculate checksum */
@@ -236,11 +240,9 @@ int udp4_checksum(void *pheader, void *udata, int psize, int dsize,
 static
 void construct_udp4_header(
     const struct net_state_t *net_state,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
-    const struct sockaddr_in *src_addr,
-    const struct sockaddr_in *dst_addr,
     const struct probe_param_t *param)
 {
     struct UDPHeader *udp;
@@ -256,13 +258,13 @@ void construct_udp4_header(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    set_udp_ports(udp, sequence, param);
+    set_udp_ports(udp, probe, param);
     udp->length = htons(udp_size);
 
     /* calculate udp checksum */
     struct UDPPseudoHeader udph = {
-        .saddr = src_addr->sin_addr.s_addr,
-        .daddr = dst_addr->sin_addr.s_addr,
+        .saddr = *(uint32_t *)sockaddr_addr_offset(&probe->local_addr),
+        .daddr = *(uint32_t *)sockaddr_addr_offset(&probe->remote_addr),
         .zero = 0,
         .protocol = 17,
         .len = udp->length
@@ -287,7 +289,7 @@ void construct_udp4_header(
 static
 int construct_udp6_packet(
     const struct net_state_t *net_state,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
@@ -301,7 +303,7 @@ int construct_udp6_packet(
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
-    set_udp_ports(udp, sequence, param);
+    set_udp_ports(udp, probe, param);
     udp->length = htons(udp_size);
 
     if (net_state->platform.ip6_socket_raw) {
@@ -538,11 +540,9 @@ static
 int construct_ip4_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
-    const struct sockaddr_storage *src_sockaddr,
-    const struct sockaddr_storage *dest_sockaddr,
     const struct probe_param_t *param)
 {
     int send_socket = net_state->platform.ip4_send_socket;
@@ -560,18 +560,15 @@ int construct_ip4_packet(
 #endif
     } else {
         if (net_state->platform.ip4_socket_raw) {
-            construct_ip4_header(net_state, packet_buffer, packet_size,
-                                 src_sockaddr, dest_sockaddr, param);
+            construct_ip4_header(net_state, probe, packet_buffer, packet_size,
+                                  param);
         }
         if (param->protocol == IPPROTO_ICMP) {
-            construct_icmp4_header(net_state, sequence, packet_buffer,
+            construct_icmp4_header(net_state, probe, packet_buffer,
                                    packet_size, param);
         } else if (param->protocol == IPPROTO_UDP) {
-            construct_udp4_header(net_state, sequence, packet_buffer,
-                                  packet_size,
-                                  (struct sockaddr_in *)src_sockaddr,
-                                  (struct sockaddr_in *)dest_sockaddr,
-                                  param);
+            construct_udp4_header(net_state, probe, packet_buffer,
+                                  packet_size, param);
         } else {
             errno = EINVAL;
             return -1;
@@ -580,8 +577,8 @@ int construct_ip4_packet(
 
     if (is_stream_protocol) {
         send_socket =
-            open_stream_socket(net_state, param->protocol, sequence,
-                               src_sockaddr, dest_sockaddr, param);
+            open_stream_socket(net_state, param->protocol, probe->sequence,
+                               &probe->local_addr, &probe->remote_addr, param);
 
         if (send_socket == -1) {
             return -1;
@@ -634,7 +631,7 @@ int construct_ip4_packet(
     }
 
     /*  Bind to our local address  */
-    if (bind_send_socket && bind(socket, (struct sockaddr *)src_sockaddr,
+    if (bind_send_socket && bind(socket, (struct sockaddr *)&probe->local_addr,
                 sizeof(struct sockaddr_in))) {
         return -1;
     }
@@ -667,11 +664,9 @@ static
 int construct_ip6_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
-    const struct sockaddr_storage *src_sockaddr,
-    const struct sockaddr_storage *dest_sockaddr,
     const struct probe_param_t *param)
 {
     int send_socket;
@@ -694,7 +689,7 @@ int construct_ip6_packet(
         }
 
         if (construct_icmp6_packet
-            (net_state, sequence, packet_buffer, packet_size, param)) {
+            (net_state, probe, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else if (param->protocol == IPPROTO_UDP) {
@@ -705,7 +700,7 @@ int construct_ip6_packet(
         }
 
         if (construct_udp6_packet
-            (net_state, sequence, packet_buffer, packet_size, param)) {
+            (net_state, probe, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else {
@@ -715,8 +710,8 @@ int construct_ip6_packet(
 
     if (is_stream_protocol) {
         send_socket =
-            open_stream_socket(net_state, param->protocol, sequence,
-                               src_sockaddr, dest_sockaddr, param);
+            open_stream_socket(net_state, param->protocol, probe->sequence,
+                               &probe->local_addr, &probe->remote_addr, param);
 
         if (send_socket == -1) {
             return -1;
@@ -740,7 +735,7 @@ int construct_ip6_packet(
 
         if (net_state->platform.ip6_socket_raw) {
             if (memcmp(&current_sockaddr,
-                       src_sockaddr, sizeof(struct sockaddr_in6)) == 0) {
+                       &probe->local_addr, sizeof(struct sockaddr_in6)) == 0) {
                 bind_send_socket = false;
             }
         } else {
@@ -753,7 +748,7 @@ int construct_ip6_packet(
 
     /*  Bind to our local address  */
     if (bind_send_socket) {
-        if (bind(send_socket, (struct sockaddr *) src_sockaddr,
+        if (bind(send_socket, (struct sockaddr *) &probe->local_addr,
                  sizeof(struct sockaddr_in6))) {
             return -1;
         }
@@ -787,11 +782,9 @@ int construct_ip6_packet(
 int construct_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_buffer_size,
-    const struct sockaddr_storage *dest_sockaddr,
-    const struct sockaddr_storage *src_sockaddr,
     const struct probe_param_t *param)
 {
     int packet_size;
@@ -809,15 +802,15 @@ int construct_packet(
     memset(packet_buffer, param->bit_pattern, packet_size);
 
     if (param->ip_version == 6) {
-        if (construct_ip6_packet(net_state, packet_socket, sequence,
+        if (construct_ip6_packet(net_state, packet_socket, probe,
                                  packet_buffer, packet_size,
-                                 src_sockaddr, dest_sockaddr, param)) {
+                                 param)) {
             return -1;
         }
     } else if (param->ip_version == 4) {
-        if (construct_ip4_packet(net_state, packet_socket, sequence,
+        if (construct_ip4_packet(net_state, packet_socket, probe,
                                  packet_buffer, packet_size,
-                                 src_sockaddr, dest_sockaddr, param)) {
+                                 param)) {
             return -1;
         }
     } else {

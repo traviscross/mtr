@@ -120,8 +120,7 @@ void check_length_order(
 {
     char packet[PACKET_BUFFER_SIZE];
     struct probe_param_t param;
-    struct sockaddr_storage dest_sockaddr;
-    struct sockaddr_storage src_sockaddr;
+    struct probe_t p0 = {.sequence = MIN_PORT };
     ssize_t bytes_sent;
     int packet_size;
 
@@ -138,8 +137,9 @@ void check_length_order(
     param.remote_address = "127.0.0.1";
     param.is_probing_byte_order = true;
 
-    if (resolve_probe_addresses(net_state, &param, &dest_sockaddr,
-                &src_sockaddr)) {
+
+    if (resolve_probe_addresses(net_state, &param, &p0.remote_addr,
+                &p0.local_addr)) {
         fprintf(stderr, "Error decoding localhost address\n");
         exit(EXIT_FAILURE);
     }
@@ -147,9 +147,9 @@ void check_length_order(
     /*  First attempt to ping the localhost with network byte order  */
     net_state->platform.ip_length_host_order = false;
 
-    packet_size = construct_packet(net_state, NULL, MIN_PORT,
+    packet_size = construct_packet(net_state, NULL, &p0,
                                    packet, PACKET_BUFFER_SIZE,
-                                   &dest_sockaddr, &src_sockaddr, &param);
+                                   &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(EXIT_FAILURE);
@@ -157,7 +157,7 @@ void check_length_order(
 
     bytes_sent =
         send_packet(net_state, &param, MIN_PORT, packet, packet_size,
-                    &dest_sockaddr);
+                    &p0.remote_addr);
     if (bytes_sent > 0) {
         return;
     }
@@ -165,9 +165,9 @@ void check_length_order(
     /*  Since network byte order failed, try host byte order  */
     net_state->platform.ip_length_host_order = true;
 
-    packet_size = construct_packet(net_state, NULL, MIN_PORT,
+    packet_size = construct_packet(net_state, NULL, &p0,
                                    packet, PACKET_BUFFER_SIZE,
-                                   &dest_sockaddr, &src_sockaddr, &param);
+                                   &param);
     if (packet_size < 0) {
         perror("Unable to send to localhost");
         exit(EXIT_FAILURE);
@@ -175,7 +175,7 @@ void check_length_order(
 
     bytes_sent =
         send_packet(net_state, &param, MIN_PORT, packet, packet_size,
-                    &dest_sockaddr);
+                    &p0.remote_addr);
     if (bytes_sent < 0) {
         perror("Unable to send with swapped length");
         exit(EXIT_FAILURE);
@@ -551,7 +551,6 @@ void send_probe(
 {
     char packet[PACKET_BUFFER_SIZE];
     struct probe_t *probe;
-    struct sockaddr_storage src_sockaddr;
     int trytimes;
     int packet_size;
 
@@ -562,7 +561,7 @@ void send_probe(
     }
 
     if (resolve_probe_addresses(net_state, param, &probe->remote_addr,
-                &src_sockaddr)) {
+                &probe->local_addr)) {
         printf("%d invalid-argument\n", param->command_token);
         free_probe(net_state, probe);
         return;
@@ -579,9 +578,9 @@ void send_probe(
     for (trytimes=MIN_PORT; trytimes < MAX_PORT; trytimes++) {
 			
         packet_size = construct_packet(net_state, &probe->platform.socket,
-                         probe->sequence, packet, PACKET_BUFFER_SIZE,
-                         &probe->remote_addr, &src_sockaddr, param);
-        
+                         probe, packet, PACKET_BUFFER_SIZE,
+                         param);
+
         if (packet_size > 0) break; // no retry if we succeed.
 
         if ((param->protocol != IPPROTO_TCP) && 

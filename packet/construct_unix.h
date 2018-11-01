@@ -24,11 +24,9 @@
 int construct_packet(
     const struct net_state_t *net_state,
     int *packet_socket,
-    int sequence,
+    struct probe_t *probe,
     char *packet_buffer,
     int packet_buffer_size,
-    const struct sockaddr_storage *dest_sockaddr,
-    const struct sockaddr_storage *src_sockaddr,
     const struct probe_param_t *param);
 
 #endif
