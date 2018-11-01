@@ -32,6 +32,7 @@
 
 #include "platform.h"
 #include "protocols.h"
+#include "sockaddr.h"
 #include "construct_unix.h"
 #include "deconstruct_unix.h"
 #include "timeval.h"
@@ -62,13 +63,11 @@ int send_packet(
             if (net_state->platform.ip6_socket_raw) {
                 send_socket = net_state->platform.udp6_send_socket;
             } else {
-                struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)sockaddr;
-
                 send_socket = net_state->platform.ip6_txrx_udp_socket;
                 if (param->dest_port) {
-                    addr_in6->sin6_port = htons(param->dest_port);
+                    *(uint16_t *)sockaddr_port_offset(sockaddr) = htons(param->dest_port);
                 } else {
-                    addr_in6->sin6_port = sequence;
+                    *(uint16_t *)sockaddr_port_offset(sockaddr) = sequence;
                 }
             }
         }
@@ -85,13 +84,11 @@ int send_packet(
                     send_socket = net_state->platform.ip4_txrx_icmp_socket;
                 }
             } else if (param->protocol == IPPROTO_UDP) {
-                struct sockaddr_in *addr_in = (struct sockaddr_in *)sockaddr;
-
                 send_socket = net_state->platform.ip4_txrx_udp_socket;
                 if (param->dest_port) {
-                    addr_in->sin_port = htons(param->dest_port);
+                    *(uint16_t *)sockaddr_port_offset(sockaddr) = htons(param->dest_port);
                 } else {
-                    addr_in->sin_port = sequence;
+                    *(uint16_t *)sockaddr_port_offset(sockaddr) = sequence;
                 }
             }
         }

@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "protocols.h"
+#include "sockaddr.h"
 
 /* For Mac OS X and FreeBSD */
 #ifndef SOL_IP
@@ -90,18 +91,8 @@ void construct_addr_port(
     const struct sockaddr_storage *addr,
     int port)
 {
-    struct sockaddr_in *addr4;
-    struct sockaddr_in6 *addr6;
-
     memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
-
-    if (addr->ss_family == AF_INET6) {
-        addr6 = (struct sockaddr_in6 *) addr_with_port;
-        addr6->sin6_port = htons(port);
-    } else {
-        addr4 = (struct sockaddr_in *) addr_with_port;
-        addr4->sin_port = htons(port);
-    }
+    *(uint16_t *)sockaddr_port_offset(addr) = htons(port);
 }
 
 /*  Construct a header for IP version 4  */

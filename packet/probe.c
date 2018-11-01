@@ -31,6 +31,7 @@
 #include "platform.h"
 #include "protocols.h"
 #include "timeval.h"
+#include "sockaddr.h"
 
 #define IP_TEXT_LENGTH 64
 
@@ -109,19 +110,9 @@ int resolve_probe_addresses(
     }
     /* DGRAM ICMP id is taken from src_port not from ICMP header */
     if (param->protocol == IPPROTO_ICMP) {
-        if (src_sockaddr->ss_family == AF_INET) {
-            if (!net_state->platform.ip4_socket_raw) {
-                struct sockaddr_in *sin_src =
-                    (struct sockaddr_in *) src_sockaddr;
-                sin_src->sin_port = htons(getpid());
-            }
-        } else if (src_sockaddr->ss_family == AF_INET6) {
-            if (!net_state->platform.ip6_socket_raw) {
-                struct sockaddr_in6 *sin6_src =
-                    (struct sockaddr_in6 *) src_sockaddr;
-                sin6_src->sin6_port = htons(getpid());
-            }
-        }
+        if ( (src_sockaddr->ss_family == AF_INET && !net_state->platform.ip4_socket_raw) ||
+             (src_sockaddr->ss_family == AF_INET6 && !net_state->platform.ip6_socket_raw) )
+            *(uint16_t *)sockaddr_port_offset(src_sockaddr) = htons(getpid());
     }
 
     return 0;
@@ -259,9 +250,6 @@ void respond_to_probe(
     int remaining_size;
     const char *result;
     const char *ip_argument;
-    struct sockaddr_in *sockaddr4;
-    struct sockaddr_in6 *sockaddr6;
-    void *addr;
 
     if (icmp_type == ICMP_TIME_EXCEEDED) {
         result = "ttl-expired";
@@ -274,15 +262,11 @@ void respond_to_probe(
 
     if (remote_addr->ss_family == AF_INET6) {
         ip_argument = "ip-6";
-        sockaddr6 = (struct sockaddr_in6 *) remote_addr;
-        addr = &sockaddr6->sin6_addr;
     } else {
         ip_argument = "ip-4";
-        sockaddr4 = (struct sockaddr_in *) remote_addr;
-        addr = &sockaddr4->sin_addr;
     }
 
-    if (inet_ntop(remote_addr->ss_family, addr, ip_text, IP_TEXT_LENGTH) ==
+    if (inet_ntop(remote_addr->ss_family, sockaddr_addr_offset(remote_addr), ip_text, IP_TEXT_LENGTH) ==
         NULL) {
 
         perror("inet_ntop failure");
@@ -325,8 +309,6 @@ int find_source_addr(
 {
     int sock;
     int len;
-    struct sockaddr_in *destaddr4;
-    struct sockaddr_in6 *destaddr6;
     struct sockaddr_storage dest_with_port;
     struct sockaddr_in *srcaddr4;
     struct sockaddr_in6 *srcaddr6;
@@ -339,17 +321,8 @@ int find_source_addr(
        the connect will fail.  We aren't actually sending
        anything to the port.
      */
-    if (destaddr->ss_family == AF_INET6) {
-        destaddr6 = (struct sockaddr_in6 *) &dest_with_port;
-        destaddr6->sin6_port = htons(1);
-
-        len = sizeof(struct sockaddr_in6);
-    } else {
-        destaddr4 = (struct sockaddr_in *) &dest_with_port;
-        destaddr4->sin_port = htons(1);
-
-        len = sizeof(struct sockaddr_in);
-    }
+    *(uint16_t *)sockaddr_port_offset(&dest_with_port) = htons(1);
+    len = sockaddr_addr_size(&dest_with_port);
 
     sock = socket(destaddr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == -1) {
@@ -390,15 +363,7 @@ int find_source_addr(
        Zero the port, as we may later use this address to finding, and
        we don't want to use the port from the socket we just created.
      */
-    if (destaddr->ss_family == AF_INET6) {
-        srcaddr6 = (struct sockaddr_in6 *) srcaddr;
-
-        srcaddr6->sin6_port = 0;
-    } else {
-        srcaddr4 = (struct sockaddr_in *) srcaddr;
-
-        srcaddr4->sin_port = 0;
-    }
+    *(uint16_t *)sockaddr_port_offset(&srcaddr) = 0;
 
     return 0;
 }
