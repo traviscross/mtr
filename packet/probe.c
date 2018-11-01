@@ -33,8 +33,6 @@
 #include "timeval.h"
 #include "sockaddr.h"
 
-#define IP_TEXT_LENGTH 64
-
 /*  Convert the destination address from text to sockaddr  */
 int decode_address_string(
     int ip_version,
@@ -244,7 +242,7 @@ void respond_to_probe(
     int mpls_count,
     const struct mpls_label_t *mpls)
 {
-    char ip_text[IP_TEXT_LENGTH];
+    char ip_text[INET6_ADDRSTRLEN];
     char response[COMMAND_BUFFER_SIZE];
     char mpls_str[COMMAND_BUFFER_SIZE];
     int remaining_size;
@@ -266,7 +264,7 @@ void respond_to_probe(
         ip_argument = "ip-4";
     }
 
-    if (inet_ntop(remote_addr->ss_family, sockaddr_addr_offset(remote_addr), ip_text, IP_TEXT_LENGTH) ==
+    if (inet_ntop(remote_addr->ss_family, sockaddr_addr_offset(remote_addr), ip_text, INET6_ADDRSTRLEN) ==
         NULL) {
 
         perror("inet_ntop failure");
