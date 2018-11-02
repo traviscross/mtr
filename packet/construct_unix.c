@@ -92,7 +92,7 @@ void construct_addr_port(
     int port)
 {
     memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
-    *(uint16_t *)sockaddr_port_offset(addr) = htons(port);
+    *sockaddr_port_offset(addr) = htons(port);
 }
 
 /*  Construct a header for IP version 4  */
@@ -210,8 +210,8 @@ void set_udp_ports(
 
         udp->checksum = 0;
     }
-    *(uint16_t *)sockaddr_port_offset(&probe->local_addr) = udp->srcport;
-    *(uint16_t *)sockaddr_port_offset(&probe->remote_addr) = udp->dstport;
+    *sockaddr_port_offset(&probe->local_addr) = udp->srcport;
+    *sockaddr_port_offset(&probe->remote_addr) = udp->dstport;
 }
 
 /* Prepend pseudoheader to the udp datagram and calculate checksum */

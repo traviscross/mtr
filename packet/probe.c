@@ -110,7 +110,7 @@ int resolve_probe_addresses(
     if (param->protocol == IPPROTO_ICMP) {
         if ( (src_sockaddr->ss_family == AF_INET && !net_state->platform.ip4_socket_raw) ||
              (src_sockaddr->ss_family == AF_INET6 && !net_state->platform.ip6_socket_raw) )
-            *(uint16_t *)sockaddr_port_offset(src_sockaddr) = htons(getpid());
+            *sockaddr_port_offset(src_sockaddr) = htons(getpid());
     }
 
     return 0;
@@ -319,7 +319,7 @@ int find_source_addr(
        the connect will fail.  We aren't actually sending
        anything to the port.
      */
-    *(uint16_t *)sockaddr_port_offset(&dest_with_port) = htons(1);
+    *sockaddr_port_offset(&dest_with_port) = htons(1);
     len = sockaddr_addr_size(&dest_with_port);
 
     sock = socket(destaddr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
@@ -361,7 +361,7 @@ int find_source_addr(
        Zero the port, as we may later use this address to finding, and
        we don't want to use the port from the socket we just created.
      */
-    *(uint16_t *)sockaddr_port_offset(&srcaddr) = 0;
+    *sockaddr_port_offset(&srcaddr) = 0;
 
     return 0;
 }

@@ -65,9 +65,9 @@ int send_packet(
             } else {
                 send_socket = net_state->platform.ip6_txrx_udp_socket;
                 if (param->dest_port) {
-                    *(uint16_t *)sockaddr_port_offset(sockaddr) = htons(param->dest_port);
+                    *sockaddr_port_offset(sockaddr) = htons(param->dest_port);
                 } else {
-                    *(uint16_t *)sockaddr_port_offset(sockaddr) = sequence;
+                    *sockaddr_port_offset(sockaddr) = sequence;
                 }
             }
         }
@@ -86,9 +86,9 @@ int send_packet(
             } else if (param->protocol == IPPROTO_UDP) {
                 send_socket = net_state->platform.ip4_txrx_udp_socket;
                 if (param->dest_port) {
-                    *(uint16_t *)sockaddr_port_offset(sockaddr) = htons(param->dest_port);
+                    *sockaddr_port_offset(sockaddr) = htons(param->dest_port);
                 } else {
-                    *(uint16_t *)sockaddr_port_offset(sockaddr) = sequence;
+                    *sockaddr_port_offset(sockaddr) = sequence;
                 }
             }
         }

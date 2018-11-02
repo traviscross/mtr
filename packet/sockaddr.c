@@ -51,7 +51,7 @@ unsigned int sockaddr_size(const void *x)
 	return 0;
 }
 
-void *sockaddr_port_offset(const void *x)
+in_port_t *sockaddr_port_offset(const void *x)
 {
 	if( x == NULL )
 		return NULL;

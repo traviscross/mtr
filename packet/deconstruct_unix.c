@@ -88,10 +88,10 @@ void handle_inner_udp_packet(
     if (probe->remote_addr.ss_family != remote_addr->ss_family)
         return;
 
-    if (udp->dstport != *(uint16_t *)sockaddr_port_offset(&probe->remote_addr) )
+    if (udp->dstport != *sockaddr_port_offset(&probe->remote_addr) )
         return;
 
-    if (udp->srcport != *(uint16_t *)sockaddr_port_offset(&probe->local_addr) )
+    if (udp->srcport != *sockaddr_port_offset(&probe->local_addr) )
         return;
 
     void *saddr, *daddr;
