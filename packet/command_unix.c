@@ -19,6 +19,11 @@
 #include "command.h"
 
 #include <errno.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
@@ -41,14 +46,12 @@ void init_command_buffer(
     /*  Get the current command stream flags  */
     flags = fcntl(command_stream, F_GETFL, 0);
     if (flags == -1) {
-        perror("Unexpected command stream error");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unexpected command stream error");
     }
 
     /*  Set the O_NONBLOCK bit  */
     if (fcntl(command_stream, F_SETFL, flags | O_NONBLOCK)) {
-        perror("Unexpected command stream error");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unexpected command stream error");
     }
 }
 
@@ -80,8 +83,7 @@ int read_commands(
         /*  EAGAIN simply means there is no available data to read  */
         /*  EINTR indicates we received a signal during read  */
         if (errno != EINTR && errno != EAGAIN) {
-            perror("Unexpected command buffer read error");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "Unexpected command buffer read error");
         }
     }
 
