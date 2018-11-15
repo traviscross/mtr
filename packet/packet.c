@@ -19,6 +19,11 @@
 #include "config.h"
 
 #include <errno.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,8 +88,7 @@ int main(
      */
     init_net_state_privileged(&net_state);
     if (drop_elevated_permissions()) {
-        perror("Unable to drop elevated permissions");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unable to drop elevated permissions");
     }
     init_net_state(&net_state);
 
