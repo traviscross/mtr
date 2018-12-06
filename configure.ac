@@ -114,6 +114,10 @@ AC_CHECK_LIB([cap], [cap_set_proc], [],
   AS_IF([test "$host_os" = linux-gnu],
     AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
 
+AC_CHECK_FUNC([clock_gettime], [
+  AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define if your system has clock_gettime])
+])
+
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
   [AS_HELP_STRING([--without-ipinfo], [Do not try to use ipinfo lookup at all])],

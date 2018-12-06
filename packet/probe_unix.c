@@ -566,8 +566,8 @@ void send_probe(
         return;
     }
 
-    if (gettimeofday(&probe->platform.departure_time, NULL)) {
-        error(EXIT_FAILURE, errno, "gettimeofday failure");
+    if (getmonotime(&probe->platform.departure_time)) {
+        error(EXIT_FAILURE, errno, "getmonotime failure");
     }
 
     // there might be an off-by-one in the number of tries here. 
@@ -667,8 +667,8 @@ void receive_probe(
     struct timeval now;
 
     if (timestamp == NULL) {
-        if (gettimeofday(&now, NULL)) {
-            error(EXIT_FAILURE, errno, "gettimeofday failure");
+        if (getmonotime(&now)) {
+            error(EXIT_FAILURE, errno, "getmonotime failure");
         }
 
         timestamp = &now;
@@ -726,8 +726,8 @@ void receive_replies_from_recv_socket(
            Get the time immediately after reading the packet to
            keep the timing as precise as we can.
          */
-        if (gettimeofday(&timestamp, NULL)) {
-            error(EXIT_FAILURE, errno, "gettimeofday failure");
+        if (getmonotime(&timestamp)) {
+            error(EXIT_FAILURE, errno, "getmonotime failure");
         }
 
         if (packet_length == -1) {
@@ -975,8 +975,8 @@ void check_probe_timeouts(
     struct probe_t *probe;
     struct probe_t *probe_safe_iter;
 
-    if (gettimeofday(&now, NULL)) {
-        error(EXIT_FAILURE, errno, "gettimeofday failure");
+    if (getmonotime(&now)) {
+        error(EXIT_FAILURE, errno, "getmonotime failure");
     }
 
     LIST_FOREACH_SAFE(probe, &net_state->outstanding_probes,
@@ -1008,8 +1008,8 @@ bool get_next_probe_timeout(
     struct timeval now;
     struct timeval probe_timeout;
 
-    if (gettimeofday(&now, NULL)) {
-        error(EXIT_FAILURE, errno, "gettimeofday failure");
+    if (getmonotime(&now)) {
+        error(EXIT_FAILURE, errno, "getmonotime failure");
     }
 
     have_timeout = false;

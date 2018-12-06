@@ -62,9 +62,15 @@ void select_loop(
     struct timeval intervaltime;
     static double dnsinterval = 0;
 
-    memset(&startgrace, 0, sizeof(startgrace));
-
+#ifdef HAVE_CLOCK_GETTIME
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    TIMESPEC_TO_TIMEVAL(&lasttime, &ts);
+#else
     gettimeofday(&lasttime, NULL);
+#endif
+
+    memset(&startgrace, 0, sizeof(startgrace));
 
     while (1) {
         dt = calc_deltatime(ctl->WaitTime);
@@ -123,8 +129,12 @@ void select_loop(
                 if (ctl->Interactive)
                     display_redraw(ctl);
 
+#ifdef HAVE_CLOCK_GETTIME
+                clock_gettime(CLOCK_MONOTONIC, &ts);
+                TIMESPEC_TO_TIMEVAL(&thistime, &ts);
+#else
                 gettimeofday(&thistime, NULL);
-
+#endif
                 if (thistime.tv_sec > lasttime.tv_sec + intervaltime.tv_sec
                     || (thistime.tv_sec ==
                         lasttime.tv_sec + intervaltime.tv_sec
