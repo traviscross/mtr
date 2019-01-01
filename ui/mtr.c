@@ -305,6 +305,7 @@ static void init_fld_options(
         ctl->available_options[i] = data_fields[i].key;
         ctl->fld_index[data_fields[i].key] = i;
     }
+    ctl->available_options[i++] = '_';
     ctl->available_options[i] = 0;
 }
 
