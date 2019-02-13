@@ -437,6 +437,12 @@ Note that the replies in this example are printed out of order.
 This is the reason that it is important to send commands with unique
 token values, and to use those token values to match replies with
 their originating commands.
+.SH LANGUAGE BINDINGS
+.PP
+A Python 3.x package for sending asynchronous network probes using
+mtr-packet is available.  See
+.UR https://\:pypi.\:org/\:project/\:mtrpacket/
+.UE
 .SH CONTACT INFORMATION
 .PP
 For the latest version, see the mtr web page at
