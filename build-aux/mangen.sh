@@ -11,4 +11,19 @@ if [ $# -lt 3 ]; then
     exit 1
 fi
 
-sed -e "s|@VERSION[@]|$1|g" $2 >$3
+TMP_FILE=/tmp/mangen.$$
+
+sed -e "s|@VERSION[@]|$1|g" $2 >$TMP_FILE
+
+#
+#  MacOS's groff is missing .UR and .UE support, which makes
+#  URL completely disappear from man pages.  We need to strip
+#  those codes out when building for MacOS
+#
+if [ $(uname -s) = "Darwin" ]; then
+    sed -e "s|.UR ||g" $TMP_FILE | sed -e "s|.UE||g" > $3
+else
+    cp $TMP_FILE $3
+fi
+
+rm -f $TMP_FILE
