@@ -198,7 +198,7 @@ static gint About_clicked(
     gtk_show_about_dialog(GTK_WINDOW(main_window)
                           , "version", PACKAGE_VERSION, "copyright",
                           "Copyright \xc2\xa9 1997,1998  Matt Kimball",
-                          "website", "http://www.bitwizard.nl/mtr/",
+                          "website", "https://www.bitwizard.nl/mtr/",
                           "authors", authors, "comments",
                           "The 'traceroute' and 'ping' programs in a single network diagnostic tool.",
                           "license",

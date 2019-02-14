@@ -11,4 +11,19 @@ if [ $# -lt 3 ]; then
     exit 1
 fi
 
-sed -e "s|@VERSION[@]|$1|g" $2 >$3
+VERSION=$1
+IN=$2
+OUT=$3
+
+#
+#  MacOS's groff is missing .UR and .UE support, which makes
+#  URL completely disappear from man pages.  We need to strip
+#  those codes out when building for MacOS
+#
+if [ $(uname -s) = "Darwin" ]; then
+   RMURUE='-e s/\.UR.//g -e s/\.UE//g'
+else
+   RMURUE=""
+fi
+
+sed -e "s|@VERSION[@]|$VERSION|g" $RMURUE $IN >$OUT
