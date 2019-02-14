@@ -103,6 +103,13 @@ mtr_packet_SOURCES = \
 mtr_packet_LDADD = $(CAP_LIBS)
 
 
+if WITH_ERROR
+mtr_packet_SOURCES += \
+	portability/error.h \
+	portability/error.c
+endif
+
+
 if CYGWIN
 
 mtr_packet_SOURCES += \
