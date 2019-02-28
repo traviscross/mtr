@@ -364,6 +364,7 @@ int mtr_curses_keyaction(
             ("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n");
         printw("  Q <t>   set ping packet's TOS to t\n");
         printw("  u       switch between ICMP ECHO and UDP datagrams\n");
+        printw("  t       switch between ICMP ECHO and TCP\n");
 #ifdef HAVE_IPINFO
         printw("  y       switching IP info\n");
         printw("  z       toggle ASN info on/off\n");
