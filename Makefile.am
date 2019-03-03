@@ -113,7 +113,6 @@ endif
 if CYGWIN
 
 mtr_packet_SOURCES += \
-	packet/command_cygwin.c packet/command_cygwin.h \
 	packet/probe_cygwin.c packet/probe_cygwin.h \
 	packet/wait_cygwin.c
 mtr_packet_LDADD += -lcygwin -liphlpapi -lws2_32
@@ -148,7 +147,6 @@ else  # if CYGWIN
 check_PROGRAMS = mtr-packet-listen
 
 mtr_packet_SOURCES += \
-	packet/command_unix.c packet/command_unix.h \
 	packet/construct_unix.c packet/construct_unix.h \
 	packet/deconstruct_unix.c packet/deconstruct_unix.h \
 	packet/probe_unix.c packet/probe_unix.h \
