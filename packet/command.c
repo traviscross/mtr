@@ -20,11 +20,18 @@
 
 #include <assert.h>
 #include <errno.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include "cmdparse.h"
 #include "platform.h"
@@ -423,4 +430,64 @@ void dispatch_buffer_commands(
         printf("0 command-buffer-overflow\n");
         buffer->incoming_read_position = 0;
     }
+}
+
+/*
+    Initialize the command buffer and put the command stream in
+    non-blocking mode.
+*/
+void init_command_buffer(
+    struct command_buffer_t *command_buffer,
+    int command_stream)
+{
+    int flags;
+
+    memset(command_buffer, 0, sizeof(struct command_buffer_t));
+    command_buffer->command_stream = command_stream;
+
+    /*  Get the current command stream flags  */
+    flags = fcntl(command_stream, F_GETFL, 0);
+    if (flags == -1) {
+        error(EXIT_FAILURE, errno, "Unexpected command stream error");
+    }
+
+    /*  Set the O_NONBLOCK bit  */
+    if (fcntl(command_stream, F_SETFL, flags | O_NONBLOCK)) {
+        error(EXIT_FAILURE, errno, "Unexpected command stream error");
+    }
+}
+
+/*  Read currently available data from the command stream  */
+int read_commands(
+    struct command_buffer_t *buffer)
+{
+    int space_remaining =
+        COMMAND_BUFFER_SIZE - buffer->incoming_read_position - 1;
+    char *read_position =
+        &buffer->incoming_buffer[buffer->incoming_read_position];
+    int read_count;
+    int command_stream = buffer->command_stream;
+
+    read_count = read(command_stream, read_position, space_remaining);
+
+    /*  If the command stream has been closed, read will return zero.  */
+    if (read_count == 0) {
+        errno = EPIPE;
+        return -1;
+    }
+
+    if (read_count > 0) {
+        /*  Account for the newly read data  */
+        buffer->incoming_read_position += read_count;
+    }
+
+    if (read_count < 0) {
+        /*  EAGAIN simply means there is no available data to read  */
+        /*  EINTR indicates we received a signal during read  */
+        if (errno != EINTR && errno != EAGAIN) {
+            error(EXIT_FAILURE, errno, "Unexpected command buffer read error");
+        }
+    }
+
+    return 0;
 }

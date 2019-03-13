@@ -21,6 +21,11 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -284,9 +289,7 @@ void respond_to_probe(
 
     if (inet_ntop(remote_addr->ss_family, addr, ip_text, IP_TEXT_LENGTH) ==
         NULL) {
-
-        perror("inet_ntop failure");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "inet_ntop failure");
     }
 
     snprintf(response, COMMAND_BUFFER_SIZE,

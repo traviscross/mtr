@@ -58,11 +58,6 @@ struct probe_platform_t {
 
     /*  IP version (4 or 6) used for the probe  */
     int ip_version;
-
-    union {
-        ICMP_ECHO_REPLY *reply4;
-        ICMPV6_ECHO_REPLY *reply6;
-    };
 };
 
 /*  A Windows HANDLE for the ICMP session  */
@@ -71,6 +66,49 @@ struct net_state_platform_t {
     HANDLE icmp6;
     bool ip4_socket_raw;
     bool ip6_socket_raw;
+
+    HANDLE thread_in_pipe_read_handle;
+    int thread_in_pipe_read, thread_in_pipe_write;
+    int thread_out_pipe_read, thread_out_pipe_write;
+};
+
+/*
+    A request object passed between the main thread and the ICMP
+    service thread representing an outstanding probe.
+*/
+struct icmp_thread_request_t {
+    /*
+        net_state and probe are const to avoid race conditions between
+        the main thread and the ICMP service thread.  They are to be
+        considered read-only on the ICMP service thread.
+    */
+    const struct net_state_t *net_state;
+    const struct probe_t *probe;
+
+    /*  Parameters for the probe request  */
+    int ip_version;
+    int ttl;
+    int timeout;
+    int packet_size;
+    int bit_pattern;
+
+    /*  Source and destination for the probe  */
+    struct sockaddr_storage dest_sockaddr;
+    struct sockaddr_storage src_sockaddr;
+
+    /*  Scratch space used by the ICMP.DLL API  */
+    union {
+        ICMP_ECHO_REPLY *reply4;
+        ICMPV6_ECHO_REPLY *reply6;
+    };
+
+    /*  Probe results  */
+    int icmp_type;
+    int reply_status;
+    int round_trip_us;
+
+    /*  The remote address responding to the probe  */
+    struct sockaddr_storage remote_addr;
 };
 
 #endif

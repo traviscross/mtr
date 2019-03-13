@@ -21,6 +21,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #ifdef HAVE_LINUX_ERRQUEUE_H
 #include <linux/errqueue.h>
 #endif
@@ -154,8 +159,7 @@ void check_length_order(
                                    packet, PACKET_BUFFER_SIZE,
                                    &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
-        perror("Unable to send to localhost");
-        exit(EXIT_FAILURE);
+      error(EXIT_FAILURE, errno, "Unable to send to localhost");
     }
 
     bytes_sent =
@@ -172,16 +176,14 @@ void check_length_order(
                                    packet, PACKET_BUFFER_SIZE,
                                    &dest_sockaddr, &src_sockaddr, &param);
     if (packet_size < 0) {
-        perror("Unable to send to localhost");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unable to send to localhost");
     }
 
     bytes_sent =
         send_packet(net_state, &param, MIN_PORT, packet, packet_size,
                     &dest_sockaddr);
     if (bytes_sent < 0) {
-        perror("Unable to send with swapped length");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unable to send with swapped length");
     }
 }
 
@@ -215,13 +217,11 @@ void set_socket_nonblocking(
 
     flags = fcntl(socket, F_GETFL, 0);
     if (flags == -1) {
-        perror("Unexpected socket F_GETFL error");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unexpected socket F_GETFL error");
     }
 
     if (fcntl(socket, F_SETFL, flags | O_NONBLOCK)) {
-        perror("Unexpected socket F_SETFL O_NONBLOCK error");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "Unexpected socket F_SETFL O_NONBLOCK error");
     }
 }
 
@@ -443,13 +443,8 @@ void init_net_state_privileged(
      */
     if (!net_state->platform.ip4_present
         && !net_state->platform.ip6_present) {
-
-        errno = ip4_err;
-        perror("Failure to open IPv4 sockets");
-
-        errno = ip6_err;
-        perror("Failure to open IPv6 sockets");
-
+        error(0, ip4_err, "Failure to open IPv4 sockets");
+        error(0, ip6_err, "Failure to open IPv6 sockets");
         exit(EXIT_FAILURE);
     }
 }
@@ -572,8 +567,7 @@ void send_probe(
     }
 
     if (gettimeofday(&probe->platform.departure_time, NULL)) {
-        perror("gettimeofday failure");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "gettimeofday failure");
     }
 
     // there might be an off-by-one in the number of tries here. 
@@ -674,8 +668,7 @@ void receive_probe(
 
     if (timestamp == NULL) {
         if (gettimeofday(&now, NULL)) {
-            perror("gettimeofday failure");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "gettimeofday failure");
         }
 
         timestamp = &now;
@@ -734,8 +727,7 @@ void receive_replies_from_recv_socket(
            keep the timing as precise as we can.
          */
         if (gettimeofday(&timestamp, NULL)) {
-            perror("gettimeofday failure");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "gettimeofday failure");
         }
 
         if (packet_length == -1) {
@@ -782,8 +774,7 @@ void receive_replies_from_recv_socket(
                 continue;
             }
 
-            perror("Failure receiving replies");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "Failure receiving replies");
         }
 
 #ifdef HAVE_LINUX_ERRQUEUE_H
@@ -819,8 +810,7 @@ void receive_replies_from_recv_socket(
             int proto, length = sizeof(int);
 
             if (getsockopt(socket, SOL_SOCKET, SO_PROTOCOL, &proto, &length) < 0) {
-                perror("getsockopt SO_PROTOCOL error");
-                exit(EXIT_FAILURE);
+                error(EXIT_FAILURE, errno, "getsockopt SO_PROTOCOL error");
             }
             handle_error_queue_packet(net_state, &remote_addr, ICMP_TIME_EXCEEDED, proto,
                     packet, packet_length, &timestamp);
@@ -866,8 +856,7 @@ void receive_replies_from_probe_socket(
         if (errno == EAGAIN) {
             return;
         } else {
-            perror("probe socket select error");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "probe socket select error");
         }
     }
 
@@ -879,8 +868,7 @@ void receive_replies_from_probe_socket(
     }
 
     if (getsockopt(probe_socket, SOL_SOCKET, SO_ERROR, &err, &err_length)) {
-        perror("probe socket SO_ERROR");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "probe socket SO_ERROR");
     }
 
     /*
@@ -988,8 +976,7 @@ void check_probe_timeouts(
     struct probe_t *probe_safe_iter;
 
     if (gettimeofday(&now, NULL)) {
-        perror("gettimeofday failure");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "gettimeofday failure");
     }
 
     LIST_FOREACH_SAFE(probe, &net_state->outstanding_probes,
@@ -1022,8 +1009,7 @@ bool get_next_probe_timeout(
     struct timeval probe_timeout;
 
     if (gettimeofday(&now, NULL)) {
-        perror("gettimeofday failure");
-        exit(EXIT_FAILURE);
+        error(EXIT_FAILURE, errno, "gettimeofday failure");
     }
 
     have_timeout = false;

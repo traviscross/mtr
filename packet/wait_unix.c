@@ -20,6 +20,11 @@
 
 #include <assert.h>
 #include <errno.h>
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,8 +149,7 @@ void wait_for_activity(
          */
         if (errno != EINTR && errno != EAGAIN) {
             /*  We don't expect other errors, so report them  */
-            perror("unexpected select error");
-            exit(EXIT_FAILURE);
+            error(EXIT_FAILURE, errno, "unexpected select error");
         }
     }
 }
