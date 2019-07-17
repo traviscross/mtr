@@ -583,8 +583,11 @@ void send_probe(
 
         if ((param->protocol != IPPROTO_TCP) && 
             (param->protocol != IPPROTO_SCTP)) break; // no retry if not TCP/SCTP
-        if (errno != EADDRINUSE) break; // no retry if not addrinuse.
-        	
+
+        if (errno != EADDRINUSE && errno != EADDRNOTAVAIL) {
+            break; // no retry
+        }
+
      	probe->sequence = net_state->platform.next_sequence++;
         	
        	if (net_state->platform.next_sequence > MAX_PORT) {
