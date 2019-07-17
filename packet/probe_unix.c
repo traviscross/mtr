@@ -584,7 +584,7 @@ void send_probe(
         if ((param->protocol != IPPROTO_TCP) && 
             (param->protocol != IPPROTO_SCTP)) break; // no retry if not TCP/SCTP
 
-        if (errno != EADDRINUSE && errno != EADDRNOTAVAIL) {
+        if ((errno != EADDRINUSE) && (errno != EADDRNOTAVAIL)) {
             break; // no retry
         }
 
