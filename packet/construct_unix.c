@@ -92,7 +92,7 @@ void construct_addr_port(
     int port)
 {
     memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
-    *sockaddr_port_offset(addr) = htons(port);
+    *sockaddr_port_offset(addr_with_port) = htons(port);
 }
 
 /*  Construct a header for IP version 4  */
