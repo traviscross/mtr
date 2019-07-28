@@ -276,8 +276,6 @@ char *dns_lookup2(
         /* we've got a result. */
         if (r->name)
             return r->name;
-        else
-            return NULL;
     } else {
         r = xmalloc(sizeof(struct dns_results));
         memcpy(&r->ip, ip, sizeof(r->ip));
