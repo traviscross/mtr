@@ -104,6 +104,10 @@ struct probe_t {
     /*  The address being probed  */
     struct sockaddr_storage remote_addr;
 
+    /* The local address which was used */
+    struct sockaddr_storage local_addr;
+
+
     /*  Platform specific probe tracking  */
     struct probe_platform_t platform;
 };

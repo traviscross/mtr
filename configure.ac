@@ -110,7 +110,7 @@ AS_IF([test "x$with_ncurses" = "xyes"],
 ])
 AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 
-AC_CHECK_LIB([cap], [cap_set_proc], [],
+AC_CHECK_LIB([cap], [cap_set_proc], [have_cap="yes"],
   AS_IF([test "$host_os" = linux-gnu],
     AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
 
@@ -243,7 +243,16 @@ AC_ARG_ENABLE([bash-completion],
   [], [enable_bash_completion=yes]
 )
 AM_CONDITIONAL([BUILD_BASH_COMPLETION], [test "x$enable_bash_completion" = xyes])
-
+echo "build options:"
+echo "--------------"
+echo "ipv6    :$USES_IPV6"
+echo "ipinfo  :$with_ipinfo"
+echo "ncurses :$with_ncurses"
+echo "gtk     :$with_gtk"
+echo "cap     :$have_cap"
+echo "libs    :$LIBS"
+echo "cflags  :$CFLAGS"
+echo "--------------"
 # Prepare config.h, Makefile, and output them.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])

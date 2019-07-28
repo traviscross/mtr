@@ -98,7 +98,8 @@ mtr_packet_SOURCES = \
 	packet/probe.c packet/probe.h \
 	packet/protocols.h \
 	packet/timeval.c packet/timeval.h \
-	packet/wait.h
+	packet/wait.h \
+	packet/sockaddr.c packet/sockaddr.h
 
 mtr_packet_LDADD = $(CAP_LIBS)
 
