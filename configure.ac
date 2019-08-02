@@ -67,6 +67,7 @@ AC_CHECK_HEADERS([ \
 AC_CHECK_FUNCS([ \
   __fpending \
   fcntl \
+  prctl \
 ])
 
 AC_CHECK_FUNC([error], [with_error=no],
@@ -113,6 +114,11 @@ AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 AC_CHECK_LIB([cap], [cap_set_proc], [have_cap="yes"],
   AS_IF([test "$host_os" = linux-gnu],
     AC_MSG_WARN([Capabilities support is strongly recommended for increased security.  See SECURITY for more information.])))
+AS_IF([test "x$have_cap" = "xyes"], [
+  AC_DEFINE([HAVE_LIBCAP], [1], [Define when libcap is in use])
+  AC_SUBST([CAP_LIBS], [-lcap])
+])
+
 
 # Enable ipinfo
 AC_ARG_WITH([ipinfo],
