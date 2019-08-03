@@ -4,6 +4,106 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.93
+    Adam (1):
+          Update README
+    
+    Adrien Gallouët (1):
+          Add a help line for the t command in curses
+    
+    Alexander Blesius (1):
+          convert README to markdown
+    
+    Arkadiusz Miśkiewicz (2):
+          Also try SOCK_RAW/IPPROTO_ICMP when other fail.
+          mtr to a unreachable host is possible again.
+    
+    Ben Williams (2):
+          added UI hotkeys description (from internal help) to NOTES section in mtr man page
+          renamed NOTES to INTERACTIVE CONTROL as per discussion in pull request
+    
+    Chonggang Li (4):
+          mtr-packet: use ICMP and UDP without privilege on linux
+          mtr-packet: fix Windows compilation
+          mtr-packet: fix compilation on OS X
+          mtr-packet: fix a bug causing IPv6 raw socket not working
+    
+    Markus Kötter (7):
+          set udp checksum
+          automake - configure show build options
+          sockaddr - unify access to sockaddr_in/6 port & address
+          probe - use INET6_ADDRSTRLEN
+          probe - extend matching to src/dst host&port
+          sockaddr - save a cast accessing the port
+          construct - fix set port
+    
+    Matt Kimball (7):
+          mtr-packet: report ICMP destination unreachable probes as "no route to host"
+          ui: display "no route to host" error as host entry rather than abort
+          json: Fix malformed json when the "hubs" list is empty
+          commandline: Added --interface for using a named network interface
+          Link portability/error.c with mtr-packet when missing on MacOS
+          Mention Python mtrpacket package in mtr-packet man page
+          Rework Cygwin mtr-packet to respond to signals (such as SIGTERM)
+    
+    R.E. Wolff (15):
+          fixed some outdated text in README.
+          minor changes top help Windows compilation on 32 bit machines
+          fix #204 : added exec of mtr-packet in the place where mtr was started 
+                from. Quick and dirty, There is probably a better place to declare variables.
+          Alternative 'skip uid 0 checks on cygwin' to adpoliak's implmentation
+          fix stupid typo. Thanks adpoliak!
+          possible fix for mac terminal 100% problem
+          Sami Kerola: prevent MTR reporting unknown revision
+          Merge branch 'master' of github.com:traviscross/mtr
+          fixed split like for macos
+          better fix. to dave's problem.
+          -f equals -m fix from yvs2014
+          rewritten weiyixuan's patch
+          fixed typo
+          Netbsd build fixes thanks to yvs2014
+          Merge branch 'master' of github.com:traviscross/mtr
+    
+    Robert Scheck (1):
+          Update incorrect FSF address
+    
+    Rogier Wolff (3):
+          Fixed issue #286
+          Manpage fix for Darwin by Matt. Rewritten by REW
+          Added parentheses
+    
+    SaintBol (9):
+          Update protocols.h
+          Update deconstruct_unix.c
+          Update probe.c
+          Update probe.h
+          Update cmdpipe.c
+          Update curses.c
+          Update mtr.h
+          Update report.c
+          Update mtr-packet.8.in
+    
+    Sami Kerola (1):
+          mtr-packet: make address-not-available errors less likely
+    
+    Samuel Henrique (1):
+          [typo]mtr.8.in: s/allows to/allows one to/
+    
+    Tobias Rittweiler (2):
+          Add a .dir-locals.el file for Emacs.
+          Replace perror(...); exit(...); by error(...);
+    
+    divinity76 (1):
+          use setup.exe's package manager mode, replacing apt-cyg
+    
+    tk (1):
+          Fix typo (resove -> resolve)
+    
+    weiyixuan (3):
+          Option -y can not work properly
+          Option --ipinfo 1 can not work properly
+          for tcp, fix : bind port failed, try next sequence
+    
 V0.92
    added a few arguments to calls added by fmazu. Allows it to compile.
 
