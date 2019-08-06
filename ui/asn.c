@@ -313,11 +313,9 @@ int is_printii(
 void asn_open(
     struct mtr_ctl *ctl)
 {
-    if (ctl->ipinfo_no >= 0) {
-        DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
-        if (!(iihash = hcreate(IIHASH_HI)))
-            error(0, errno, "ipinfo hash");
-    }
+    DEB_syslog(LOG_INFO, "hcreate(%d)", IIHASH_HI);
+    if (!(iihash = hcreate(IIHASH_HI)))
+        error(0, errno, "ipinfo hash");
 }
 
 void asn_close(
