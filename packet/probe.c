@@ -323,7 +323,7 @@ int find_source_addr(
        anything to the port.
      */
     *sockaddr_port_offset(&dest_with_port) = htons(1);
-    len = sockaddr_addr_size(&dest_with_port);
+    len = sockaddr_size(&dest_with_port);
 
     sock = socket(destaddr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == -1) {
@@ -364,7 +364,7 @@ int find_source_addr(
        Zero the port, as we may later use this address to finding, and
        we don't want to use the port from the socket we just created.
      */
-    *sockaddr_port_offset(&srcaddr) = 0;
+    *sockaddr_port_offset(srcaddr) = 0;
 
     return 0;
 }
