@@ -274,22 +274,22 @@ static void Toolbar_fill(
 
     Button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-    g_signal_connect(GTK_OBJECT(Button), "clicked",
+    g_signal_connect(G_OBJECT(Button), "clicked",
                      G_CALLBACK(Window_destroy), NULL);
 
     Button = gtk_button_new_from_stock(GTK_STOCK_ABOUT);
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-    g_signal_connect(GTK_OBJECT(Button), "clicked",
+    g_signal_connect(G_OBJECT(Button), "clicked",
                      G_CALLBACK(About_clicked), NULL);
 
     Button = gtk_button_new_with_mnemonic("_Restart");
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
-    g_signal_connect(GTK_OBJECT(Button), "clicked",
+    g_signal_connect(G_OBJECT(Button), "clicked",
                      G_CALLBACK(Restart_clicked), ctl);
 
     Pause_Button = gtk_toggle_button_new_with_mnemonic("_Pause");
     gtk_box_pack_end(GTK_BOX(Toolbar), Pause_Button, FALSE, FALSE, 0);
-    g_signal_connect(GTK_OBJECT(Pause_Button), "clicked",
+    g_signal_connect(G_OBJECT(Pause_Button), "clicked",
                      G_CALLBACK(Pause_clicked), ctl);
 
     /* allow root only to set zero delay */
@@ -301,7 +301,7 @@ static void Toolbar_fill(
     gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(Button), TRUE);
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
     ctl->gtk_data = Button;
-    g_signal_connect(GTK_OBJECT(Adjustment), "value_changed",
+    g_signal_connect(G_OBJECT(Adjustment), "value_changed",
                      G_CALLBACK(WaitTime_changed), ctl);
 
     Label = gtk_label_new_with_mnemonic("_Hostname:");
@@ -309,7 +309,7 @@ static void Toolbar_fill(
 
     Entry = gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(Entry), ctl->Hostname);
-    g_signal_connect(GTK_OBJECT(Entry), "activate",
+    g_signal_connect(G_OBJECT(Entry), "activate",
                      G_CALLBACK(Host_activate), ctl);
     gtk_box_pack_start(GTK_BOX(Toolbar), Entry, TRUE, TRUE, 0);
 
@@ -394,7 +394,7 @@ static void TreeViewCreate(
     ReportTreeView =
         gtk_tree_view_new_with_model(GTK_TREE_MODEL(ReportStore));
 
-    g_signal_connect(GTK_OBJECT(ReportTreeView), "button_press_event",
+    g_signal_connect(G_OBJECT(ReportTreeView), "button_press_event",
                      G_CALLBACK(ReportTreeView_clicked), ctl);
 
 #ifdef HAVE_IPINFO
@@ -619,9 +619,9 @@ void gtk_open(
 
     Window_fill(ctl, main_window);
 
-    g_signal_connect(GTK_OBJECT(main_window), "delete_event",
+    g_signal_connect(G_OBJECT(main_window), "delete_event",
                      G_CALLBACK(Window_destroy), NULL);
-    g_signal_connect(GTK_OBJECT(main_window), "destroy",
+    g_signal_connect(G_OBJECT(main_window), "destroy",
                      G_CALLBACK(Window_destroy), NULL);
 
     gtk_widget_show_all(main_window);
@@ -804,11 +804,11 @@ static gboolean ReportTreeView_clicked(
     gtk_menu_shell_append(GTK_MENU_SHELL(popup_menu), copy_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(popup_menu), newdestination_item);
 
-    g_signal_connect(GTK_OBJECT(copy_item), "activate",
+    g_signal_connect(G_OBJECT(copy_item), "activate",
                      G_CALLBACK(Copy_activate), path);
 
     ctl->gtk_data = path;
-    g_signal_connect(GTK_OBJECT(newdestination_item), "activate",
+    g_signal_connect(G_OBJECT(newdestination_item), "activate",
                      G_CALLBACK(NewDestination_activate), ctl);
 
     gtk_widget_show(copy_item);
