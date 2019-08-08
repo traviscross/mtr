@@ -564,6 +564,15 @@ void gtk_redraw(
     }
 }
 
+// GTK 3 has changed the interface a bit. Here a few defines so that we can
+// work with GTK2 or GTK3 as required. 
+#ifdef HAVE_GTK3
+#define GTK_VBOX_NEW(flag,orientation,sz) gtk_box_new(orientation, sz)
+#define GTK_HBOX_NEW(flag,orientation,sz) gtk_box_new(orientation, sz)
+#else
+#define GTK_VBOX_NEW(flag,orientation,sz) gtk_vbox_new(flag, sz)
+#define GTK_HBOX_NEW(flag,orientation,sz) gtk_hbox_new(flag, sz)
+#endif
 
 static void Window_fill(
     struct mtr_ctl *ctl,
@@ -577,15 +586,8 @@ static void Window_fill(
     gtk_window_set_default_size(GTK_WINDOW(Window), 650, 400);
     gtk_container_set_border_width(GTK_CONTAINER(Window), 10);
 
-#ifdef HAVE_GTK3
-    VBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-
-    Toolbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-#else
-    VBox = gtk_vbox_new(FALSE, 10);
-
-    Toolbar = gtk_hbox_new(FALSE, 10);
-#endif
+    VBox = GTK_VBOX_NEW(FALSE, GTK_ORIENTATION_VERTICAL, 10);
+    Toolbar = GTK_HBOX_NEW(FALSE, GTK_ORIENTATION_HORIZONTAL, 10);
 
     Toolbar_fill(ctl, Toolbar);
     gtk_box_pack_start(GTK_BOX(VBox), Toolbar, FALSE, FALSE, 0);
