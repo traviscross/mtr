@@ -822,7 +822,11 @@ static gboolean ReportTreeView_clicked(
     gtk_widget_show(copy_item);
     gtk_widget_show(newdestination_item);
 
+#ifdef HAVE_GTK3
+    gtk_menu_popup_at_pointer(GTK_MENU(popup_menu), NULL);
+#else
     gtk_menu_popup(GTK_MENU(popup_menu), NULL, NULL, NULL, NULL,
                    0, event->time);
+#endif
     return TRUE;
 }
