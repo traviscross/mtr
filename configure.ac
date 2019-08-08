@@ -86,11 +86,11 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([No math library found])])
 
 # Find GTK
 AC_ARG_WITH([gtk],
-  [AS_HELP_STRING([--without-gtk], [Build without the GTK+2.0 interface])],
+  [AS_HELP_STRING([--without-gtk], [Build without the GTK+3.0 interface])],
   [], [with_gtk=yes])
 AS_IF([test "x$with_gtk" = "xyes"],
-  [PKG_CHECK_MODULES([GTK], [gtk+-2.0],
-    [AC_DEFINE([HAVE_GTK], [1], [Define if gtk+-2.0 library available])],
+  [PKG_CHECK_MODULES([GTK], [gtk+-3.0],
+    [AC_DEFINE([HAVE_GTK], [1], [Define if gtk+-3.0 library available])],
     [with_gtk=no])
 ])
 AM_CONDITIONAL([WITH_GTK], [test "x$with_gtk" = xyes])
