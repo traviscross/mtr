@@ -576,9 +576,17 @@ static void Window_fill(
     gtk_window_set_title(GTK_WINDOW(Window), "My traceroute");
     gtk_window_set_default_size(GTK_WINDOW(Window), 650, 400);
     gtk_container_set_border_width(GTK_CONTAINER(Window), 10);
+
+#ifdef HAVE_GTK3
+    VBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+    Toolbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+#else
     VBox = gtk_vbox_new(FALSE, 10);
 
     Toolbar = gtk_hbox_new(FALSE, 10);
+#endif
+
     Toolbar_fill(ctl, Toolbar);
     gtk_box_pack_start(GTK_BOX(VBox), Toolbar, FALSE, FALSE, 0);
 
