@@ -39,16 +39,12 @@
 #include "display.h"
 #include "dns.h"
 #include "utils.h"
+#include "packet/sockaddr.h"
 
 #define MinSequence 33000
 #define MaxSequence 65536
 
 static int packetsize;          /* packet size used by ping */
-
-static void sockaddrtop(
-    struct sockaddr *saddr,
-    char *strptr,
-    size_t len);
 
 struct nethost {
     ip_t addr;
@@ -739,7 +735,7 @@ static void net_find_local_address(
         error(EXIT_FAILURE, errno, "local address determination failed");
     }
 
-    sockaddrtop(sourcesockaddr, localaddr, sizeof(localaddr));
+    inet_ntop(sourcesockaddr->sa_family, sockaddr_addr_offset(sourcesockaddr), localaddr, sizeof(localaddr));
 
     close(udp_socket);
 }
@@ -783,8 +779,7 @@ int net_open(
     } else if (ctl->InterfaceName) {
         net_find_interface_address_from_name(
             &sourcesockaddr_struct, ctl->af, ctl->InterfaceName);
-
-        sockaddrtop(sourcesockaddr, localaddr, sizeof(localaddr));
+        inet_ntop(sourcesockaddr->sa_family, sockaddr_addr_offset(sourcesockaddr), localaddr, sizeof(localaddr));
     } else {
         net_find_local_address();
     }
@@ -906,37 +901,6 @@ void net_save_return(
     }
     host[at].saved[idx] = ms;
 }
-
-/* Similar to inet_ntop but uses a sockaddr as it's argument. */
-static void sockaddrtop(
-    struct sockaddr *saddr,
-    char *strptr,
-    size_t len)
-{
-    struct sockaddr_in *sa4;
-#ifdef ENABLE_IPV6
-    struct sockaddr_in6 *sa6;
-#endif
-
-    switch (saddr->sa_family) {
-    case AF_INET:
-        sa4 = (struct sockaddr_in *) saddr;
-        xstrncpy(strptr, inet_ntoa(sa4->sin_addr), len - 1);
-        strptr[len - 1] = '\0';
-        return;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        sa6 = (struct sockaddr_in6 *) saddr;
-        inet_ntop(sa6->sin6_family, &(sa6->sin6_addr), strptr, len);
-        return;
-#endif
-    default:
-        error(0, 0, "sockaddrtop unknown address type");
-        strptr[0] = '\0';
-        return;
-    }
-}
-
 
 /* Address comparison. */
 int addrcmp(
