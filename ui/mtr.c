@@ -299,7 +299,7 @@ static void init_fld_options(
 {
     int i;
 
-    memset(ctl->fld_index, -1, FLD_INDEX_SZ);
+    memset(ctl->fld_index, -1, FLD_INDEX_SZ*sizeof(ctl->fld_index[0]));
 
     for (i = 0; data_fields[i].key != 0; i++) {
         ctl->available_options[i] = data_fields[i].key;
