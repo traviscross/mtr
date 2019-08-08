@@ -145,7 +145,8 @@ void check_length_order(
 
     if (resolve_probe_addresses(net_state, &param, &p0.remote_addr,
                 &p0.local_addr)) {
-        fprintf(stderr, "Error decoding localhost address\n");
+        fprintf(stderr, "Error decoding localhost address (%s/%s)\n", 
+                probe_err, strerror (errno));
         exit(EXIT_FAILURE);
     }
 

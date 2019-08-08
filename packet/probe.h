@@ -207,4 +207,6 @@ int find_source_addr(
     struct sockaddr_storage *srcaddr,
     const struct sockaddr_storage *destaddr);
 
+extern char *probe_err;
+
 #endif
