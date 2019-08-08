@@ -272,12 +272,12 @@ static void Toolbar_fill(
     GtkWidget *Label;
     GtkAdjustment *Adjustment;
 
-    Button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
+    Button = gtk_button_new_with_label("Quit");
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
     g_signal_connect(G_OBJECT(Button), "clicked",
                      G_CALLBACK(Window_destroy), NULL);
 
-    Button = gtk_button_new_from_stock(GTK_STOCK_ABOUT);
+    Button = gtk_button_new_with_label("About");
     gtk_box_pack_end(GTK_BOX(Toolbar), Button, FALSE, FALSE, 0);
     g_signal_connect(G_OBJECT(Button), "clicked",
                      G_CALLBACK(About_clicked), NULL);
