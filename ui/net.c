@@ -87,8 +87,6 @@ static struct packet_command_pipe_t packet_command_pipe;
 #ifdef ENABLE_IPV6
 static struct sockaddr_storage sourcesockaddr_struct;
 static struct sockaddr_storage remotesockaddr_struct;
-static struct sockaddr_in6 *ssa6 =
-    (struct sockaddr_in6 *) &sourcesockaddr_struct;
 static struct sockaddr_in6 *rsa6 =
     (struct sockaddr_in6 *) &remotesockaddr_struct;
 #else
@@ -100,8 +98,6 @@ static struct sockaddr *sourcesockaddr =
     (struct sockaddr *) &sourcesockaddr_struct;
 static struct sockaddr *remotesockaddr =
     (struct sockaddr *) &remotesockaddr_struct;
-static struct sockaddr_in *ssa4 =
-    (struct sockaddr_in *) &sourcesockaddr_struct;
 static struct sockaddr_in *rsa4 =
     (struct sockaddr_in *) &remotesockaddr_struct;
 
@@ -229,7 +225,7 @@ static void net_process_ping(
     char addrcopy[sizeof(struct in_addr)];
 #endif
 
-    addrcpy((void *) &addrcopy, (char *) addr, ctl->af);
+    memcpy(&addrcopy, addr, sockaddr_addr_size(sourcesockaddr));
 
     index = mark_sequence_complete(seq);
     if (index < 0) {
@@ -241,12 +237,12 @@ static void net_process_ping(
     if (addrcmp((void *) &(host[index].addr),
                 (void *) &ctl->unspec_addr, ctl->af) == 0) {
         /* should be out of if as addr can change */
-        addrcpy((void *) &(host[index].addr), addrcopy, ctl->af);
+        memcpy(&(host[index].addr), addrcopy, sockaddr_addr_size(sourcesockaddr));
         host[index].mpls = *mpls;
         display_rawhost(ctl, index, (void *) &(host[index].addr));
 
         /* multi paths */
-        addrcpy((void *) &(host[index].addrs[0]), addrcopy, ctl->af);
+        memcpy(&(host[index].addrs[0]), addrcopy, sockaddr_addr_size(sourcesockaddr));
         host[index].mplss[0] = *mpls;
     } else {
         for (i = 0; i < MAXPATH;) {
@@ -262,7 +258,9 @@ static void net_process_ping(
 
         if (addrcmp((void *) &(host[index].addrs[i]), addrcopy, ctl->af) !=
             0 && i < MAXPATH) {
-            addrcpy((void *) &(host[index].addrs[i]), addrcopy, ctl->af);
+            memcpy(&(host[index].addrs[i]), addrcopy, sockaddr_addr_size(sourcesockaddr));
+
+
             host[index].mplss[i] = *mpls;
             display_rawhost(ctl, index, (void *) &(host[index].addrs[i]));
         }
@@ -755,24 +753,11 @@ int net_open(
 
     net_reset(ctl);
 
-    remotesockaddr->sa_family = hostent->h_addrtype;
+    remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
+    memcpy(sockaddr_addr_offset(remotesockaddr), hostent->h_addr, sockaddr_addr_size(remotesockaddr));
 
-    switch (hostent->h_addrtype) {
-    case AF_INET:
-        addrcpy((void *) &(rsa4->sin_addr), hostent->h_addr, AF_INET);
-        sourceaddress = (ip_t *) & (ssa4->sin_addr);
-        remoteaddress = (ip_t *) & (rsa4->sin_addr);
-        break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        addrcpy((void *) &(rsa6->sin6_addr), hostent->h_addr, AF_INET6);
-        sourceaddress = (ip_t *) & (ssa6->sin6_addr);
-        remoteaddress = (ip_t *) & (rsa6->sin6_addr);
-        break;
-#endif
-    default:
-        error(EXIT_FAILURE, 0, "net_open bad address type");
-    }
+    sourceaddress = sockaddr_addr_offset(sourcesockaddr);
+    remoteaddress = sockaddr_addr_offset(remotesockaddr);
 
     if (ctl->InterfaceAddress) {
         net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
@@ -799,21 +784,8 @@ void net_reopen(
     }
 
     remotesockaddr->sa_family = addr->h_addrtype;
-    addrcpy((void *) remoteaddress, addr->h_addr, addr->h_addrtype);
-
-    switch (addr->h_addrtype) {
-    case AF_INET:
-        addrcpy((void *) &(rsa4->sin_addr), addr->h_addr, AF_INET);
-        break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        addrcpy((void *) &(rsa6->sin6_addr), addr->h_addr, AF_INET6);
-        break;
-#endif
-    default:
-        error(EXIT_FAILURE, 0, "net_reopen bad address type");
-    }
-
+    memcpy(remoteaddress, addr->h_addr, sockaddr_addr_size(remotesockaddr));
+    memcpy(sockaddr_addr_offset(remotesockaddr), addr->h_addr, sockaddr_addr_size(remotesockaddr));
     net_reset(ctl);
     net_send_batch(ctl);
 }
@@ -922,25 +894,6 @@ int addrcmp(
     }
 
     return rc;
-}
-
-/* Address copy. */
-void addrcpy(
-    char *a,
-    char *b,
-    int family)
-{
-
-    switch (family) {
-    case AF_INET:
-        memcpy(a, b, sizeof(struct in_addr));
-        break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        memcpy(a, b, sizeof(struct in6_addr));
-        break;
-#endif
-    }
 }
 
 /* for GTK frontend */

@@ -41,6 +41,7 @@
 #include "dns.h"
 #include "net.h"
 #include "utils.h"
+#include "packet/sockaddr.h"
 
 struct dns_results {
     ip_t ip;
@@ -117,22 +118,9 @@ static void set_sockaddr_ip(
     struct sockaddr_storage *sa,
     ip_t * ip)
 {
-    struct sockaddr_in *sa_in;
-    struct sockaddr_in6 *sa_in6;
-
     memset(sa, 0, sizeof(struct sockaddr_storage));
-    switch (ctl->af) {
-    case AF_INET:
-        sa_in = (struct sockaddr_in *) sa;
-        sa_in->sin_family = ctl->af;
-        addrcpy((void *) &sa_in->sin_addr, (void *) ip, ctl->af);
-        break;
-    case AF_INET6:
-        sa_in6 = (struct sockaddr_in6 *) sa;
-        sa_in6->sin6_family = ctl->af;
-        addrcpy((void *) &sa_in6->sin6_addr, (void *) ip, ctl->af);
-        break;
-    }
+    sa->ss_family = ctl->af;
+    memcpy(sockaddr_addr_offset(sa), ip, sockaddr_addr_size(sa));
 }
 
 void dns_open(
