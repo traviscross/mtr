@@ -84,22 +84,13 @@ static struct nethost host[MaxHost];
 static struct sequence sequence[MaxSequence];
 static struct packet_command_pipe_t packet_command_pipe;
 
-#ifdef ENABLE_IPV6
 static struct sockaddr_storage sourcesockaddr_struct;
 static struct sockaddr_storage remotesockaddr_struct;
-static struct sockaddr_in6 *rsa6 =
-    (struct sockaddr_in6 *) &remotesockaddr_struct;
-#else
-static struct sockaddr_in sourcesockaddr_struct;
-static struct sockaddr_in remotesockaddr_struct;
-#endif
 
 static struct sockaddr *sourcesockaddr =
     (struct sockaddr *) &sourcesockaddr_struct;
 static struct sockaddr *remotesockaddr =
     (struct sockaddr *) &remotesockaddr_struct;
-static struct sockaddr_in *rsa4 =
-    (struct sockaddr_in *) &remotesockaddr_struct;
 
 static ip_t *sourceaddress;
 static ip_t *remoteaddress;
@@ -684,8 +675,6 @@ static void net_find_local_address(
     int udp_socket;
     int addr_length;
     struct sockaddr_storage remote_sockaddr;
-    struct sockaddr_in *remote4;
-    struct sockaddr_in6 *remote6;
 
     udp_socket =
         socket(remotesockaddr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
@@ -697,24 +686,11 @@ static void net_find_local_address(
        We need to set the port to a non-zero value for the connect
        to succeed.
      */
-    if (remotesockaddr->sa_family == AF_INET6) {
-#ifdef ENABLE_IPV6
-        addr_length = sizeof(struct sockaddr_in6);
-
-        memcpy(&remote_sockaddr, rsa6, addr_length);
-        remote6 = (struct sockaddr_in6 *) &remote_sockaddr;
-        remote6->sin6_port = htons(1);
-#endif
-    } else {
-        addr_length = sizeof(struct sockaddr_in);
-
-        memcpy(&remote_sockaddr, rsa4, addr_length);
-        remote4 = (struct sockaddr_in *) &remote_sockaddr;
-        remote4->sin_port = htons(1);
-    }
+    memcpy(&remote_sockaddr, &remotesockaddr_struct, sockaddr_size(&remotesockaddr_struct));
+    *sockaddr_port_offset(&remote_sockaddr) = htons(1);
 
     if (connect
-        (udp_socket, (struct sockaddr *) &remote_sockaddr, addr_length)) {
+        (udp_socket, (struct sockaddr *) &remote_sockaddr, sockaddr_size(&remote_sockaddr))) {
 #ifdef __linux__
         /* Linux doesn't require source address, so we can support
          * a case when mtr is run against unreachable host (that can become
