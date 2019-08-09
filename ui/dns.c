@@ -276,8 +276,6 @@ char *dns_lookup2(
         /* we've got a result. */
         if (r->name)
             return r->name;
-        else
-            return strlongip(ctl, ip);
     } else {
         r = xmalloc(sizeof(struct dns_results));
         memcpy(&r->ip, ip, sizeof(r->ip));
@@ -289,7 +287,7 @@ char *dns_lookup2(
         if (rv < 0)
             error(0, errno, "couldn't write to resolver process");
     }
-    return strlongip(ctl, ip);
+    return NULL;
 }
 
 
@@ -302,7 +300,7 @@ char *dns_lookup(
     if (!ctl->dns || !ctl->use_dns)
         return NULL;
     t = dns_lookup2(ctl, ip);
-    return t;
+    return t ? t : strlongip(ctl, ip);
 }
 
 /* XXX check if necessary/exported. */
