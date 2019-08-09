@@ -73,9 +73,9 @@ int send_synchronous_command(
     struct mtr_ctl *ctl,
     struct packet_command_pipe_t *cmdpipe,
     const char *cmd,
-    struct command_t *result)
+    struct command_t *result,
+    char *reply)
 {
-    char reply[PACKET_REPLY_BUFFER_SIZE];
     int command_length;
     int write_length;
     int read_length;
@@ -120,11 +120,12 @@ int check_feature(
 {
     char check_command[COMMAND_BUFFER_SIZE];
     struct command_t reply;
+    char reply_buf[PACKET_REPLY_BUFFER_SIZE];
 
     snprintf(check_command, COMMAND_BUFFER_SIZE,
              "1 check-support feature %s\n", feature);
 
-    if (send_synchronous_command(ctl, cmdpipe, check_command, &reply) ==
+    if (send_synchronous_command(ctl, cmdpipe, check_command, &reply, reply_buf) ==
         -1) {
         return -1;
     }
