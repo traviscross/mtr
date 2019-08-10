@@ -84,6 +84,12 @@ AM_CONDITIONAL([WITH_GETOPT], [test "x$with_getopt" = "xyes"])
 
 AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([No math library found])])
 
+# libasan
+AC_ARG_WITH([libasan],
+ [AS_HELP_STRING([--with-libasan], [Build with AddressSanitizer])],
+ [with_libasan=yes], [])
+AM_CONDITIONAL([WITH_LIBASAN], [test "x$with_libasan" = "xyes"])
+
 # Find GTK
 AC_ARG_WITH([gtk],
   [AS_HELP_STRING([--without-gtk], [Build without the GTK+ interface])],
@@ -248,6 +254,7 @@ AC_ARG_ENABLE([bash-completion],
 AM_CONDITIONAL([BUILD_BASH_COMPLETION], [test "x$enable_bash_completion" = xyes])
 echo "build options:"
 echo "--------------"
+echo "libasan :$with_libasan"
 echo "ipv6    :$USES_IPV6"
 echo "ipinfo  :$with_ipinfo"
 echo "ncurses :$with_ncurses"
