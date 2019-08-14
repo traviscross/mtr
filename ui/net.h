@@ -117,12 +117,8 @@ extern void net_save_return(
     int ms);
 
 extern int addrcmp(
-    char *a,
-    char *b,
-    int af);
-extern void addrcpy(
-    char *a,
-    char *b,
+    void *a,
+    void *b,
     int af);
 
 extern void net_add_fds(

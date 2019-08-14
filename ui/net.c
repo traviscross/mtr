@@ -107,6 +107,14 @@ static char localaddr[INET_ADDRSTRLEN];
 static int batch_at = 0;
 static int numhosts = 10;
 
+
+#define host_addr_cmp(index, other, af) \
+    addrcmp((void *) &(host[(index)].addr), (void *) (other), (af))
+
+#define host_addrs_cmp(index, path, other, af) \
+    addrcmp((void *) &(host[(index)].addrs[path]), (void *) (other), (af))
+
+
 /* return the number of microseconds to wait before sending the next
    ping */
 int calc_deltatime(
@@ -198,6 +206,7 @@ static int mark_sequence_complete(
 
     Record the round trip time and address of the responding host.
 */
+
 static void net_process_ping(
     struct mtr_ctl *ctl,
     int seq,
@@ -460,8 +469,7 @@ int net_max(
 
     max = 0;
     for (at = 0; at < ctl->maxTTL; at++) {
-        if (addrcmp((void *) &(host[at].addr),
-                    (void *) remoteaddress, ctl->af) == 0) {
+        if (host_addr_cmp(at , remoteaddress, ctl->af) == 0) {
             return at + 1;
         } else if (host[at].err != 0) {
             /*
@@ -470,8 +478,7 @@ int net_max(
                 final hop.
             */
             return at + 1;
-        } else if (addrcmp((void *) &(host[at].addr),
-                           (void *) &ctl->unspec_addr, ctl->af) != 0) {
+        } else if (host_addr_cmp(at, &ctl->unspec_addr, ctl->af) != 0) {
             max = at + 2;
         }
     }
@@ -560,9 +567,7 @@ int net_send_batch(
     net_send_query(ctl, batch_at, abs(packetsize));
 
     for (i = ctl->fstTTL - 1; i < batch_at; i++) {
-        if (addrcmp
-            ((void *) &(host[i].addr), (void *) &ctl->unspec_addr,
-             ctl->af) == 0)
+        if (host_addr_cmp(i, &ctl->unspec_addr, ctl->af) == 0)
             n_unknown++;
 
         /* The second condition in the next "if" statement was added in mtr-0.56, 
@@ -570,14 +575,12 @@ int net_send_batch(
            hosts. Removed in 0.65. 
            If the line proves necessary, it should at least NOT trigger that line
            when host[i].addr == 0 */
-        if ((addrcmp((void *) &(host[i].addr),
-                     (void *) remoteaddress, ctl->af) == 0))
+        if (host_addr_cmp(i, remoteaddress, ctl->af) == 0)
             n_unknown = MaxHost;        /* Make sure we drop into "we should restart" */
     }
 
     if (                        /* success in reaching target */
-           (addrcmp((void *) &(host[batch_at].addr),
-                    (void *) remoteaddress, ctl->af) == 0) ||
+           (host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0) ||
            /* fail in consecutive maxUnknown (firewall?) */
            (n_unknown > ctl->maxUnknown) ||
            /* or reach limit  */
@@ -852,8 +855,8 @@ void net_save_return(
 
 /* Address comparison. */
 int addrcmp(
-    char *a,
-    char *b,
+    void *a,
+    void *b,
     int family)
 {
     int rc = -1;

@@ -106,7 +106,7 @@ static struct dns_results *findip(
     struct dns_results *t;
 
     for (t = results; t; t = t->next) {
-        if (addrcmp((void *) ip, (void *) &t->ip, ctl->af) == 0)
+        if (addrcmp(ip, &t->ip, ctl->af) == 0)
             return t;
     }
 
