@@ -224,6 +224,7 @@ static void net_process_ping(
 #else
     char addrcopy[sizeof(struct in_addr)];
 #endif
+    struct nethost *nh = NULL;
 
     memcpy(&addrcopy, addr, sockaddr_addr_size(sourcesockaddr));
 
@@ -231,89 +232,85 @@ static void net_process_ping(
     if (index < 0) {
         return;
     }
+    nh = &host[index];
+    nh->err = err;
 
-    host[index].err = err;
 
-    if (addrcmp((void *) &(host[index].addr),
-                (void *) &ctl->unspec_addr, ctl->af) == 0) {
+
+    if (addrcmp(&nh->addr, &ctl->unspec_addr, ctl->af) == 0) {
         /* should be out of if as addr can change */
-        memcpy(&(host[index].addr), addrcopy, sockaddr_addr_size(sourcesockaddr));
-        host[index].mpls = *mpls;
-        display_rawhost(ctl, index, (void *) &(host[index].addr));
+        memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
+        nh->mpls = *mpls;
+        display_rawhost(ctl, index, (void *) &(nh->addr));
 
         /* multi paths */
-        memcpy(&(host[index].addrs[0]), addrcopy, sockaddr_addr_size(sourcesockaddr));
-        host[index].mplss[0] = *mpls;
+        memcpy(&nh->addrs[0], addrcopy, sockaddr_addr_size(sourcesockaddr));
+        nh->mplss[0] = *mpls;
     } else {
         for (i = 0; i < MAXPATH;) {
-            if (addrcmp
-                ((void *) &(host[index].addrs[i]), (void *) &addrcopy,
-                 ctl->af) == 0
-                || addrcmp((void *) &(host[index].addrs[i]),
-                           (void *) &ctl->unspec_addr, ctl->af) == 0) {
+            if (addrcmp(&nh->addrs[i], &addrcopy, ctl->af) == 0 ||
+                addrcmp(&nh->addrs[i], &ctl->unspec_addr, ctl->af) == 0) {
                 break;
             }
             i++;
         }
 
-        if (addrcmp((void *) &(host[index].addrs[i]), addrcopy, ctl->af) !=
-            0 && i < MAXPATH) {
-            memcpy(&(host[index].addrs[i]), addrcopy, sockaddr_addr_size(sourcesockaddr));
+        if (addrcmp(&nh->addrs[i], &addrcopy, ctl->af) != 0 && i < MAXPATH) {
+            memcpy(&nh->addrs[i], addrcopy, sockaddr_addr_size(sourcesockaddr));
 
-
-            host[index].mplss[i] = *mpls;
-            display_rawhost(ctl, index, (void *) &(host[index].addrs[i]));
+            nh->mplss[i] = *mpls;
+            display_rawhost(ctl, index, (void *) &(nh->addrs[i]));
         }
     }
 
-    host[index].jitter = totusec - host[index].last;
-    if (host[index].jitter < 0) {
-        host[index].jitter = -host[index].jitter;
+    nh->jitter = totusec - nh->last;
+    if (nh->jitter < 0) {
+        nh->jitter = -nh->jitter;
     }
 
-    host[index].last = totusec;
+    nh->last = totusec;
 
-    if (host[index].returned < 1) {
-        host[index].best = host[index].worst = host[index].gmean = totusec;
-        host[index].avg = host[index].ssd = 0;
+    if (nh->returned < 1) {
+        nh->best = nh->worst = nh->gmean = totusec;
+        nh->avg = nh->ssd = 0;
 
-        host[index].jitter = host[index].jworst = host[index].jinta = 0;
+        nh->jitter = nh->jworst = nh->jinta = 0;
     }
 
-    if (totusec < host[index].best) {
-        host[index].best = totusec;
+    if (totusec < nh->best) {
+        nh->best = totusec;
     }
-    if (totusec > host[index].worst) {
-        host[index].worst = totusec;
-    }
-
-    if (host[index].jitter > host[index].jworst) {
-        host[index].jworst = host[index].jitter;
+    if (totusec > nh->worst) {
+        nh->worst = totusec;
     }
 
-    host[index].returned++;
-    oldavg = host[index].avg;
-    host[index].avg += (totusec - oldavg + .0) / host[index].returned;
-    host[index].ssd +=
-        (totusec - oldavg + .0) * (totusec - host[index].avg);
+    if (nh->jitter > nh->jworst) {
+        nh->jworst = nh->jitter;
+    }
 
-    oldjavg = host[index].javg;
-    host[index].javg +=
-        (host[index].jitter - oldjavg) / host[index].returned;
+    nh->returned++;
+    oldavg = nh->avg;
+    nh->avg += (totusec - oldavg + .0) / nh->returned;
+    nh->ssd +=
+        (totusec - oldavg + .0) * (totusec - nh->avg);
+
+    oldjavg = nh->javg;
+    nh->javg +=
+        (nh->jitter - oldjavg) / nh->returned;
     /* below algorithm is from rfc1889, A.8 */
-    host[index].jinta +=
-        host[index].jitter - ((host[index].jinta + 8) >> 4);
+    nh->jinta +=
+        nh->jitter - ((nh->jinta + 8) >> 4);
 
-    if (host[index].returned > 1) {
-        host[index].gmean =
-            pow((double) host[index].gmean,
-                (host[index].returned - 1.0) / host[index].returned)
-            * pow((double) totusec, 1.0 / host[index].returned);
+    if (nh->returned > 1) {
+        nh->gmean =
+            pow((double) nh->gmean,
+                (nh->returned - 1.0) / nh->returned)
+            * pow((double) totusec, 1.0 / nh->returned);
     }
 
-    host[index].sent = 0;
-    host[index].up = 1;
-    host[index].transit = 0;
+    nh->sent = 0;
+    nh->up = 1;
+    nh->transit = 0;
 
     net_save_return(index, sequence[seq].saved_seq, totusec);
     display_rawping(ctl, index, totusec, seq);
