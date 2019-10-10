@@ -92,7 +92,7 @@ void split_redraw(
      */
     for (at = 0; at < max; at++) {
         addr = net_addr(at);
-        if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+        if (addrcmp(addr, &ctl->unspec_addr, ctl->af)) {
             char str[256], *name;
             if (!(name = dns_lookup(ctl, addr)))
                 name = strlongip(ctl, addr);

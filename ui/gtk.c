@@ -507,7 +507,7 @@ static void update_tree_row(
     char str[256] = "???", *name = str;
 
     addr = net_addr(row);
-    if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+    if (addrcmp(addr, &ctl->unspec_addr, ctl->af)) {
         if ((name = dns_lookup(ctl, addr))) {
             if (ctl->show_ips) {
                 snprintf(str, sizeof(str), "%s (%s)", name,
