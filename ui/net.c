@@ -629,7 +629,7 @@ static void net_find_interface_address_from_name(
 
     interface = ifaddrs;
     while (interface != NULL) {
-        if (!strcmp(interface->ifa_name, interface_name)) {
+        if (interface->ifa_addr != NULL && !strcmp(interface->ifa_name, interface_name)) {
             found_interface_name = 1;
 
             if (interface->ifa_addr->sa_family == address_family) {
