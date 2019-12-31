@@ -686,7 +686,8 @@ static void net_find_local_address(
        We need to set the port to a non-zero value for the connect
        to succeed.
      */
-    memcpy(&remote_sockaddr, &remotesockaddr_struct, sockaddr_size(&remotesockaddr_struct));
+    addr_length = sockaddr_size(&remotesockaddr_struct);
+    memcpy(&remote_sockaddr, &remotesockaddr_struct, addr_length);
     *sockaddr_port_offset(&remote_sockaddr) = htons(1);
 
     if (connect
