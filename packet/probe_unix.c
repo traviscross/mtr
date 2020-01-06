@@ -819,8 +819,10 @@ void receive_replies_from_recv_socket(
             /* ICMP packets received from raw socket */
             handle_received_packet(net_state, &remote_addr, packet,
                                    packet_length, &timestamp);
+#ifdef HAVE_LINUX_ERRQUEUE_H
 #ifdef SO_PROTOCOL
         }
+#endif
 #endif
     }
 }
