@@ -796,7 +796,6 @@ void receive_replies_from_recv_socket(
                 memcpy(&remote_addr, SO_EE_OFFENDER(ee), sizeof(remote_addr));
             }
         }
-#endif
 
 #ifdef SO_PROTOCOL
         if (icmp_connrefused_received) {
@@ -815,6 +814,7 @@ void receive_replies_from_recv_socket(
             handle_error_queue_packet(net_state, &remote_addr, ICMP_TIME_EXCEEDED, proto,
                     packet, packet_length, &timestamp);
         } else {
+#endif
 #endif
             /* ICMP packets received from raw socket */
             handle_received_packet(net_state, &remote_addr, packet,
