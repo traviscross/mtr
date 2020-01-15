@@ -52,8 +52,11 @@ int send_packet(
     int packet_size,
     const struct sockaddr_storage *sockaddr)
 {
+    struct sockaddr_storage dst;
     int send_socket = 0;
     int sockaddr_length;
+
+    memcpy(&dst, sockaddr, sizeof(struct sockaddr_storage));
 
     if (sockaddr->ss_family == AF_INET6) {
         sockaddr_length = sizeof(struct sockaddr_in6);
@@ -67,12 +70,17 @@ int send_packet(
         } else if (param->protocol == IPPROTO_UDP) {
             if (net_state->platform.ip6_socket_raw) {
                 send_socket = net_state->platform.udp6_send_socket;
+                /* we got a ipv6 udp raw socket
+                 * the remote port is in the payload
+                 * we do not set in the sockaddr
+                 */
+                *sockaddr_port_offset(&dst) = 0;
             } else {
                 send_socket = net_state->platform.ip6_txrx_udp_socket;
                 if (param->dest_port) {
-                    *sockaddr_port_offset(sockaddr) = htons(param->dest_port);
+                    *sockaddr_port_offset(&dst) = htons(param->dest_port);
                 } else {
-                    *sockaddr_port_offset(sockaddr) = sequence;
+                    *sockaddr_port_offset(&dst) = sequence;
                 }
             }
         }
@@ -91,9 +99,9 @@ int send_packet(
             } else if (param->protocol == IPPROTO_UDP) {
                 send_socket = net_state->platform.ip4_txrx_udp_socket;
                 if (param->dest_port) {
-                    *sockaddr_port_offset(sockaddr) = htons(param->dest_port);
+                    *sockaddr_port_offset(&dst) = htons(param->dest_port);
                 } else {
-                    *sockaddr_port_offset(sockaddr) = sequence;
+                    *sockaddr_port_offset(&dst) = sequence;
                 }
             }
         }
@@ -105,7 +113,7 @@ int send_packet(
     }
 
     return sendto(send_socket, packet, packet_size, 0,
-                  (struct sockaddr *) sockaddr, sockaddr_length);
+                  (struct sockaddr *) &dst, sockaddr_length);
 }
 
 /*
