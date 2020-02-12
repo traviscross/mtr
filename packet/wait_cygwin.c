@@ -19,6 +19,7 @@
 #include "wait.h"
 
 #include <error.h>
+#include <errno.h>
 #include <sys/select.h>
 
 #include "command.h"
