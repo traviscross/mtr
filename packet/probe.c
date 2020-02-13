@@ -318,8 +318,12 @@ int find_source_addr(
     int sock;
     int len;
     struct sockaddr_storage dest_with_port;
+#ifdef __linux__
+    // The Linux code needs these. 
     struct sockaddr_in *srcaddr4;
     struct sockaddr_in6 *srcaddr6;
+#endif
+
 
     dest_with_port = *destaddr;
 

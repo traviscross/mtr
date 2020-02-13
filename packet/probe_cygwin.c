@@ -483,7 +483,7 @@ DWORD WINAPI icmp_service_thread(LPVOID param) {
     HANDLE event;
     BOOL success;
     bool read_pending;
-    int read_count;
+    DWORD read_count;
     int err;
 
     /*
