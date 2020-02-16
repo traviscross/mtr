@@ -64,12 +64,19 @@ void raw_rawping(
     fflush(stdout);
 }
 
-
 void raw_rawhost(
     struct mtr_ctl *ctl,
     int host,
-    ip_t * ip_addr)
+    ip_t *ip_addr,
+    struct mplslen *mpls)
 {
     printf("h %d %s\n", host, strlongip(ctl, ip_addr));
+    if (ctl->enablempls) {
+        int k;
+        for (k = 0; k < mpls->labels; k++)
+            printf("m %d %lu %u %u %u\n",
+                   host, mpls->label[k], mpls->tc[k], mpls->s[k], mpls->ttl[k]);
+    }
+
     fflush(stdout);
 }
