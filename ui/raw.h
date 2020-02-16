@@ -30,4 +30,5 @@ extern void raw_rawping(
 extern void raw_rawhost(
     struct mtr_ctl *ctl,
     int host,
-    ip_t * addr);
+    ip_t *addr,
+    struct mplslen *mpls);

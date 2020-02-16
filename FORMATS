@@ -11,7 +11,7 @@ The split format is:
 
 The "raw" format is:
 
-hostline|xmitline|pingline|dnsline|timestampline
+hostline|xmitline|pingline|dnsline|timestampline|mplsline
 
 hostline:
 h <pos> <host IP>
@@ -28,6 +28,8 @@ d <pos> <hostname>
 timestampline:
 t <pos> <pingtime> <timestamp>
 
+mplsline:
+m <pos> <label> <traffic_class> <bottom_stack> <ttl>
 
 Timestampline is not  yet implemented. Need to find out how to do
 ICMP timestamping first. :-)

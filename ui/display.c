@@ -225,10 +225,11 @@ void display_rawping(
 void display_rawhost(
     struct mtr_ctl *ctl,
     int host,
-    ip_t * ip_addr)
+    ip_t * ip_addr,
+    struct mplslen *mpls)
 {
     if (ctl->DisplayMode == DisplayRaw)
-        raw_rawhost(ctl, host, ip_addr);
+        raw_rawhost(ctl, host, ip_addr, mpls);
 }
 
 

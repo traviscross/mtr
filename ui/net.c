@@ -241,7 +241,7 @@ static void net_process_ping(
         /* should be out of if as addr can change */
         memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
         nh->mpls = *mpls;
-        display_rawhost(ctl, index, (void *) &(nh->addr));
+        display_rawhost(ctl, index, (void *)&(nh->addr), (void *)&(nh->mpls));
 
         /* multi paths */
         memcpy(&nh->addrs[0], addrcopy, sockaddr_addr_size(sourcesockaddr));
@@ -259,7 +259,7 @@ static void net_process_ping(
             memcpy(&nh->addrs[i], addrcopy, sockaddr_addr_size(sourcesockaddr));
 
             nh->mplss[i] = *mpls;
-            display_rawhost(ctl, index, (void *) &(nh->addrs[i]));
+            display_rawhost(ctl, index, (void *)&(nh->addrs[i]), (void *)&(nh->addrs[i]));
         }
     }
 
