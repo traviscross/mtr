@@ -71,12 +71,16 @@ void raw_rawhost(
     struct mplslen *mpls)
 {
     printf("h %d %s\n", host, strlongip(ctl, ip_addr));
+    fflush(stdout);
+
     if (ctl->enablempls) {
         int k;
-        for (k = 0; k < mpls->labels; k++)
+        for (k = 0; k < mpls->labels; k++) {
             printf("m %d %lu %u %u %u\n",
                    host, mpls->label[k], mpls->tc[k], mpls->s[k], mpls->ttl[k]);
+
+            fflush(stdout);
+        }
     }
 
-    fflush(stdout);
 }
