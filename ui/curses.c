@@ -685,7 +685,8 @@ void mtr_curses_redraw(
     char buf[1024];
     char fmt[16];
 
-    erase();
+    
+	erase();
     getmaxyx(stdscr, __unused_int, maxx);
 
     rowstat = 5;
@@ -696,10 +697,6 @@ void mtr_curses_redraw(
              PACKAGE_VERSION, "]");
     pwcenter(buf);
     attroff(A_BOLD);
-
-    //printw(fmt_ipinfo(ctl, addr));
-    //printw("%s", name);
-
 
     mvprintw(1, 0, "%s (%s), %s %s", ctl->LocalHostname, net_localaddr(), " --> ", ctl->Hostname);
     t = time(NULL);
