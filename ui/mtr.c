@@ -785,6 +785,7 @@ int main(
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
     ctl.ipinfo_max = -1;
+    ctl.fstMASK = 0;
     xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
     /*

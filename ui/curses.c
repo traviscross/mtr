@@ -279,6 +279,25 @@ int mtr_curses_keyaction(
         ctl->maxTTL = i;
 
         return ActionNone;
+    case '0':
+        mvprintw(2, 0, "Mask : %d\n\n", ctl->fstMASK);
+        move(2, 7);
+        refresh();
+        while ((c = getch()) != '\n' && i < MAXFLD) {
+            attron(A_BOLD);
+            printw("%c", c);
+            attroff(A_BOLD);
+            refresh();
+            buf[i++] = c;       /* need more checking on 'c' */
+        }
+        buf[i] = '\0';
+        i = atoi(buf);
+
+        if (i > (MaxHost - 1))
+            return ActionNone;
+        ctl->fstMASK = i;
+
+        return ActionNone;
         /* fields to display & their ordering */
     case 'o':
         mvprintw(2, 0, "Fields: %s\n\n", ctl->fld_active);
@@ -369,6 +388,8 @@ int mtr_curses_keyaction(
         printw("  y       switching IP info\n");
         printw("  z       toggle ASN info on/off\n");
 #endif
+        printw
+            ("  0 <n>   masks first #n IPs in the TTL list (0 = masking off)\n");
         printw("\n");
         printw(" press any key to go back...");
         getch();                /* read and ignore 'any key' */
@@ -434,13 +455,17 @@ static void mtr_curses_hosts(
             if (is_printii(ctl))
                 printw(fmt_ipinfo(ctl, addr));
 #endif
-            if (name != NULL) {
-                if (ctl->show_ips)
-                    printw("%s (%s)", name, strlongip(ctl, addr));
-                else
-                    printw("%s", name);
+            if ( at < ctl->fstMASK ) {
+                printw("___ip_masked___");
             } else {
-                printw("%s", strlongip(ctl, addr));
+                if (name != NULL) {
+                    if (ctl->show_ips)
+                        printw("%s (%s)", name, strlongip(ctl, addr));
+                    else
+                        printw("%s", name);
+                } else {
+                    printw("%s", strlongip(ctl, addr));
+                }
             }
             attroff(A_BOLD);
 
@@ -653,7 +678,11 @@ static void mtr_curses_graph(
                 printw(fmt_ipinfo(ctl, addr));
 #endif
             name = dns_lookup(ctl, addr);
-            printw("%s", name ? name : strlongip(ctl, addr));
+            if ( at < ctl->fstMASK ) {
+                printw("___ip_masked___");
+            } else {
+                printw("%s", name ? name : strlongip(ctl, addr));
+            }
         } else {
             attron(A_BOLD);
             printw("(%s)", host_error_to_string(err));
@@ -698,7 +727,11 @@ void mtr_curses_redraw(
     pwcenter(buf);
     attroff(A_BOLD);
 
-    mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
+    if (ctl->fstMASK == 0) {
+        mvprintw(1, 0, "%s (%s)", ctl->LocalHostname, net_localaddr());
+    } else {
+        mvprintw(1, 0, "hostname masked (ip masked)", ctl->LocalHostname, net_localaddr());
+    }
     t = time(NULL);
     mvprintw(1, maxx - 25, iso_time(&t));
     printw("\n");
