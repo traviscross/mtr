@@ -175,7 +175,7 @@ static void net_send_query(
     int time_to_live = index + 1;
 
     send_probe_command(ctl, &packet_command_pipe, remoteaddress,
-                       sourceaddress, packetsize, seq, time_to_live);
+                       sourceaddress, packet_size, seq, time_to_live);
 }
 
 
