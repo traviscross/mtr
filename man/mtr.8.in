@@ -138,7 +138,7 @@ A sudden increase in packet loss or response time is often an indication
 of a bad (or simply overloaded) link. 
 .PP
 The results are usually reported as round-trip-response times in milliseconds
-and the percentage of packetloss. 
+and the percentage of packet loss. 
 .SH OPTIONS
 .TP
 .B \-h\fR, \fB\-\-help
