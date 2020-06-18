@@ -121,7 +121,7 @@ probes.
 .I IP-ADDRESS
 .HP 14
 .IP
-The local Internet Procol version 4 address to use when sending probes.
+The local Internet Protocol version 4 address to use when sending probes.
 .HP 7
 .IP
 .B local-ip-6
@@ -407,7 +407,7 @@ value, are used.
 \&...
 .RE 0
 .LP
-Each interemediate host would respond with a
+Each intermediate host would respond with a
 .B ttl-expired
 message, and the destination host would respond with a
 .BR reply :

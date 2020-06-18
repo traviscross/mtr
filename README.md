@@ -31,7 +31,7 @@ If you're building from the git repository, you'll need to run:
 
 	./bootstrap.sh && ./configure && make
 
-When it looks as if the compilation was succesful, you can
+When it looks as if the compilation was successful, you can
 test mtr with
 
 	sudo ./mtr <host>
