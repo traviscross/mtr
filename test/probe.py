@@ -208,7 +208,7 @@ class TestProbeICMPv4(mtrpacket.MtrPacketTest):
     def test_ttl_expired(self):
         'Test sending a probe which will have its time-to-live expire'
 
-        #  Probe Goolge's DNS server, but give the probe only one hop
+        #  Probe Google's DNS server, but give the probe only one hop
         #  to live.
         self.write_command('16 send-probe ip-4 8.8.8.8 ttl 1')
         reply = self.parse_reply()
@@ -220,7 +220,7 @@ class TestProbeICMPv4(mtrpacket.MtrPacketTest):
         '''Test sending multiple probes in parallel
 
         We will expect the probes to complete out-of-order by sending
-        a probe to a distant host immeidately followed by a probe to
+        a probe to a distant host immediately followed by a probe to
         the local host.'''
 
         success_count = 0
@@ -300,7 +300,7 @@ class TestProbeICMPv6(mtrpacket.MtrPacketTest):
     def test_ttl_expired(self):
         'Test sending a probe which will have its time-to-live expire'
 
-        #  Probe Goolge's DNS server, but give the probe only one hop
+        #  Probe Google's DNS server, but give the probe only one hop
         #  to live.
         cmd = '53 send-probe ip-6 ' + self.google_addr + ' ttl 1'
         self.write_command(cmd)

@@ -150,7 +150,7 @@ void dns_open(
             error(EXIT_FAILURE, errno, "signal");
         }
 
-        /* Close all unneccessary FDs.
+        /* Close all unnecessary FDs.
            for debugging and error reporting, keep std-in/out/err. */
         for (i = 3; i < fromdns[1]; i++) {
             if (i == todns[0])

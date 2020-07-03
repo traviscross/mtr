@@ -62,7 +62,7 @@ class TestParameters(mtrpacket.MtrPacketTest):
 
 @unittest.skipIf(sys.platform == 'cygwin', 'No Cygwin test')
 class TestIPv6Parameters(mtrpacket.MtrPacketTest):
-    'Test packet paramter customization for IPv6'
+    'Test packet parameter customization for IPv6'
 
     @unittest.skipUnless(mtrpacket.HAVE_IPV6, 'No IPv6')
     def test_param(self):

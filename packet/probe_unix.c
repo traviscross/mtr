@@ -692,7 +692,7 @@ void receive_probe(
 
 /*
     Read all available packets through our receiving raw socket, and
-    handle any responses to probes we have preivously sent.
+    handle any responses to probes we have previously sent.
 */
 static
 void receive_replies_from_recv_socket(

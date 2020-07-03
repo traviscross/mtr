@@ -34,7 +34,7 @@
 #define SEQUENCE_NUM 33000
 
 /*
-    Check to see if the packet we've recieved is intended for this test
+    Check to see if the packet we've received is intended for this test
     process.  We expected the ICMP sequence number to be equal to our
     process ID.
 */

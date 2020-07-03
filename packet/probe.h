@@ -68,7 +68,7 @@ struct probe_param_t {
     /*  The packet "mark" used for mark-based routing on Linux  */
     int routing_mark;
 
-    /*  Time to live for the transmited probe  */
+    /*  Time to live for the transmitted probe  */
     int ttl;
 
     /*  The packet size (in bytes) including protocol headers  */

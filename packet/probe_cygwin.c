@@ -81,7 +81,7 @@
 
     We use the Cygwin pipe() to create the pipes, but in the ICMP
     service thread we use the Win32 HANDLE that corresponds to the
-    recieving end of the input pipe to wait for ICMP requests.
+    receiving end of the input pipe to wait for ICMP requests.
 */
 
 
@@ -94,7 +94,7 @@ void init_net_state_privileged(
 }
 
 /*
-    Convienience similar to error(), but for reporting Windows
+    Convenience similar to error(), but for reporting Windows
     error codes instead of errno codes.
 */
 void error_win(int exit_code, int win_error, const char *str) {
@@ -717,7 +717,7 @@ void receive_replies(
 }
 
 /*
-    On Windows, an implementation of check_probe_timeout is unnecesary because
+    On Windows, an implementation of check_probe_timeout is unnecessary because
     timeouts are managed by ICMP.DLL, including a call to the I/O completion
     routine when the time fully expires.
 */

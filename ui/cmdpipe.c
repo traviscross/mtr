@@ -207,7 +207,7 @@ int check_packet_features(
 
 extern char *myname;
 /*
-    Execute mtr-packet, allowing the MTR_PACKET evironment to override
+    Execute mtr-packet, allowing the MTR_PACKET environment to override
     the PATH when locating the executable.
 */
 static
@@ -755,7 +755,7 @@ void consume_reply_buffer(
         /*
            Terminate the reply string at the newline, which
            is necessary in the case where we are able to read
-           mulitple replies arriving simultaneously.
+           multiple replies arriving simultaneously.
          */
         *end_of_reply = 0;
 
