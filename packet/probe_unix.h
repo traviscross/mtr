@@ -40,7 +40,7 @@ struct probe_platform_t {
     struct timeval departure_time;
 };
 
-/*  We'll use rack sockets to send and recieve probes on Unix systems  */
+/*  We'll use rack sockets to send and receive probes on Unix systems  */
 struct net_state_platform_t {
     /*  true if we were successful at opening IPv4 sockets  */
     bool ip4_present;

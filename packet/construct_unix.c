@@ -724,7 +724,7 @@ int construct_ip6_packet(
     /*
        Check the current socket address, and if it is the same
        as the source address we intend, we will skip the bind.
-       This is to accomodate Solaris, which, as of Solaris 11.3,
+       This is to accommodate Solaris, which, as of Solaris 11.3,
        will return an EINVAL error on bind if the socket is already
        bound, even if the same address is used.
      */
@@ -754,7 +754,7 @@ int construct_ip6_packet(
         }
     }
 
-    /*  The traffic class in IPv6 is analagous to ToS in IPv4  */
+    /*  The traffic class in IPv6 is analogous to ToS in IPv4  */
     if (setsockopt(send_socket, IPPROTO_IPV6,
                    IPV6_TCLASS, &param->type_of_service, sizeof(int))) {
         return -1;

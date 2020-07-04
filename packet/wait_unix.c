@@ -104,7 +104,7 @@ int gather_read_fds(
     Sleep until we receive a new probe response, a new command on the
     command stream, or a probe timeout.  On Unix systems, this means
     we use select to wait on file descriptors for the command stream
-    and the raw recieve socket.
+    and the raw receive socket.
 */
 void wait_for_activity(
     struct command_buffer_t *command_buffer,

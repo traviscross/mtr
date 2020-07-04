@@ -66,8 +66,8 @@ int tokenize_command(
     structure for later semantic interpretation.  Returns EINVAL if the
     command string is unparseable or zero for success.
 
-    comamnd_string will be modified in-place with NUL characters terminating
-    tokens, and the command_t will use pointers to the conents of
+    command_string will be modified in-place with NUL characters terminating
+    tokens, and the command_t will use pointers to the contents of
     command_string without copying, so any interpretation of the
     command_t structure requires that the command_string memory has not yet
     been freed or otherwise reused.

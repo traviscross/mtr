@@ -546,7 +546,7 @@ int net_send_batch(
                have a range for "rand()" that runs to 32768, and the 
                destination range is 10000, you end up with 4 out of 32768 
                0-2768's and only 3 out of 32768 for results 2769 .. 9999. 
-               As our detination range (in the example 10000) is much 
+               As our destination range (in the example 10000) is much 
                smaller (reasonable packet sizes), and our rand() range much 
                larger, this effect is insignificant. Oh! That other formula
                didn't work. */
