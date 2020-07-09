@@ -26,6 +26,14 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#ifdef HAVE_JANSSON
+#include <jansson.h>
+#endif
+#ifdef HAVE_ERROR_H
+#include <error.h>
+#else
+#include "portability/error.h"
+#endif
 
 #include "mtr.h"
 #include "report.h"
@@ -269,111 +277,111 @@ void txt_close(
     report_close(ctl);
 }
 
-
+#ifdef HAVE_JANSSON
 void json_open(
     void)
 {
 }
 
-
-void json_close(
-    struct mtr_ctl *ctl)
+void json_close(struct mtr_ctl *ctl)
 {
-    int i, j, at, first, max;
+    int i, j, at, max;
+    int ret;
+    char buf[128];
+    json_t *jreport, *jmtr, *jhubs, *jh;
     ip_t *addr;
     char name[MAX_FORMAT_STR];
 
-    printf("{\n");
-    printf("  \"report\": {\n");
-    printf("    \"mtr\": {\n");
-    printf("      \"src\": \"%s\",\n", ctl->LocalHostname);
-    printf("      \"dst\": \"%s\",\n", ctl->Hostname);
-    printf("      \"tos\": \"0x%X\",\n", ctl->tos);
-    if (ctl->cpacketsize >= 0) {
-        printf("      \"psize\": \"%d\",\n", ctl->cpacketsize);
-    } else {
-        printf("      \"psize\": \"rand(%d-%d)\",\n", MINPACKET,
-               -ctl->cpacketsize);
-    }
-    if (ctl->bitpattern >= 0) {
-        printf("      \"bitpattern\": \"0x%02X\",\n",
-               (unsigned char) (ctl->bitpattern));
-    } else {
-        printf("      \"bitpattern\": \"rand(0x00-FF)\",\n");
-    }
-    printf("      \"tests\": \"%d\"\n", ctl->MaxPing);
-    printf("    },\n");
+    jmtr = json_pack("{ss ss si si}",
+                     "src", ctl->LocalHostname,
+                     "dst", ctl->Hostname,
+                     "tos", ctl->tos,
+                     "tests", ctl->MaxPing);
+    if (!jmtr)
+        goto on_error;
 
-    printf("    \"hubs\": [");
+    if (ctl->cpacketsize >= 0) {
+        snprintf(buf, sizeof(buf), "%d", ctl->cpacketsize);
+    } else {
+        snprintf(buf, sizeof(buf), "rand(%d-%d)", MINPACKET, -ctl->cpacketsize);
+    }
+    ret = json_object_set_new(jmtr, "psize", json_string(buf));
+    if (ret == -1)
+        goto on_error;
+
+    if (ctl->bitpattern >= 0) {
+        snprintf(buf, sizeof(buf), "0x%02X", (unsigned char)(ctl->bitpattern));
+    } else {
+        snprintf(buf, sizeof(buf), "rand(0x00-FF)");
+    }
+
+    ret = json_object_set_new(jmtr, "bitpattern", json_string(buf));
+    if (ret == -1)
+        goto on_error;
+
+    jhubs = json_array();
+    if (!jhubs)
+        goto on_error;
 
     max = net_max(ctl);
-    at = first = net_min(ctl);
+    at = net_min(ctl);
     for (; at < max; at++) {
         addr = net_addr(at);
         snprint_addr(ctl, name, sizeof(name), addr);
 
-        if (at == first) {
-            printf("{\n");
-        } else {
-            printf("    {\n");
-        }
-        printf("      \"count\": \"%d\",\n", at + 1);
-        printf("      \"host\": \"%s\",\n", name);
+        jh = json_pack("{si ss}", "count", at + 1, "host", name);
+        if (!jh)
+            goto on_error;
+
 #ifdef HAVE_IPINFO
         if(!ctl->ipinfo_no) {
-          char* fmtinfo = fmt_ipinfo(ctl, addr);
-          if (fmtinfo != NULL) fmtinfo = trim(fmtinfo, '\0');
-          printf("      \"ASN\": \"%s\",\n", fmtinfo);
+            char* fmtinfo = fmt_ipinfo(ctl, addr);
+            if (fmtinfo != NULL)
+                fmtinfo = trim(fmtinfo, '\0');
+
+            ret = json_object_set_new(jh, "ASN", json_string(fmtinfo));
+            if (ret == -1)
+                goto on_error;
         }
 #endif
-        for (i = 0; i < MAXFLD; i++) {
-            const char *format;
 
+        for (i = 0; i < MAXFLD; i++) {
             j = ctl->fld_index[ctl->fld_active[i]];
 
-            /* Commas */
-            if (i + 1 == MAXFLD) {
-                printf("\n");
-            } else if (j > 0 && i != 0) {
-                printf(",\n");
-            }
-
             if (j <= 0)
-                continue;       /* Field nr 0, " " shouldn't be printed in this method. */
+                continue; /* Field nr 0, " " shouldn't be printed in this method. */
 
-            /* Format value */
-            format = data_fields[j].format;
-            if (strchr(format, 'f')) {
-                format = "%.2f";
-            } else {
-                format = "%d";
-            }
-
-            /* Format json line */
-            snprintf(name, sizeof(name), "%s%s", "      \"%s\": ", format);
-
-            /* Output json line */
             if (strchr(data_fields[j].format, 'f')) {
-                /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
-                printf(name,
-                       data_fields[j].title,
-                       data_fields[j].net_xxx(at) / 1000.0);
+                ret = json_object_set_new(
+                    jh, data_fields[j].title,
+                    json_real(data_fields[j].net_xxx(at) / 1000.0));
             } else {
-                printf(name,
-                       data_fields[j].title, data_fields[j].net_xxx(at));
+                ret = json_object_set_new(
+                    jh, data_fields[j].title,
+                    json_integer(data_fields[j].net_xxx(at)));
             }
+            if (ret == -1)
+                goto on_error;
         }
-        if (at + 1 == max) {
-            printf("    }");
-        } else {
-            printf("    },\n");
-        }
-    }
-    printf("]\n");
-    printf("  }\n");
-    printf("}\n");
-}
 
+        ret = json_array_append_new(jhubs, jh);
+        if (ret == -1)
+            goto on_error;
+    }
+
+    jreport = json_pack("{s{so so}}", "report", "mtr", jmtr, "hubs", jhubs);
+
+    ret = json_dumpf(jreport, stdout, JSON_INDENT(4) | JSON_REAL_PRECISION(5));
+    if (ret == -1)
+        goto on_error;
+
+    printf("\n"); // bash promt should be on new line
+    json_decref(jreport);
+    return;
+on_error:
+    error(EXIT_FAILURE, 0, "json_close failed");
+}
+#endif
 
 
 void xml_open(

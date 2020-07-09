@@ -267,6 +267,9 @@ Use this option to tell
 .B mtr
 to use the JSON output format.  This format is better suited for
 automated processing of the measurement results.
+Jansson library must have been available on the system when
+.B mtr
+was built for this to work.
 .TP
 .B \-p\fR, \fB\-\-split
 Use this option to set

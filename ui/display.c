@@ -81,9 +81,11 @@ void display_open(
     case DisplayTXT:
         txt_open();
         break;
+#ifdef HAVE_JANSSON
     case DisplayJSON:
         json_open();
         break;
+#endif
     case DisplayXML:
         xml_open();
         break;
@@ -127,9 +129,11 @@ void display_close(
     case DisplayTXT:
         txt_close(ctl);
         break;
+#ifdef HAVE_JANSSON
     case DisplayJSON:
         json_close(ctl);
         break;
+#endif
     case DisplayXML:
         xml_close(ctl);
         break;

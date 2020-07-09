@@ -349,7 +349,9 @@ static void parse_arg(
 #endif
         {"raw", 0, NULL, 'l'},
         {"csv", 0, NULL, 'C'},
+#ifdef HAVE_JANSSON
         {"json", 0, NULL, 'j'},
+#endif
         {"displaymode", 1, NULL, OPT_DISPLAYMODE},
         {"split", 0, NULL, 'p'},        /* BL */
         /* maybe above should change to -d 'x' */
@@ -445,9 +447,11 @@ static void parse_arg(
         case 'C':
             ctl->DisplayMode = DisplayCSV;
             break;
+#ifdef HAVE_JANSSON
         case 'j':
             ctl->DisplayMode = DisplayJSON;
             break;
+#endif
         case 'x':
             ctl->DisplayMode = DisplayXML;
             break;
@@ -644,7 +648,9 @@ static void parse_arg(
 
     if (ctl->DisplayMode == DisplayReport ||
         ctl->DisplayMode == DisplayTXT ||
+#ifdef HAVE_JANSSON
         ctl->DisplayMode == DisplayJSON ||
+#endif
         ctl->DisplayMode == DisplayXML ||
         ctl->DisplayMode == DisplayRaw || ctl->DisplayMode == DisplayCSV)
         ctl->Interactive = 0;
