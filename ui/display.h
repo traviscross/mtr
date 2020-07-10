@@ -41,7 +41,9 @@ enum {
     DisplayXML,
     DisplayCSV,
     DisplayTXT,
-    DisplayJSON
+#ifdef HAVE_JANSSON
+    DisplayJSON,
+#endif
 };
 
 enum {

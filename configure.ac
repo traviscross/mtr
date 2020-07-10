@@ -104,6 +104,15 @@ AS_IF([test "x$with_gtk" = "xyes"],
 ])
 AM_CONDITIONAL([WITH_GTK], [test "x$with_gtk" = xyes])
 
+AC_ARG_WITH([jansson],
+  [AS_HELP_STRING([--without-jansson], [Build without JSON output])],
+  [], [with_jansson=yes])
+AS_IF([test "x$with_jansson" = "xyes"],
+  [PKG_CHECK_MODULES([JANSSON], [jansson],
+    [AC_DEFINE([HAVE_JANSSON], [1], [Define if jansson library available])],
+    [with_jansson=no])
+])
+
 # Find ncurses
 AC_ARG_WITH([ncurses],
   [AS_HELP_STRING([--without-ncurses], [Build without the ncurses interface])],
@@ -259,6 +268,7 @@ echo "ipv6    :$USES_IPV6"
 echo "ipinfo  :$with_ipinfo"
 echo "ncurses :$with_ncurses"
 echo "gtk     :$with_gtk"
+echo "jansson :$with_jansson"
 echo "cap     :$have_cap"
 echo "libs    :$LIBS"
 echo "cflags  :$CFLAGS"

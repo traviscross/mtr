@@ -92,8 +92,8 @@ ASAN_CFLAGS += -fsanitize=address
 endif
 
 mtr_INCLUDES = $(GLIB_CFLAGS) -I$(top_builddir) -I$(top_srcdir)
-mtr_CFLAGS = $(GTK_CFLAGS) $(NCURSES_CFLAGS) $(ASAN_CFLAGS)
-mtr_LDADD = $(GTK_LIBS) $(NCURSES_LIBS) $(RESOLV_LIBS)
+mtr_CFLAGS = $(GTK_CFLAGS) $(NCURSES_CFLAGS) $(ASAN_CFLAGS) $(JANSSON_CFLAGS)
+mtr_LDADD = $(GTK_LIBS) $(NCURSES_LIBS) $(RESOLV_LIBS) $(JANSSON_LIBS)
 
 
 mtr_packet_SOURCES = \
