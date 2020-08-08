@@ -191,8 +191,14 @@ void report_close(
             mplss = net_mplss(at, z);
             if ((addrcmp
                  ((void *) &ctl->unspec_addr, (void *) addr2,
-                  ctl->af)) == 0)
+                  ctl->af)) == 0) {
                 break;
+            } else {
+                snprint_addr(ctl, name, sizeof(name), addr2);
+                snprintf(fmt, sizeof(fmt), "        %%-%zus", len_hosts);
+                snprintf(buf, sizeof(buf), fmt,  name);
+                printf("%s\n", buf);
+            }
             for (w = 0; w < z; w++)
                 /* Ok... checking if there are ips repeated on same hop */
                 if ((addrcmp
