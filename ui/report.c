@@ -184,8 +184,8 @@ void report_close(
 
         /* This feature shows 'loadbalances' on routes */
 
-        /* z is starting at 1 because addrs[0] is the same that addr */
-        for (z = 1; z < MAXPATH; z++) {
+        /* Print list of all hosts that have responded from ttl = at + 1 away */
+        for (z = 0; z < MAXPATH; z++) {
             int found = 0;
             addr2 = net_addrs(at, z);
             mplss = net_mplss(at, z);
@@ -193,6 +193,10 @@ void report_close(
                  ((void *) &ctl->unspec_addr, (void *) addr2,
                   ctl->af)) == 0) {
                 break;
+            } else if ((addrcmp
+                        ((void *) addr, (void *) addr2,
+                          ctl->af)) == 0) {
+                continue; /* Latest Host is already printed */
             } else {
                 snprint_addr(ctl, name, sizeof(name), addr2);
                 snprintf(fmt, sizeof(fmt), "        %%-%zus", len_hosts);

@@ -47,8 +47,8 @@
 static int packetsize;          /* packet size used by ping */
 
 struct nethost {
-    ip_t addr;
-    ip_t addrs[MAXPATH];        /* for multi paths byMin */
+    ip_t addr;                  /* Latest host to respond */
+    ip_t addrs[MAXPATH];        /* For Multi paths/Path Changes: List of all hosts that have responded */
     int err;
     int xmit;
     int returned;
@@ -219,6 +219,7 @@ static void net_process_ping(
     int oldavg;                 /* usedByMin */
     int oldjavg;                /* usedByMin */
     int i;                      /* usedByMin */
+    int found = 0;
 #ifdef ENABLE_IPV6
     char addrcopy[sizeof(struct in6_addr)];
 #else
@@ -237,30 +238,31 @@ static void net_process_ping(
 
 
 
-    if (addrcmp(&nh->addr, &ctl->unspec_addr, ctl->af) == 0) {
-        /* should be out of if as addr can change */
-        memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
-        nh->mpls = *mpls;
-        display_rawhost(ctl, index, (void *)&(nh->addr), (void *)&(nh->mpls));
-
-        /* multi paths */
-        memcpy(&nh->addrs[0], addrcopy, sockaddr_addr_size(sourcesockaddr));
-        nh->mplss[0] = *mpls;
-    } else {
+    if (addrcmp(&nh->addr, &addrcopy, ctl->af) != 0) {
         for (i = 0; i < MAXPATH;) {
-            if (addrcmp(&nh->addrs[i], &addrcopy, ctl->af) == 0 ||
-                addrcmp(&nh->addrs[i], &ctl->unspec_addr, ctl->af) == 0) {
+            if (addrcmp(&nh->addrs[i], &nh->addr, ctl->af) == 0) {
+                found = 1; /* This host is already in the list */
                 break;
+            }
+            if (addrcmp(&nh->addrs[i], &ctl->unspec_addr, ctl->af) == 0) {
+                break; /* Found first vacant position */
             }
             i++;
         }
 
-        if (addrcmp(&nh->addrs[i], &addrcopy, ctl->af) != 0 && i < MAXPATH) {
-            memcpy(&nh->addrs[i], addrcopy, sockaddr_addr_size(sourcesockaddr));
+        if (found == 0 && i < MAXPATH) {
+            memcpy(&nh->addrs[i], &nh->addr, sockaddr_addr_size(sourcesockaddr));
 
-            nh->mplss[i] = *mpls;
+            nh->mplss[i] = nh->mpls;
             display_rawhost(ctl, index, (void *)&(nh->addrs[i]), (void *)&(nh->addrs[i]));
         }
+
+        /* Always save the latest host in nh->addr. This
+         * allows maxTTL to change whenever path changes.
+         */
+        memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
+        nh->mpls = *mpls;
+        display_rawhost(ctl, index, (void *)&(nh->addr), (void *)&(nh->mpls));
     }
 
     nh->jitter = totusec - nh->last;
@@ -535,6 +537,7 @@ int net_send_batch(
     struct mtr_ctl *ctl)
 {
     int n_unknown = 0, i;
+    int restart = 0;
 
     /* randomized packet size and/or bit pattern if packetsize<0 and/or 
        bitpattern<0.  abs(packetsize) and/or abs(bitpattern) will be used 
@@ -572,8 +575,11 @@ int net_send_batch(
            hosts. Removed in 0.65. 
            If the line proves necessary, it should at least NOT trigger that line
            when host[i].addr == 0 */
-        if (host_addr_cmp(i, remoteaddress, ctl->af) == 0)
-            n_unknown = MaxHost;        /* Make sure we drop into "we should restart" */
+        if (host_addr_cmp(i, remoteaddress, ctl->af) == 0) {
+            restart = 1;
+            numhosts = i + 1; /* Saves batch_at - index number of probes in the next round!*/
+            break;
+        }
     }
 
     if (                        /* success in reaching target */
@@ -582,7 +588,11 @@ int net_send_batch(
            (n_unknown > ctl->maxUnknown) ||
            /* or reach limit  */
            (batch_at >= ctl->maxTTL - 1)) {
+        restart = 1;
         numhosts = batch_at + 1;
+    }
+
+    if(restart) {
         batch_at = ctl->fstTTL - 1;
         return 1;
     }
