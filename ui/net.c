@@ -48,7 +48,7 @@ static int packetsize;          /* packet size used by ping */
 
 struct nethost {
     ip_t addr;                  /* Latest host to respond */
-    ip_t addrs[MAXPATH];        /* For Multi paths/Path Changes: List of all hosts that have responded */
+    ip_t addrs[MAX_PATH];        /* For Multi paths/Path Changes: List of all hosts that have responded */
     int err;
     int xmit;
     int returned;
@@ -68,7 +68,7 @@ struct nethost {
     int saved[SAVED_PINGS];
     int saved_seq_offset;
     struct mplslen mpls;
-    struct mplslen mplss[MAXPATH];
+    struct mplslen mplss[MAX_PATH];
 };
 
 
@@ -239,7 +239,7 @@ static void net_process_ping(
 
 
     if (addrcmp(&nh->addr, &addrcopy, ctl->af) != 0) {
-        for (i = 0; i < MAXPATH;) {
+        for (i = 0; i < MAX_PATH;) {
             if (addrcmp(&nh->addrs[i], &nh->addr, ctl->af) == 0) {
                 found = 1; /* This host is already in the list */
                 break;
@@ -250,7 +250,7 @@ static void net_process_ping(
             i++;
         }
 
-        if (found == 0 && i < MAXPATH) {
+        if (found == 0 && i < MAX_PATH) {
             memcpy(&nh->addrs[i], &nh->addr, sockaddr_addr_size(sourcesockaddr));
 
             nh->mplss[i] = nh->mpls;

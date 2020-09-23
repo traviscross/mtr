@@ -61,7 +61,7 @@ typedef int time_t;
 
 /* net related definitions */
 #define SAVED_PINGS 200
-#define MAXPATH 8
+#define MAX_PATH 8
 #define MaxHost 256
 #define MinPort 1024
 #define MaxPort 65535

@@ -185,7 +185,7 @@ void report_close(
         /* This feature shows 'loadbalances' on routes */
 
         /* Print list of all hosts that have responded from ttl = at + 1 away */
-        for (z = 0; z < MAXPATH; z++) {
+        for (z = 0; z < MAX_PATH; z++) {
             int found = 0;
             addr2 = net_addrs(at, z);
             mplss = net_mplss(at, z);
