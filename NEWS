@@ -4,6 +4,76 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.94
+   Aaron Lipinski (10):
+         gtk_menu_append -> gtk_menu_shell_append
+         GTK_OBJECT -> G_OBJECT
+         gtk_button_new_from_stock -> gtk_button_new_with_label
+         gtk3
+         hbox/vbox -> gtk_box_new
+         gtk_menu_popup -> gtk_menu_popup_at_pointer
+         show resolved hostname in raw dnsline
+         rely on final return NULL
+         introduce libasan
+         avoid stack use after scope
+   
+   Alejandro Leal (2):
+         few updates to manual page and README.md
+         Updating some comments
+   
+   Chongyu Zhu (1):
+         probe: fix find_source_addr
+   
+   Konrad Bucheli (1):
+         fix segmentation fault if there is no IP address on an interface (fixes #320)
+   
+   Kulemin Alexander (1):
+         report: json: reworked with libjansson
+   
+   Mark Egan-Fuller (1):
+         Add display of destination.
+   
+   Markus Kötter (6):
+         simplification - remove sockaddrtop
+         simplification - remove addrcpy
+         simplification - remove rsa{4,6}
+         simplification - address addrcmp
+         simplification - improve readability
+         ip6 udp - fix probes with local or remote port
+   
+   R.E. Wolff (29):
+         fix warning on recent compilers.
+         Merge branch 'master' of github.com:traviscross/mtr
+         net find local address fix by meingtsla
+         proposed patch for bsd compile error
+         fix closing brace
+         Added include errno --obouizi
+         Merge branch 'master' of github.com:traviscross/mtr
+         More compilation warning fixes from obouizi
+         Added extra help text to configure --yvs
+         Changed MAXPATH to MAX_PATH for AIX compatibility. -- aixtools
+         make the code for gtk2/3 a bit nicer.
+         Merge branch 'gtk3_with_fallback' of https://github.com/krisl/mtr
+         Merge branch 'master' of github.com:traviscross/mtr
+         in hindsight my previous patch wasn't so nice. And nobody told me.
+   
+   Sean Wei (1):
+         Fix parameter in ui/net.c
+   
+   Siyuan Miao (1):
+         show mpls information in raw output
+   
+   atib (1):
+         Added code to print multiple addresses regitered on the same hop count
+   
+   atibdialpad (2):
+         Change TTL dynamically to adjust for path changes
+         TODO list changes
+   
+   meingtsla (2):
+         asn_{open,close}: Always initialize ipinfo hash table
+         Merge branch 'master' of https://github.com/traviscross/mtr into asn-open-always-hcreate
+   
 V0.93
     Adam (1):
           Update README
