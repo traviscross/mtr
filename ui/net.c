@@ -262,6 +262,7 @@ static void net_process_ping(
          */
         memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
         nh->mpls = *mpls;
+        nh->mplss[0] = *mpls;
         display_rawhost(ctl, index, (void *)&(nh->addr), (void *)&(nh->mpls));
     }
 
