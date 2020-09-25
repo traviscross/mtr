@@ -534,35 +534,17 @@ void handle_received_ip4_packet(
     int packet_length,
     struct timeval *timestamp)
 {
-    int ip_icmp_size = 0;
     const struct IPHeader *ip;
     const struct ICMPHeader *icmp;
-    int icmp_length;
-
-    if (net_state->platform.ip4_socket_raw) {
-        ip_icmp_size += sizeof(struct IPHeader);
-    }
-    ip_icmp_size += sizeof(struct ICMPHeader);
-
-    /*  Ensure that we don't access memory beyond the bounds of the packet  */
-    if (packet_length < ip_icmp_size) {
-        return;
-    }
 
     if (net_state->platform.ip4_socket_raw) {
         ip = (struct IPHeader *) packet;
-        if (ip->protocol != IPPROTO_ICMP) {
-            return;
-        }
-
         icmp = (struct ICMPHeader *) (ip + 1);
-        icmp_length = packet_length - sizeof(struct IPHeader);
     } else {
         icmp = (struct ICMPHeader *) packet;
-        icmp_length = packet_length;
     }
 
-    handle_received_icmp4_packet(net_state, remote_addr, icmp, icmp_length,
+    handle_received_icmp4_packet(net_state, remote_addr, icmp, packet_length,
                                  timestamp);
 }
 
