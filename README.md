@@ -22,10 +22,14 @@ simple as:
 
 	./configure && make
 
+Please note that this refers to the tarballs from
+ https://www.bitwizard.nl/mtr/files/
+and not the tarballs that github can produce. 
+
 (in the past, there was a Makefile in the distribution that did
 the `./configure` for you and then ran make again with the generated
 Makefile, but this has suffered some bitrot. It didn't work well
-with git.)
+with git.) 
 
 If you're building from the git repository, you'll need to run:
 
