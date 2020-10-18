@@ -90,6 +90,8 @@ extern ip_t *net_addrs(
     int i);
 extern char *net_localaddr(
     void);
+extern char *net_remoteaddr(
+    void);
 
 extern int net_send_batch(
     struct mtr_ctl *ctl);

@@ -698,7 +698,7 @@ void mtr_curses_redraw(
     pwcenter(buf);
     attroff(A_BOLD);
 
-    mvprintw(1, 0, "%s (%s) -> %s", ctl->LocalHostname, net_localaddr(), ctl->Hostname);
+    mvprintw(1, 0, "%s (%s) -> %s (%s)", ctl->LocalHostname, net_localaddr(), ctl->Hostname, net_remoteaddr());
     t = time(NULL);
     mvprintw(1, maxx - 25, iso_time(&t));
     printw("\n");

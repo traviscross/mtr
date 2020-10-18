@@ -97,11 +97,13 @@ static ip_t *remoteaddress;
 
 #ifdef ENABLE_IPV6
 static char localaddr[INET6_ADDRSTRLEN];
+static char remoteaddr[INET6_ADDRSTRLEN];
 #else
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
 static char localaddr[INET_ADDRSTRLEN];
+static char remoteaddr[INET_ADDRSTRLEN];
 #endif
 
 static int batch_at = 0;
@@ -523,6 +525,13 @@ char *net_localaddr(
 }
 
 
+char *net_remoteaddr(
+    void)
+{
+    return remoteaddr;
+}
+
+
 void net_end_transit(
     void)
 {
@@ -755,6 +764,8 @@ int net_open(
     } else {
         net_find_local_address();
     }
+
+    inet_ntop(remotesockaddr->sa_family, sockaddr_addr_offset(remotesockaddr), remoteaddr, sizeof(remoteaddr));
 
     return 0;
 }
