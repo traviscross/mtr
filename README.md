@@ -78,7 +78,7 @@ https://cygwin.com/install.html.
 Next, re-run cygwin's `setup-x86.exe` (or `setup-x86_64.exe` if you're using 64bit cygwin) with the following arguments,  
 which will install the packages required for building:
 
-        setup-x86.exe --package-manager --wait --packages automake,pkg-config,make,gcc-core,libncurses-devel
+        setup-x86.exe --package-manager --wait --packages automake,pkg-config,make,gcc-core,libncurses-devel,libjansson-devel
 
 Build as under Unix:
 
