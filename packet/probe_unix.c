@@ -87,16 +87,21 @@ int send_packet(
     } else if (sockaddr->ss_family == AF_INET) {
         sockaddr_length = sizeof(struct sockaddr_in);
 
-        if (net_state->platform.ip4_socket_raw) {
-            send_socket = net_state->platform.ip4_send_socket;
-        } else {
-            if (param->protocol == IPPROTO_ICMP) {
-                if (param->is_probing_byte_order) {
-                    send_socket = net_state->platform.ip4_tmp_icmp_socket;;
-                } else {
-                    send_socket = net_state->platform.ip4_txrx_icmp_socket;
-                }
-            } else if (param->protocol == IPPROTO_UDP) {
+        if (param->protocol == IPPROTO_ICMP) {
+            if (net_state->platform.ip4_socket_raw) {
+                send_socket = net_state->platform.icmp4_send_socket;
+            } else {
+                send_socket = net_state->platform.ip4_txrx_icmp_socket;
+            }
+        } else if (param->protocol == IPPROTO_UDP) {
+            if (net_state->platform.ip4_socket_raw) {
+                send_socket = net_state->platform.udp4_send_socket;
+                /* we got a ipv4 udp raw socket
+                 * the remote port is in the payload
+                 * we do not set in the sockaddr
+                 */
+                *sockaddr_port_offset(&dst) = 0;
+            } else {
                 send_socket = net_state->platform.ip4_txrx_udp_socket;
                 if (param->dest_port) {
                     *sockaddr_port_offset(&dst) = htons(param->dest_port);
@@ -105,6 +110,7 @@ int send_packet(
                 }
             }
         }
+
     }
 
     if (send_socket == 0) {
@@ -236,26 +242,19 @@ static
 int open_ip4_sockets_raw(
     struct net_state_t *net_state)
 {
-    int send_socket;
+    int send_socket_icmp;
+    int send_socket_udp;
     int recv_socket;
-    int trueopt = 1;
 
-    send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-    if (send_socket == -1) {
-        send_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-        if (send_socket == -1) {
-            return -1;
-        }
+    send_socket_icmp = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (send_socket_icmp == -1) {
+        return -1;
     }
 
-    /*
-       We will be including the IP header in transmitted packets.
-       Linux doesn't require this, but BSD derived network stacks do.
-     */
-    if (setsockopt
-        (send_socket, IPPROTO_IP, IP_HDRINCL, &trueopt, sizeof(int))) {
+    send_socket_udp = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+    if (send_socket_udp == -1) {
+        close(send_socket_icmp);
 
-        close(send_socket);
         return -1;
     }
 
@@ -265,13 +264,15 @@ int open_ip4_sockets_raw(
      */
     recv_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (recv_socket == -1) {
-        close(send_socket);
+        close(send_socket_icmp);
+        close(send_socket_udp);
         return -1;
     }
 
     net_state->platform.ip4_present = true;
     net_state->platform.ip4_socket_raw = true;
-    net_state->platform.ip4_send_socket = send_socket;
+    net_state->platform.icmp4_send_socket = send_socket_icmp;
+    net_state->platform.udp4_send_socket = send_socket_udp;
     net_state->platform.ip4_recv_socket = recv_socket;
 
     return 0;
