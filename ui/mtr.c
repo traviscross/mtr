@@ -693,7 +693,7 @@ static void init_rand(
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
+    srand(((getpid() & 0xffff) << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
 
