@@ -256,7 +256,7 @@ static void net_process_ping(
             memcpy(&nh->addrs[i], &nh->addr, sockaddr_addr_size(sourcesockaddr));
 
             nh->mplss[i] = nh->mpls;
-            display_rawhost(ctl, index, (void *)&(nh->addrs[i]), (void *)&(nh->addrs[i]));
+            display_rawhost(ctl, index, &nh->addrs[i], &nh->mpls);
         }
 
         /* Always save the latest host in nh->addr. This
@@ -264,7 +264,7 @@ static void net_process_ping(
          */
         memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
         nh->mpls = *mpls;
-        display_rawhost(ctl, index, (void *)&(nh->addr), (void *)&(nh->mpls));
+        display_rawhost(ctl, index, &nh->addr, &nh->mpls);
     }
 
     nh->jitter = totusec - nh->last;
