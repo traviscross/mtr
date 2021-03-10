@@ -215,14 +215,14 @@ void report_close(
             if (!found) {
 
 #ifdef HAVE_IPINFO
+                if (mpls->labels && z == 1 && ctl->enablempls)
+                    print_mpls(mpls);
                 if (is_printii(ctl)) {
-                    if (mpls->labels && z == 1 && ctl->enablempls)
-                        print_mpls(mpls);
                     snprint_addr(ctl, name, sizeof(name), addr2);
                     printf("     %s%s\n", fmt_ipinfo(ctl, addr2), name);
-                    if (ctl->enablempls)
-                        print_mpls(mplss);
                 }
+                if (ctl->enablempls)
+                    print_mpls(mplss);
 #else
                 int k;
                 if (mpls->labels && z == 1 && ctl->enablempls) {
