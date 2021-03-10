@@ -58,9 +58,9 @@ extern ip_t *net_addr(
     int at);
 extern int net_err(
     int at);
-extern void *net_mpls(
+extern struct mplslen *net_mpls(
     int at);
-extern void *net_mplss(
+extern struct mplslen *net_mplss(
     int,
     int);
 extern int net_loss(

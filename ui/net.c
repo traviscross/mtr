@@ -241,22 +241,21 @@ static void net_process_ping(
 
 
     if (addrcmp(&nh->addr, &addrcopy, ctl->af) != 0) {
-        for (i = 0; i < MAX_PATH;) {
-            if (addrcmp(&nh->addrs[i], &nh->addr, ctl->af) == 0) {
+        for (i = 0; i < MAX_PATH; i++) {
+            if (addrcmp(&nh->addrs[i], &addrcopy, ctl->af) == 0) {
                 found = 1; /* This host is already in the list */
                 break;
             }
             if (addrcmp(&nh->addrs[i], &ctl->unspec_addr, ctl->af) == 0) {
                 break; /* Found first vacant position */
             }
-            i++;
         }
 
         if (found == 0 && i < MAX_PATH) {
-            memcpy(&nh->addrs[i], &nh->addr, sockaddr_addr_size(sourcesockaddr));
+            memcpy(&nh->addrs[i], &addrcopy, sockaddr_addr_size(sourcesockaddr));
 
-            nh->mplss[i] = nh->mpls;
-            display_rawhost(ctl, index, &nh->addrs[i], &nh->mpls);
+            nh->mplss[i] = *mpls;
+            display_rawhost(ctl, index, &nh->addrs[i], mpls);
         }
 
         /* Always save the latest host in nh->addr. This
@@ -264,7 +263,7 @@ static void net_process_ping(
          */
         memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
         nh->mpls = *mpls;
-        display_rawhost(ctl, index, &nh->addr, &nh->mpls);
+        display_rawhost(ctl, index, &nh->addr, mpls);
     }
 
     nh->jitter = totusec - nh->last;
@@ -334,7 +333,7 @@ void net_process_return(
 ip_t *net_addr(
     int at)
 {
-    return (ip_t *) & (host[at].addr);
+    return & (host[at].addr);
 }
 
 
@@ -342,7 +341,7 @@ ip_t *net_addrs(
     int at,
     int i)
 {
-    return (ip_t *) & (host[at].addrs[i]);
+    return & (host[at].addrs[i]);
 }
 
 /*
@@ -354,17 +353,17 @@ int net_err(
     return host[at].err;
 }
 
-void *net_mpls(
+struct mplslen *net_mpls(
     int at)
 {
-    return (struct mplslen *) &(host[at].mplss);
+    return & (host[at].mpls);
 }
 
-void *net_mplss(
+struct mplslen *net_mplss(
     int at,
     int i)
 {
-    return (struct mplslen *) &(host[at].mplss[i]);
+    return & (host[at].mplss[i]);
 }
 
 int net_loss(
