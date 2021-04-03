@@ -773,7 +773,7 @@ int net_open(
 
 void net_reopen(
     struct mtr_ctl *ctl,
-    struct hostent *addr)
+    struct hostent *hostent)
 {
     int at;
 
@@ -781,9 +781,9 @@ void net_reopen(
         memset(&host[at], 0, sizeof(host[at]));
     }
 
-    remotesockaddr->sa_family = addr->h_addrtype;
-    memcpy(remoteaddress, addr->h_addr, sockaddr_addr_size(remotesockaddr));
-    memcpy(sockaddr_addr_offset(remotesockaddr), addr->h_addr, sockaddr_addr_size(remotesockaddr));
+    remotesockaddr->sa_family = hostent->h_addrtype;
+    memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
+    memcpy(sockaddr_addr_offset(remotesockaddr), hostent->h_addr, sockaddr_addr_size(remotesockaddr));
     net_reset(ctl);
 }
 
