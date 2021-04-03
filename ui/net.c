@@ -764,7 +764,7 @@ void net_reopen(
 
     net_reset(ctl);
 
-    remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
+    ctl->af = remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
     remoteaddress = sockaddr_addr_offset(remotesockaddr);
     memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
     inet_ntop(remotesockaddr->sa_family, remoteaddress, remoteaddr, sizeof(remoteaddr));
