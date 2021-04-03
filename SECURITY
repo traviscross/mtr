@@ -35,7 +35,7 @@ minimal.
 3. Make mtr-packet a setuid-root binary.
 
 The mtr-packet binary can be made setuid-root, which is what "make install"
-does by default.
+does only if using setcap (above) fails.  Using setcap is tried first.
 
 When mtr-packet is installed as suid-root, some concern over security is
 justified.  mtr-packet does the following two things after it is launched:

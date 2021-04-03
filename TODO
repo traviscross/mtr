@@ -23,6 +23,8 @@ Oh, Feel free to provide suggestions for this list.
 
 ----------------------------------------------------------------------
 
+- cleanup
+  - cleanup warnings that the newer GCC produces. 
 
 - Stuff to implement:
 
