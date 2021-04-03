@@ -114,12 +114,12 @@ static struct dns_results *findip(
 }
 
 static void set_sockaddr_ip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     struct sockaddr_storage *sa,
     ip_t * ip)
 {
     memset(sa, 0, sizeof(struct sockaddr_storage));
-    sa->ss_family = ctl->af;
+    sa->ss_family = family;
     memcpy(sockaddr_addr_offset(sa), ip, sockaddr_addr_size(sa));
 }
 
@@ -174,7 +174,7 @@ void dns_open(
                 buf[strlen(buf) - 1] = 0;       /* chomp newline. */
 
                 longipstr(buf, &host, ctl->af);
-                set_sockaddr_ip(ctl, &sa, &host);
+                set_sockaddr_ip(ctl->af, &sa, &host);
                 salen = (ctl->af == AF_INET) ? sizeof(struct sockaddr_in) :
                     sizeof(struct sockaddr_in6);
 
