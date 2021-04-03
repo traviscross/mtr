@@ -65,10 +65,10 @@ static size_t snprint_addr(
         struct hostent *host =
             ctl->dns ? addr2host((void *) addr, ctl->af) : NULL;
         if (!host)
-            return snprintf(dst, dst_len, "%s", strlongip(ctl, addr));
+            return snprintf(dst, dst_len, "%s", strlongip(ctl->af, addr));
         else if (ctl->dns && ctl->show_ips)
             return snprintf(dst, dst_len, "%s (%s)", host->h_name,
-                            strlongip(ctl, addr));
+                            strlongip(ctl->af, addr));
         else
             return snprintf(dst, dst_len, "%s", host->h_name);
     } else
@@ -235,7 +235,7 @@ void report_close(
                 }
 
                 if (z == 1) {
-                    printf("    |  `|-- %s\n", strlongip(ctl, addr2));
+                    printf("    |  `|-- %s\n", strlongip(ctl->af, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
@@ -243,7 +243,7 @@ void report_close(
                              mplss->ttl[k]);
                     }
                 } else {
-                    printf("    |   |-- %s\n", strlongip(ctl, addr2));
+                    printf("    |   |-- %s\n", strlongip(ctl->af, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",

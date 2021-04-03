@@ -44,7 +44,7 @@ extern char *dns_lookup2(
 extern struct hostent *dns_forward(
     const char *name);
 extern char *strlongip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     ip_t * ip);
 
 extern void addr2ip6arpa(

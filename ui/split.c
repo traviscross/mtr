@@ -95,10 +95,10 @@ void split_redraw(
         if (addrcmp(addr, &ctl->unspec_addr, ctl->af)) {
             char str[256], *name;
             if (!(name = dns_lookup(ctl, addr)))
-                name = strlongip(ctl, addr);
+                name = strlongip(ctl->af, addr);
             if (ctl->show_ips) {
                 snprintf(str, sizeof(str), "%s %s", name,
-                         strlongip(ctl, addr));
+                         strlongip(ctl->af, addr));
                 name = str;
             }
             /* May be we should test name's length */

@@ -512,11 +512,11 @@ static void update_tree_row(
         if ((name = dns_lookup(ctl, addr))) {
             if (ctl->show_ips) {
                 snprintf(str, sizeof(str), "%s (%s)", name,
-                         strlongip(ctl, addr));
+                         strlongip(ctl->af, addr));
                 name = str;
             }
         } else
-            name = strlongip(ctl, addr);
+            name = strlongip(ctl->af, addr);
     }
 
     gtk_list_store_set(ReportStore, iter,

@@ -436,11 +436,11 @@ static void mtr_curses_hosts(
 #endif
             if (name != NULL) {
                 if (ctl->show_ips)
-                    printw("%s (%s)", name, strlongip(ctl, addr));
+                    printw("%s (%s)", name, strlongip(ctl->af, addr));
                 else
                     printw("%s", name);
             } else {
-                printw("%s", strlongip(ctl, addr));
+                printw("%s", strlongip(ctl->af, addr));
             }
             attroff(A_BOLD);
 
@@ -489,11 +489,11 @@ static void mtr_curses_hosts(
 #endif
                 if (name != NULL) {
                     if (ctl->show_ips)
-                        printw("%s (%s)", name, strlongip(ctl, addrs));
+                        printw("%s (%s)", name, strlongip(ctl->af, addrs));
                     else
                         printw("%s", name);
                 } else {
-                    printw("%s", strlongip(ctl, addrs));
+                    printw("%s", strlongip(ctl->af, addrs));
                 }
                 for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                     printw("\n    [MPLS: Lbl %lu TC %u S %u TTL %u]",
@@ -653,7 +653,7 @@ static void mtr_curses_graph(
                 printw(fmt_ipinfo(ctl, addr));
 #endif
             name = dns_lookup(ctl, addr);
-            printw("%s", name ? name : strlongip(ctl, addr));
+            printw("%s", name ? name : strlongip(ctl->af, addr));
         } else {
             attron(A_BOLD);
             printw("(%s)", host_error_to_string(err));

@@ -52,13 +52,13 @@ struct dns_results {
 static struct dns_results *results;
 
 char *strlongip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     ip_t * ip)
 {
 #ifdef ENABLE_IPV6
     static char addrstr[INET6_ADDRSTRLEN];
 
-    return (char *) inet_ntop(ctl->af, ip, addrstr, sizeof addrstr);
+    return (char *) inet_ntop(family, ip, addrstr, sizeof addrstr);
 #else
     return inet_ntoa(*ip);
 #endif
@@ -182,7 +182,7 @@ void dns_open(
                                  hostname, sizeof(hostname), NULL, 0, 0);
                 if (rv == 0) {
                     snprintf(result, sizeof(result),
-                             "%s %s\n", strlongip(ctl, &host), hostname);
+                             "%s %s\n", strlongip(ctl->af, &host), hostname);
 
                     rv = write(fromdns[1], result, strlen(result));
                     if (rv < 0)
@@ -270,7 +270,7 @@ char *dns_lookup2(
         r->name = NULL;
         r->next = results;
         results = r;
-        snprintf(buf, sizeof(buf), "%s\n", strlongip(ctl, ip));
+        snprintf(buf, sizeof(buf), "%s\n", strlongip(ctl->af, ip));
         rv = write(todns[1], buf, strlen(buf));
         if (rv < 0)
             error(0, errno, "couldn't write to resolver process");
@@ -288,7 +288,7 @@ char *dns_lookup(
     if (!ctl->dns || !ctl->use_dns)
         return NULL;
     t = dns_lookup2(ctl, ip);
-    return t ? t : strlongip(ctl, ip);
+    return t ? t : strlongip(ctl->af, ip);
 }
 
 /* XXX check if necessary/exported. */
