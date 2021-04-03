@@ -746,25 +746,7 @@ int net_open(
         return err;
     }
 
-    net_reset(ctl);
-
-    remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
-    memcpy(sockaddr_addr_offset(remotesockaddr), hostent->h_addr, sockaddr_addr_size(remotesockaddr));
-
-    sourceaddress = sockaddr_addr_offset(sourcesockaddr);
-    remoteaddress = sockaddr_addr_offset(remotesockaddr);
-
-    if (ctl->InterfaceAddress) {
-        net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
-    } else if (ctl->InterfaceName) {
-        net_find_interface_address_from_name(
-            &sourcesockaddr_struct, ctl->af, ctl->InterfaceName);
-        inet_ntop(sourcesockaddr->sa_family, sockaddr_addr_offset(sourcesockaddr), localaddr, sizeof(localaddr));
-    } else {
-        net_find_local_address();
-    }
-
-    inet_ntop(remotesockaddr->sa_family, sockaddr_addr_offset(remotesockaddr), remoteaddr, sizeof(remoteaddr));
+    net_reopen(ctl, hostent);
 
     return 0;
 }
@@ -772,7 +754,7 @@ int net_open(
 
 void net_reopen(
     struct mtr_ctl *ctl,
-    struct hostent *addr)
+    struct hostent *hostent)
 {
     int at;
 
@@ -780,11 +762,25 @@ void net_reopen(
         memset(&host[at], 0, sizeof(host[at]));
     }
 
-    remotesockaddr->sa_family = addr->h_addrtype;
-    memcpy(remoteaddress, addr->h_addr, sockaddr_addr_size(remotesockaddr));
-    memcpy(sockaddr_addr_offset(remotesockaddr), addr->h_addr, sockaddr_addr_size(remotesockaddr));
     net_reset(ctl);
-    net_send_batch(ctl);
+
+    remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
+    remoteaddress = sockaddr_addr_offset(remotesockaddr);
+    memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
+    inet_ntop(remotesockaddr->sa_family, remoteaddress, remoteaddr, sizeof(remoteaddr));
+
+    sourceaddress = sockaddr_addr_offset(sourcesockaddr);
+
+    if (ctl->InterfaceAddress) {
+        net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
+    } else if (ctl->InterfaceName) {
+        net_find_interface_address_from_name(
+            &sourcesockaddr_struct, ctl->af, ctl->InterfaceName);
+        inet_ntop(sourcesockaddr->sa_family, sourceaddress, localaddr, sizeof(localaddr));
+    } else {
+        net_find_local_address();
+    }
+
 }
 
 
