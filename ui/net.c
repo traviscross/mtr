@@ -770,6 +770,7 @@ void net_reopen(
 
     sourceaddress = sockaddr_addr_offset(sourcesockaddr);
     remoteaddress = sockaddr_addr_offset(remotesockaddr);
+    memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
 
     if (ctl->InterfaceAddress) {
         net_validate_interface_address(ctl->af, ctl->InterfaceAddress);
