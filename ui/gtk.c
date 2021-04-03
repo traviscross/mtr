@@ -249,6 +249,7 @@ static gint Host_activate(
     addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
     if (addr) {
         net_reopen(ctl, addr);
+        net_send_batch(ctl);
         /* If we are "Paused" at this point it is usually because someone
            entered a non-existing host. Therefore do the go-ahead... */
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Pause_Button), 0);

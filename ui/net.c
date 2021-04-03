@@ -785,7 +785,6 @@ void net_reopen(
     memcpy(remoteaddress, addr->h_addr, sockaddr_addr_size(remotesockaddr));
     memcpy(sockaddr_addr_offset(remotesockaddr), addr->h_addr, sockaddr_addr_size(remotesockaddr));
     net_reset(ctl);
-    net_send_batch(ctl);
 }
 
 
