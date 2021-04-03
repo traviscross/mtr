@@ -747,6 +747,22 @@ int net_open(
         return err;
     }
 
+    net_reopen(ctl, hostent);
+
+    return 0;
+}
+
+
+void net_reopen(
+    struct mtr_ctl *ctl,
+    struct hostent *hostent)
+{
+    int at;
+
+    for (at = 0; at < MaxHost; at++) {
+        memset(&host[at], 0, sizeof(host[at]));
+    }
+
     net_reset(ctl);
 
     remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
@@ -766,25 +782,6 @@ int net_open(
     }
 
     inet_ntop(remotesockaddr->sa_family, sockaddr_addr_offset(remotesockaddr), remoteaddr, sizeof(remoteaddr));
-
-    return 0;
-}
-
-
-void net_reopen(
-    struct mtr_ctl *ctl,
-    struct hostent *hostent)
-{
-    int at;
-
-    for (at = 0; at < MaxHost; at++) {
-        memset(&host[at], 0, sizeof(host[at]));
-    }
-
-    remotesockaddr->sa_family = hostent->h_addrtype;
-    memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
-    memcpy(sockaddr_addr_offset(remotesockaddr), hostent->h_addr, sockaddr_addr_size(remotesockaddr));
-    net_reset(ctl);
 }
 
 
