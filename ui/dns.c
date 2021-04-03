@@ -124,7 +124,7 @@ static void set_sockaddr_ip(
 }
 
 void dns_open(
-    struct mtr_ctl *ctl)
+    sa_family_t family)
 {
     int pid;
 
@@ -173,16 +173,16 @@ void dns_open(
 
                 buf[strlen(buf) - 1] = 0;       /* chomp newline. */
 
-                longipstr(buf, &host, ctl->af);
-                set_sockaddr_ip(ctl->af, &sa, &host);
-                salen = (ctl->af == AF_INET) ? sizeof(struct sockaddr_in) :
+                longipstr(buf, &host, family);
+                set_sockaddr_ip(family, &sa, &host);
+                salen = (family == AF_INET) ? sizeof(struct sockaddr_in) :
                     sizeof(struct sockaddr_in6);
 
                 rv = getnameinfo((struct sockaddr *) &sa, salen,
                                  hostname, sizeof(hostname), NULL, 0, 0);
                 if (rv == 0) {
                     snprintf(result, sizeof(result),
-                             "%s %s\n", strlongip(ctl->af, &host), hostname);
+                             "%s %s\n", strlongip(family, &host), hostname);
 
                     rv = write(fromdns[1], result, strlen(result));
                     if (rv < 0)
