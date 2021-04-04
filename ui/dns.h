@@ -23,7 +23,7 @@
 /*  Prototypes for dns.c  */
 
 extern void dns_open(
-    sa_family_t family);
+    void);
 extern int dns_waitfd(
     void);
 extern void dns_ack(
