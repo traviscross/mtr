@@ -23,7 +23,7 @@
 /*  Prototypes for dns.c  */
 
 extern void dns_open(
-    struct mtr_ctl *ctl);
+    sa_family_t family);
 extern int dns_waitfd(
     void);
 extern void dns_ack(
@@ -44,7 +44,7 @@ extern char *dns_lookup2(
 extern struct hostent *dns_forward(
     const char *name);
 extern char *strlongip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     ip_t * ip);
 
 extern void addr2ip6arpa(

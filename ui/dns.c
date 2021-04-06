@@ -52,13 +52,13 @@ struct dns_results {
 static struct dns_results *results;
 
 char *strlongip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     ip_t * ip)
 {
 #ifdef ENABLE_IPV6
     static char addrstr[INET6_ADDRSTRLEN];
 
-    return (char *) inet_ntop(ctl->af, ip, addrstr, sizeof addrstr);
+    return (char *) inet_ntop(family, ip, addrstr, sizeof addrstr);
 #else
     return inet_ntoa(*ip);
 #endif
@@ -114,17 +114,17 @@ static struct dns_results *findip(
 }
 
 static void set_sockaddr_ip(
-    struct mtr_ctl *ctl,
+    sa_family_t family,
     struct sockaddr_storage *sa,
     ip_t * ip)
 {
     memset(sa, 0, sizeof(struct sockaddr_storage));
-    sa->ss_family = ctl->af;
+    sa->ss_family = family;
     memcpy(sockaddr_addr_offset(sa), ip, sockaddr_addr_size(sa));
 }
 
 void dns_open(
-    struct mtr_ctl *ctl)
+    sa_family_t family)
 {
     int pid;
 
@@ -173,16 +173,16 @@ void dns_open(
 
                 buf[strlen(buf) - 1] = 0;       /* chomp newline. */
 
-                longipstr(buf, &host, ctl->af);
-                set_sockaddr_ip(ctl, &sa, &host);
-                salen = (ctl->af == AF_INET) ? sizeof(struct sockaddr_in) :
+                longipstr(buf, &host, family);
+                set_sockaddr_ip(family, &sa, &host);
+                salen = (family == AF_INET) ? sizeof(struct sockaddr_in) :
                     sizeof(struct sockaddr_in6);
 
                 rv = getnameinfo((struct sockaddr *) &sa, salen,
                                  hostname, sizeof(hostname), NULL, 0, 0);
                 if (rv == 0) {
                     snprintf(result, sizeof(result),
-                             "%s %s\n", strlongip(ctl, &host), hostname);
+                             "%s %s\n", strlongip(family, &host), hostname);
 
                     rv = write(fromdns[1], result, strlen(result));
                     if (rv < 0)
@@ -270,7 +270,7 @@ char *dns_lookup2(
         r->name = NULL;
         r->next = results;
         results = r;
-        snprintf(buf, sizeof(buf), "%s\n", strlongip(ctl, ip));
+        snprintf(buf, sizeof(buf), "%s\n", strlongip(ctl->af, ip));
         rv = write(todns[1], buf, strlen(buf));
         if (rv < 0)
             error(0, errno, "couldn't write to resolver process");
@@ -288,7 +288,7 @@ char *dns_lookup(
     if (!ctl->dns || !ctl->use_dns)
         return NULL;
     t = dns_lookup2(ctl, ip);
-    return t ? t : strlongip(ctl, ip);
+    return t ? t : strlongip(ctl->af, ip);
 }
 
 /* XXX check if necessary/exported. */

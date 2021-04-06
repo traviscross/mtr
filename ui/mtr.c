@@ -858,7 +858,7 @@ int main(
         }
 
         lock(stdout);
-        dns_open(&ctl);
+        dns_open(ctl.af);
         display_open(&ctl);
 
         display_loop(&ctl);
