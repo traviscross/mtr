@@ -842,7 +842,7 @@ int main(
             }
         }
 
-        if (net_open(&ctl, host) != 0) {
+        if (net_open(&ctl, res) != 0) {
             error(0, 0, "Unable to start net module");
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
