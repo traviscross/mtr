@@ -706,8 +706,7 @@ static void init_rand(
 static int get_hostent_from_name(
     struct mtr_ctl *ctl,
     struct hostent *host,
-    const char *name,
-    char **alptr)
+    const char *name)
 {
     int gai_error;
     struct addrinfo hints, *res;
@@ -732,22 +731,20 @@ static int get_hostent_from_name(
     }
 
     /* Convert the first addrinfo into a hostent. */
-    memset(host, 0, sizeof(struct hostent));
     host->h_name = res->ai_canonname;
     host->h_aliases = NULL;
     host->h_addrtype = res->ai_family;
     ctl->af = res->ai_family;
     host->h_length = res->ai_addrlen;
-    host->h_addr_list = alptr;
     switch (ctl->af) {
     case AF_INET:
         sa4 = (struct sockaddr_in *) res->ai_addr;
-        alptr[0] = (void *) &(sa4->sin_addr);
+        host->h_addr_list[0] = (void *) &(sa4->sin_addr);
         break;
 #ifdef ENABLE_IPV6
     case AF_INET6:
         sa6 = (struct sockaddr_in6 *) res->ai_addr;
-        alptr[0] = (void *) &(sa6->sin6_addr);
+        host->h_addr_list[0] = (void *) &(sa6->sin6_addr);
         break;
 #endif
     default:
@@ -756,7 +753,7 @@ static int get_hostent_from_name(
         errno = EINVAL;
         return -1;
     }
-    alptr[1] = NULL;
+    host->h_addr_list[1] = NULL;
 
     return 0;
 }
@@ -767,7 +764,7 @@ int main(
     char **argv)
 {
     char *alptr[2];
-    struct hostent trhost;
+    struct hostent trhost = { .h_addr_list = alptr };
     struct hostent *host = &trhost;
     names_t *names_head = NULL;
     names_t *names_walk;
@@ -837,7 +834,7 @@ int main(
                      sizeof(ctl.LocalHostname));
         }
 
-        if (get_hostent_from_name(&ctl, host, ctl.Hostname, alptr) != 0) {
+        if (get_hostent_from_name(&ctl, host, ctl.Hostname) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
