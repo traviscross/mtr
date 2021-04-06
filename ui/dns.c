@@ -87,18 +87,6 @@ static int longipstr(
 }
 
 
-struct hostent *dns_forward(
-    const char *name)
-{
-    struct hostent *host;
-
-    if ((host = gethostbyname(name)))
-        return host;
-    else
-        return NULL;
-}
-
-
 static struct dns_results *findip(
     struct mtr_ctl *ctl,
     ip_t * ip)

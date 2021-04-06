@@ -246,7 +246,7 @@ static gint Host_activate(
     struct mtr_ctl *ctl = (struct mtr_ctl *) data;
     struct hostent *addr;
 
-    addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
+    addr = gethostbyname(gtk_entry_get_text(GTK_ENTRY(entry)));
     if (addr) {
         net_reopen(ctl, addr);
         net_send_batch(ctl);
