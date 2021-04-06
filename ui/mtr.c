@@ -696,6 +696,30 @@ static void init_rand(
     srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
+static int convert_addrinfo_to_hostent(struct hostent *host, struct addrinfo *res)
+{
+    host->h_name = res->ai_canonname;
+    host->h_aliases = NULL;
+    host->h_addrtype = res->ai_family;
+    host->h_length = res->ai_addrlen;
+    switch (res->ai_family) {
+    case AF_INET:
+        host->h_addr_list[0] = (char*)&((struct sockaddr_in *)res->ai_addr)->sin_addr;
+        break;
+#ifdef ENABLE_IPV6
+    case AF_INET6:
+        host->h_addr_list[0] = (char*)&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
+        break;
+#endif
+    default:
+        error(0, 0, "unknown address type");
+
+        errno = EINVAL;
+        return -1;
+    }
+    host->h_addr_list[1] = NULL;
+    return 0;
+}
 
 /*
     For historical reasons, we need a hostent structure to represent
@@ -726,30 +750,9 @@ static int get_hostent_from_name(
         return -1;
     }
 
-    /* Convert the first addrinfo into a hostent. */
-    host->h_name = res->ai_canonname;
-    host->h_aliases = NULL;
-    host->h_addrtype = res->ai_family;
     ctl->af = res->ai_family;
-    host->h_length = res->ai_addrlen;
-    switch (ctl->af) {
-    case AF_INET:
-        host->h_addr_list[0] = (char*)&((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        host->h_addr_list[0] = (char*)&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
-        break;
-#endif
-    default:
-        error(0, 0, "unknown address type");
-
-        errno = EINVAL;
-        return -1;
-    }
-    host->h_addr_list[1] = NULL;
-
-    return 0;
+    /* Convert the first addrinfo into a hostent. */
+    return convert_addrinfo_to_hostent(host, res);
 }
 
 
