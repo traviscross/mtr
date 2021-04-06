@@ -766,9 +766,9 @@ int main(
     int argc,
     char **argv)
 {
-    struct hostent *host = NULL;
-    struct hostent trhost;
     char *alptr[2];
+    struct hostent trhost;
+    struct hostent *host = &trhost;
     names_t *names_head = NULL;
     names_t *names_walk;
 
@@ -837,7 +837,6 @@ int main(
                      sizeof(ctl.LocalHostname));
         }
 
-        host = &trhost;
         if (get_hostent_from_name(&ctl, host, ctl.Hostname, alptr) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
