@@ -246,6 +246,7 @@ static gint Host_activate(
     struct mtr_ctl *ctl = (struct mtr_ctl *) data;
     struct addrinfo *res = NULL;
 
+    ctl->af = DEFAULT_AF;  // should this obey the cmd line option?
     ctl->Hostname = gtk_entry_get_text(GTK_ENTRY(entry));
     if (get_hostent_from_name(ctl, &res, ctl->Hostname) == 0) {
         net_reopen(ctl, res);
