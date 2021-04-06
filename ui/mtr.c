@@ -710,10 +710,6 @@ static int get_hostent_from_name(
 {
     int gai_error;
     struct addrinfo hints, *res;
-    struct sockaddr_in *sa4;
-#ifdef ENABLE_IPV6
-    struct sockaddr_in6 *sa6;
-#endif
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset(&hints, 0, sizeof hints);
@@ -738,13 +734,11 @@ static int get_hostent_from_name(
     host->h_length = res->ai_addrlen;
     switch (ctl->af) {
     case AF_INET:
-        sa4 = (struct sockaddr_in *) res->ai_addr;
-        host->h_addr_list[0] = (void *) &(sa4->sin_addr);
+        host->h_addr_list[0] = (char*)&((struct sockaddr_in *)res->ai_addr)->sin_addr;
         break;
 #ifdef ENABLE_IPV6
     case AF_INET6:
-        sa6 = (struct sockaddr_in6 *) res->ai_addr;
-        host->h_addr_list[0] = (void *) &(sa6->sin6_addr);
+        host->h_addr_list[0] = (char*)&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
         break;
 #endif
     default:
