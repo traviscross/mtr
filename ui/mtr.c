@@ -729,17 +729,17 @@ static int convert_addrinfo_to_hostent(struct hostent *host, struct addrinfo *re
 */
 static int get_hostent_from_name(
     struct mtr_ctl *ctl,
-    struct hostent *host,
+    struct addrinfo **res,
     const char *name)
 {
     int gai_error;
-    struct addrinfo hints, *res;
+    struct addrinfo hints;
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ctl->af;
     hints.ai_socktype = SOCK_DGRAM;
-    gai_error = getaddrinfo(name, NULL, &hints, &res);
+    gai_error = getaddrinfo(name, NULL, &hints, res);
     if (gai_error) {
         if (gai_error == EAI_SYSTEM)
             error(0, 0, "Failed to resolve host: %s", name);
@@ -750,9 +750,8 @@ static int get_hostent_from_name(
         return -1;
     }
 
-    ctl->af = res->ai_family;
-    /* Convert the first addrinfo into a hostent. */
-    return convert_addrinfo_to_hostent(host, res);
+    ctl->af = (*res)->ai_family;
+    return 0;
 }
 
 
@@ -831,7 +830,10 @@ int main(
                      sizeof(ctl.LocalHostname));
         }
 
-        if (get_hostent_from_name(&ctl, host, ctl.Hostname) != 0) {
+        struct addrinfo *res = NULL;
+        if (get_hostent_from_name(&ctl, &res, ctl.Hostname) != 0 ||
+            /* Convert the first addrinfo into a hostent. */
+            convert_addrinfo_to_hostent(host, res) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
