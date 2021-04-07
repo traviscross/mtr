@@ -85,7 +85,7 @@ struct mtr_ctl {
     int MaxPing;
     float WaitTime;
     float GraceTime;
-    char *Hostname;
+    const char *Hostname;
     char *InterfaceName;
     char *InterfaceAddress;
     char LocalHostname[128];
