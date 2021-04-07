@@ -32,8 +32,10 @@
 
 /* Typedefs */
 #ifdef ENABLE_IPV6
+#define DEFAULT_AF AF_UNSPEC
 typedef struct in6_addr ip_t;
 #else
+#define DEFAULT_AF AF_INET
 typedef struct in_addr ip_t;
 #endif
 
