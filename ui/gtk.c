@@ -248,7 +248,7 @@ static gint Host_activate(
 
     ctl->af = DEFAULT_AF;  // should this obey the cmd line option?
     ctl->Hostname = gtk_entry_get_text(GTK_ENTRY(entry));
-    if (get_hostent_from_name(ctl, &res, ctl->Hostname) == 0) {
+    if (get_addrinfo_from_name(ctl, &res, ctl->Hostname) == 0) {
         net_reopen(ctl, res);
         freeaddrinfo(res);
         net_send_batch(ctl);

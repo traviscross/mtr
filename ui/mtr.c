@@ -694,12 +694,11 @@ static void init_rand(
     would be to use gethostbyname().  We'll use getaddrinfo() instead
     to generate the hostent.
 */
-int get_hostent_from_name(
+int get_addrinfo_from_name(
     struct mtr_ctl *ctl,
     struct addrinfo **res,
     const char *name)
 {
-    printf("get_hostent_from_name: %x %s\n", ctl->af, name);
     int gai_error;
     struct addrinfo hints;
 
@@ -796,7 +795,7 @@ int main(
         }
 
         struct addrinfo *res = NULL;
-        if (get_hostent_from_name(&ctl, &res, ctl.Hostname) != 0) {
+        if (get_addrinfo_from_name(&ctl, &res, ctl.Hostname) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {

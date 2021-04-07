@@ -149,7 +149,7 @@ struct mplslen {
 #define running_as_root() (getuid() == 0)
 #endif
 
-int get_hostent_from_name(
+int get_addrinfo_from_name(
     struct mtr_ctl *ctl,
     struct addrinfo **res,
     const char *name);
