@@ -250,6 +250,7 @@ static gint Host_activate(
     ctl->Hostname = gtk_entry_get_text(GTK_ENTRY(entry));
     if (get_hostent_from_name(ctl, &res, ctl->Hostname) == 0) {
         net_reopen(ctl, res);
+        freeaddrinfo(res);
         net_send_batch(ctl);
         /* If we are "Paused" at this point it is usually because someone
            entered a non-existing host. Therefore do the go-ahead... */

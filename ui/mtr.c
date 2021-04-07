@@ -815,6 +815,8 @@ int main(
             }
         }
 
+        freeaddrinfo(res);
+
         lock(stdout);
         dns_open();
         display_open(&ctl);
