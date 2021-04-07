@@ -38,7 +38,6 @@
 #include <sys/limits.h>
 #endif
 
-#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <ctype.h>
@@ -695,11 +694,12 @@ static void init_rand(
     would be to use gethostbyname().  We'll use getaddrinfo() instead
     to generate the hostent.
 */
-static int get_hostent_from_name(
+int get_hostent_from_name(
     struct mtr_ctl *ctl,
     struct addrinfo **res,
     const char *name)
 {
+    printf("get_hostent_from_name: %x %s\n", ctl->af, name);
     int gai_error;
     struct addrinfo hints;
 

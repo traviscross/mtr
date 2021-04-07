@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -147,5 +148,10 @@ struct mplslen {
 #else
 #define running_as_root() (getuid() == 0)
 #endif
+
+int get_hostent_from_name(
+    struct mtr_ctl *ctl,
+    struct addrinfo **res,
+    const char *name);
 
 #endif                          /* MTR_MTR_H */
