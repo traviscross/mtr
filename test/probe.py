@@ -268,9 +268,10 @@ class TestProbeICMPv6(mtrpacket.MtrPacketTest):
     '''Test sending probes using IP version 6'''
 
     def __init__(self, *args):
-        google_addr = resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
+        if mtrpacket.HAVE_IPV6:
+            google_addr = resolve_ipv6_address(mtrpacket.IPV6_TEST_HOST)
 
-        self.google_addr = google_addr  # type: str
+            self.google_addr = google_addr  # type: str
 
         super(TestProbeICMPv6, self).__init__(*args)
 

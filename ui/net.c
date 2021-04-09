@@ -736,7 +736,7 @@ static void net_find_local_address(
 
 int net_open(
     struct mtr_ctl *ctl,
-    struct hostent *hostent)
+    struct addrinfo *res)
 {
     int err;
 
@@ -746,7 +746,7 @@ int net_open(
         return err;
     }
 
-    net_reopen(ctl, hostent);
+    net_reopen(ctl, res);
 
     return 0;
 }
@@ -754,7 +754,7 @@ int net_open(
 
 void net_reopen(
     struct mtr_ctl *ctl,
-    struct hostent *hostent)
+    struct addrinfo *res)
 {
     int at;
 
@@ -764,9 +764,9 @@ void net_reopen(
 
     net_reset(ctl);
 
-    ctl->af = remotesockaddr->sa_family = sourcesockaddr->sa_family = hostent->h_addrtype;
+    ctl->af = remotesockaddr->sa_family = sourcesockaddr->sa_family = res->ai_family;
     remoteaddress = sockaddr_addr_offset(remotesockaddr);
-    memcpy(remoteaddress, hostent->h_addr, sockaddr_addr_size(remotesockaddr));
+    memcpy(remoteaddress, sockaddr_addr_offset(res->ai_addr), sockaddr_addr_size(remotesockaddr));
     inet_ntop(remotesockaddr->sa_family, remoteaddress, remoteaddr, sizeof(remoteaddr));
 
     sourceaddress = sockaddr_addr_offset(sourcesockaddr);

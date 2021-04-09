@@ -87,18 +87,6 @@ static int longipstr(
 }
 
 
-struct hostent *dns_forward(
-    const char *name)
-{
-    struct hostent *host;
-
-    if ((host = gethostbyname(name)))
-        return host;
-    else
-        return NULL;
-}
-
-
 static struct dns_results *findip(
     struct mtr_ctl *ctl,
     ip_t * ip)
@@ -124,7 +112,7 @@ static void set_sockaddr_ip(
 }
 
 void dns_open(
-    sa_family_t family)
+    void)
 {
     int pid;
 
@@ -173,7 +161,8 @@ void dns_open(
 
                 buf[strlen(buf) - 1] = 0;       /* chomp newline. */
 
-                longipstr(buf, &host, family);
+                sa_family_t family = (buf[0] == '4') ? AF_INET : AF_INET6;
+                longipstr(buf +1, &host, family);
                 set_sockaddr_ip(family, &sa, &host);
                 salen = (family == AF_INET) ? sizeof(struct sockaddr_in) :
                     sizeof(struct sockaddr_in6);
@@ -256,7 +245,7 @@ char *dns_lookup2(
     ip_t * ip)
 {
     struct dns_results *r;
-    char buf[INET6_ADDRSTRLEN + 1];
+    char buf[INET6_ADDRSTRLEN + 2]; // af_byte + addr + null
     int rv;
 
     r = findip(ctl, ip);
@@ -270,7 +259,8 @@ char *dns_lookup2(
         r->name = NULL;
         r->next = results;
         results = r;
-        snprintf(buf, sizeof(buf), "%s\n", strlongip(ctl->af, ip));
+        char ip4or6 = (ctl->af == AF_INET) ? '4' : '6';
+        snprintf(buf, sizeof(buf), "%c%s\n", ip4or6, strlongip(ctl->af, ip));
         rv = write(todns[1], buf, strlen(buf));
         if (rv < 0)
             error(0, errno, "couldn't write to resolver process");

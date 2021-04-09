@@ -244,11 +244,13 @@ static gint Host_activate(
     gpointer data)
 {
     struct mtr_ctl *ctl = (struct mtr_ctl *) data;
-    struct hostent *addr;
+    struct addrinfo *res = NULL;
 
-    addr = dns_forward(gtk_entry_get_text(GTK_ENTRY(entry)));
-    if (addr) {
-        net_reopen(ctl, addr);
+    ctl->af = DEFAULT_AF;  // should this obey the cmd line option?
+    ctl->Hostname = gtk_entry_get_text(GTK_ENTRY(entry));
+    if (get_addrinfo_from_name(ctl, &res, ctl->Hostname) == 0) {
+        net_reopen(ctl, res);
+        freeaddrinfo(res);
         net_send_batch(ctl);
         /* If we are "Paused" at this point it is usually because someone
            entered a non-existing host. Therefore do the go-ahead... */

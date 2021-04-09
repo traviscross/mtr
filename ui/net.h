@@ -33,10 +33,10 @@
 
 extern int net_open(
     struct mtr_ctl *ctl,
-    struct hostent *host);
+    struct addrinfo *res);
 extern void net_reopen(
     struct mtr_ctl *ctl,
-    struct hostent *address);
+    struct addrinfo *res);
 extern void net_reset(
     struct mtr_ctl *ctl);
 extern void net_close(

@@ -38,7 +38,6 @@
 #include <sys/limits.h>
 #endif
 
-#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <ctype.h>
@@ -62,13 +61,6 @@
 #else
 #include "portability/getopt.h"
 #endif
-
-#ifdef ENABLE_IPV6
-#define DEFAULT_AF AF_UNSPEC
-#else
-#define DEFAULT_AF AF_INET
-#endif
-
 
 char *myname;
 
@@ -696,31 +688,25 @@ static void init_rand(
     srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
-
 /*
     For historical reasons, we need a hostent structure to represent
     our remote target for probing.  The obsolete way of doing this
     would be to use gethostbyname().  We'll use getaddrinfo() instead
     to generate the hostent.
 */
-static int get_hostent_from_name(
+int get_addrinfo_from_name(
     struct mtr_ctl *ctl,
-    struct hostent *host,
-    const char *name,
-    char **alptr)
+    struct addrinfo **res,
+    const char *name)
 {
     int gai_error;
-    struct addrinfo hints, *res;
-    struct sockaddr_in *sa4;
-#ifdef ENABLE_IPV6
-    struct sockaddr_in6 *sa6;
-#endif
+    struct addrinfo hints;
 
     /* gethostbyname2() is deprecated so we'll use getaddrinfo() instead. */
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ctl->af;
     hints.ai_socktype = SOCK_DGRAM;
-    gai_error = getaddrinfo(name, NULL, &hints, &res);
+    gai_error = getaddrinfo(name, NULL, &hints, res);
     if (gai_error) {
         if (gai_error == EAI_SYSTEM)
             error(0, 0, "Failed to resolve host: %s", name);
@@ -731,33 +717,7 @@ static int get_hostent_from_name(
         return -1;
     }
 
-    /* Convert the first addrinfo into a hostent. */
-    memset(host, 0, sizeof(struct hostent));
-    host->h_name = res->ai_canonname;
-    host->h_aliases = NULL;
-    host->h_addrtype = res->ai_family;
-    ctl->af = res->ai_family;
-    host->h_length = res->ai_addrlen;
-    host->h_addr_list = alptr;
-    switch (ctl->af) {
-    case AF_INET:
-        sa4 = (struct sockaddr_in *) res->ai_addr;
-        alptr[0] = (void *) &(sa4->sin_addr);
-        break;
-#ifdef ENABLE_IPV6
-    case AF_INET6:
-        sa6 = (struct sockaddr_in6 *) res->ai_addr;
-        alptr[0] = (void *) &(sa6->sin6_addr);
-        break;
-#endif
-    default:
-        error(0, 0, "unknown address type");
-
-        errno = EINVAL;
-        return -1;
-    }
-    alptr[1] = NULL;
-
+    ctl->af = (*res)->ai_family;
     return 0;
 }
 
@@ -766,9 +726,6 @@ int main(
     int argc,
     char **argv)
 {
-    struct hostent *host = NULL;
-    struct hostent trhost;
-    char *alptr[2];
     names_t *names_head = NULL;
     names_t *names_walk;
 
@@ -837,8 +794,8 @@ int main(
                      sizeof(ctl.LocalHostname));
         }
 
-        host = &trhost;
-        if (get_hostent_from_name(&ctl, host, ctl.Hostname, alptr) != 0) {
+        struct addrinfo *res = NULL;
+        if (get_addrinfo_from_name(&ctl, &res, ctl.Hostname) != 0) {
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
@@ -847,7 +804,7 @@ int main(
             }
         }
 
-        if (net_open(&ctl, host) != 0) {
+        if (net_open(&ctl, res) != 0) {
             error(0, 0, "Unable to start net module");
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
@@ -857,8 +814,10 @@ int main(
             }
         }
 
+        freeaddrinfo(res);
+
         lock(stdout);
-        dns_open(ctl.af);
+        dns_open();
         display_open(&ctl);
 
         display_loop(&ctl);
