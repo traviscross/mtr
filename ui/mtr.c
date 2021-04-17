@@ -142,7 +142,9 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -w, --report-wide          output wide report\n", out);
     fputs(" -c, --report-cycles COUNT  set the number of pings sent\n",
           out);
+#ifdef HAVE_JANSSON
     fputs(" -j, --json                 output json\n", out);
+#endif
     fputs(" -x, --xml                  output xml\n", out);
     fputs(" -C, --csv                  output comma separated values\n",
           out);
