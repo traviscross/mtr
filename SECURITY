@@ -22,7 +22,7 @@ On Linux, privileges are known as capabilities. The only additional
 capability that mtr-packet needs is cap_net_raw. To give this
 capability to the mtr-packet binary, run the following command as root:
 
-# setcap cap_net_raw+ep mtr-packet
+# setcap cap_net_raw+p mtr-packet
 
 
 2. Run mtr as the root user.

@@ -35,6 +35,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#ifdef HAVE_LIBCAP
+# include <sys/capability.h>
+#endif
+
 #include "platform.h"
 #include "protocols.h"
 #include "sockaddr.h"
@@ -411,6 +415,43 @@ int open_ip6_sockets_dgram(
 }
 #endif
 
+#ifdef HAVE_LIBCAP
+static int modify_capability(cap_value_t cap, cap_flag_value_t on)
+{
+    cap_t cap_p = cap_get_proc();
+    cap_flag_value_t cap_ok;
+    int rc = -1;
+
+    if (!cap_p) {
+        error(0, errno, "cap_get_proc");
+        goto out;
+    }
+
+    cap_ok = CAP_CLEAR;
+    cap_get_flag(cap_p, cap, CAP_PERMITTED, &cap_ok);
+    if (cap_ok == CAP_CLEAR) {
+        rc = on ? -1 : 0;
+        goto out;
+    }
+
+    cap_set_flag(cap_p, CAP_EFFECTIVE, 1, &cap, on);
+
+    if (cap_set_proc(cap_p) < 0) {
+        error(0, errno, "cap_set_proc");
+        goto out;
+    }
+
+    cap_free(cap_p);
+    cap_p = NULL;
+
+    rc = 0;
+ out:
+    if (cap_p)
+        cap_free(cap_p);
+    return rc;
+}
+#endif
+
 /*
     The first half of the net state initialization.  Since this
     happens with elevated privileges, this is kept as minimal
@@ -426,6 +467,9 @@ void init_net_state_privileged(
 
     net_state->platform.next_sequence = MIN_PORT;
 
+#ifdef HAVE_LIBCAP
+    modify_capability(CAP_NET_RAW, CAP_SET);
+#endif
     if (open_ip4_sockets_raw(net_state)) {
 #ifdef HAVE_LINUX_ERRQUEUE_H
         /* fall back to using unprivileged sockets */
@@ -442,7 +486,9 @@ void init_net_state_privileged(
         }
 #endif
     }
-
+#ifdef HAVE_LIBCAP
+    modify_capability(CAP_NET_RAW, CAP_CLEAR);
+#endif
     /*
        If we couldn't open either IPv4 or IPv6 sockets, we can't do
        much, so print errors and exit.

@@ -33,6 +33,13 @@
 #include <sys/capability.h>
 #endif
 
+#ifdef HAVE_PRCTL
+# include <sys/prctl.h>
+# ifndef PR_SET_NO_NEW_PRIVS
+#  define PR_SET_NO_NEW_PRIVS 38
+# endif
+#endif
+
 #include "wait.h"
 
 /*  Drop SUID privileges.  To be used after accquiring raw sockets.  */
@@ -66,6 +73,11 @@ int drop_elevated_permissions(
         return -1;
     }
     if (cap_set_proc(cap)) {
+        return -1;
+    }
+#endif
+#ifdef HAVE_PRCTL
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
         return -1;
     }
 #endif
