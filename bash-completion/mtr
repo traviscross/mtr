@@ -15,7 +15,7 @@ _mtr_module()
       COMPREPLY=( $(compgen -W "ADDRESS" -- $cur) )
       return 0
       ;;
-    '-f'|'--first-ttl'|'-m'|'--max-ttl'|'-m'|'--max-unknown'|'-B'|'--bitpattern'|'-Q'|'--tos'|'-c'|'--report-cycles')
+    '-f'|'--first-ttl'|'-m'|'--max-ttl'|'-U'|'--max-unknown'|'-B'|'--bitpattern'|'-Q'|'--tos'|'-c'|'--report-cycles')
       COMPREPLY=( $(compgen -W "NUMBER" -- $cur) )
       return 0
       ;;
