@@ -7,7 +7,7 @@
 #
 
 if [ $# -lt 3 ]; then
-    echo Usage: mangen.sh VERSION IN OUT
+    echo "Usage: mangen.sh VERSION IN OUT"
     exit 1
 fi
 
@@ -20,10 +20,10 @@ OUT=$3
 #  URL completely disappear from man pages.  We need to strip
 #  those codes out when building for MacOS
 #
-if [ $(uname -s) = "Darwin" ]; then
+if [ "$(uname -s)" = "Darwin" ]; then
    RMURUE='-e s/\.UR.//g -e s/\.UE//g'
 else
    RMURUE=""
 fi
 
-sed -e "s|@VERSION[@]|$VERSION|g" $RMURUE $IN >$OUT
+sed -e "s|@VERSION[@]|$VERSION|g" $RMURUE "$IN" >"$OUT"
