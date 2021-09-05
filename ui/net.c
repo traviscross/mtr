@@ -600,7 +600,7 @@ int net_send_batch(
         numhosts = batch_at + 1;
     }
 
-    if(restart) {
+    if (restart) {
         batch_at = ctl->fstTTL - 1;
         return 1;
     }

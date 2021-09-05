@@ -305,7 +305,7 @@ struct {								\
 #define	STAILQ_FIRST(head)	((head)->stqh_first)
 
 #define	STAILQ_FOREACH(var, head, field)				\
-	for((var) = STAILQ_FIRST((head));				\
+	for ((var) = STAILQ_FIRST((head));				\
 	   (var);							\
 	   (var) = STAILQ_NEXT((var), field))
 

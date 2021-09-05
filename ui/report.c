@@ -344,7 +344,7 @@ void json_close(struct mtr_ctl *ctl)
             goto on_error;
 
 #ifdef HAVE_IPINFO
-        if(!ctl->ipinfo_no) {
+        if (!ctl->ipinfo_no) {
             char* fmtinfo = fmt_ipinfo(ctl, addr);
             if (fmtinfo != NULL)
                 fmtinfo = trim(fmtinfo, '\0');
