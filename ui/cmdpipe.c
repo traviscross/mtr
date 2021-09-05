@@ -355,7 +355,7 @@ void construct_base_command(
     const char *local_ip_type;
     const char *protocol = NULL;
 
-    /*  Conver the remote IP address to a string  */
+    /*  Convert the remote IP address to a string  */
     if (inet_ntop(ctl->af, address, ip_string, INET6_ADDRSTRLEN) == NULL) {
 
         display_close(ctl);
@@ -742,7 +742,7 @@ void consume_reply_buffer(
 
     /*
        We may have multiple completed replies.  Loop until we don't
-       have any more newlines termininating replies.
+       have any more newlines terminating replies.
      */
     while (true) {
         /*  If no newline is found, our reply isn't yet complete  */
@@ -803,7 +803,7 @@ void handle_command_replies(
     reply_buffer = cmdpipe->reply_buffer;
 
     /*
-       Read the available reply text, up to the the remaining
+       Read the available reply text, up to the remaining
        buffer space.  (Minus one for the terminating NUL.)
      */
     read_buffer = &reply_buffer[cmdpipe->reply_buffer_used];

@@ -170,7 +170,7 @@ void report_close(
             if (j < 0)
                 continue;
 
-            /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
+            /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
                 snprintf(buf + len, sizeof(buf), data_fields[j].format,
                          data_fields[j].net_xxx(at) / 1000.0);
@@ -385,7 +385,7 @@ void json_close(struct mtr_ctl *ctl)
     if (ret == -1)
         goto on_error;
 
-    printf("\n"); // bash promt should be on new line
+    printf("\n"); // bash prompt should be on new line
     json_decref(jreport);
     return;
 on_error:
@@ -447,7 +447,7 @@ void xml_close(
                 title = "Loss";
             }
 
-            /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
+            /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
                 printf(name,
                        title, data_fields[j].net_xxx(at) / 1000.0, title);
@@ -518,7 +518,7 @@ void csv_close(
             if (j < 0)
                 continue;
 
-            /* 1000.0 is a temporay hack for stats usec to ms, impacted net_loss. */
+            /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
                 printf(",%.2f",
                        (double) (data_fields[j].net_xxx(at) / 1000.0));

@@ -35,7 +35,7 @@
 
 #include "wait.h"
 
-/*  Drop SUID privileges.  To be used after accquiring raw sockets.  */
+/*  Drop SUID privileges.  To be used after acquiring raw sockets.  */
 static
 int drop_elevated_permissions(
     void)

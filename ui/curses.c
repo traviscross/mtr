@@ -390,7 +390,7 @@ static void format_field(
         format_number(n, 5, dst);
     } else if (strchr(format, 'f')) {
         /* this is for fields where we measure integer microseconds but
-           display floating point miliseconds. Convert to float here. */
+           display floating point milliseconds. Convert to float here. */
         snprintf(dst, dst_length, format, n / 1000.0);
         /* this was marked as a temporary hack over 10 years ago. -- REW */
     } else {

@@ -176,7 +176,7 @@ void close_stdout(
         _exit(EXIT_FAILURE);
 }
 
-/* ctime() replacement that will reteturn ISO-8601 timestamp string such as:
+/* ctime() replacement that will return ISO-8601 timestamp string such as:
  * 2016-08-29T19:25:02+01:00 */
 const char *iso_time(
     const time_t * t)
