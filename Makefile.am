@@ -40,7 +40,7 @@ $(PATHFILES): Makefile
 dist_man_MANS = mtr.8 mtr-packet.8
 PATHFILES += man/mtr.8 man/mtr-packet.8
 
-install-exec-hook: 
+install-exec-hook:
 	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr-packet` \
 	|| chmod u+s $(DESTDIR)$(sbindir)/mtr-packet
 
@@ -172,4 +172,3 @@ endif
 
 dist-hook:
 	$(AM_V_GEN)echo $(VERSION) > $(distdir)/.tarball-version
-

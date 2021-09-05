@@ -207,7 +207,7 @@ static void reverse_host6(
 {
     int i;
     char *b = buff;
-    // We need to process the top 64 bits, or 8 bytes. 
+    // We need to process the top 64 bits, or 8 bytes.
     for (i = 8-1; i >= 0; i--, b += 4, buff_length -= 4)
         snprintf(b, buff_length,
                  "%x.%x.", addr->s6_addr[i] & 0xf, addr->s6_addr[i] >> 4);

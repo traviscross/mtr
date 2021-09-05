@@ -24,12 +24,12 @@ simple as:
 
 Please note that this refers to the tarballs from
  https://www.bitwizard.nl/mtr/files/
-and not the tarballs that github can produce. 
+and not the tarballs that github can produce.
 
 (in the past, there was a Makefile in the distribution that did
 the `./configure` for you and then ran make again with the generated
 Makefile, but this has suffered some bitrot. It didn't work well
-with git.) 
+with git.)
 
 If you're building from the git repository, you'll need to run:
 
@@ -75,7 +75,7 @@ BUILDING FOR WINDOWS
 
 Building for Windows requires Cygwin.  To obtain Cygwin, see
 https://cygwin.com/install.html.
-Next, re-run cygwin's `setup-x86.exe` (or `setup-x86_64.exe` if you're using 64bit cygwin) with the following arguments,  
+Next, re-run cygwin's `setup-x86.exe` (or `setup-x86_64.exe` if you're using 64bit cygwin) with the following arguments,
 which will install the packages required for building:
 
         setup-x86.exe --package-manager --wait --packages automake,pkg-config,make,gcc-core,libncurses-devel,libjansson-devel
@@ -110,4 +110,3 @@ when the server was upgraded, the mailing list died.)
 
 
 REW
-

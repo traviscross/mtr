@@ -153,7 +153,7 @@ void check_length_order(
 
     if (resolve_probe_addresses(net_state, &param, &p0.remote_addr,
                 &p0.local_addr)) {
-        fprintf(stderr, "Error decoding localhost address (%s/%s)\n", 
+        fprintf(stderr, "Error decoding localhost address (%s/%s)\n",
                 probe_err, strerror (errno));
         exit(EXIT_FAILURE);
     }
@@ -575,18 +575,18 @@ void send_probe(
         error(EXIT_FAILURE, errno, "gettimeofday failure");
     }
 
-    // there might be an off-by-one in the number of tries here. 
+    // there might be an off-by-one in the number of tries here.
     // this is intentional.  It is no use exhausting the very last
-    // open port. Max 10 retries would've been acceptable too I think. 
+    // open port. Max 10 retries would've been acceptable too I think.
     for (trytimes=MIN_PORT; trytimes < MAX_PORT; trytimes++) {
-			
+
         packet_size = construct_packet(net_state, &probe->platform.socket,
                          probe, packet, PACKET_BUFFER_SIZE,
                          param);
 
         if (packet_size > 0) break; // no retry if we succeed.
 
-        if ((param->protocol != IPPROTO_TCP) && 
+        if ((param->protocol != IPPROTO_TCP) &&
             (param->protocol != IPPROTO_SCTP)) break; // no retry if not TCP/SCTP
 
         if ((errno != EADDRINUSE) && (errno != EADDRNOTAVAIL)) {
@@ -594,7 +594,7 @@ void send_probe(
         }
 
      	probe->sequence = net_state->platform.next_sequence++;
-        	
+
        	if (net_state->platform.next_sequence > MAX_PORT) {
             net_state->platform.next_sequence = MIN_PORT;
         }

@@ -82,7 +82,7 @@ int main(
     struct net_state_t net_state;
 
     /*
-       To minimize security risk, the only thing done prior to 
+       To minimize security risk, the only thing done prior to
        dropping SUID should be opening the network state for
        raw sockets.
      */

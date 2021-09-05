@@ -231,8 +231,8 @@ void execute_packet_child(
      */
     execlp(mtr_packet_path, "mtr-packet", (char *) NULL);
 
-    /* 
-       Then try to find it where WE were executed from.  
+    /*
+       Then try to find it where WE were executed from.
      */
     strncpy (buf, myname, 240);
     strcat (buf, "-packet");

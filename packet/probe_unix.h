@@ -20,7 +20,7 @@
 #define PROBE_UNIX_H
 
 #ifndef IPPROTO_SCTP
-// Needed for Netbsd. 
+// Needed for Netbsd.
 #define IPPROTO_SCTP           132             /* SCTP */
 #endif
 

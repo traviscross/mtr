@@ -424,7 +424,7 @@ void dispatch_buffer_commands(
     if (buffer->incoming_read_position >= COMMAND_BUFFER_SIZE - 1) {
         /*
            If we've filled the buffer without a complete command, the
-           only thing we can do is discard what we've read and hope that 
+           only thing we can do is discard what we've read and hope that
            new data is better formatted.
          */
         printf("0 command-buffer-overflow\n");

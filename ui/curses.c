@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -451,7 +451,7 @@ static void mtr_curses_hosts(
             hd_len = 0;
             for (i = 0; i < MAXFLD; i++) {
                 /* Ignore options that don't exist */
-                /* On the other hand, we now check the input side. Shouldn't happen, 
+                /* On the other hand, we now check the input side. Shouldn't happen,
                    can't be careful enough. */
                 j = ctl->fld_index[ctl->fld_active[i]];
                 if (j == -1)
@@ -698,8 +698,8 @@ void mtr_curses_redraw(
     pwcenter(buf);
     attroff(A_BOLD);
 
-    mvprintw(1, 0, "%s (%s) -> %s (%s)", 
-	ctl->LocalHostname, net_localaddr(), 
+    mvprintw(1, 0, "%s (%s) -> %s (%s)",
+	ctl->LocalHostname, net_localaddr(),
 	ctl->Hostname, net_remoteaddr());
     t = time(NULL);
     mvprintw(1, maxx - 25, iso_time(&t));
