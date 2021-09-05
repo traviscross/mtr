@@ -17,7 +17,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''Test sending probes and receiving respones.'''
+'''Test sending probes and receiving responses.'''
 
 import socket
 import sys
@@ -136,7 +136,7 @@ class TestProbeICMPv4(mtrpacket.MtrPacketTest):
         'Test timeouts when sending to a non-existant address'
 
         #
-        #  Probe a non-existant address, and expect no reply
+        #  Probe a non-existent address, and expect no reply
         #
         #  I'm not sure what the best way to find an address that doesn't
         #  exist, but is still route-able.  If we use a reserved IP

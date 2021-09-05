@@ -4,7 +4,7 @@
     Changes/additions Copyright (C) 1998 R.E.Wolff@BitWizard.nl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -94,7 +94,7 @@ int gtk_detect(
 {
     if (getenv("DISPLAY") != NULL) {
         /* If we do this here, gtk_init exits on an error. This happens
-           BEFORE the user has had a chance to tell us not to use the 
+           BEFORE the user has had a chance to tell us not to use the
            display... */
         return TRUE;
     } else {
@@ -568,7 +568,7 @@ void gtk_redraw(
 }
 
 // GTK 3 has changed the interface a bit. Here a few defines so that we can
-// work with GTK2 or GTK3 as required. 
+// work with GTK2 or GTK3 as required.
 #ifdef HAVE_GTK3
 #define gtk_vbox_new_(orientation,sz) gtk_box_new(orientation, sz)
 #define gtk_hbox_new_(orientation,sz) gtk_box_new(orientation, sz)

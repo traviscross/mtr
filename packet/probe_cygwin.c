@@ -352,7 +352,7 @@ void icmp_send_probe(
         timeout = 1000 * request->timeout;
     } else {
         /*
-           IcmpSendEcho2 will return invalid argument on a timeout of 
+           IcmpSendEcho2 will return invalid argument on a timeout of
            zero.  Our Unix implementation allows it.  Bump up the timeout
            to 1 millisecond.
          */

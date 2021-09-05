@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -18,7 +18,7 @@
 
 #include <netinet/in.h>
 
-/* Don't put a trailing comma in enumeration lists. Some compilers 
+/* Don't put a trailing comma in enumeration lists. Some compilers
    (notably the one on Irix 5.2) do not like that. */
 enum { ActionNone, ActionQuit, ActionReset, ActionDisplay,
     ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS,

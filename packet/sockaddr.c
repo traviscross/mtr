@@ -5,14 +5,14 @@
 
 void *sockaddr_addr_offset(const void *x)
 {
-	if( x == NULL )
+	if ( x == NULL )
 		return NULL;
 
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET )
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
 		return ((void *)(x) + offsetof(struct sockaddr_in, sin_addr));
-	}else
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
+	} else
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
 		return ((void *)(x) + offsetof(struct sockaddr_in6, sin6_addr));
 	}
@@ -22,13 +22,13 @@ void *sockaddr_addr_offset(const void *x)
 
 unsigned int sockaddr_addr_size(const void *x)
 {
-	if( x == NULL )
+	if ( x == NULL )
 		return 0;
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET )
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
 		return sizeof(struct in_addr);
-	}else
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
+	} else
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
 		return sizeof(struct in6_addr);
 	}
@@ -38,13 +38,13 @@ unsigned int sockaddr_addr_size(const void *x)
 
 unsigned int sockaddr_size(const void *x)
 {
-	if( x == NULL )
+	if ( x == NULL )
 		return 0;
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET )
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
 		return sizeof(struct sockaddr_in);
-	}else
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
+	} else
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
 		return sizeof(struct sockaddr_in6);
 	}
@@ -53,14 +53,14 @@ unsigned int sockaddr_size(const void *x)
 
 in_port_t *sockaddr_port_offset(const void *x)
 {
-	if( x == NULL )
+	if ( x == NULL )
 		return NULL;
 
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET )
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
 		return ((void *)(x) + offsetof(struct sockaddr_in, sin_port));
-	}else
-	if( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
+	} else
+	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
 		return ((void *)(x) + offsetof(struct sockaddr_in6, sin6_port));
 	}

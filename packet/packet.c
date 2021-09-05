@@ -35,7 +35,7 @@
 
 #include "wait.h"
 
-/*  Drop SUID privileges.  To be used after accquiring raw sockets.  */
+/*  Drop SUID privileges.  To be used after acquiring raw sockets.  */
 static
 int drop_elevated_permissions(
     void)
@@ -82,7 +82,7 @@ int main(
     struct net_state_t net_state;
 
     /*
-       To minimize security risk, the only thing done prior to 
+       To minimize security risk, the only thing done prior to
        dropping SUID should be opening the network state for
        raw sockets.
      */

@@ -114,38 +114,38 @@ mtr \- a network diagnostic tool
 ]
 .I HOSTNAME
 .SH DESCRIPTION
-.B mtr 
-combines the functionality of the 
+.B mtr
+combines the functionality of the
 .B traceroute
-and 
+and
 .B ping
 programs in a single network diagnostic tool.
 .PP
-As 
-.B mtr 
-starts, it investigates the network connection between the host 
+As
 .B mtr
-runs on and 
+starts, it investigates the network connection between the host
+.B mtr
+runs on and
 .BR HOSTNAME
 by sending packets with purposely low TTLs.  It continues to send
 packets with low TTL, noting the response time of the intervening
-routers.  This allows 
-.B mtr 
+routers.  This allows
+.B mtr
 to print the response percentage and response times of the internet
-route to 
-.BR HOSTNAME . 
+route to
+.BR HOSTNAME .
 A sudden increase in packet loss or response time is often an indication
-of a bad (or simply overloaded) link. 
+of a bad (or simply overloaded) link.
 .PP
 The results are usually reported as round-trip-response times in milliseconds
-and the percentage of packet loss. 
+and the percentage of packet loss.
 .SH OPTIONS
 .TP
 .B \-h\fR, \fB\-\-help
 Print the summary of command line argument options.
 .TP
 .B \-v\fR, \fB\-\-version
-Print the installed version of mtr.  
+Print the installed version of mtr.
 .TP
 .B \-4
 Use IPv4 only.
@@ -157,33 +157,33 @@ Use IPv6 only.  (IPV4 may be used for DNS lookups.)
 Reads the list of hostnames from the specified file.
 .TP
 .B \-r\fR, \fB\-\-report
-This option puts 
+This option puts
 .B mtr
-into 
+into
 .B report
 mode.  When in this mode,
 .B mtr
-will run for the number of cycles specified by the 
+will run for the number of cycles specified by the
 .B \-c
-option, and then print statistics and exit.  
+option, and then print statistics and exit.
 .TP
 \c
-This mode is useful for generating statistics about network quality.  
-Note that each running instance of 
+This mode is useful for generating statistics about network quality.
+Note that each running instance of
 .B mtr
-generates a significant amount of network traffic.  Using 
+generates a significant amount of network traffic.  Using
 .B mtr
 to measure the quality of your network may result in decreased
-network performance.  
+network performance.
 .TP
 .B \-w\fR, \fB\-\-report\-wide
-This option puts 
+This option puts
 .B mtr
-into 
+into
 .B wide report
 mode.  When in this mode,
 .B mtr
-will not cut hostnames in the report. 
+will not cut hostnames in the report.
 .TP
 .B \-x\fR, \fB\-\-xml
 Use this option to tell
@@ -192,12 +192,12 @@ to use the xml output format.  This format is better suited for
 automated processing of the measurement results.
 .TP
 .B \-t\fR, \fB\-\-curses
-Use this option to force 
-.B mtr 
+Use this option to force
+.B mtr
 to use the curses based terminal
 interface (if available).
-In case the list of hops exceeds the 
-height of your terminal, you can use the 
+In case the list of hops exceeds the
+height of your terminal, you can use the
 .B +
 and
 .B -
@@ -215,19 +215,19 @@ information.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
-.B mtr 
-to use the GTK+ based X11 window interface (if available).  
-GTK+ must have been available on the system when 
-.B mtr 
-was built for this to work.  See the GTK+ web page at 
+.B mtr
+to use the GTK+ based X11 window interface (if available).
+GTK+ must have been available on the system when
+.B mtr
+was built for this to work.  See the GTK+ web page at
 .UR http://\:www.\:gtk.\:org/
 .UE
 for more information about GTK+.
 .TP
 .B \-l\fR, \fB\-\-raw
 Use the raw output format.  This format is better suited for
-archival of the measurement results.  It could be parsed to 
-be presented into any of the other display methods. 
+archival of the measurement results.  It could be parsed to
+be presented into any of the other display methods.
 .IP
 Example of the raw output format:
 .nf
@@ -273,14 +273,14 @@ was built for this to work.
 .TP
 .B \-p\fR, \fB\-\-split
 Use this option to set
-.B mtr 
+.B mtr
 to spit out a format that is suitable for a split-user interface.
 .TP
 .B \-n\fR, \fB\-\-no\-dns
-Use this option to force 
-.B mtr 
+Use this option to force
+.B mtr
 to display numeric IP numbers and not try to resolve the
-host names. 
+host names.
 .TP
 .B \-b\fR, \fB\-\-show\-ips
 Use this option to tell
@@ -288,7 +288,7 @@ Use this option to tell
 to display both the host names and numeric IP numbers.  In split mode
 this adds an extra field to the output.  In report mode, there is usually
 too little space to add the IPs, and they will be truncated.  Use the
-wide report (-w) mode to see the IPs in report mode. 
+wide report (-w) mode to see the IPs in report mode.
 .TP
 .B \-o \fIFIELDS\fR, \fB\-\-order \fIFIELDS
 Use this option to specify which fields to display and in which order.
@@ -354,7 +354,7 @@ root user may choose values between zero and one.
 .TP
 .B \-c \fICOUNT\fR, \fB\-\-report\-cycles \fICOUNT
 Use this option to set the number of pings sent to determine
-both the machines on the network and the reliability of 
+both the machines on the network and the reliability of
 those machines.  Each cycle lasts one second.
 .TP
 .B \-s \fIPACKETSIZE\fR, \fB\-\-psize \fIPACKETSIZE
@@ -378,8 +378,8 @@ Specifies value for type of service field in IP header.  Should be within range 
 - 255.
 .TP
 .B \-e\fR, \fB\-\-mpls
-Use this option to tell 
-.B mtr 
+Use this option to tell
+.B mtr
 to display information from ICMP extensions for MPLS (RFC 4950)
 that are encoded in the response packets.
 .TP
@@ -501,15 +501,15 @@ can be controlled while it is running with the following keys:
   z       toggle ASN info on/off
   q       exit
 .SH BUGS
-Some modern routers give a lower priority to ICMP ECHO packets than 
+Some modern routers give a lower priority to ICMP ECHO packets than
 to other network traffic.  Consequently, the reliability of these
-routers reported by 
+routers reported by
 .B mtr
-will be significantly lower than the actual reliability of 
-these routers.  
+will be significantly lower than the actual reliability of
+these routers.
 .SH CONTACT INFORMATION
 .PP
-For the latest version, see the mtr web page at 
+For the latest version, see the mtr web page at
 .UR http://\:www.\:bitwizard.\:nl/\:mtr/
 .UE
 .PP

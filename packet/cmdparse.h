@@ -29,7 +29,7 @@ struct command_t {
     /*  A unique value for matching command requests with replies  */
     int token;
 
-    /*  Text indiciating the command type, or reply type  */
+    /*  Text indicating the command type, or reply type  */
     char *command_name;
 
     /*  The number of key, value argument pairs used  */

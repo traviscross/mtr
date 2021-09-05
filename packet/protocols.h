@@ -50,7 +50,7 @@
 #define HTTP_PORT 80
 
 /*  We can't rely on header files to provide this information, because
-    the fields have different names between, for instance, Linux and 
+    the fields have different names between, for instance, Linux and
     Solaris  */
 struct ICMPHeader {
     uint8_t type;

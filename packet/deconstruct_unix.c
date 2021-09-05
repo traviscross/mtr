@@ -99,22 +99,22 @@ void handle_inner_udp_packet(
     {
         saddr = &((struct IPHeader *)ip)->saddr;
         daddr = &((struct IPHeader *)ip)->daddr;
-    }else
+    } else
     if (af == AF_INET6)
     {
         daddr = &((struct IP6Header *)ip)->daddr;
         saddr = &((struct IP6Header *)ip)->saddr;
-    }else
+    } else
     {
         return;
     }
 
-    if( memcmp(sockaddr_addr_offset(&probe->remote_addr),
+    if ( memcmp(sockaddr_addr_offset(&probe->remote_addr),
                daddr,
                sockaddr_addr_size(&probe->remote_addr)) != 0 )
             return;
 
-    if( memcmp(sockaddr_addr_offset(&probe->local_addr),
+    if ( memcmp(sockaddr_addr_offset(&probe->local_addr),
            saddr,
            sockaddr_addr_size(&probe->local_addr)) != 0)
         return;

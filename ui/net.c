@@ -3,7 +3,7 @@
     Copyright (C) 1997,1998  Matt Kimball
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -547,18 +547,18 @@ int net_send_batch(
     int n_unknown = 0, i;
     int restart = 0;
 
-    /* randomized packet size and/or bit pattern if packetsize<0 and/or 
-       bitpattern<0.  abs(packetsize) and/or abs(bitpattern) will be used 
+    /* randomized packet size and/or bit pattern if packetsize<0 and/or
+       bitpattern<0.  abs(packetsize) and/or abs(bitpattern) will be used
      */
     if (batch_at < ctl->fstTTL) {
         if (ctl->cpacketsize < 0) {
-            /* Someone used a formula here that tried to correct for the 
-               "end-error" in "rand()". By "end-error" I mean that if you 
-               have a range for "rand()" that runs to 32768, and the 
-               destination range is 10000, you end up with 4 out of 32768 
-               0-2768's and only 3 out of 32768 for results 2769 .. 9999. 
-               As our destination range (in the example 10000) is much 
-               smaller (reasonable packet sizes), and our rand() range much 
+            /* Someone used a formula here that tried to correct for the
+               "end-error" in "rand()". By "end-error" I mean that if you
+               have a range for "rand()" that runs to 32768, and the
+               destination range is 10000, you end up with 4 out of 32768
+               0-2768's and only 3 out of 32768 for results 2769 .. 9999.
+               As our destination range (in the example 10000) is much
+               smaller (reasonable packet sizes), and our rand() range much
                larger, this effect is insignificant. Oh! That other formula
                didn't work. */
             packetsize =
@@ -578,9 +578,9 @@ int net_send_batch(
         if (host_addr_cmp(i, &ctl->unspec_addr, ctl->af) == 0)
             n_unknown++;
 
-        /* The second condition in the next "if" statement was added in mtr-0.56, 
+        /* The second condition in the next "if" statement was added in mtr-0.56,
            but I don't remember why. It makes mtr stop skipping sections of unknown
-           hosts. Removed in 0.65. 
+           hosts. Removed in 0.65.
            If the line proves necessary, it should at least NOT trigger that line
            when host[i].addr == 0 */
         if (host_addr_cmp(i, remoteaddress, ctl->af) == 0) {
@@ -600,7 +600,7 @@ int net_send_batch(
         numhosts = batch_at + 1;
     }
 
-    if(restart) {
+    if (restart) {
         batch_at = ctl->fstTTL - 1;
         return 1;
     }

@@ -7,7 +7,7 @@
     Copyright (C) 1998  Bertrand Leconte <B.Leconte@mail.dotcom.fr>
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 as 
+    it under the terms of the GNU General Public License version 2 as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -77,7 +77,7 @@ void split_redraw(
     fprintf(stderr, "split_redraw()\n");
 #endif
 
-    /* 
+    /*
      * If there is less lines than last time, we delete them
      * TEST THIS PLEASE
      */
@@ -166,7 +166,7 @@ int split_keyaction(
     tv.tv_usec = 0;
 
     if (select(1, &readfds, NULL, NULL, &tv) > 0) {
-        if (read(0, &c, 1) <= 0) 
+        if (read(0, &c, 1) <= 0)
           return ActionQuit;
     } else
         return 0;
