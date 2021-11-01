@@ -432,7 +432,7 @@ static void mtr_curses_hosts(
                 attron(A_BOLD);
 #ifdef HAVE_IPINFO
             if (is_printii(ctl))
-                printw(fmt_ipinfo(ctl, addr));
+                printw("%s", fmt_ipinfo(ctl, addr));
 #endif
             if (name != NULL) {
                 if (ctl->show_ips)
@@ -485,7 +485,7 @@ static void mtr_curses_hosts(
                 printw("\n    ");
 #ifdef HAVE_IPINFO
                 if (is_printii(ctl))
-                    printw(fmt_ipinfo(ctl, addrs));
+                    printw("%s", fmt_ipinfo(ctl, addrs));
 #endif
                 if (name != NULL) {
                     if (ctl->show_ips)
@@ -650,7 +650,7 @@ static void mtr_curses_graph(
 
 #ifdef HAVE_IPINFO
             if (is_printii(ctl))
-                printw(fmt_ipinfo(ctl, addr));
+                printw("%s", fmt_ipinfo(ctl, addr));
 #endif
             name = dns_lookup(ctl, addr);
             printw("%s", name ? name : strlongip(ctl->af, addr));
@@ -702,7 +702,7 @@ void mtr_curses_redraw(
 	ctl->LocalHostname, net_localaddr(),
 	ctl->Hostname, net_remoteaddr());
     t = time(NULL);
-    mvprintw(1, maxx - 25, iso_time(&t));
+    mvprintw(1, maxx - 25, "%s", iso_time(&t));
     printw("\n");
 
     printw("Keys:  ");
@@ -762,7 +762,7 @@ void mtr_curses_redraw(
         startstat = padding - 2;
 
         snprintf(msg, sizeof(msg), " Last %3d pings", max_cols);
-        mvprintw(rowstat - 1, startstat, msg);
+        mvprintw(rowstat - 1, startstat, "%s", msg);
 
         attroff(A_BOLD);
         move(rowstat, 0);
