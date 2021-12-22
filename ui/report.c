@@ -43,7 +43,7 @@
 #include "utils.h"
 
 #define MAXLOADBAL 5
-#define MAX_FORMAT_STR 81
+#define MAX_FORMAT_STR 320
 
 
 void report_open(
