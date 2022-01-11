@@ -4,6 +4,68 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.95
+   Aaron Lipinski (27):
+         move net_send_batch call to its caller
+         addr -> hostent for consistency
+         re-init source too
+         additional call from net_reopen
+         refactor - group local, remote inits
+         reset ctl address family at net_reopen
+         accept only value used in structure
+         tell dns process if we want 4 or 6
+         resolve ipv6 only if we have ipv6
+         remove wrapper only function
+         init structures correctly wired up
+         prepare host with h_addr_list
+         remove temporaries
+         extract convert_addrinfo_to_hostent function
+         move conversion call to caller
+         use addrinfo
+         remove conversion function
+         switch gui to addrinfo
+         export DEFAULT_AF
+         reset addr family before searching again
+         freeaddrinfo
+         export get_hostent_from_name
+         make Hostname as const
+         rename function
+         dont show json option if not available
+   
+   Egor Panov (1):
+         Updated Readme
+   
+   R.E. Wolff (2):
+         Slight cleanup, but no fix for code that came up in a bugreport.
+         increased max length suggested by YVS2014
+   
+   Roger Wolff (12):
+   
+   Rogier Wolff (2):
+         Code formatting for Zenithal pull
+         added clarification to readme suggested by Zenithal
+   
+   Sergei Trofimovich (1):
+         ui/curses: always use "%s"-style format for printf()-style functions
+   
+   Vincent Bernat (3):
+         ui: don't cast to void* when calling display_rawhost()
+         net: fix MPLS display for curses and report
+         report: fix display of MPLS labels when using --report
+   
+   Zenithal (1):
+         Add display of destination with resolved addr under curses mode
+   
+   a1346054 (5):
+         fix wrong bash completion flag
+         fix shellcheck warnings
+         unify codestyle
+         fix spelling
+         trim trailing whitespace
+   
+   gaamox@tutanota.com (1):
+         Report secondary servers when CSV + wide report is enabled
+   
 V0.94
    Aaron Lipinski (10):
          gtk_menu_append -> gtk_menu_shell_append
