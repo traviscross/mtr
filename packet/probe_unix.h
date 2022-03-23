@@ -25,7 +25,7 @@
 #endif
 
 /*  The range of local port numbers to use for probes  */
-#define MIN_PORT 33000
+#define MIN_PORT 33434
 #define MAX_PORT 65535
 
 /*  We need to track the transmission and timeouts on Unix systems  */
