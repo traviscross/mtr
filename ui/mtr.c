@@ -369,6 +369,7 @@ static void parse_arg(
         {"first-ttl", 1, NULL, 'f'},    /* -f & -m are borrowed from traceroute */
         {"max-ttl", 1, NULL, 'm'},
         {"max-unknown", 1, NULL, 'U'},
+        {"max-display-path", 1, NULL, 'E'},
         {"udp", 0, NULL, 'u'},  /* UDP (default is ICMP) */
         {"tcp", 0, NULL, 'T'},  /* TCP (default is ICMP) */
 #ifdef HAS_SCTP
@@ -519,6 +520,12 @@ static void parse_arg(
                 strtonum_or_err(optarg, "invalid argument", STRTO_INT);
             if (ctl->maxUnknown < 1) {
                 ctl->maxUnknown = 1;
+            }
+            break;
+        case 'E':
+            ctl->maxDisplayPath = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+            if (ctl->maxDisplayPath > MAX_PATH) {
+                ctl->maxDisplayPath = MAX_PATH;
             }
             break;
         case 'o':
@@ -747,6 +754,7 @@ int main(
     ctl.fstTTL = 1;
     ctl.maxTTL = 30;
     ctl.maxUnknown = 12;
+    ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
     ctl.ipinfo_max = -1;
