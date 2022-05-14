@@ -471,7 +471,7 @@ static void mtr_curses_hosts(
             }
 
             /* Multi path */
-            for (i = 1; i < MAX_PATH; i++) {
+            for (i = 1; i < ctl->maxDisplayPath; i++) {
                 addrs = net_addrs(at, i);
                 mplss = net_mplss(at, i);
                 if (addrcmp(addrs, addr, ctl->af) == 0)
