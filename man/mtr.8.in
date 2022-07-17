@@ -92,6 +92,9 @@ mtr \- a network diagnostic tool
 .BI \-U \ MAX\-UNKNOWN\c
 ]
 [\c
+.BI \-E \ MAX\-DISPLAY\-PATH\c
+]
+[\c
 .B \-\-udp\c
 ]
 [\c
@@ -406,6 +409,9 @@ probe.  Default is 30.
 .TP
 .B \-U \fINUM\fR, \fB\-\-max-unknown \fINUM
 Specifies the maximum unknown host. Default is 5.
+.TP
+.B \-E \fINUM\fR, \fB\-\-max-display-path \fINUM
+Specifies the maximum number of ECMP paths to display. Default is 8.
 .TP
 .B \-u\fR, \fB\-\-udp
 Use UDP datagrams instead of ICMP ECHO.

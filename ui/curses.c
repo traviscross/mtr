@@ -421,8 +421,8 @@ static void mtr_curses_hosts(
     for (at = net_min(ctl) + ctl->display_offset; at < max; at++) {
         printw("%2d. ", at + 1);
         err = net_err(at);
-        addr = net_addr(at);
-        mpls = net_mpls(at);
+        addr = net_addrs(at, 0);
+        mpls = net_mplss(at, 0);
 
         addrcmp_result = addrcmp(addr, &ctl->unspec_addr, ctl->af);
 
@@ -471,7 +471,7 @@ static void mtr_curses_hosts(
             }
 
             /* Multi path */
-            for (i = 0; i < MAX_PATH; i++) {
+            for (i = 1; i < ctl->maxDisplayPath; i++) {
                 addrs = net_addrs(at, i);
                 mplss = net_mplss(at, i);
                 if (addrcmp(addrs, addr, ctl->af) == 0)
