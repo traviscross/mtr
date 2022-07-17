@@ -306,18 +306,25 @@ int construct_udp6_packet(
     set_udp_ports(udp, probe, param);
     udp->length = htons(udp_size);
 
-    if (net_state->platform.ip6_socket_raw) {
-        /*
-           Instruct the kernel to put the pseudoheader checksum into the
-           UDP header, this is only needed when using RAW socket.
-         */
-        int chksum_offset = (char *) &udp->checksum - (char *) udp;
-        if (setsockopt(udp_socket, IPPROTO_IPV6,
-                       IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
-            return -1;
-        }
-    }
+    struct IP6PseudoHeader udph = {
+        .zero = {0,0,0},
+        .protocol = 17,
+        .len = udp->length
+    };
+    memcpy(udph.saddr, sockaddr_addr_offset(&probe->local_addr), 16);
+    memcpy(udph.daddr, sockaddr_addr_offset(&probe->remote_addr), 16);
 
+    /* get position to write checksum */
+    uint16_t *checksum_off = &udp->checksum;
+
+    if (udp->checksum != 0)
+    { /* checksum is sequence number - correct the payload to match the checksum
+         checksum_off is udp payload */
+        checksum_off = (uint16_t *)&packet_buffer[sizeof(struct UDPHeader)];
+    }
+    *checksum_off = htons(udp4_checksum(&udph, udp,
+                                        sizeof(struct IP6PseudoHeader),
+                                        udp_size, udp->checksum != 0));
     return 0;
 }
 
