@@ -53,6 +53,9 @@ struct probe_param_t {
     /*  The local address from which to send probes  */
     const char *local_address;
 
+    /*  The local device from which to send probes  */
+    const char *local_device;
+
     /*  Protocol for the probe, using the IPPROTO_* defines  */
     int protocol;
 
