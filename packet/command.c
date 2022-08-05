@@ -189,6 +189,11 @@ bool decode_probe_argument(
         param->local_address = value;
     }
 
+    /*  Device name to send from  */
+    if (!strcmp(name, "local-device")) {
+        param->local_device = value;
+    }
+
     /*  Protocol for the probe  */
     if (!strcmp(name, "protocol")) {
         if (!strcmp(value, "icmp")) {

@@ -398,6 +398,13 @@ int set_stream_socket_options(
     }
 #endif
 
+    if (param->local_device) {
+        if (setsockopt(stream_socket, SOL_SOCKET,
+                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -614,6 +621,13 @@ int construct_ip4_packet(
     }
 #endif
 
+    if (param->local_device) {
+        if (setsockopt(send_socket, SOL_SOCKET,
+                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+            return -1;
+        }
+    }
+
     /*
        Bind src port when not using raw socket to pass in ICMP id, kernel
        get ICMP id from src_port when using DGRAM socket.
@@ -781,6 +795,14 @@ int construct_ip6_packet(
         }
     }
 #endif
+
+    if (param->local_device) {
+        if (setsockopt(send_socket,
+                       SOL_SOCKET, SO_BINDTODEVICE, param->local_device,
+                       strlen(param->local_device))) {
+            return -1;
+        }
+    }
 
     return 0;
 }

@@ -417,6 +417,22 @@ void append_command_argument(
     strncat(command, argument, remaining_size);
 }
 
+static
+void append_command_string_argument(
+    char *command,
+    int buffer_size,
+    char *name,
+    char *value)
+{
+    char argument[COMMAND_BUFFER_SIZE];
+    int remaining_size;
+
+    remaining_size = buffer_size - strlen(command) - 1;
+
+    snprintf(argument, buffer_size, " %s %s", name, value);
+    strncat(command, argument, remaining_size);
+}
+
 
 /*  Request a new probe from the "mtr-packet" child process  */
 void send_probe_command(
@@ -465,6 +481,11 @@ void send_probe_command(
                                 ctl->mark);
     }
 #endif
+
+    if (ctl->InterfaceName) {
+        append_command_string_argument(command, COMMAND_BUFFER_SIZE,
+                                       "local-device", ctl->InterfaceName);
+    }
 
     remaining_size = COMMAND_BUFFER_SIZE - strlen(command) - 1;
     strncat(command, "\n", remaining_size);
