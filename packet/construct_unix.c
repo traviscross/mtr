@@ -398,12 +398,14 @@ int set_stream_socket_options(
     }
 #endif
 
+#ifdef SO_BINDTODEVICE
     if (param->local_device) {
         if (setsockopt(stream_socket, SOL_SOCKET,
                        SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
             return -1;
         }
     }
+#endif
 
     return 0;
 }
@@ -621,12 +623,14 @@ int construct_ip4_packet(
     }
 #endif
 
+#ifdef SO_BINDTODEVICE
     if (param->local_device) {
         if (setsockopt(send_socket, SOL_SOCKET,
                        SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
             return -1;
         }
     }
+#endif
 
     /*
        Bind src port when not using raw socket to pass in ICMP id, kernel
@@ -796,6 +800,7 @@ int construct_ip6_packet(
     }
 #endif
 
+#ifdef SO_BINDTODEVICE
     if (param->local_device) {
         if (setsockopt(send_socket,
                        SOL_SOCKET, SO_BINDTODEVICE, param->local_device,
@@ -803,6 +808,7 @@ int construct_ip6_packet(
             return -1;
         }
     }
+#endif
 
     return 0;
 }
