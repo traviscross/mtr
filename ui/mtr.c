@@ -94,84 +94,59 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs("\nUsage:\n", out);
     fputs(" mtr [options] hostname\n", out);
     fputs("\n", out);
-    fputs(" -F, --filename FILE        read hostname(s) from a file\n",
-          out);
-    fputs(" -4                         use IPv4 only\n", out);
-#ifdef ENABLE_IPV6
-    fputs(" -6                         use IPv6 only\n", out);
-#endif
-    fputs(" -u, --udp                  use UDP instead of ICMP echo\n",
-          out);
-    fputs(" -T, --tcp                  use TCP instead of ICMP echo\n",
-          out);
-    fputs(" -I, --interface NAME       use named network interface\n",
-         out);
-    fputs
-        (" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n",
-         out);
-    fputs(" -f, --first-ttl NUMBER     set what TTL to start\n", out);
-    fputs(" -m, --max-ttl NUMBER       maximum number of hops\n", out);
-    fputs(" -U, --max-unknown NUMBER   maximum unknown host\n", out);
-    fputs
-        (" -P, --port PORT            target port number for TCP, SCTP, or UDP\n",
-         out);
-    fputs(" -L, --localport LOCALPORT  source port number for UDP\n", out);
-    fputs
-        (" -s, --psize PACKETSIZE     set the packet size used for probing\n",
-         out);
-    fputs
-        (" -B, --bitpattern NUMBER    set bit pattern to use in payload\n",
-         out);
-    fputs(" -i, --interval SECONDS     ICMP echo request interval\n", out);
-    fputs
-        (" -G, --gracetime SECONDS    number of seconds to wait for responses\n",
-         out);
-    fputs
-        (" -Q, --tos NUMBER           type of service field in IP header\n",
-         out);
-    fputs
-        (" -e, --mpls                 display information from ICMP extensions\n",
-         out);
-    fputs
-        (" -Z, --timeout SECONDS      seconds to keep probe sockets open\n",
-         out);
-#ifdef SO_MARK
-    fputs(" -M, --mark MARK            mark each sent packet\n", out);
-#endif
-    fputs(" -r, --report               output using report mode\n", out);
-    fputs(" -w, --report-wide          output wide report\n", out);
-    fputs(" -c, --report-cycles COUNT  set the number of pings sent\n",
-          out);
-#ifdef HAVE_JANSSON
-    fputs(" -j, --json                 output json\n", out);
-#endif
-    fputs(" -x, --xml                  output xml\n", out);
-    fputs(" -C, --csv                  output comma separated values\n",
-          out);
-    fputs(" -l, --raw                  output raw format\n", out);
-    fputs(" -p, --split                split output\n", out);
-#ifdef HAVE_CURSES
-    fputs(" -t, --curses               use curses terminal interface\n",
-          out);
-#endif
-    fputs("     --displaymode MODE     select initial display mode\n",
-          out);
-#ifdef HAVE_GTK
-    fputs(" -g, --gtk                  use GTK+ xwindow interface\n", out);
-#endif
-    fputs(" -n, --no-dns               do not resolve host names\n", out);
-    fputs(" -b, --show-ips             show IP numbers and host names\n",
-          out);
-    fputs(" -o, --order FIELDS         select output fields\n", out);
-#ifdef HAVE_IPINFO
-    fputs(" -y, --ipinfo NUMBER        select IP information in output\n",
-          out);
-    fputs(" -z, --aslookup             display AS number\n", out);
-#endif
-    fputs(" -h, --help                 display this help and exit\n", out);
-    fputs
-        (" -v, --version              output version information and exit\n",
-         out);
+    fputs(" -F, --filename FILE              read hostname(s) from a file\n",
+          out);      
+    fputs(" -4                               use IPv4 only\n", out);
+#ifdef ENABLE_IPV6      
+    fputs(" -6                               use IPv6 only\n", out);
+#endif      
+    fputs(" -u, --udp                        use UDP instead of ICMP echo\n", out);      
+    fputs(" -T, --tcp                        use TCP instead of ICMP echo\n", out);      
+    fputs(" -I, --interface NAME             use named network interface\n", out);      
+    fputs(" -a, --address ADDRESS            bind the outgoing socket to ADDRESS\n", out);  
+    fputs(" -f, --first-ttl NUMBER           set what TTL to start\n", out);
+    fputs(" -m, --max-ttl NUMBER             maximum number of hops\n", out);
+    fputs(" -U, --max-unknown NUMBER         maximum unknown host\n", out);
+    fputs(" -E, --max-display-path NUMBER    maximum number of ECMP paths to display\n", out);
+    fputs(" -P, --port PORT                  arget port number for TCP, SCTP, or UDP\n", out);  
+    fputs(" -L, --localport LOCALPORT        source port number for UDP\n", out);
+    fputs(" -s, --psize PACKETSIZE           set the packet size used for probing\n", out);       
+    fputs(" -B, --bitpattern NUMBER          set bit pattern to use in payload\n", out);       
+    fputs(" -i, --interval SECONDS           ICMP echo request interval\n", out);
+    fputs(" -G, --gracetime SECONDS          number of seconds to wait for responses\n", out);       
+    fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);       
+    fputs(" -e, --mpls                       display information from ICMP extensions\n", out);       
+    fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);       
+#ifdef SO_MARK       
+    fputs(" -M, --mark MARK                  mark each sent packet\n", out);
+#endif       
+    fputs(" -r, --report                     output using report mode\n", out);
+    fputs(" -w, --report-wide                output wide report\n", out);
+    fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);       
+#ifdef HAVE_JANSSON       
+    fputs(" -j, --json                       output json\n", out);
+#endif       
+    fputs(" -x, --xml                        output xml\n", out);
+    fputs(" -C, --csv                        output comma separated values\n", out);       
+    fputs(" -l, --raw                        output raw format\n", out);
+    fputs(" -p, --split                      split output\n", out);
+#ifdef HAVE_CURSES       
+    fputs(" -t, --curses                     use curses terminal interface\n", out);       
+#endif       
+    fputs("     --displaymode MODE           select initial display mode\n", out);       
+#ifdef HAVE_GTK       
+    fputs(" -g, --gtk                        use GTK+ xwindow interface\n", out);
+#endif       
+    fputs(" -n, --no-dns                     do not resolve host names\n", out);
+    fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
+    fputs(" -o, --order FIELDS               select output fields\n", out);
+#ifdef HAVE_IPINFO       
+    fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
+          out);       
+    fputs(" -z, --aslookup                   display AS number\n", out);
+#endif       
+    fputs(" -h, --help                       display this help and exit\n", out);
+    fputs(" -v, --version                    output version information and exit\n", out);  
     fputs("\n", out);
     fputs("See the 'man 8 mtr' for details.\n", out);
     exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
