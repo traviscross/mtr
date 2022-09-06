@@ -710,6 +710,7 @@ int main(
     int argc,
     char **argv)
 {
+    int exit_val = EXIT_SUCCESS;
     names_t *names_head = NULL;
     names_t *names_walk;
 
@@ -784,6 +785,7 @@ int main(
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
+                exit_val = EXIT_FAILURE;
                 names_walk = names_walk->next;
                 continue;
             }
@@ -794,6 +796,7 @@ int main(
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
+                exit_val = EXIT_FAILURE;
                 names_walk = names_walk->next;
                 continue;
             }
@@ -829,5 +832,5 @@ int main(
         item = NULL;
     }
 
-    return 0;
+    return exit_val;
 }
