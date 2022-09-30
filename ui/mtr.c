@@ -376,7 +376,6 @@ static void parse_arg(
         /* optional options need two ':', but ignore them now as they are not in use */
     }
 
-    opt = 0;
     while (1) {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
         if (opt == -1)
