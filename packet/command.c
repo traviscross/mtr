@@ -225,15 +225,6 @@ bool decode_probe_argument(
         if (*endstr != 0) {
             return false;
         }
-
-        /*
-           Don't allow using a local port which requires
-           privileged binding.
-         */
-        if (param->local_port < 1024) {
-            param->local_port = 0;
-            return false;
-        }
     }
 
     /*  The "type of service" field for the IP header  */

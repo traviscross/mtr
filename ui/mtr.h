@@ -66,7 +66,6 @@ typedef int time_t;
 #define SAVED_PINGS 200
 #define MAX_PATH 128
 #define MaxHost 256
-#define MinPort 1024
 #define MaxPort 65535
 #define MAXPACKET 4470          /* largest test packet size */
 #define MINPACKET 28            /* 20 bytes IP header and 8 bytes ICMP or UDP */

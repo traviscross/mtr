@@ -580,7 +580,7 @@ static void parse_arg(
         case 'L':
             ctl->localport =
                 strtonum_or_err(optarg, "invalid argument", STRTO_INT);
-            if (ctl->localport < MinPort || MaxPort < ctl->localport) {
+            if (MaxPort < ctl->localport) {
                 error(EXIT_FAILURE, 0, "Illegal port number: %d",
                       ctl->localport);
             }
