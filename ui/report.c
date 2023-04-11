@@ -140,7 +140,7 @@ void report_close(
             continue;
 
         snprintf(fmt, sizeof(fmt), "%%%ds", data_fields[j].length);
-        snprintf(buf + len, sizeof(buf), fmt, data_fields[j].title);
+        snprintf(buf + len, sizeof(buf) - len, fmt, data_fields[j].title);
         len += data_fields[j].length;
     }
     printf("%s\n", buf);
@@ -172,10 +172,10 @@ void report_close(
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
-                snprintf(buf + len, sizeof(buf), data_fields[j].format,
+                snprintf(buf + len, sizeof(buf) - len, data_fields[j].format,
                          data_fields[j].net_xxx(at) / 1000.0);
             } else {
-                snprintf(buf + len, sizeof(buf), data_fields[j].format,
+                snprintf(buf + len, sizeof(buf) - len, data_fields[j].format,
                          data_fields[j].net_xxx(at));
             }
             len += data_fields[j].length;
