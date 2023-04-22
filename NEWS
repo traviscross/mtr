@@ -354,9 +354,9 @@ V0.88
          build-sys: default to ,/configure --enable-silent-rules
          warnings: do not take abs() when data type is unsigned
          warnings: mark unused function input variables
-         warnings: fix couple unsigned vs signed variable comparisions
+         warnings: fix couple unsigned vs signed variable comparisons
          warnings: multiply timeval seconds only when the value is small
-         warnings: fix some missed unsigned vs signed variable comparisions
+         warnings: fix some missed unsigned vs signed variable comparisons
          comment: add value range note to initialization
          cast: do not downgrade to float when double should be used
          warnings: remove dead code
