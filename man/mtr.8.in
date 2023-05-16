@@ -56,6 +56,12 @@ mtr \- a network diagnostic tool
 .B \-\-aslookup\c
 ]
 [\c
+.BI \-\-ipinfo_provider4 \ DOMAIN\c
+]
+[\c
+.BI \-\-ipinfo_provider6 \ DOMAIN\c
+]
+[\c
 .BI \-i \ INTERVAL\c
 ]
 [\c
@@ -348,6 +354,14 @@ Example (columns to the right not shown for clarity):
 5. ???
 6. AS???   rix-k2-gw.isnic.is
 7. AS1850  www.isnic.is
+.fi
+.TP
+.B \-\-ipinfo_provider4 \fIDOMAIN
+Provider for IPv4 AS lookups.  Defaults to origin.asn.cymru.com.
+.fi
+.TP
+.B \-\-ipinfo_provider6 \fIDOMAIN
+Provider for IPv6 AS lookups.  Defaults to origin6.asn.cymru.com.
 .fi
 .TP
 .B \-i \fISECONDS\fR, \fB\-\-interval \fISECONDS
