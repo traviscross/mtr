@@ -65,7 +65,7 @@ static int iihash = 0;
 static char fmtinfo[32];
 
 /* items width: ASN, Route, Country, Registry, Allocated */
-static const int iiwidth[] = { 7, 19, 4, 8, 11 };       /* item len + space */
+static const int iiwidth[] = { 12, 19, 4, 8, 11 };       /* item len + space */
 
 typedef char *items_t[ITEMSMAX + 1];
 static items_t items_a;         /* without hash: items */
@@ -230,7 +230,7 @@ static char *get_ipinfo(
     if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
         reverse_host6(addr, key, NAMELEN);
-        if (snprintf(lookup_key, NAMELEN, "%s.origin6.asn.cymru.com", key)
+        if (snprintf(lookup_key, NAMELEN, "%s.%s", key, ctl->ipinfo_provider6)
             >= NAMELEN)
             return NULL;
 #else
@@ -243,7 +243,7 @@ static char *get_ipinfo(
             (key, NAMELEN, "%d.%d.%d.%d", buff[3], buff[2], buff[1],
              buff[0]) >= NAMELEN)
             return NULL;
-        if (snprintf(lookup_key, NAMELEN, "%s.origin.asn.cymru.com", key)
+        if (snprintf(lookup_key, NAMELEN, "%s.%s", key, ctl->ipinfo_provider4)
             >= NAMELEN)
             return NULL;
     }
