@@ -144,9 +144,9 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
           out);       
     fputs(" -z, --aslookup                   display AS number\n", out);
-    fputs("     --ipinfo_provider4           providor for IPv4 AS lookups\n", out);
+    fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
 #ifdef ENABLE_IPV6
-    fputs("     --ipinfo_provider6           providor for IPv6 AS lookups\n", out);
+    fputs("     --ipinfo_provider6           provider for IPv6 AS lookups\n", out);
 #endif
 #endif       
     fputs(" -h, --help                       display this help and exit\n", out);
