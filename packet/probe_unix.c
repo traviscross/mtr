@@ -543,6 +543,8 @@ void report_packet_error(
         printf("%d address-in-use\n", command_token);
     } else if (errno == EADDRNOTAVAIL) {
         printf("%d address-not-available\n", command_token);
+    } else if (errno == ETIMEDOUT) {
+        printf("%d wait-tcp-respone-timeout\n", command_token);
     } else {
         printf("%d unexpected-error errno %d\n", command_token, errno);
     }
