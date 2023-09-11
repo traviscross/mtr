@@ -54,8 +54,11 @@ struct net_state_platform_t {
     /* true if ipv6 socket is raw socket */
     bool ip6_socket_raw;
 
-    /*  Socket used to send raw IPv4 packets  */
-    int ip4_send_socket;
+    /*  Send socket for ICMPv6 packets  */
+    int icmp4_send_socket;
+
+    /*  Send socket for UDPv6 packets  */
+    int udp4_send_socket;
 
     /*  Socket used to receive IPv4 ICMP replies  */
     int ip4_recv_socket;
