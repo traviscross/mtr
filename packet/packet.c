@@ -33,24 +33,41 @@
 #include <sys/capability.h>
 #endif
 
-#include "wait.h"
+#include "utils.h"
 
-#define N_ENTRIES(array) \
-    (sizeof((array)) / sizeof(*(array)))
+#include "wait.h"
 
 #ifdef HAVE_LIBCAP
 static
 void drop_excess_capabilities() {
-    cap_value_t cap_permitted[] = {
-#ifdef SO_MARK
+
     /*
       By default, the root user has all capabilities, which poses a security risk.
-      Since the socket has already been opened, we only need CAP_NET_ADMIN to set
-      the fwmark. This capability must remain in the permitted set so that it can
-      be added to the effective set when needed.
+
+      Some capabilities must be retained in the permitted set so that it can be added
+      to the effective set when needed.
     */
-        CAP_NET_ADMIN
+    cap_value_t cap_permitted[] = {
+#ifdef SO_MARK
+        /*
+          CAP_NET_ADMIN is needed to set the routing mark (SO_MARK) on a socket
+        */
+        CAP_NET_ADMIN,
 #endif /* ifdef SOMARK */
+
+#ifdef SO_BINDTODEVICE
+        /*
+          The CAP_NET_RAW capability is necessary for binding to a network device using
+          the SO_BINDTODEVICE socket option. Although this capability is not needed for
+          the initial bind operation, it is required when calling setsockopt after data has
+          been sent.
+
+          Given the current architecture, the socket is re-bound to the device every time
+          a probe is sent. Therefore, CAP_NET_RAW is required when specifying an interface
+          using the -I or --interface options.
+        */
+        CAP_NET_RAW,
+#endif /* ifdef SO_BINDTODEVICE */
     };
 
     cap_t current_cap = cap_get_proc();

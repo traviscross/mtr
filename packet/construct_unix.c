@@ -18,6 +18,8 @@
 
 #include "construct_unix.h"
 
+#include "utils.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -282,25 +284,47 @@ int construct_udp6_packet(
     return 0;
 }
 
-#define SET_MARK_N_ADDED_CAPS 1
+/*
+    This defines a common interface which elevates privileges on
+    platforms with LIBCAP and acts as a NOOP on platforms without
+    it.
+*/
+#ifdef HAVE_LIBCAP
 
-/* Set the socket mark */
-static int set_socket_mark(int socket, unsigned int mark) {
+typedef cap_value_t mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW CAP_NET_RAW
+#define MAYADD_CAP_NET_ADMIN CAP_NET_ADMIN
+#define MAYADD_UNUSED
+
+#else /* ifdef HAVE_LIBCAP */
+
+typedef int mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW ((mayadd_cap_value_t) 0)
+#define MAYADD_CAP_NET_ADMIN ((mayadd_cap_value_t) 0)
+#define MAYADD_UNUSED UNUSED
+
+#endif /* ifdef HAVE_LIBCAP */
+
+static
+int set_privileged_socket_opt(int socket, int option_name,
+    void const * option_value, socklen_t option_len,
+    MAYADD_UNUSED mayadd_cap_value_t required_cap) {
+
     int result = -1;
 
     // Add CAP_NET_ADMIN to the effective set if libcap is present
 #ifdef HAVE_LIBCAP
-    cap_t cap = NULL;
-    static cap_value_t cap_add[SET_MARK_N_ADDED_CAPS] = { CAP_NET_ADMIN };
+    static cap_value_t cap_add[1];
+    cap_add[0] = required_cap;
 
     // Get the capabilities of the current process
-    cap = cap_get_proc();
+    cap_t cap = cap_get_proc();
     if (cap == NULL) {
         goto cleanup_and_exit;
     }
 
     // Set the required capability flag
-    if (cap_set_flag(cap, CAP_EFFECTIVE, SET_MARK_N_ADDED_CAPS, cap_add,
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
         CAP_SET)) {
         goto cleanup_and_exit;
     }
@@ -312,7 +336,7 @@ static int set_socket_mark(int socket, unsigned int mark) {
 #endif /* ifdef HAVE_LIBPCAP */
 
     // Set the socket mark
-    if (setsockopt(socket, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) {
+    if (setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len)) {
         goto cleanup_and_exit;
     }
 
@@ -320,7 +344,7 @@ static int set_socket_mark(int socket, unsigned int mark) {
 #ifdef HAVE_LIBCAP
 
     // Clear the CAP_NET_ADMIN capability flag
-    if (cap_set_flag(cap, CAP_EFFECTIVE, SET_MARK_N_ADDED_CAPS, cap_add,
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
         CAP_CLEAR)) {
         goto cleanup_and_exit;
     }
@@ -342,6 +366,22 @@ cleanup_and_exit:
     return result;
 }
 
+/* Set the socket mark */
+#ifdef SO_MARK
+static
+int set_socket_mark(int socket, unsigned int mark) {
+    return set_privileged_socket_opt(socket, SO_MARK, &mark, sizeof(mark),
+        MAYADD_CAP_NET_ADMIN);
+}
+#endif /* ifdef SO_MARK */
+
+#ifdef SO_BINDTODEVICE
+static
+int set_bind_to_device(int socket, char const * device) {
+    return set_privileged_socket_opt(socket, SO_BINDTODEVICE, device,
+            strlen(device), MAYADD_CAP_NET_RAW);
+}
+#endif /* ifdef SO_BINDTODEVICE */
 
 /*
     Set the socket options for an outgoing stream protocol socket based on
@@ -414,8 +454,7 @@ int set_stream_socket_options(
 
 #ifdef SO_BINDTODEVICE
     if (param->local_device) {
-        if (setsockopt(stream_socket, SOL_SOCKET,
-                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+        if (set_bind_to_device(stream_socket, param->local_device)) {
             return -1;
         }
     }
@@ -650,8 +689,7 @@ int construct_ip4_packet(
 
 #ifdef SO_BINDTODEVICE
     if (param->local_device) {
-        if (setsockopt(send_socket, SOL_SOCKET,
-                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+        if(set_bind_to_device(send_socket, param->local_device)) {
             return -1;
         }
     }
