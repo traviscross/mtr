@@ -35,15 +35,75 @@
 
 #include "wait.h"
 
+#define N_ENTRIES(array) \
+    (sizeof((array)) / sizeof(*(array)))
+
+#ifdef HAVE_LIBCAP
+static
+void drop_excess_capabilities() {
+    cap_value_t cap_permitted[] = {
+#ifdef SO_MARK
+    /*
+      By default, the root user has all capabilities, which poses a security risk.
+      Since the socket has already been opened, we only need CAP_NET_ADMIN to set
+      the fwmark. This capability must remain in the permitted set so that it can
+      be added to the effective set when needed.
+    */
+        CAP_NET_ADMIN
+#endif /* ifdef SOMARK */
+    };
+
+    cap_t current_cap = cap_get_proc();
+    cap_t wanted_cap = cap_get_proc();
+
+    if(!current_cap || !wanted_cap) {
+        goto pcap_error;
+    }
+
+    // Clear all capabilities from the 'wanted_cap' set
+    if(cap_clear(wanted_cap)) {
+        goto pcap_error;
+    }
+
+    // Retain only the necessary capabilities defined in 'cap_permitted' in the permitted set.
+    // This approach ensures the principle of least privilege.
+    // If the user has dropped capabilities, the code assumes those features will not be needed.
+    for(unsigned i = 0; i < N_ENTRIES(cap_permitted); i++) {
+        cap_flag_value_t is_set;
+
+        if(cap_get_flag(current_cap, cap_permitted[i], CAP_PERMITTED, &is_set)) {
+            goto pcap_error;
+        }
+
+        if(cap_set_flag(wanted_cap, CAP_PERMITTED, 1, &cap_permitted[i], is_set)) {
+            goto pcap_error;
+        }
+    }
+
+    // Update the process's capabilities to match 'wanted_cap'
+    if(cap_set_proc(wanted_cap)) {
+        goto pcap_error;
+    }
+
+    if(cap_free(current_cap) || cap_free(wanted_cap)) {
+        goto pcap_error;
+    }
+
+    return;
+
+pcap_error:
+
+    cap_free(current_cap);
+    cap_free(wanted_cap);
+    error(EXIT_FAILURE, errno, "Failed to drop capabilities");
+}
+#endif /* ifdef HAVE_LIBCAP */
+
 /*  Drop SUID privileges.  To be used after acquiring raw sockets.  */
 static
 int drop_elevated_permissions(
     void)
 {
-#ifdef HAVE_LIBCAP
-    cap_t cap;
-#endif
-
     /*  Drop any suid permissions granted  */
     if (setgid(getgid()) || setuid(getuid())) {
         return -1;
@@ -55,19 +115,9 @@ int drop_elevated_permissions(
 
     /*
        Drop all process capabilities.
-       This will revoke anything granted by a commandline 'setcap'
      */
 #ifdef HAVE_LIBCAP
-    cap = cap_get_proc();
-    if (cap == NULL) {
-        return -1;
-    }
-    if (cap_clear(cap)) {
-        return -1;
-    }
-    if (cap_set_proc(cap)) {
-        return -1;
-    }
+    drop_excess_capabilities();
 #endif
 
     return 0;

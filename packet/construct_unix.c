@@ -32,6 +32,10 @@
 #define SOL_IP IPPROTO_IP
 #endif
 
+#ifdef HAVE_LIBCAP
+#include <sys/capability.h>
+#endif
+
 /*  A source of data for computing a checksum  */
 struct checksum_source_t {
     const void *data;
@@ -278,6 +282,67 @@ int construct_udp6_packet(
     return 0;
 }
 
+#define SET_MARK_N_ADDED_CAPS 1
+
+/* Set the socket mark */
+static int set_socket_mark(int socket, unsigned int mark) {
+    int result = -1;
+
+    // Add CAP_NET_ADMIN to the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+    cap_t cap = NULL;
+    static cap_value_t cap_add[SET_MARK_N_ADDED_CAPS] = { CAP_NET_ADMIN };
+
+    // Get the capabilities of the current process
+    cap = cap_get_proc();
+    if (cap == NULL) {
+        goto cleanup_and_exit;
+    }
+
+    // Set the required capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, SET_MARK_N_ADDED_CAPS, cap_add,
+        CAP_SET)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBPCAP */
+
+    // Set the socket mark
+    if (setsockopt(socket, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) {
+        goto cleanup_and_exit;
+    }
+
+    // Drop CAP_NET_ADMIN from the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+
+    // Clear the CAP_NET_ADMIN capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, SET_MARK_N_ADDED_CAPS, cap_add,
+        CAP_CLEAR)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBPCAP */
+
+    result = 0; // Success
+
+cleanup_and_exit:
+
+#ifdef HAVE_LIBCAP
+    cap_free(cap);
+#endif /* ifdef HAVE_LIBPCAP */
+
+    return result;
+}
+
+
 /*
     Set the socket options for an outgoing stream protocol socket based on
     the packet parameters.
@@ -341,8 +406,7 @@ int set_stream_socket_options(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(stream_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(stream_socket, param->routing_mark)) {
             return -1;
         }
     }
@@ -359,6 +423,7 @@ int set_stream_socket_options(
 
     return 0;
 }
+
 
 /*
     Open a TCP or SCTP socket, respecting the probe paramters as much as
@@ -577,8 +642,7 @@ int construct_ip4_packet(
      */
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(send_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
             return -1;
         }
     }
@@ -750,9 +814,7 @@ int construct_ip6_packet(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(send_socket,
-                       SOL_SOCKET, SO_MARK, &param->routing_mark,
-                       sizeof(int))) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
             return -1;
         }
     }
