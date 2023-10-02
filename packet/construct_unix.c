@@ -294,21 +294,19 @@ int construct_udp6_packet(
 typedef cap_value_t mayadd_cap_value_t;
 #define MAYADD_CAP_NET_RAW CAP_NET_RAW
 #define MAYADD_CAP_NET_ADMIN CAP_NET_ADMIN
-#define MAYADD_UNUSED
 
 #else /* ifdef HAVE_LIBCAP */
 
 typedef int mayadd_cap_value_t;
 #define MAYADD_CAP_NET_RAW ((mayadd_cap_value_t) 0)
 #define MAYADD_CAP_NET_ADMIN ((mayadd_cap_value_t) 0)
-#define MAYADD_UNUSED UNUSED
 
 #endif /* ifdef HAVE_LIBCAP */
 
-static
+UNUSED static
 int set_privileged_socket_opt(int socket, int option_name,
     void const * option_value, socklen_t option_len,
-    MAYADD_UNUSED mayadd_cap_value_t required_cap) {
+    UNUSED mayadd_cap_value_t required_cap) {
 
     int result = -1;
 
