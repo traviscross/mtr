@@ -18,6 +18,8 @@
 
 #include "construct_unix.h"
 
+#include "utils.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +32,10 @@
 /* For Mac OS X and FreeBSD */
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
+#endif
+
+#ifdef HAVE_LIBCAP
+#include <sys/capability.h>
 #endif
 
 /*  A source of data for computing a checksum  */
@@ -279,6 +285,102 @@ int construct_udp6_packet(
 }
 
 /*
+    This defines a common interface which elevates privileges on
+    platforms with LIBCAP and acts as a NOOP on platforms without
+    it.
+*/
+#ifdef HAVE_LIBCAP
+
+typedef cap_value_t mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW CAP_NET_RAW
+#define MAYADD_CAP_NET_ADMIN CAP_NET_ADMIN
+
+#else /* ifdef HAVE_LIBCAP */
+
+typedef int mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW ((mayadd_cap_value_t) 0)
+#define MAYADD_CAP_NET_ADMIN ((mayadd_cap_value_t) 0)
+
+#endif /* ifdef HAVE_LIBCAP */
+
+UNUSED static
+int set_privileged_socket_opt(int socket, int option_name,
+    void const * option_value, socklen_t option_len,
+    UNUSED mayadd_cap_value_t required_cap) {
+
+    int result = -1;
+
+    // Add CAP_NET_ADMIN to the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+    static cap_value_t cap_add[1];
+    cap_add[0] = required_cap;
+
+    // Get the capabilities of the current process
+    cap_t cap = cap_get_proc();
+    if (cap == NULL) {
+        goto cleanup_and_exit;
+    }
+
+    // Set the required capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
+        CAP_SET)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBCAP */
+
+    // Set the socket mark
+    int set_sock_err = setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len);
+
+    // Drop CAP_NET_ADMIN from the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+
+    // Clear the CAP_NET_ADMIN capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
+        CAP_CLEAR)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBCAP */
+
+    if(!set_sock_err) {
+        result = 0; // Success
+    }
+
+#ifdef HAVE_LIBCAP
+cleanup_and_exit:
+    cap_free(cap);
+#endif /* ifdef HAVE_LIBCAP */
+
+    return result;
+}
+
+/* Set the socket mark */
+#ifdef SO_MARK
+static
+int set_socket_mark(int socket, unsigned int mark) {
+    return set_privileged_socket_opt(socket, SO_MARK, &mark, sizeof(mark),
+        MAYADD_CAP_NET_ADMIN);
+}
+#endif /* ifdef SO_MARK */
+
+#ifdef SO_BINDTODEVICE
+static
+int set_bind_to_device(int socket, char const * device) {
+    return set_privileged_socket_opt(socket, SO_BINDTODEVICE, device,
+            strlen(device), MAYADD_CAP_NET_RAW);
+}
+#endif /* ifdef SO_BINDTODEVICE */
+
+/*
     Set the socket options for an outgoing stream protocol socket based on
     the packet parameters.
 */
@@ -341,8 +443,7 @@ int set_stream_socket_options(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(stream_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(stream_socket, param->routing_mark)) {
             return -1;
         }
     }
@@ -350,8 +451,7 @@ int set_stream_socket_options(
 
 #ifdef SO_BINDTODEVICE
     if (param->local_device) {
-        if (setsockopt(stream_socket, SOL_SOCKET,
-                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+        if (set_bind_to_device(stream_socket, param->local_device)) {
             return -1;
         }
     }
@@ -359,6 +459,7 @@ int set_stream_socket_options(
 
     return 0;
 }
+
 
 /*
     Open a TCP or SCTP socket, respecting the probe paramters as much as
@@ -577,8 +678,7 @@ int construct_ip4_packet(
      */
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(send_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
             return -1;
         }
     }
@@ -586,8 +686,7 @@ int construct_ip4_packet(
 
 #ifdef SO_BINDTODEVICE
     if (param->local_device) {
-        if (setsockopt(send_socket, SOL_SOCKET,
-                       SO_BINDTODEVICE, param->local_device, strlen(param->local_device))) {
+        if(set_bind_to_device(send_socket, param->local_device)) {
             return -1;
         }
     }
@@ -750,9 +849,7 @@ int construct_ip6_packet(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(send_socket,
-                       SOL_SOCKET, SO_MARK, &param->routing_mark,
-                       sizeof(int))) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
             return -1;
         }
     }
