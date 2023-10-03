@@ -244,13 +244,11 @@ int construct_udp4_packet(
 /*  Construct a header for UDPv6 probes  */
 static
 int construct_udp6_packet(
-    const struct net_state_t *net_state,
     struct probe_t *probe,
     char *packet_buffer,
     int packet_size,
     const struct probe_param_t *param)
 {
-    int udp_socket = net_state->platform.udp6_send_socket;
     struct UDPHeader *udp;
     int udp_size;
 
@@ -782,7 +780,7 @@ int construct_ip6_packet(
         }
 
         if (construct_udp6_packet
-            (net_state, probe, packet_buffer, packet_size, param)) {
+            (probe, packet_buffer, packet_size, param)) {
             return -1;
         }
     } else {
