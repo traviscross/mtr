@@ -331,12 +331,10 @@ int set_privileged_socket_opt(int socket, int option_name,
     if (cap_set_proc(cap)) {
         goto cleanup_and_exit;
     }
-#endif /* ifdef HAVE_LIBPCAP */
+#endif /* ifdef HAVE_LIBCAP */
 
     // Set the socket mark
-    if (setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len)) {
-        goto cleanup_and_exit;
-    }
+    int set_sock_err = setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len);
 
     // Drop CAP_NET_ADMIN from the effective set if libcap is present
 #ifdef HAVE_LIBCAP
@@ -351,15 +349,16 @@ int set_privileged_socket_opt(int socket, int option_name,
     if (cap_set_proc(cap)) {
         goto cleanup_and_exit;
     }
-#endif /* ifdef HAVE_LIBPCAP */
+#endif /* ifdef HAVE_LIBCAP */
 
-    result = 0; // Success
-
-cleanup_and_exit:
+    if(!set_sock_err) {
+        result = 0; // Success
+    }
 
 #ifdef HAVE_LIBCAP
+cleanup_and_exit:
     cap_free(cap);
-#endif /* ifdef HAVE_LIBPCAP */
+#endif /* ifdef HAVE_LIBCAP */
 
     return result;
 }
