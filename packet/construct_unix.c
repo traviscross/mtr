@@ -175,7 +175,7 @@ void set_udp_ports(
 
 /* Prepend pseudoheader to the udp datagram and calculate checksum */
 static
-int udp4_checksum(void *pheader, void *udata, int psize, int dsize,
+int udp_checksum(void *pheader, void *udata, int psize, int dsize,
                   int alt_checksum)
 {
     unsigned int totalsize = psize + dsize;
@@ -234,7 +234,7 @@ int construct_udp4_packet(
                                                   udp_size +
                                                   sizeof(struct UDPHeader)];
     }
-    *checksum_off = htons(udp4_checksum(&udph, udp,
+    *checksum_off = htons(udp_checksum(&udph, udp,
                                         sizeof(struct UDPPseudoHeader),
                                         udp_size, udp->checksum != 0));
 
@@ -276,7 +276,7 @@ int construct_udp6_packet(
          checksum_off is udp payload */
         checksum_off = (uint16_t *)&packet_buffer[sizeof(struct UDPHeader)];
     }
-    *checksum_off = htons(udp4_checksum(&udph, udp,
+    *checksum_off = htons(udp_checksum(&udph, udp,
                                         sizeof(struct IP6PseudoHeader),
                                         udp_size, udp->checksum != 0));
     return 0;
