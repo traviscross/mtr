@@ -280,7 +280,7 @@ class Host(NetworkObject):
                 **kwargs
             ))
         else:
-            assert len(kwargs) == 0 # noqa: B101
+            assert len(kwargs) == 0 # noqa: S101
             self._routes.append(prefix_or_route)
 
     @config_method
@@ -353,7 +353,7 @@ class Network():
         '''
 
         assert self._phase == Lifecycle.CONFIG, \
-                "Repeated calls to create() on a single network object" # noqa: B101
+                "Repeated calls to create() on a single network object" # noqa: S101
 
 
         for name, host in self._hosts.items():
@@ -376,7 +376,7 @@ class Network():
         associated resources
         '''
         assert self._phase == Lifecycle.RUNTIME, \
-            "Network not setup" # noqa: B101
+            "Network not setup" # noqa: S101
 
 
         destroy_network(self)
