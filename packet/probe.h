@@ -69,7 +69,7 @@ struct probe_param_t {
     int type_of_service;
 
     /*  The packet "mark" used for mark-based routing on Linux  */
-    int routing_mark;
+    uint32_t routing_mark;
 
     /*  Time to live for the transmitted probe  */
     int ttl;
