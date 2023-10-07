@@ -70,10 +70,10 @@ to the "trusted" directory.)
 
 Building on MacOS should not require any special steps.
 
-BUILDING FOR WINDOWS
+USING MTR ON WINDOWS
 ===
 
-Building for Windows requires Windows Subsystem for Linux (WSL).  
+Using mtr on Windows requires Windows Subsystem for Linux (WSL).  
 To install WSL with Ubuntu distribution (Default), see
 [How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 
@@ -83,7 +83,9 @@ simple as:
 	sudo apt-get -y install mtr
 
 
-This method will be simpler and easier than tranditional method using cygwin.
+
+BUILDING FOR WINDOWS (TRADITIONAL METHOD)
+===
 
 If you prefer traditional method.
 Obtain Cygwin, see
