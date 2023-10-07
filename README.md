@@ -73,9 +73,24 @@ Building on MacOS should not require any special steps.
 BUILDING FOR WINDOWS
 ===
 
-Building for Windows requires Cygwin.  To obtain Cygwin, see
+Building for Windows requires Windows Subsystem for Linux (WSL).  
+To install WSL, see
+[How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
+
+After complete initial process,
+simple as:
+
+	sudo apt-get -y install mtr
+
+
+This method will be simpler and easier than tranditional method using cygwin.
+
+If you prefer traditional method.
+Obtain Cygwin, see
 https://cygwin.com/install.html.
+
 Next, re-run cygwin's `setup-x86.exe` (or `setup-x86_64.exe` if you're using 64bit cygwin) with the following arguments,
+
 which will install the packages required for building:
 
         setup-x86.exe --package-manager --wait --packages automake,pkg-config,make,gcc-core,libncurses-devel,libjansson-devel
@@ -87,6 +102,8 @@ Build as under Unix:
 Finally, install the built binaries:
 
         make install
+
+
 
 
 WHERE CAN I GET THE LATEST VERSION OR MORE INFORMATION?
