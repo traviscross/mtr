@@ -136,8 +136,14 @@ void init_net_state(
     net_state->platform.thread_out_pipe_read = out_pipe[0];
     net_state->platform.thread_out_pipe_write = out_pipe[1];
 
-    net_state->platform.thread_in_pipe_read_handle =
-        (HANDLE)get_osfhandle(in_pipe[0]);
+    InitializeCriticalSection(&net_state->platform.pending_request_cs);
+    net_state->platform.pending_request_count = 0;
+    net_state->platform.pending_request_event =
+        CreateEvent(NULL, TRUE, FALSE, NULL);
+
+    if (net_state->platform.pending_request_event == NULL) {
+        error(EXIT_FAILURE, errno, "Failure creating request event");
+    }
 
     /*
         The read on the out pipe needs to be nonblocking because
@@ -281,7 +287,7 @@ void WINAPI on_icmp_reply(
             remote_addr6->sin6_family = AF_INET6;
             remote_addr6->sin6_port = 0;
             remote_addr6->sin6_flowinfo = 0;
-            memcpy(&remote_addr6->sin6_addr, reply6->AddressBits,
+            memcpy(&remote_addr6->sin6_addr, reply6->Address.sin6_addr,
                    sizeof(struct in6_addr));
             remote_addr6->sin6_scope_id = 0;
         }
@@ -468,6 +474,86 @@ void icmp_handle_probe_request(struct icmp_thread_request_t *request)
 }
 
 /*
+    Write the next thread request to the request pipe.
+    Update the count of pending requests and set the event
+    indicating that requests are present.
+*/
+static
+void send_thread_request(
+    struct net_state_t *net_state,
+    struct icmp_thread_request_t *request)
+{
+    int byte_count;
+    byte_count = write(
+        net_state->platform.thread_in_pipe_write,
+        &request,
+        sizeof(struct icmp_thread_request_t *));
+
+    if (byte_count == -1) {
+        error(
+            EXIT_FAILURE, errno,
+            "failure writing to probe request queue");
+    }
+
+    EnterCriticalSection(&net_state->platform.pending_request_cs);
+    {
+        net_state->platform.pending_request_count++;
+        SetEvent(net_state->platform.pending_request_event);
+    }
+    LeaveCriticalSection(&net_state->platform.pending_request_cs);
+}
+
+/*
+    Read the next thread request from the pipe, if any are pending.
+    If it is the last request in the queue, reset the pending
+    request event.
+
+    If no requests are pending, return NULL.
+*/
+static
+struct icmp_thread_request_t *receive_thread_request(
+    struct net_state_t *net_state)
+{
+    struct icmp_thread_request_t *request;
+    int byte_count;
+    bool pending_request;
+
+    EnterCriticalSection(&net_state->platform.pending_request_cs);
+    {
+        if (net_state->platform.pending_request_count > 0) {
+            pending_request = true;
+            net_state->platform.pending_request_count--;
+            if (net_state->platform.pending_request_count == 0) {
+                ResetEvent(net_state->platform.pending_request_event);
+            }
+        } else {
+            pending_request = false;
+        }
+    }
+    LeaveCriticalSection(&net_state->platform.pending_request_cs);
+
+    if (!pending_request) {
+        return NULL;
+    }
+
+    byte_count = read(
+        net_state->platform.thread_in_pipe_read,
+        &request,
+        sizeof(struct icmp_thread_request_t *));
+
+    if (byte_count == -1) {
+        error(
+            EXIT_FAILURE,
+            errno,
+            "failure reading probe request queue");
+    }
+
+    assert(byte_count == sizeof(struct icmp_thread_request_t *));
+
+    return request;
+}
+
+/*
     The main loop of the ICMP service thread.  The loop starts
     an overlapped read on the incoming request pipe, then waits
     in an alertable wait for that read to complete.  Because
@@ -478,99 +564,26 @@ static
 DWORD WINAPI icmp_service_thread(LPVOID param) {
     struct net_state_t *net_state;
     struct icmp_thread_request_t *request;
-    DWORD wait_status;
-    OVERLAPPED overlapped;
-    HANDLE event;
-    BOOL success;
-    bool read_pending;
-    DWORD read_count;
-    int err;
-
-    /*
-        We need an event to signal completion of reads from the request
-        pipe.
-    */
-    event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (event == NULL) {
-        error_win(
-            EXIT_FAILURE, GetLastError(),
-            "failure creating ICMP thread event");
-    }
 
     net_state = (struct net_state_t *)param;
-    read_pending = false;
     while (true) {
-        /*
-            Start a new read on the request pipe if none is
-            currently pending.
-        */
-        if (!read_pending) {
-            request = NULL;
-
-            ResetEvent(event);
-
-            memset(&overlapped, 0, sizeof(OVERLAPPED));
-            overlapped.hEvent = event;
-
-            success = ReadFile(
-                net_state->platform.thread_in_pipe_read_handle,
-                &request,
-                sizeof(struct icmp_thread_request_t *),
-                NULL,
-                &overlapped);
-
-            if (!success) {
-                err = GetLastError();
-
-                if (err != ERROR_IO_PENDING) {
-                    error_win(
-                        EXIT_FAILURE, err,
-                        "failure starting overlapped thread pipe read");
-                }
-            }
-
-            read_pending = true;
-        }
-
-        /*
-            Wait for either the request read to complete, or
-            an APC which completes an ICMP probe.
-        */
-        wait_status = WaitForSingleObjectEx(
-            event,
-            INFINITE,
-            TRUE);
-
-        /*
-            If the event we waited on has been signalled, read
-            the request from the pipe.
-        */
-        if (wait_status == WAIT_OBJECT_0) {
-            read_pending = false;
-
-            success = GetOverlappedResult(
-                net_state->platform.thread_in_pipe_read_handle,
-                &overlapped,
-                &read_count,
-                FALSE);
-
-            if (!success) {
-                error_win(
-                    EXIT_FAILURE, GetLastError(),
-                    "failure completing overlapped thread pipe read");
-            }
-
-            if (read_count == 0) {
-                continue;
-            }
-
-            assert(
-                read_count == sizeof(struct icmp_thread_request_t *));
-
+        request = receive_thread_request(net_state);
+        if (request != NULL) {
             /*  Start the new probe from the request  */
             icmp_handle_probe_request(request);
+        } else {
+            /*
+                Wait for either a request to be queued or for
+                an APC which completes an ICMP probe.
+            */
+            WaitForSingleObjectEx(
+                net_state->platform.pending_request_event,
+                INFINITE,
+                TRUE);
         }
     }
+
+    return 0;
 }
 
 /*
@@ -587,7 +600,6 @@ void queue_thread_request(
     struct sockaddr_storage *src_sockaddr)
 {
     struct icmp_thread_request_t *request;
-    int byte_count;
 
     request = malloc(sizeof(struct icmp_thread_request_t));
     if (request == NULL) {
@@ -610,16 +622,7 @@ void queue_thread_request(
         The ownership of the request is passed to the ICMP thread
         through the pipe.
     */
-    byte_count = write(
-        net_state->platform.thread_in_pipe_write,
-        &request,
-        sizeof(struct icmp_thread_request_t *));
-
-    if (byte_count == -1) {
-        error(
-            EXIT_FAILURE, errno,
-            "failure writing to probe request queue");
-    }
+    send_thread_request(net_state, request);
 }
 
 /*  Decode the probe parameters and send a probe  */

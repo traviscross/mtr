@@ -19,31 +19,13 @@
 #ifndef PROBE_CYGWIN_H
 #define PROBE_CYGWIN_H
 
+#include <cygwin/in6.h>
+typedef struct in6_addr IN6_ADDR, *PIN6_ADDR, *LPIN6_ADDR;
+
 #include <arpa/inet.h>
 #include <windows.h>
 #include <iphlpapi.h>
 #include <icmpapi.h>
-
-/*
-    This should be in the Windows headers, but is missing from
-    Cygwin's Windows headers.
-*/
-typedef struct icmpv6_echo_reply_lh {
-    /*
-       Although Windows uses an IPV6_ADDRESS_EX here, we are using uint8_t
-       fields to avoid structure padding differences between gcc and
-       Visual C++.  (gcc wants to align the flow info to a 4 byte boundary,
-       and Windows uses it unaligned.)
-     */
-    uint8_t PortBits[2];
-    uint8_t FlowInfoBits[4];
-    uint8_t AddressBits[16];
-    uint8_t ScopeIdBits[4];
-
-    ULONG Status;
-    unsigned int RoundTripTime;
-} ICMPV6_ECHO_REPLY,
-*PICMPV6_ECHO_REPLY;
 
 /*
 	Windows requires an echo reply structure for each in-flight
@@ -67,9 +49,16 @@ struct net_state_platform_t {
     bool ip4_socket_raw;
     bool ip6_socket_raw;
 
-    HANDLE thread_in_pipe_read_handle;
     int thread_in_pipe_read, thread_in_pipe_write;
     int thread_out_pipe_read, thread_out_pipe_write;
+
+    CRITICAL_SECTION pending_request_cs;
+
+    /*  Guarded by the critical section.  */
+    unsigned int pending_request_count;
+
+    /*  Set when any requests are pending.  */
+    HANDLE pending_request_event;
 };
 
 /*
