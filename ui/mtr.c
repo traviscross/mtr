@@ -108,7 +108,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -m, --max-ttl NUMBER             maximum number of hops\n", out);
     fputs(" -U, --max-unknown NUMBER         maximum unknown host\n", out);
     fputs(" -E, --max-display-path NUMBER    maximum number of ECMP paths to display\n", out);
-    fputs(" -P, --port PORT                  arget port number for TCP, SCTP, or UDP\n", out);  
+    fputs(" -P, --port PORT                  target port number for TCP, SCTP, or UDP\n", out);  
     fputs(" -L, --localport LOCALPORT        source port number for UDP\n", out);
     fputs(" -s, --psize PACKETSIZE           set the packet size used for probing\n", out);       
     fputs(" -B, --bitpattern NUMBER          set bit pattern to use in payload\n", out);       
