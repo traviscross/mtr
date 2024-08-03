@@ -140,7 +140,7 @@ void report_close(
             continue;
 
         snprintf(fmt, sizeof(fmt), "%%%ds", data_fields[j].length);
-        snprintf(buf + len, sizeof(buf), fmt, data_fields[j].title);
+        snprintf(buf + len, sizeof(buf) - len, fmt, data_fields[j].title);
         len += data_fields[j].length;
     }
     printf("%s\n", buf);
@@ -172,10 +172,10 @@ void report_close(
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
-                snprintf(buf + len, sizeof(buf), data_fields[j].format,
+                snprintf(buf + len, sizeof(buf) - len, data_fields[j].format,
                          data_fields[j].net_xxx(at) / 1000.0);
             } else {
-                snprintf(buf + len, sizeof(buf), data_fields[j].format,
+                snprintf(buf + len, sizeof(buf) - len, data_fields[j].format,
                          data_fields[j].net_xxx(at));
             }
             len += data_fields[j].length;
@@ -185,7 +185,7 @@ void report_close(
         /* This feature shows 'loadbalances' on routes */
 
         /* Print list of all hosts that have responded from ttl = at + 1 away */
-        for (z = 0; z < MAX_PATH; z++) {
+        for (z = 0; z < ctl->maxDisplayPath; z++) {
             int found = 0;
             addr2 = net_addrs(at, z);
             mplss = net_mplss(at, z);
@@ -531,7 +531,7 @@ void csv_close(
         if (ctl->reportwide == 0)
             continue;
         
-        for (z = 0; z < MAX_PATH; z++) {
+        for (z = 0; z < ctl->maxDisplayPath; z++) {
             int found = 0;
             addr2 = net_addrs(at, z);
             snprint_addr(ctl, name, sizeof(name), addr2);

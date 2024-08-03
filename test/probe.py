@@ -263,7 +263,6 @@ class TestProbeICMPv4(mtrpacket.MtrPacketTest):
         required_success = int(loop_count * 0.90)
         self.assertGreaterEqual(success_count, required_success)
 
-
 class TestProbeICMPv6(mtrpacket.MtrPacketTest):
     '''Test sending probes using IP version 6'''
 

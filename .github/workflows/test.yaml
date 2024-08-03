@@ -1,0 +1,35 @@
+name: Test compilation
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Install flake8
+        run: pip3 install flake8==3.9.2 flake8-bandit==2.1.2 bandit==1.7.2
+      - name: Run flake8
+        run: python3 -m flake8 .
+  compile-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - uses: egor-tensin/setup-gcc@v1.3
+        with:
+          version: latest
+          platform: x64
+      - name: Bootstrap
+        run: ./bootstrap.sh
+      - name: Configure
+        run: ./configure --without-gtk --without-jansson
+      - name: Make
+        run: make -j $(nproc)
+      - name: Run sample mtr against 1.1.1.1
+        run: ./mtr --report --report-cycles 1 -m 1 1.1.1.1
+      - name: Run test - cmdparse.py
+        run: python3 ./test/cmdparse.py

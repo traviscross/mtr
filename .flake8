@@ -1,0 +1,14 @@
+[flake8]
+
+select =
+    E902,
+    E999,
+    S,
+    F,
+
+ignore =
+    F821
+
+per-file-ignores =
+    test/*: S603,S404
+

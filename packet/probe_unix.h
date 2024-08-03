@@ -25,7 +25,7 @@
 #endif
 
 /*  The range of local port numbers to use for probes  */
-#define MIN_PORT 33000
+#define MIN_PORT 33434
 #define MAX_PORT 65535
 
 /*  We need to track the transmission and timeouts on Unix systems  */
@@ -54,8 +54,11 @@ struct net_state_platform_t {
     /* true if ipv6 socket is raw socket */
     bool ip6_socket_raw;
 
-    /*  Socket used to send raw IPv4 packets  */
-    int ip4_send_socket;
+    /*  Send socket for ICMPv6 packets  */
+    int icmp4_send_socket;
+
+    /*  Send socket for UDPv6 packets  */
+    int udp4_send_socket;
 
     /*  Socket used to receive IPv4 ICMP replies  */
     int ip4_recv_socket;

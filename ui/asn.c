@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #ifdef HAVE_ERROR_H
 #include <error.h>
@@ -65,7 +66,7 @@ static int iihash = 0;
 static char fmtinfo[32];
 
 /* items width: ASN, Route, Country, Registry, Allocated */
-static const int iiwidth[] = { 7, 19, 4, 8, 11 };       /* item len + space */
+static const int iiwidth[] = { 12, 19, 4, 8, 11 };       /* item len + space */
 
 typedef char *items_t[ITEMSMAX + 1];
 static items_t items_a;         /* without hash: items */
@@ -215,6 +216,13 @@ static void reverse_host6(
 }
 #endif
 
+#ifdef ENABLE_IPV6
+static bool is_well_known_nat64(struct in6_addr *addr){
+    // 64:ff9b::
+    return addr->s6_addr[0] == 0x00 &&  addr->s6_addr[1] == 0x64 && addr->s6_addr[2] == 0xff && addr->s6_addr[3] == 0x9b;
+}
+#endif
+
 static char *get_ipinfo(
     struct mtr_ctl *ctl,
     ip_t * addr)
@@ -229,10 +237,23 @@ static char *get_ipinfo(
 
     if (ctl->af == AF_INET6) {
 #ifdef ENABLE_IPV6
-        reverse_host6(addr, key, NAMELEN);
-        if (snprintf(lookup_key, NAMELEN, "%s.origin6.asn.cymru.com", key)
-            >= NAMELEN)
-            return NULL;
+        if (is_well_known_nat64(addr)) {
+            // Treats the final 4 bytes as IPv4 address
+            unsigned char buff[4];
+            memcpy(buff, addr->s6_addr + 12, 4);
+            if (snprintf
+                (key, NAMELEN, "%d.%d.%d.%d", buff[3], buff[2], buff[1],
+                 buff[0]) >= NAMELEN)
+                return NULL;
+            if (snprintf(lookup_key, NAMELEN, "%s.%s", key, ctl->ipinfo_provider4)
+                >= NAMELEN)
+                return NULL;
+        } else {
+            reverse_host6(addr, key, NAMELEN);
+            if (snprintf(lookup_key, NAMELEN, "%s.%s", key, ctl->ipinfo_provider6)
+                >= NAMELEN)
+                return NULL;
+        }
 #else
         return NULL;
 #endif
@@ -243,7 +264,7 @@ static char *get_ipinfo(
             (key, NAMELEN, "%d.%d.%d.%d", buff[3], buff[2], buff[1],
              buff[0]) >= NAMELEN)
             return NULL;
-        if (snprintf(lookup_key, NAMELEN, "%s.origin.asn.cymru.com", key)
+        if (snprintf(lookup_key, NAMELEN, "%s.%s", key, ctl->ipinfo_provider4)
             >= NAMELEN)
             return NULL;
     }

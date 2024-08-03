@@ -94,84 +94,63 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs("\nUsage:\n", out);
     fputs(" mtr [options] hostname\n", out);
     fputs("\n", out);
-    fputs(" -F, --filename FILE        read hostname(s) from a file\n",
-          out);
-    fputs(" -4                         use IPv4 only\n", out);
+    fputs(" -F, --filename FILE              read hostname(s) from a file\n",
+          out);      
+    fputs(" -4                               use IPv4 only\n", out);
+#ifdef ENABLE_IPV6      
+    fputs(" -6                               use IPv6 only\n", out);
+#endif      
+    fputs(" -u, --udp                        use UDP instead of ICMP echo\n", out);      
+    fputs(" -T, --tcp                        use TCP instead of ICMP echo\n", out);      
+    fputs(" -I, --interface NAME             use named network interface\n", out);      
+    fputs(" -a, --address ADDRESS            bind the outgoing socket to ADDRESS\n", out);  
+    fputs(" -f, --first-ttl NUMBER           set what TTL to start\n", out);
+    fputs(" -m, --max-ttl NUMBER             maximum number of hops\n", out);
+    fputs(" -U, --max-unknown NUMBER         maximum unknown host\n", out);
+    fputs(" -E, --max-display-path NUMBER    maximum number of ECMP paths to display\n", out);
+    fputs(" -P, --port PORT                  target port number for TCP, SCTP, or UDP\n", out);  
+    fputs(" -L, --localport LOCALPORT        source port number for UDP\n", out);
+    fputs(" -s, --psize PACKETSIZE           set the packet size used for probing\n", out);       
+    fputs(" -B, --bitpattern NUMBER          set bit pattern to use in payload\n", out);       
+    fputs(" -i, --interval SECONDS           ICMP echo request interval\n", out);
+    fputs(" -G, --gracetime SECONDS          number of seconds to wait for responses\n", out);       
+    fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);       
+    fputs(" -e, --mpls                       display information from ICMP extensions\n", out);       
+    fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);       
+#ifdef SO_MARK       
+    fputs(" -M, --mark MARK                  mark each sent packet\n", out);
+#endif       
+    fputs(" -r, --report                     output using report mode\n", out);
+    fputs(" -w, --report-wide                output wide report\n", out);
+    fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);       
+#ifdef HAVE_JANSSON       
+    fputs(" -j, --json                       output json\n", out);
+#endif       
+    fputs(" -x, --xml                        output xml\n", out);
+    fputs(" -C, --csv                        output comma separated values\n", out);       
+    fputs(" -l, --raw                        output raw format\n", out);
+    fputs(" -p, --split                      split output\n", out);
+#ifdef HAVE_CURSES       
+    fputs(" -t, --curses                     use curses terminal interface\n", out);       
+#endif       
+    fputs("     --displaymode MODE           select initial display mode\n", out);       
+#ifdef HAVE_GTK       
+    fputs(" -g, --gtk                        use GTK+ xwindow interface\n", out);
+#endif       
+    fputs(" -n, --no-dns                     do not resolve host names\n", out);
+    fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
+    fputs(" -o, --order FIELDS               select output fields\n", out);
+#ifdef HAVE_IPINFO       
+    fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
+          out);       
+    fputs(" -z, --aslookup                   display AS number\n", out);
+    fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
 #ifdef ENABLE_IPV6
-    fputs(" -6                         use IPv6 only\n", out);
+    fputs("     --ipinfo_provider6           provider for IPv6 AS lookups\n", out);
 #endif
-    fputs(" -u, --udp                  use UDP instead of ICMP echo\n",
-          out);
-    fputs(" -T, --tcp                  use TCP instead of ICMP echo\n",
-          out);
-    fputs(" -I, --interface NAME       use named network interface\n",
-         out);
-    fputs
-        (" -a, --address ADDRESS      bind the outgoing socket to ADDRESS\n",
-         out);
-    fputs(" -f, --first-ttl NUMBER     set what TTL to start\n", out);
-    fputs(" -m, --max-ttl NUMBER       maximum number of hops\n", out);
-    fputs(" -U, --max-unknown NUMBER   maximum unknown host\n", out);
-    fputs
-        (" -P, --port PORT            target port number for TCP, SCTP, or UDP\n",
-         out);
-    fputs(" -L, --localport LOCALPORT  source port number for UDP\n", out);
-    fputs
-        (" -s, --psize PACKETSIZE     set the packet size used for probing\n",
-         out);
-    fputs
-        (" -B, --bitpattern NUMBER    set bit pattern to use in payload\n",
-         out);
-    fputs(" -i, --interval SECONDS     ICMP echo request interval\n", out);
-    fputs
-        (" -G, --gracetime SECONDS    number of seconds to wait for responses\n",
-         out);
-    fputs
-        (" -Q, --tos NUMBER           type of service field in IP header\n",
-         out);
-    fputs
-        (" -e, --mpls                 display information from ICMP extensions\n",
-         out);
-    fputs
-        (" -Z, --timeout SECONDS      seconds to keep probe sockets open\n",
-         out);
-#ifdef SO_MARK
-    fputs(" -M, --mark MARK            mark each sent packet\n", out);
-#endif
-    fputs(" -r, --report               output using report mode\n", out);
-    fputs(" -w, --report-wide          output wide report\n", out);
-    fputs(" -c, --report-cycles COUNT  set the number of pings sent\n",
-          out);
-#ifdef HAVE_JANSSON
-    fputs(" -j, --json                 output json\n", out);
-#endif
-    fputs(" -x, --xml                  output xml\n", out);
-    fputs(" -C, --csv                  output comma separated values\n",
-          out);
-    fputs(" -l, --raw                  output raw format\n", out);
-    fputs(" -p, --split                split output\n", out);
-#ifdef HAVE_CURSES
-    fputs(" -t, --curses               use curses terminal interface\n",
-          out);
-#endif
-    fputs("     --displaymode MODE     select initial display mode\n",
-          out);
-#ifdef HAVE_GTK
-    fputs(" -g, --gtk                  use GTK+ xwindow interface\n", out);
-#endif
-    fputs(" -n, --no-dns               do not resolve host names\n", out);
-    fputs(" -b, --show-ips             show IP numbers and host names\n",
-          out);
-    fputs(" -o, --order FIELDS         select output fields\n", out);
-#ifdef HAVE_IPINFO
-    fputs(" -y, --ipinfo NUMBER        select IP information in output\n",
-          out);
-    fputs(" -z, --aslookup             display AS number\n", out);
-#endif
-    fputs(" -h, --help                 display this help and exit\n", out);
-    fputs
-        (" -v, --version              output version information and exit\n",
-         out);
+#endif       
+    fputs(" -h, --help                       display this help and exit\n", out);
+    fputs(" -v, --version                    output version information and exit\n", out);  
     fputs("\n", out);
     fputs("See the 'man 8 mtr' for details.\n", out);
     exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -319,7 +298,11 @@ static void parse_arg(
        3/ update the help message (see usage() function).
      */
     enum {
-        OPT_DISPLAYMODE = CHAR_MAX + 1
+        OPT_DISPLAYMODE = CHAR_MAX + 1,
+        OPT_IPINFO4 = CHAR_MAX + 2,
+#ifdef ENABLE_IPV6
+        OPT_IPINFO6 = CHAR_MAX + 3,
+#endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
         /* option name, has argument, NULL, short name */
@@ -356,6 +339,10 @@ static void parse_arg(
 #ifdef HAVE_IPINFO
         {"ipinfo", 1, NULL, 'y'},       /* IP info lookup */
         {"aslookup", 0, NULL, 'z'},     /* Do AS lookup (--ipinfo 0) */
+        {"ipinfo_provider4", 1, NULL, OPT_IPINFO4},
+#ifdef ENABLE_IPV6
+        {"ipinfo_provider6", 1, NULL, OPT_IPINFO6},
+#endif
 #endif
 
         {"interval", 1, NULL, 'i'},
@@ -369,6 +356,7 @@ static void parse_arg(
         {"first-ttl", 1, NULL, 'f'},    /* -f & -m are borrowed from traceroute */
         {"max-ttl", 1, NULL, 'm'},
         {"max-unknown", 1, NULL, 'U'},
+        {"max-display-path", 1, NULL, 'E'},
         {"udp", 0, NULL, 'u'},  /* UDP (default is ICMP) */
         {"tcp", 0, NULL, 'T'},  /* TCP (default is ICMP) */
 #ifdef HAS_SCTP
@@ -400,7 +388,6 @@ static void parse_arg(
         /* optional options need two ':', but ignore them now as they are not in use */
     }
 
-    opt = 0;
     while (1) {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
         if (opt == -1)
@@ -521,6 +508,12 @@ static void parse_arg(
                 ctl->maxUnknown = 1;
             }
             break;
+        case 'E':
+            ctl->maxDisplayPath = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+            if (ctl->maxDisplayPath > MAX_PATH) {
+                ctl->maxDisplayPath = MAX_PATH;
+            }
+            break;
         case 'o':
             /* Check option before passing it on to fld_active. */
             if (strlen(optarg) > MAXFLD) {
@@ -628,6 +621,14 @@ static void parse_arg(
         case 'z':
             ctl->ipinfo_no = 0;
             break;
+        case OPT_IPINFO4:
+            ctl->ipinfo_provider4 = optarg;
+            break;
+#ifdef ENABLE_IPV6
+        case OPT_IPINFO6:
+            ctl->ipinfo_provider6 = optarg;
+            break;
+#endif
 #endif
 #ifdef SO_MARK
         case 'M':
@@ -728,6 +729,7 @@ int main(
     int argc,
     char **argv)
 {
+    int exit_val = EXIT_SUCCESS;
     names_t *names_head = NULL;
     names_t *names_walk;
 
@@ -747,9 +749,17 @@ int main(
     ctl.fstTTL = 1;
     ctl.maxTTL = 30;
     ctl.maxUnknown = 12;
+    ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
     ctl.ipinfo_max = -1;
+#ifdef HAVE_IPINFO
+    ctl.ipinfo_provider4 = "origin.asn.cymru.com";
+#ifdef ENABLE_IPV6
+    ctl.ipinfo_provider6 = "origin6.asn.cymru.com";
+#endif
+#endif
+
     xstrncpy(ctl.fld_active, "LS NABWV", 2 * MAXFLD);
 
     /*
@@ -801,6 +811,7 @@ int main(
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
+                exit_val = EXIT_FAILURE;
                 names_walk = names_walk->next;
                 continue;
             }
@@ -811,6 +822,7 @@ int main(
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
+                exit_val = EXIT_FAILURE;
                 names_walk = names_walk->next;
                 continue;
             }
@@ -846,5 +858,5 @@ int main(
         item = NULL;
     }
 
-    return 0;
+    return exit_val;
 }

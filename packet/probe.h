@@ -53,6 +53,9 @@ struct probe_param_t {
     /*  The local address from which to send probes  */
     const char *local_address;
 
+    /*  The local device from which to send probes  */
+    const char *local_device;
+
     /*  Protocol for the probe, using the IPPROTO_* defines  */
     int protocol;
 
@@ -66,7 +69,7 @@ struct probe_param_t {
     int type_of_service;
 
     /*  The packet "mark" used for mark-based routing on Linux  */
-    int routing_mark;
+    uint32_t routing_mark;
 
     /*  Time to live for the transmitted probe  */
     int ttl;

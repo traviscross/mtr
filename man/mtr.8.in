@@ -56,6 +56,12 @@ mtr \- a network diagnostic tool
 .B \-\-aslookup\c
 ]
 [\c
+.BI \-\-ipinfo_provider4 \ DOMAIN\c
+]
+[\c
+.BI \-\-ipinfo_provider6 \ DOMAIN\c
+]
+[\c
 .BI \-i \ INTERVAL\c
 ]
 [\c
@@ -90,6 +96,9 @@ mtr \- a network diagnostic tool
 ]
 [\c
 .BI \-U \ MAX\-UNKNOWN\c
+]
+[\c
+.BI \-E \ MAX\-DISPLAY\-PATH\c
 ]
 [\c
 .B \-\-udp\c
@@ -347,6 +356,14 @@ Example (columns to the right not shown for clarity):
 7. AS1850  www.isnic.is
 .fi
 .TP
+.B \-\-ipinfo_provider4 \fIDOMAIN
+Provider for IPv4 AS lookups.  Defaults to origin.asn.cymru.com.
+.fi
+.TP
+.B \-\-ipinfo_provider6 \fIDOMAIN
+Provider for IPv6 AS lookups.  Defaults to origin6.asn.cymru.com.
+.fi
+.TP
 .B \-i \fISECONDS\fR, \fB\-\-interval \fISECONDS
 Use this option to specify the positive number of seconds between ICMP
 ECHO requests.  The default value for this parameter is one second.  The
@@ -406,6 +423,9 @@ probe.  Default is 30.
 .TP
 .B \-U \fINUM\fR, \fB\-\-max-unknown \fINUM
 Specifies the maximum unknown host. Default is 5.
+.TP
+.B \-E \fINUM\fR, \fB\-\-max-display-path \fINUM
+Specifies the maximum number of ECMP paths to display. Default is 8.
 .TP
 .B \-u\fR, \fB\-\-udp
 Use UDP datagrams instead of ICMP ECHO.

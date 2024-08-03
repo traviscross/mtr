@@ -80,7 +80,7 @@ int strtonum_or_err(
 
     if (str != NULL && *str != '\0') {
         errno = 0;
-        num = strtoul(str, &end, 10);
+        num = strtoul(str, &end, 0);
         if (errno == 0 && str != end && end != NULL && *end == '\0') {
             switch (type) {
             case STRTO_INT:

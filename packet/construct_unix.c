@@ -18,6 +18,8 @@
 
 #include "construct_unix.h"
 
+#include "utils.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +32,10 @@
 /* For Mac OS X and FreeBSD */
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
+#endif
+
+#ifdef HAVE_LIBCAP
+#include <sys/capability.h>
 #endif
 
 /*  A source of data for computing a checksum  */
@@ -71,19 +77,6 @@ uint16_t compute_checksum(
     return (~sum & 0xffff);
 }
 
-/*  Encode the IP header length field in the order required by the OS.  */
-static
-uint16_t length_byte_swap(
-    const struct net_state_t *net_state,
-    uint16_t length)
-{
-    if (net_state->platform.ip_length_host_order) {
-        return length;
-    } else {
-        return htons(length);
-    }
-}
-
 /*  Construct a combined sockaddr from a source address and source port  */
 static
 void construct_addr_port(
@@ -95,38 +88,9 @@ void construct_addr_port(
     *sockaddr_port_offset(addr_with_port) = htons(port);
 }
 
-/*  Construct a header for IP version 4  */
-static
-void construct_ip4_header(
-    const struct net_state_t *net_state,
-    const struct probe_t *probe,
-    char *packet_buffer,
-    int packet_size,
-    const struct probe_param_t *param)
-{
-    struct IPHeader *ip;
-
-    ip = (struct IPHeader *) &packet_buffer[0];
-
-    memset(ip, 0, sizeof(struct IPHeader));
-
-    ip->version = 0x45;
-    ip->tos = param->type_of_service;
-    ip->len = length_byte_swap(net_state, packet_size);
-    ip->ttl = param->ttl;
-    ip->protocol = param->protocol;
-//    ip->id = htons(getpid());
-    memcpy(&ip->saddr,
-           sockaddr_addr_offset(&probe->local_addr),
-           sockaddr_addr_size(&probe->local_addr));
-    memcpy(&ip->daddr,
-           sockaddr_addr_offset(&probe->remote_addr),
-           sockaddr_addr_size(&probe->remote_addr));
-}
-
 /*  Construct an ICMP header for IPv4  */
 static
-void construct_icmp4_header(
+int construct_icmp4_packet(
     const struct net_state_t *net_state,
     struct probe_t *probe,
     char *packet_buffer,
@@ -134,22 +98,17 @@ void construct_icmp4_header(
     const struct probe_param_t *param)
 {
     struct ICMPHeader *icmp;
-    int icmp_size;
 
-    if (net_state->platform.ip4_socket_raw) {
-        icmp = (struct ICMPHeader *) &packet_buffer[sizeof(struct IPHeader)];
-        icmp_size = packet_size - sizeof(struct IPHeader);
-    } else {
-        icmp = (struct ICMPHeader *) &packet_buffer[0];
-        icmp_size = packet_size;
-    }
+    icmp = (struct ICMPHeader *) packet_buffer;
 
     memset(icmp, 0, sizeof(struct ICMPHeader));
 
     icmp->type = ICMP_ECHO;
     icmp->id = htons(getpid());
     icmp->sequence = htons(probe->sequence);
-    icmp->checksum = htons(compute_checksum(icmp, icmp_size));
+    icmp->checksum = htons(compute_checksum(icmp, packet_size));
+
+    return 0;
 }
 
 /*  Construct an ICMP header for IPv6  */
@@ -238,7 +197,7 @@ int udp4_checksum(void *pheader, void *udata, int psize, int dsize,
     with the probe.
 */
 static
-void construct_udp4_header(
+int construct_udp4_packet(
     const struct net_state_t *net_state,
     struct probe_t *probe,
     char *packet_buffer,
@@ -248,13 +207,8 @@ void construct_udp4_header(
     struct UDPHeader *udp;
     int udp_size;
 
-    if (net_state->platform.ip4_socket_raw) {
-        udp = (struct UDPHeader *) &packet_buffer[sizeof(struct IPHeader)];
-        udp_size = packet_size - sizeof(struct IPHeader);
-    } else {
-        udp = (struct UDPHeader *) &packet_buffer[0];
-        udp_size = packet_size;
-    }
+    udp = (struct UDPHeader *) packet_buffer;
+    udp_size = packet_size;
 
     memset(udp, 0, sizeof(struct UDPHeader));
 
@@ -283,6 +237,8 @@ void construct_udp4_header(
     *checksum_off = htons(udp4_checksum(&udph, udp,
                                         sizeof(struct UDPPseudoHeader),
                                         udp_size, udp->checksum != 0));
+
+    return 0;
 }
 
 /*  Construct a header for UDPv6 probes  */
@@ -306,20 +262,123 @@ int construct_udp6_packet(
     set_udp_ports(udp, probe, param);
     udp->length = htons(udp_size);
 
-    if (net_state->platform.ip6_socket_raw) {
-        /*
-           Instruct the kernel to put the pseudoheader checksum into the
-           UDP header, this is only needed when using RAW socket.
-         */
-        int chksum_offset = (char *) &udp->checksum - (char *) udp;
-        if (setsockopt(udp_socket, IPPROTO_IPV6,
-                       IPV6_CHECKSUM, &chksum_offset, sizeof(int))) {
-            return -1;
-        }
-    }
+    struct IP6PseudoHeader udph = {
+        .zero = {0,0,0},
+        .protocol = 17,
+        .len = udp->length
+    };
+    memcpy(udph.saddr, sockaddr_addr_offset(&probe->local_addr), 16);
+    memcpy(udph.daddr, sockaddr_addr_offset(&probe->remote_addr), 16);
 
+    /* get position to write checksum */
+    uint16_t *checksum_off = &udp->checksum;
+
+    if (udp->checksum != 0)
+    { /* checksum is sequence number - correct the payload to match the checksum
+         checksum_off is udp payload */
+        checksum_off = (uint16_t *)&packet_buffer[sizeof(struct UDPHeader)];
+    }
+    *checksum_off = htons(udp4_checksum(&udph, udp,
+                                        sizeof(struct IP6PseudoHeader),
+                                        udp_size, udp->checksum != 0));
     return 0;
 }
+
+/*
+    This defines a common interface which elevates privileges on
+    platforms with LIBCAP and acts as a NOOP on platforms without
+    it.
+*/
+#ifdef HAVE_LIBCAP
+
+typedef cap_value_t mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW CAP_NET_RAW
+#define MAYADD_CAP_NET_ADMIN CAP_NET_ADMIN
+
+#else /* ifdef HAVE_LIBCAP */
+
+typedef int mayadd_cap_value_t;
+#define MAYADD_CAP_NET_RAW ((mayadd_cap_value_t) 0)
+#define MAYADD_CAP_NET_ADMIN ((mayadd_cap_value_t) 0)
+
+#endif /* ifdef HAVE_LIBCAP */
+
+UNUSED static
+int set_privileged_socket_opt(int socket, int option_name,
+    void const * option_value, socklen_t option_len,
+    UNUSED mayadd_cap_value_t required_cap) {
+
+    int result = -1;
+
+    // Add CAP_NET_ADMIN to the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+    static cap_value_t cap_add[1];
+    cap_add[0] = required_cap;
+
+    // Get the capabilities of the current process
+    cap_t cap = cap_get_proc();
+    if (cap == NULL) {
+        goto cleanup_and_exit;
+    }
+
+    // Set the required capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
+        CAP_SET)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBCAP */
+
+    // Set the socket mark
+    int set_sock_err = setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len);
+
+    // Drop CAP_NET_ADMIN from the effective set if libcap is present
+#ifdef HAVE_LIBCAP
+
+    // Clear the CAP_NET_ADMIN capability flag
+    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
+        CAP_CLEAR)) {
+        goto cleanup_and_exit;
+    }
+
+    // Apply the modified capabilities to the current process
+    if (cap_set_proc(cap)) {
+        goto cleanup_and_exit;
+    }
+#endif /* ifdef HAVE_LIBCAP */
+
+    if(!set_sock_err) {
+        result = 0; // Success
+    }
+
+#ifdef HAVE_LIBCAP
+cleanup_and_exit:
+    cap_free(cap);
+#endif /* ifdef HAVE_LIBCAP */
+
+    return result;
+}
+
+/* Set the socket mark */
+#ifdef SO_MARK
+static
+int set_socket_mark(int socket, unsigned int mark) {
+    return set_privileged_socket_opt(socket, SO_MARK, &mark, sizeof(mark),
+        MAYADD_CAP_NET_ADMIN);
+}
+#endif /* ifdef SO_MARK */
+
+#ifdef SO_BINDTODEVICE
+static
+int set_bind_to_device(int socket, char const * device) {
+    return set_privileged_socket_opt(socket, SO_BINDTODEVICE, device,
+            strlen(device), MAYADD_CAP_NET_RAW);
+}
+#endif /* ifdef SO_BINDTODEVICE */
 
 /*
     Set the socket options for an outgoing stream protocol socket based on
@@ -384,8 +443,15 @@ int set_stream_socket_options(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(stream_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(stream_socket, param->routing_mark)) {
+            return -1;
+        }
+    }
+#endif
+
+#ifdef SO_BINDTODEVICE
+    if (param->local_device) {
+        if (set_bind_to_device(stream_socket, param->local_device)) {
             return -1;
         }
     }
@@ -393,6 +459,7 @@ int set_stream_socket_options(
 
     return 0;
 }
+
 
 /*
     Open a TCP or SCTP socket, respecting the probe paramters as much as
@@ -545,10 +612,10 @@ int construct_ip4_packet(
     int packet_size,
     const struct probe_param_t *param)
 {
-    int send_socket = net_state->platform.ip4_send_socket;
+    int send_socket;
     bool is_stream_protocol = false;
-    int tos, ttl, socket;
-    bool bind_send_socket = false;
+    int tos, ttl;
+    bool bind_send_socket = true;
     struct sockaddr_storage current_sockaddr;
     int current_sockaddr_len;
 
@@ -558,22 +625,33 @@ int construct_ip4_packet(
     } else if (param->protocol == IPPROTO_SCTP) {
         is_stream_protocol = true;
 #endif
-    } else {
+    } else if (param->protocol == IPPROTO_ICMP) {
         if (net_state->platform.ip4_socket_raw) {
-            construct_ip4_header(net_state, probe, packet_buffer, packet_size,
-                                  param);
-        }
-        if (param->protocol == IPPROTO_ICMP) {
-            construct_icmp4_header(net_state, probe, packet_buffer,
-                                   packet_size, param);
-        } else if (param->protocol == IPPROTO_UDP) {
-            construct_udp4_header(net_state, probe, packet_buffer,
-                                  packet_size, param);
+            send_socket = net_state->platform.icmp4_send_socket;
         } else {
-            errno = EINVAL;
+            send_socket = net_state->platform.ip4_txrx_icmp_socket;
+        }
+
+        if (construct_icmp4_packet
+            (net_state, probe, packet_buffer, packet_size, param)) {
             return -1;
         }
+    } else if (param->protocol == IPPROTO_UDP) {
+        if (net_state->platform.ip4_socket_raw) {
+            send_socket = net_state->platform.udp4_send_socket;
+        } else {
+            send_socket = net_state->platform.ip4_txrx_udp_socket;
+        }
+
+        if (construct_udp4_packet
+            (net_state, probe, packet_buffer, packet_size, param)) {
+            return -1;
+        }
+    } else {
+        errno = EINVAL;
+        return -1;
     }
+
 
     if (is_stream_protocol) {
         send_socket =
@@ -600,61 +678,65 @@ int construct_ip4_packet(
      */
 #ifdef SO_MARK
     if (param->routing_mark) {
-        if (setsockopt(send_socket, SOL_SOCKET,
-                       SO_MARK, &param->routing_mark, sizeof(int))) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
+            return -1;
+        }
+    }
+#endif
+
+#ifdef SO_BINDTODEVICE
+    if (param->local_device) {
+        if(set_bind_to_device(send_socket, param->local_device)) {
             return -1;
         }
     }
 #endif
 
     /*
-       Bind src port when not using raw socket to pass in ICMP id, kernel
-       get ICMP id from src_port when using DGRAM socket.
+       Check the current socket address, and if it is the same
+       as the source address we intend, we will skip the bind.
+       This is to accommodate Solaris, which, as of Solaris 11.3,
+       will return an EINVAL error on bind if the socket is already
+       bound, even if the same address is used.
      */
-    if (!net_state->platform.ip4_socket_raw &&
-            param->protocol == IPPROTO_ICMP &&
-            !param->is_probing_byte_order) {
-        current_sockaddr_len = sizeof(struct sockaddr_in);
-        bind_send_socket = true;
-        socket = net_state->platform.ip4_txrx_icmp_socket;
-        if (getsockname(socket, (struct sockaddr *) &current_sockaddr,
-                        &current_sockaddr_len)) {
-            return -1;
-        }
-        struct sockaddr_in *sin_cur =
-            (struct sockaddr_in *) &current_sockaddr;
+    current_sockaddr_len = sizeof(struct sockaddr_in);
+    if (getsockname(send_socket, (struct sockaddr *) &current_sockaddr,
+                    &current_sockaddr_len) == 0) {
+        struct sockaddr_in *sin_cur = (struct sockaddr_in *) &current_sockaddr;
 
-        /* avoid double bind */
-        if (sin_cur->sin_port) {
-            bind_send_socket = false;
+        if (net_state->platform.ip4_socket_raw) {
+            if (memcmp(&current_sockaddr,
+                       &probe->local_addr, sizeof(struct sockaddr_in)) == 0) {
+                bind_send_socket = false;
+            }
+        } else {
+            /* avoid double bind for DGRAM socket */
+            if (sin_cur->sin_port) {
+                bind_send_socket = false;
+            }
         }
     }
 
     /*  Bind to our local address  */
-    if (bind_send_socket && bind(socket, (struct sockaddr *)&probe->local_addr,
+    if (bind_send_socket && bind(send_socket, (struct sockaddr *)&probe->local_addr,
                 sizeof(struct sockaddr_in))) {
         return -1;
     }
 
-    /* set TOS and TTL for non-raw socket */
-    if (!net_state->platform.ip4_socket_raw && !param->is_probing_byte_order) {
-        if (param->protocol == IPPROTO_ICMP) {
-            socket = net_state->platform.ip4_txrx_icmp_socket;
-        } else if (param->protocol == IPPROTO_UDP) {
-            socket = net_state->platform.ip4_txrx_udp_socket;
-        } else {
-            return 0;
-        }
-        tos = param->type_of_service;
-        if (setsockopt(socket, SOL_IP, IP_TOS, &tos, sizeof(int))) {
-            return -1;
-        }
-        ttl = param->ttl;
-        if (setsockopt(socket, SOL_IP, IP_TTL,
-                       &ttl, sizeof(int)) == -1) {
-            return -1;
-        }
+    /*  Set the type of service  */
+    tos = param->type_of_service;
+    if (setsockopt(send_socket, SOL_IP, IP_TOS, &tos, sizeof(int))) {
+        return -1;
     }
+
+    /*  Set the time-to-live  */
+    ttl = param->ttl;
+    if (setsockopt(send_socket, SOL_IP, IP_TTL,
+                   &ttl, sizeof(int)) == -1) {
+        return -1;
+    }
+
+
 
     return 0;
 }
@@ -767,9 +849,17 @@ int construct_ip6_packet(
     }
 #ifdef SO_MARK
     if (param->routing_mark) {
+        if (set_socket_mark(send_socket, param->routing_mark)) {
+            return -1;
+        }
+    }
+#endif
+
+#ifdef SO_BINDTODEVICE
+    if (param->local_device) {
         if (setsockopt(send_socket,
-                       SOL_SOCKET, SO_MARK, &param->routing_mark,
-                       sizeof(int))) {
+                       SOL_SOCKET, SO_BINDTODEVICE, param->local_device,
+                       strlen(param->local_device))) {
             return -1;
         }
     }

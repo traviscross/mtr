@@ -64,7 +64,7 @@ typedef int time_t;
 
 /* net related definitions */
 #define SAVED_PINGS 200
-#define MAX_PATH 8
+#define MAX_PATH 128
 #define MaxHost 256
 #define MinPort 1024
 #define MaxPort 65535
@@ -103,6 +103,7 @@ struct mtr_ctl {
     int fstTTL;                 /* initial hub(ttl) to ping byMin */
     int maxTTL;                 /* last hub to ping byMin */
     int maxUnknown;             /* stop ping threshold */
+    int maxDisplayPath;         /* maximum number of ECMP paths to display */
     int remoteport;             /* target port for TCP tracing */
     int localport;              /* source port for UDP tracing */
     int probe_timeout;          /* timeout for probe sockets */
@@ -117,6 +118,12 @@ struct mtr_ctl {
         use_dns:1,
         show_ips:1,
         enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5, CompactLayout:1;
+#ifdef HAVE_IPINFO
+#ifdef ENABLE_IPV6
+    char *ipinfo_provider6;
+#endif
+    char *ipinfo_provider4;
+#endif
 };
 
 /* dynamic field drawing */
