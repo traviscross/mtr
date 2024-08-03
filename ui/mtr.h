@@ -117,7 +117,7 @@ struct mtr_ctl {
      ForceMaxPing:1,
         use_dns:1,
         show_ips:1,
-        enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5;
+        enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5, CompactLayout:1;
 #ifdef HAVE_IPINFO
 #ifdef ENABLE_IPV6
     char *ipinfo_provider6;

@@ -20,7 +20,7 @@
 
 /* Don't put a trailing comma in enumeration lists. Some compilers
    (notably the one on Irix 5.2) do not like that. */
-enum { ActionNone, ActionQuit, ActionReset, ActionDisplay,
+enum { ActionNone, ActionQuit, ActionReset, ActionDisplay, ActionCompact,
     ActionClear, ActionPause, ActionResume, ActionMPLS, ActionDNS,
 #ifdef HAVE_IPINFO
     ActionII, ActionAS,

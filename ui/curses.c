@@ -172,6 +172,8 @@ int mtr_curses_keyaction(
         return ActionReset;
     case 'd':
         return ActionDisplay;
+    case 'c':
+        return ActionCompact;
     case 'e':
         return ActionMPLS;
     case 'n':
@@ -345,6 +347,7 @@ int mtr_curses_keyaction(
         printw("  ?|h     help\n");
         printw("  p       pause (SPACE to resume)\n");
         printw("  d       switching display mode\n");
+        printw("  c       switching compact mode\n");
         printw("  e       toggle MPLS information on/off\n");
         printw("  n       toggle DNS on/off\n");
         printw("  r       reset all counters\n");
@@ -689,7 +692,7 @@ void mtr_curses_redraw(
     erase();
     getmaxyx(stdscr, __unused_int, maxx);
 
-    rowstat = 5;
+    rowstat = !ctl->CompactLayout;
 
     move(0, 0);
     attron(A_BOLD);
@@ -698,34 +701,38 @@ void mtr_curses_redraw(
     pwcenter(buf);
     attroff(A_BOLD);
 
-    mvprintw(1, 0, "%s (%s) -> %s (%s)",
+    mvprintw(rowstat, 0, "%s (%s) -> %s (%s)",
 	ctl->LocalHostname, net_localaddr(),
 	ctl->Hostname, net_remoteaddr());
     t = time(NULL);
-    mvprintw(1, maxx - 25, "%s", iso_time(&t));
-    printw("\n");
+    mvprintw(rowstat, maxx - 25, "%s", iso_time(&t));
+    if (rowstat) {
+        printw("\n");
 
-    printw("Keys:  ");
-    attron(A_BOLD);
-    printw("H");
-    attroff(A_BOLD);
-    printw("elp   ");
-    attron(A_BOLD);
-    printw("D");
-    attroff(A_BOLD);
-    printw("isplay mode   ");
-    attron(A_BOLD);
-    printw("R");
-    attroff(A_BOLD);
-    printw("estart statistics   ");
-    attron(A_BOLD);
-    printw("O");
-    attroff(A_BOLD);
-    printw("rder of fields   ");
-    attron(A_BOLD);
-    printw("q");
-    attroff(A_BOLD);
-    printw("uit\n");
+        printw("Keys:  ");
+        attron(A_BOLD);
+        printw("H");
+        attroff(A_BOLD);
+        printw("elp   ");
+        attron(A_BOLD);
+        printw("D");
+        attroff(A_BOLD);
+        printw("isplay mode   ");
+        attron(A_BOLD);
+        printw("R");
+        attroff(A_BOLD);
+        printw("estart statistics   ");
+        attron(A_BOLD);
+        printw("O");
+        attroff(A_BOLD);
+        printw("rder of fields   ");
+        attron(A_BOLD);
+        printw("q");
+        attroff(A_BOLD);
+        printw("uit\n");
+    }
+
+    rowstat = rowstat ? 5 : 1;
 
     if (ctl->display_mode == DisplayModeDefault) {
         for (i = 0; i < MAXFLD; i++) {
@@ -761,8 +768,10 @@ void mtr_curses_redraw(
             maxx <= SAVED_PINGS + padding ? maxx - padding : SAVED_PINGS;
         startstat = padding - 2;
 
-        snprintf(msg, sizeof(msg), " Last %3d pings", max_cols);
-        mvprintw(rowstat - 1, startstat, "%s", msg);
+        if (rowstat > 1) {
+            snprintf(msg, sizeof(msg), " Last %3d pings", max_cols);
+            mvprintw(rowstat - 1, startstat, "%s", msg);
+        }
 
         attroff(A_BOLD);
         move(rowstat, 0);
