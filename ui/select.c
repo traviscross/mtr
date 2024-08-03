@@ -224,6 +224,10 @@ void select_loop(
                 ctl->display_mode =
                     (ctl->display_mode + 1) % DisplayModeMAX;
                 break;
+            case ActionCompact:
+                ctl->CompactLayout = !ctl->CompactLayout;
+                display_clear(ctl);
+                break;
             case ActionClear:
                 display_clear(ctl);
                 break;
