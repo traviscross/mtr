@@ -536,6 +536,8 @@ void report_packet_error(
         printf("%d network-down\n", command_token);
     } else if (errno == ENETUNREACH) {
         printf("%d no-route\n", command_token);
+    } else if (errno == EHOSTDOWN) {
+        printf("%d no-route\n", command_token);
     } else if (errno == EHOSTUNREACH) {
         printf("%d no-route\n", command_token);
     } else if (errno == EPERM) {
