@@ -453,7 +453,7 @@ a short interval, will use up a lot of file descriptors.
 Set the mark for each packet sent through this socket similar to the
 netfilter MARK target but socket-based.
 .I MARK
-is 32 unsigned integer.  See
+is a 32-bit unsigned integer.  See
 .BR socket (7)
 for full description of this socket option.
 .SH ENVIRONMENT
