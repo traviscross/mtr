@@ -266,17 +266,16 @@ void display_clear(
 char *host_error_to_string(
     int err)
 {
-    if (err == ENETUNREACH) {
+    if (err == ENETDOWN)
+        return "network is down";
+    else if (err == EHOSTDOWN)
+        return "host is down";
+    else if (err == ENETUNREACH)
+        return "no route to network";
+    else if (err == EHOSTUNREACH)
         return "no route to host";
-    }
-
-    if (err == ENETDOWN) {
-        return "network down";
-    }
-
-    if (err == 0) {
+    else if (err == 0)
         return "waiting for reply";
-    }
 
     return strerror(err);
 }

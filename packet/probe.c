@@ -264,7 +264,8 @@ void respond_to_probe(
     if (icmp_type == ICMP_TIME_EXCEEDED) {
         result = "ttl-expired";
     } else if (icmp_type == ICMP_DEST_UNREACH) {
-        result = "no-route";
+        /* XXX icmphdr->code is not known here, so assume that host is unreachable */
+        result = "no-route-host";
     } else {
         assert(icmp_type == ICMP_ECHOREPLY);
         result = "reply";

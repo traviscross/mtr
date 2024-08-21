@@ -317,13 +317,17 @@ label, and so on.  The values are provided in this order:
 .IR ttl .
 .HP 7
 .TP
-.B no-route
-There was no route to the host used in a
+.B no-route-network
+.B no-route-host
+There was no route to the network or the host itself for the
 .B send-probe
-request.
+request used to reach the host.
 .TP
 .B network-down
 A probe could not be sent because the network is down.
+.TP
+.B host-down
+A probe could not be sent because the host is down.
 .TP
 .B probes-exhausted
 A probe could not be sent because there are already too many unresolved
