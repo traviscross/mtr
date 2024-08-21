@@ -534,10 +534,12 @@ void report_packet_error(
         printf("%d invalid-argument\n", command_token);
     } else if (errno == ENETDOWN) {
         printf("%d network-down\n", command_token);
+    } else if (errno == EHOSTDOWN) {
+        printf("%d host-down\n", command_token);
     } else if (errno == ENETUNREACH) {
-        printf("%d no-route\n", command_token);
+        printf("%d no-route-network\n", command_token);
     } else if (errno == EHOSTUNREACH) {
-        printf("%d no-route\n", command_token);
+        printf("%d no-route-host\n", command_token);
     } else if (errno == EPERM) {
         printf("%d permission-denied\n", command_token);
     } else if (errno == EADDRINUSE) {

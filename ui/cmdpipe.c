@@ -715,10 +715,14 @@ void handle_command_reply(
     if (!strcmp(reply_name, "reply")
             || !strcmp(reply_name, "ttl-expired")) {
         err = 0;
-    } else if (!strcmp(reply_name, "no-route")) {
-        err = ENETUNREACH;
     } else if (!strcmp(reply_name, "network-down")) {
         err = ENETDOWN;
+    } else if (!strcmp(reply_name, "host-down")) {
+        err = EHOSTDOWN;
+    } else if (!strcmp(reply_name, "no-route-network")) {
+        err = ENETUNREACH;
+    } else if (!strcmp(reply_name, "no-route-host")) {
+        err = EHOSTUNREACH;
     } else {
         /*  If the reply type is unknown, ignore it  */
         return;
