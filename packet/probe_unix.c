@@ -296,6 +296,7 @@ int open_ip4_sockets_dgram(
     }
 #ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(icmp_socket, SOL_IP, IP_RECVERR, &val, sizeof(val)) < 0) {
+        close(icmp_socket);
         return -1;
     }
 #endif
@@ -386,6 +387,7 @@ int open_ip6_sockets_dgram(
     }
 #ifdef HAVE_LINUX_ERRQUEUE_H
     if (setsockopt(icmp_socket, SOL_IPV6, IPV6_RECVERR, &val, sizeof(val)) < 0) {
+        close(icmp_socket);
         return -1;
     }
 #endif
