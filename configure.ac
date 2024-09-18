@@ -122,7 +122,10 @@ AS_IF([test "x$with_ncurses" = "xyes"],
   # (On Solaris 11.3, ncurses builds and links for us, but curses does not.)
   [AC_SEARCH_LIBS(
     [initscr], [ncurses curses],
+  [AC_SEARCH_LIBS(
+    [raw], [ncurses curses cursesX tinfo],
     [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
+    [with_ncurses=no])],
     [with_ncurses=no])
 ])
 AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
