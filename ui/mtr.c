@@ -476,11 +476,7 @@ static void parse_arg(
             }
             break;
         case 'f':
-            ctl->fstTTL =
-                strtonum_or_err(optarg, "invalid argument", STRTO_INT);
-            if (ctl->fstTTL > ctl->maxTTL) {
-                ctl->fstTTL = ctl->maxTTL;
-            }
+            ctl->fstTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
             if (ctl->fstTTL < 1) {      /* prevent 0 hop */
                 ctl->fstTTL = 1;
             }
@@ -489,16 +485,12 @@ static void parse_arg(
             read_from_file(names, optarg);
             break;
         case 'm':
-            ctl->maxTTL =
-                strtonum_or_err(optarg, "invalid argument", STRTO_INT);
+            ctl->maxTTL = strtonum_or_err(optarg, "invalid argument", STRTO_INT);
             if (ctl->maxTTL > (MaxHost - 1)) {
                 ctl->maxTTL = MaxHost - 1;
             }
             if (ctl->maxTTL < 1) {      /* prevent 0 hop */
                 ctl->maxTTL = 1;
-            }
-            if (ctl->fstTTL > ctl->maxTTL) {    /* don't know the pos of -m or -f */
-                ctl->fstTTL = ctl->maxTTL;
             }
             break;
         case 'U':
@@ -649,6 +641,13 @@ static void parse_arg(
         ctl->DisplayMode == DisplayXML ||
         ctl->DisplayMode == DisplayRaw || ctl->DisplayMode == DisplayCSV)
         ctl->Interactive = 0;
+
+    if (ctl->fstTTL > ctl->maxTTL) {
+        fprintf (stderr, "%s: firstTTL(%d) cannot be larger than maxTTL(%d). \n", 
+		argv[0], ctl->fstTTL, ctl->maxTTL);
+        exit (1);
+        //ctl->fstTTL = ctl->maxTTL;
+    }
 
     if (optind > argc - 1)
         return;
