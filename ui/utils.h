@@ -20,6 +20,8 @@
 extern char *trim(
     char *s,
     const char c);
+extern char *tolowerstring(
+    char *s);
 extern int strtoint_or_err(
     const char *str,
     const char *errmesg);

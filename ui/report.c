@@ -407,23 +407,24 @@ void xml_close(
     ip_t *addr;
     char name[MAX_FORMAT_STR];
     char buf[128];
+    char sbuf[16];
 
     printf("<?xml version=\"1.0\"?>\n");
-    printf("<MTR SRC=\"%s\" DST=\"%s\"", ctl->LocalHostname,
+    printf("<mtr src=\"%s\" dst=\"%s\"", ctl->LocalHostname,
            ctl->Hostname);
-    printf(" TOS=\"0x%X\"", ctl->tos);
+    printf(" tos=\"0x%X\"", ctl->tos);
     if (ctl->cpacketsize >= 0) {
-        printf(" PSIZE=\"%d\"", ctl->cpacketsize);
+        printf(" psize=\"%d\"", ctl->cpacketsize);
     } else {
-        printf(" PSIZE=\"rand(%d-%d)\"", MINPACKET, -ctl->cpacketsize);
+        printf(" psize=\"rand(%d-%d)\"", MINPACKET, -ctl->cpacketsize);
     }
     if (ctl->bitpattern >= 0) {
-        printf(" BITPATTERN=\"0x%02X\"",
+        printf(" bitpattern=\"0x%02X\"",
                (unsigned char) (ctl->bitpattern));
     } else {
-        printf(" BITPATTERN=\"rand(0x00-FF)\"");
+        printf(" bitpattern=\"rand(0x00-FF)\"");
     }
-    printf(" TESTS=\"%d\">\n", ctl->MaxPing);
+    printf(" tests=\"%d\">\n", ctl->MaxPing);
 
     max = net_max(ctl);
     at = net_min(ctl);
@@ -431,7 +432,7 @@ void xml_close(
         addr = net_addr(at);
         snprint_addr(ctl, name, sizeof(name), addr);
 
-        printf("    <HUB COUNT=\"%d\" HOST=\"%s\">\n", at + 1, name);
+        printf("    <hub count=\"%d\" host=\"%s\">\n", at + 1, name);
         for (i = 0; i < MAXFLD; i++) {
             const char *title;
 
@@ -452,11 +453,13 @@ void xml_close(
                 snprintf(buf, sizeof(buf), data_fields[j].format, data_fields[j].net_xxx(at));
             }
             trim(buf, 0);
-            printf("        <%s>%s</%s>\n", title, buf, title);
+            strncpy(sbuf, title, sizeof(sbuf));
+            tolowerstring(sbuf);
+            printf("        <%s>%s</%s>\n", sbuf, buf, sbuf);
         }
-        printf("    </HUB>\n");
+        printf("    </hub>\n");
     }
-    printf("</MTR>\n");
+    printf("</mtr>\n");
 }
 
 

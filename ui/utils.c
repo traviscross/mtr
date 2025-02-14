@@ -69,6 +69,16 @@ char *trim(
     return str;
 }
 
+char *tolowerstring(
+    char *str)
+{
+    size_t slen = strlen(str);
+    for (size_t i = 0; i < slen; i++) {
+        str[i] = tolower(str[i]);
+    }
+    return str;
+}
+
 /* Parse string, and return positive signed int. */
 int strtoint_or_err(
     const char *str,
