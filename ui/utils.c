@@ -70,17 +70,17 @@ char *trim(
 }
 
 /* Parse string, and return positive signed int. */
-int strtonum_or_err(
+long int strtonum_or_err(
     const char *str,
     const char *errmesg,
     const int type)
 {
-    unsigned long int num;
+    long int num;
     char *end = NULL;
 
     if (str != NULL && *str != '\0') {
         errno = 0;
-        num = strtoul(str, &end, 0);
+        num = strtol(str, &end, 0);
         if (errno == 0 && str != end && end != NULL && *end == '\0') {
             switch (type) {
             case STRTO_INT:

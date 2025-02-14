@@ -25,7 +25,7 @@ enum {
 extern char *trim(
     char *s,
     const char c);
-extern int strtonum_or_err(
+extern long int strtonum_or_err(
     const char *str,
     const char *errmesg,
     const int type);
