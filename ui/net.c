@@ -561,8 +561,13 @@ int net_send_batch(
                smaller (reasonable packet sizes), and our rand() range much
                larger, this effect is insignificant. Oh! That other formula
                didn't work. */
-            packetsize =
-                MINPACKET + rand() % (-ctl->cpacketsize - MINPACKET);
+            if (-ctl->cpacketsize <= MINPACKET) {
+                /* There is no room to introduce randomness. */
+                packetsize = MINPACKET;
+            } else {
+                packetsize =
+                    MINPACKET + rand() % (-ctl->cpacketsize - MINPACKET);
+            }
         } else {
             packetsize = ctl->cpacketsize;
         }
