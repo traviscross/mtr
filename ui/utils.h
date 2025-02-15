@@ -17,18 +17,15 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-enum {
-    STRTO_INT,
-    STRTO_U32INT
-};
-
 extern char *trim(
     char *s,
     const char c);
-extern int strtonum_or_err(
+extern int strtoint_or_err(
     const char *str,
-    const char *errmesg,
-    const int type);
+    const char *errmesg);
+extern unsigned long strtoulong_or_err(
+    const char *str,
+    const char *errmesg);
 extern float strtofloat_or_err(
     const char *str,
     const char *errmesg);
