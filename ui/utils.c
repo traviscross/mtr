@@ -80,7 +80,7 @@ int strtoint_or_err(
     if (str != NULL && *str != '\0') {
         errno = 0;
         num = strtol(str, &end, 0);
-        if (errno == 0 && str != end && end != NULL && *end == '\0' && num < INT_MAX) {
+        if (errno == 0 && str != end && end != NULL && *end == '\0') {
             return num;
         }
     }
@@ -99,7 +99,7 @@ unsigned long strtoulong_or_err(
     if (str != NULL && *str != '\0') {
         errno = 0;
         num = strtoul(str, &end, 0);
-        if (errno == 0 && str != end && end != NULL && *end == '\0' && num < UINT32_MAX) {
+        if (errno == 0 && str != end && end != NULL && *end == '\0') {
             return num;
         }
     }
