@@ -406,6 +406,7 @@ void xml_close(
     int i, j, at, max;
     ip_t *addr;
     char name[MAX_FORMAT_STR];
+    char buf[128];
 
     printf("<?xml version=\"1.0\"?>\n");
     printf("<MTR SRC=\"%s\" DST=\"%s\"", ctl->LocalHostname,
@@ -438,9 +439,6 @@ void xml_close(
             if (j <= 0)
                 continue;       /* Field nr 0, " " shouldn't be printed in this method. */
 
-            snprintf(name, sizeof(name), "%s%s%s", "        <%s>",
-                     data_fields[j].format, "</%s>\n");
-
             /* XML doesn't allow "%" in tag names, rename Loss% to just Loss */
             title = data_fields[j].title;
             if (strcmp(data_fields[j].title, "Loss%") == 0) {
@@ -449,11 +447,12 @@ void xml_close(
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
-                printf(name,
-                       title, data_fields[j].net_xxx(at) / 1000.0, title);
+                snprintf(buf, sizeof(buf), data_fields[j].format, data_fields[j].net_xxx(at) / 1000.0);
             } else {
-                printf(name, title, data_fields[j].net_xxx(at), title);
+                snprintf(buf, sizeof(buf), data_fields[j].format, data_fields[j].net_xxx(at));
             }
+            trim(buf, 0);
+            printf("        <%s>%s</%s>\n", title, buf, title);
         }
         printf("    </HUB>\n");
     }
