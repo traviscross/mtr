@@ -202,7 +202,10 @@ int mtr_curses_keyaction(
             buf[i++] = c;       /* need more checking on 'c' */
         }
         buf[i] = '\0';
-        ctl->cpacketsize = atoi(buf);
+        int new_packetsize = atoi(buf);
+        if (abs(ctl->cpacketsize) >= MINPACKET && abs(ctl->cpacketsize) < MAXPACKET) {
+            ctl->cpacketsize = new_packetsize;
+        }
         return ActionNone;
     case 'b':
         mvprintw(2, 0, "Ping Bit Pattern: %d\n", ctl->bitpattern);
