@@ -63,7 +63,7 @@ typedef int time_t;
 #define FLD_INDEX_SZ 256
 
 /* net related definitions */
-#define SAVED_PINGS 200
+#define SAVED_PINGS 400
 #define MAX_PATH 128
 #define MaxHost 256
 #define MinPort 1024

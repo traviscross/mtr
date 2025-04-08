@@ -46,10 +46,18 @@ enum {
 #endif
 };
 
+// if we have libncursesw and braille graphs were enabled, build with them
+#if HAVE_CURSESW && ENABLE_BRAILLE
+#define WITH_BRAILLE_DISPLAY 1
+#endif
+
 enum {
     DisplayModeDefault,
     DisplayModeBlockmap,
     DisplayModeBlockmapScale,
+#ifdef WITH_BRAILLE_DISPLAY
+    DisplayModeBraille,
+#endif
     DisplayModeMAX              /* this must be the last DisplayMode entry */
 };
 

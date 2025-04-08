@@ -20,6 +20,8 @@
 
 #include "mtr.h"
 
+#include <locale.h>
+#include <assert.h>
 #include <strings.h>
 #include <unistd.h>
 
@@ -576,22 +578,178 @@ static void mtr_curses_init(
     block_map[NUM_FACTORS - 1] = '>';
 }
 
-static void mtr_print_scaled(
+static int ms_to_factor(
     int ms)
 {
     int i;
 
     for (i = 0; i < NUM_FACTORS; i++) {
-        if (ms <= scale[i]) {
-            attrset(block_col[i + 1]);
-            printw("%c", block_map[i]);
-            attrset(A_NORMAL);
-            return;
-        }
+        if (ms <= scale[i])
+            return i;
+    }
+
+    return NUM_FACTORS;
+}
+
+static void mtr_print_scaled(
+    int ms)
+{
+    int f = ms_to_factor(ms);
+
+    if ((unsigned)f < NUM_FACTORS) {
+        attrset(block_col[f + 1]);
+        printw("%c", block_map[f]);
+        attrset(A_NORMAL);
+        return;
     }
     printw(">");
 }
 
+#ifdef WITH_BRAILLE_DISPLAY
+static int current_host_range_low_ms = 1000000;
+static int current_host_range_high_ms = -1;
+
+static void compute_current_host_range(const int *ms_data, size_t length)
+{
+    current_host_range_low_ms = 1000000;
+    current_host_range_high_ms = -1;
+
+    for (int i=0; i<length; ++i) {
+        int ms = ms_data[i];
+        if (ms < 0)
+            continue;
+        if (current_host_range_low_ms > ms)
+            current_host_range_low_ms = ms;
+        if (current_host_range_high_ms < ms)
+            current_host_range_high_ms = ms;
+    }
+}
+
+static const int scale_ms_to_braille_factor(int ms)
+{
+    if (ms <= 0)
+        return 0;
+
+    int ms_range = current_host_range_high_ms - current_host_range_low_ms;
+    if (ms_range < 1)
+        return 0;
+
+    return (ms - current_host_range_low_ms) * 4 / ms_range;
+}
+
+static const wchar_t *braille_char_lookup(
+    int ms,
+    const wchar_t *braille_set[5])
+{
+    if (ms < 0)
+        return L"𜸲"; // this is an error in decoding
+
+    int i = scale_ms_to_braille_factor(ms);
+    if ((unsigned)i >= 4)
+        return L"🮐"; // this is the max
+
+    return braille_set[i];
+}
+
+// handle if left is not provided, but right is
+static const wchar_t *braille_char_left(
+    int left_ms)
+{
+    static const wchar_t *braille_left_lookup[5] =  {
+        L"⡀", L"⡄", L"⡆", L"⡇",
+    };
+
+    return braille_char_lookup(left_ms, braille_left_lookup);
+}
+
+
+// handle if right is not provided, but left is
+static const wchar_t *braille_char_right(
+    int right_ms)
+{
+    static const wchar_t *braille_right_lookup[5] =  {
+        L"⢀", L"⢠", L"⢰", L"⢸",
+    };
+
+    return braille_char_lookup(right_ms, braille_right_lookup);
+}
+
+// handle both left and right being provided
+static const wchar_t *braille_char_double(
+    int left_ms,
+    int right_ms)
+{
+    static const wchar_t *braille_double_lookup[5][5] =  {
+        { L"⣀", L"⣠", L"⣰", L"⣸", },
+        { L"⣄", L"⣤", L"⣴", L"⣼", },
+        { L"⣆", L"⣦", L"⣶", L"⣾", },
+        { L"⣇", L"⣧", L"⣷", L"⣿", }
+    };
+
+    int left_i = scale_ms_to_braille_factor(left_ms);
+    if ((unsigned)left_i >= 4)
+        return L"🮐"; // this is the max
+
+    return braille_char_lookup(right_ms, braille_double_lookup[left_i]);
+}
+
+static void mtr_print_braille(
+    int left_ms,
+    int right_ms)
+{
+    int ms_max = left_ms > right_ms ? left_ms : right_ms;
+    int f = ms_to_factor(ms_max);
+    f = ((unsigned)f < NUM_FACTORS) ? f : NUM_FACTORS - 1;
+
+    const wchar_t *wstr;
+    if (left_ms > 0 && right_ms > 0)
+        wstr = braille_char_double(left_ms, right_ms);
+    else if (left_ms > 0)
+        wstr = braille_char_left(left_ms);
+    else if (right_ms > 0)
+        wstr = braille_char_right(right_ms);
+    else
+        wstr = L"▁";
+
+    attrset(block_col[f + 1]);
+    printw("%ls", wstr);
+    attrset(A_NORMAL);
+}
+
+static void mtr_fill_graph_braille(
+    struct mtr_ctl *ctl,
+    int at,
+    int cols)
+{
+    const int *saved;
+    int i;
+
+    saved = net_saved_pings(at);
+
+    compute_current_host_range(saved, SAVED_PINGS);
+
+    // we can pack twice as many entries into a braille line
+
+    cols = cols * 2;
+    cols = cols <= SAVED_PINGS ? cols : SAVED_PINGS;
+
+    for (i = SAVED_PINGS - cols; i < SAVED_PINGS; i+=2) {
+        int a = saved[i];
+        int b = (i+1 < SAVED_PINGS) ? saved[i+1] : 0;
+
+        if (a == -2 && b == -2) {
+            printw(" ");
+        } else if (a == -1 || b == -1) {
+            attrset(block_col[0]);
+            printw("%c", '?');
+            attrset(A_NORMAL);
+        } else {
+            mtr_print_braille(a, b);
+        }
+    }
+
+}
+#endif
 
 static void mtr_fill_graph(
     struct mtr_ctl *ctl,
@@ -671,7 +829,14 @@ static void mtr_curses_graph(
         move(y, startstat);
 
         printw(" ");
-        mtr_fill_graph(ctl, at, cols);
+#ifdef WITH_BRAILLE_DISPLAY
+        if (ctl->display_mode == DisplayModeBraille) {
+            mtr_fill_graph_braille(ctl, at, cols);
+        } else
+#endif
+        {
+            mtr_fill_graph(ctl, at, cols);
+        }
         printw("\n");
     }
 }
@@ -809,6 +974,11 @@ void mtr_curses_open(
 {
     int bg_col = 0;
     int i;
+
+#ifdef WITH_BRAILLE_DISPLAY
+    // initialize all locale variables, before ncurses starts
+    setlocale(LC_ALL, "");
+#endif
 
     initscr();
     raw();
