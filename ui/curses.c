@@ -71,6 +71,11 @@ enum { NUM_FACTORS = 8 };
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static char block_map[NUM_FACTORS];
+#ifdef WITH_BRAILLE_DISPLAY
+static const wchar_t *braille_map[NUM_FACTORS] = {
+    L"⣀", L"⣀", L"⣤", L"⣤", L"⣶", L"⣶", L"⣿", L"🮐"
+};
+#endif
 
 enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
 static const int block_col[NUM_FACTORS + 1] = {
@@ -952,17 +957,23 @@ void mtr_curses_redraw(
         printw("Scale:");
         attroff(A_BOLD);
 
-        for (i = 0; i < NUM_FACTORS - 1; i++) {
+#ifdef WITH_BRAILLE_DISPLAY
+        bool use_braille_map = (ctl->display_mode == DisplayModeBraille);
+#endif
+
+        for (i = 0; i < NUM_FACTORS; i++) {
             printw("  ");
             attrset(block_col[i + 1]);
-            printw("%c", block_map[i]);
+#ifdef WITH_BRAILLE_DISPLAY
+            if (use_braille_map)
+                printw("%ls", braille_map[i]);
+            else
+#endif
+                printw("%c", block_map[i]);
             attrset(A_NORMAL);
-            printw(":%d ms", scale[i] / 1000);
+            if (i < NUM_FACTORS-1)
+                printw(":%d ms", scale[i] / 1000);
         }
-        printw("  ");
-        attrset(block_col[NUM_FACTORS]);
-        printw("%c", block_map[NUM_FACTORS - 1]);
-        attrset(A_NORMAL);
     }
 
     refresh();
