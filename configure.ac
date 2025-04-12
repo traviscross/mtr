@@ -172,7 +172,7 @@ AC_ARG_ENABLE([braille],
   [WANTS_BRAILLE=$enableval], [WANTS_BRAILLE=yes])
 
 AS_IF([test "x$WANTS_BRAILLE" = "xyes"], [
-  AC_DEFINE([ENABLE_BRAILLE], [1], [Define to enable IPv6])
+  AC_DEFINE([ENABLE_BRAILLE], [1], [Define to enable uncode braille character graphs])
   USES_BRAILLE=yes
 ])
 
