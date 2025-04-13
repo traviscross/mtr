@@ -408,7 +408,7 @@ void xml_close(
     char name[MAX_FORMAT_STR];
     char buf[128];
 
-    printf("<?xml version=\"1.0\"?>\n");
+    printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
     printf("<MTR SRC=\"%s\" DST=\"%s\"", ctl->LocalHostname,
            ctl->Hostname);
     printf(" TOS=\"0x%X\"", ctl->tos);
