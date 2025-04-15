@@ -44,6 +44,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <locale.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -775,6 +776,9 @@ int main(
 
     /* This will check if stdout/stderr writing is successful */
     atexit(close_stdout);
+
+    /* Set encoding for reports */
+    setlocale(LC_CTYPE, "C.UTF-8");
 
     /* reset the random seed */
     init_rand();
