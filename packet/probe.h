@@ -34,7 +34,7 @@
 #include "probe_unix.h"
 #endif
 
-#define MAX_PROBES 1024
+#define MAX_PROBES 10240
 
 /*  Use the "jumbo" frame size as the max packet size  */
 #define PACKET_BUFFER_SIZE 9000
