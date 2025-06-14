@@ -136,7 +136,7 @@ void split_open(
 #endif
     LineCount = -1;
     for (i = 0; i < MAX_LINE_COUNT; i++) {
-        xstrncpy(Lines[i], "???", MAX_LINE_SIZE);
+        xstrncpy(Lines[i], "", MAX_LINE_SIZE);
     }
 }
 
