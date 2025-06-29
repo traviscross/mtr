@@ -220,10 +220,17 @@ void execute_packet_child(
        the path to the mtr-packet executable.  This is necessary
        for debugging changes for mtr-packet.
      */
-    char *mtr_packet_path = getenv("MTR_PACKET");
-    if (mtr_packet_path == NULL) {
+    char * mtr_packet_path = NULL; 
+
+    // In the rare case that mtr-packet is not setuid-root, 
+    // and a select group of users has sudo privileges to run 
+    // mtr and not much else, THEN create /etc/mtr.is.run.under.sudo
+    // to prevent a privilege escalation when one of those accounts
+    // is compromised.  CVE-2025-49809
+    if (access ("/etc/mtr.is.run.under.sudo", F_OK) != 0)
+        mtr_packet_path = getenv("MTR_PACKET");
+    if (mtr_packet_path == NULL)
         mtr_packet_path = "mtr-packet";
-    }
 
     /*
        First, try to execute mtr-packet from PATH
