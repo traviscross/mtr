@@ -895,6 +895,7 @@ int addrcmp(
         break;
 #ifdef ENABLE_IPV6
     case AF_INET6:
+    case AF_UNSPEC:
         rc = memcmp(a, b, sizeof(struct in6_addr));
         break;
 #endif
