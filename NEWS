@@ -4,6 +4,11 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+
+   Arad Cohen:
+         Brought an unlikely privilege escalation
+         scenario to my attention. 
+
 V0.95
    Aaron Lipinski (27):
          move net_send_batch call to its caller
