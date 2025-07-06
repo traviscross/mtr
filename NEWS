@@ -4,6 +4,120 @@ The new release script will do a "git shortlog" to add
 the commit messages here. 
 
 #NEW_STUFF_HERE this is a tag my script looks for. 
+V0.96
+   23hiro (1):
+         Merge branch 'traviscross:master' into master
+   
+   Alarig Le Lay (1):
+         Change UDP and ICMP sockets binding to accept a source IP from the -a CLI option
+   
+   Andrew Marshall (1):
+         Adjust MIN_PORT to match other implementations
+   
+   Arkadiusz Miśkiewicz (1):
+         Handle EHOSTDOWN and refine error handling better granularity
+   
+   Bart Trojanowski (3):
+         add braille graph support with --displaymode 3
+         fix legend for braille display
+         fix documentation/comment for ENABLE_BRAILLE
+   
+   Brandon Ewing (2):
+         use addrs for static host ordering in curses
+         add --max-display-paths option
+   
+   Denis Afonin (1):
+         Add a compact mode in curses
+   
+   Denis Ovsienko (1):
+         mtr.8.in: spell --mark argument type properly
+   
+   Denys Fedoryshchenko (1):
+         Fix tiny typo in target
+   
+   Evan Pratten (1):
+         Implement ASN lookups in well-known nat64 prefix
+   
+   James Lu (2):
+         net: implement addrcmp for AF_UNSPEC
+         Initialize lines to empty string in split mode
+   
+   Jian Cheng (1):
+         Add error code ETIMEOUT(110) handle logic
+   
+   Marcus Meissner (1):
+         fixed the sizes passed into snprintf
+   
+   Marek Küthe (6):
+         Allow signed integers in the utils function
+         Split the strtonum function into two parts to create a better structure
+         Remove redundant code
+         Fix https://github.com/traviscross/mtr/issues/475
+         xml report: remove leading spaces
+         Set UTF-8 encoding for XML reports
+   
+   Matt Kimball (1):
+         Update Cygwin ICMP service thread for asynchronous pipes
+   
+   Michal Sekletar (1):
+         Prevent icmp_socket leak on error
+   
+   R.E. Wolff (9):
+         Markus pointed out useless statement.
+         merged
+         Merge branch 'master' of github.com:traviscross/mtr
+         Fixed typo noted by @szczot3k
+         Changed how conflicitng first/max TTL works.
+         Increased max probes
+         Added protection against use of MTR_PACKET under special circumstances
+         Merge branch 'master' of github.com:traviscross/mtr
+         Added Arad Cohen to NEWS
+   
+   Robert Vollmer (2):
+         Set SO_BINDTODEVICE for -I
+         Check if SO_BINDTODEVICE is defined
+   
+   Sami Kerola (1):
+         ui: make interactive and non-interactive exit code the same
+   
+   Tony Lewis Hiroaki URAHAMA (3):
+         Add WSL method to Windows Install
+         Add Ubuntu as specific distribution
+         Update section title
+   
+   darless (1):
+         Github actions added to perform lint and compile
+   
+   eater (1):
+         configure.ac: fix broken cap check
+   
+   famfo (1):
+         Add option to use custom ipinfo provider
+   
+   flu0r1ne (10):
+         Fix Capability Management, Retain CAP_NET_ADMIN
+         Fix interface binding by retaining CAP_NET_RAW
+         Linux-Only Interface, Marking, and IP Unit Tests
+         Annotate `set_privileged_socket_opt` with UNUSED
+         Drop capabilities when `setsockopt` errors
+         Fix flake8 linting
+         Change B101->S101 to reflect flake8
+         Use a uint32 for the type of a Linux mark
+         Use Packet Marking for IP Address Selection
+         Support Hexadecimal Arguments for Packet Marking
+   
+   hiro (1):
+         ipv6 udp checksums like ipv4 but with ipv6 pseudoheader
+   
+   lilinjie (1):
+         fix typo
+   
+   verrens (1):
+         Merge branch 'master' into compact-layout
+   
+   wenlxie (1):
+         Add help info for option -E
+   
 
    Arad Cohen:
          Brought an unlikely privilege escalation
