@@ -40,7 +40,7 @@ test mtr with
 
 	sudo ./mtr <host>
 
-(fill in a hostname or IP address where it says <host>) or
+(fill in a hostname or IP address where it says ``<host>``) or
 immediately continue on to installing:
 
 	make install
