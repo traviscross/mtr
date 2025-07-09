@@ -47,7 +47,7 @@ void raw_rawxmit(
 void raw_rawping(
     struct mtr_ctl *ctl,
     int host,
-    int msec,
+    int usec,
     int seq)
 {
     static int havename[MaxHost];
@@ -60,7 +60,7 @@ void raw_rawping(
             printf("d %d %s\n", host, name);
         }
     }
-    printf("p %d %d %d\n", host, msec, seq);
+    printf("p %d %d %d\n", host, usec, seq);
     fflush(stdout);
 }
 

@@ -20,7 +20,7 @@ xmitline:
 x <pos> <seqnum>
 
 pingline:
-p <pos> <pingtime (ms)> <seqnum>
+p <pos> <pingtime (usec)> <seqnum>
 
 dnsline:
 d <pos> <hostname>
