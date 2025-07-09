@@ -79,7 +79,7 @@ extern void display_rawxmit(
 extern void display_rawping(
     struct mtr_ctl *ctl,
     int hostnum,
-    int msec,
+    int usec,
     int seq);
 extern void display_rawhost(
     struct mtr_ctl *ctl,

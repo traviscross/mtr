@@ -218,11 +218,11 @@ void display_rawxmit(
 void display_rawping(
     struct mtr_ctl *ctl,
     int host,
-    int msec,
+    int usec,
     int seq)
 {
     if (ctl->DisplayMode == DisplayRaw)
-        raw_rawping(ctl, host, msec, seq);
+        raw_rawping(ctl, host, usec, seq);
 }
 
 

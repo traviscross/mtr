@@ -25,7 +25,7 @@ extern void raw_rawxmit(
 extern void raw_rawping(
     struct mtr_ctl *ctl,
     int host,
-    int msec,
+    int usec,
     int seq);
 extern void raw_rawhost(
     struct mtr_ctl *ctl,
