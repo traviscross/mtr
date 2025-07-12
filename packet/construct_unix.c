@@ -427,19 +427,28 @@ int set_stream_socket_options(
     }
 
     /*  Set the "type of service" field of the IP header  */
+#ifdef IPV6_TCLASS
     if (param->ip_version == 6) {
         level = IPPROTO_IPV6;
         opt = IPV6_TCLASS;
     } else {
+#else
+    opt = 0;
+    if (param->ip_version == 4) {
+#endif
         level = IPPROTO_IP;
         opt = IP_TOS;
     }
 
-    if (setsockopt(stream_socket, level, opt,
-                   &param->type_of_service, sizeof(int)) == -1) {
+    /* Avoid trying to set on IPv6 stacks which lack RFC 3542 support (IPV6_TCLASS) */
+    if (opt != 0) {
+        if (setsockopt(stream_socket, level, opt,
+                       &param->type_of_service, sizeof(int)) == -1) {
 
-        return -1;
+            return -1;
+        }
     }
+
 #ifdef SO_MARK
     if (param->routing_mark) {
         if (set_socket_mark(stream_socket, param->routing_mark)) {
@@ -835,11 +844,13 @@ int construct_ip6_packet(
         }
     }
 
+#ifdef IPV6_TCLASS
     /*  The traffic class in IPv6 is analogous to ToS in IPv4  */
     if (setsockopt(send_socket, IPPROTO_IPV6,
                    IPV6_TCLASS, &param->type_of_service, sizeof(int))) {
         return -1;
     }
+#endif
 
     /*  Set the time-to-live  */
     if (setsockopt(send_socket, IPPROTO_IPV6,
