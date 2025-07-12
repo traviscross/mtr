@@ -250,7 +250,6 @@ int construct_udp6_packet(
     int packet_size,
     const struct probe_param_t *param)
 {
-    int udp_socket = net_state->platform.udp6_send_socket;
     struct UDPHeader *udp;
     int udp_size;
 
