@@ -30,9 +30,6 @@
 #endif
 #include <errno.h>
 
-#ifdef __APPLE__
-#define BIND_8_COMPAT
-#endif
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
