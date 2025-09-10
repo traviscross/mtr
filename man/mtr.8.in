@@ -421,6 +421,12 @@ Specifies with what TTL to start.  Defaults to 1.
 Specifies the maximum number of hops (max time-to-live value) traceroute will
 probe.  Default is 30.
 .TP
+.B \-D \fINUM\fR, \fB\-\-due-ttl \fINUM
+Specifies the minimum TTL value to achieve when sending network probes.
+Default is disabled. However, if responses from the target host were received
+on hops less than the specified value, the host address will be displayed only
+in the ECMP section of the paths.
+.TP
 .B \-U \fINUM\fR, \fB\-\-max-unknown \fINUM
 Specifies the maximum unknown host. Default is 5.
 .TP

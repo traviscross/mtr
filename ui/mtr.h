@@ -102,6 +102,7 @@ struct mtr_ctl {
     int mtrtype;                /* type of query packet used */
     int fstTTL;                 /* initial hub(ttl) to ping byMin */
     int maxTTL;                 /* last hub to ping byMin */
+    int dueTTL;                 /* don't stop until reach dueTTL */
     int maxUnknown;             /* stop ping threshold */
     int maxDisplayPath;         /* maximum number of ECMP paths to display */
     int remoteport;             /* target port for TCP tracing */
