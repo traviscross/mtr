@@ -107,6 +107,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -a, --address ADDRESS            bind the outgoing socket to ADDRESS\n", out);  
     fputs(" -f, --first-ttl NUMBER           set what TTL to start\n", out);
     fputs(" -m, --max-ttl NUMBER             maximum number of hops\n", out);
+    fputs(" -D, --due-ttl NUMBER             set what TTL must be reached\n", out);
     fputs(" -U, --max-unknown NUMBER         maximum unknown host\n", out);
     fputs(" -E, --max-display-path NUMBER    maximum number of ECMP paths to display\n", out);
     fputs(" -P, --port PORT                  target port number for TCP, SCTP, or UDP\n", out);  
@@ -356,6 +357,7 @@ static void parse_arg(
         {"address", 1, NULL, 'a'},
         {"first-ttl", 1, NULL, 'f'},    /* -f & -m are borrowed from traceroute */
         {"max-ttl", 1, NULL, 'm'},
+        {"due-ttl", 1, NULL, 'D'},
         {"max-unknown", 1, NULL, 'U'},
         {"max-display-path", 1, NULL, 'E'},
         {"udp", 0, NULL, 'u'},  /* UDP (default is ICMP) */
@@ -495,6 +497,15 @@ static void parse_arg(
             }
             if (ctl->maxTTL < 1) {      /* prevent 0 hop */
                 ctl->maxTTL = 1;
+            }
+            break;
+        case 'D':
+            ctl->dueTTL = strtoint_or_err(optarg, "invalid argument");
+            if (ctl->dueTTL > (MaxHost - 1)) {
+                ctl->dueTTL = MaxHost - 1;
+            }
+            if (ctl->dueTTL <= 0) {
+                error(EXIT_FAILURE, 0, "due TTL must be greater than 0");
             }
             break;
         case 'U':
@@ -652,6 +663,16 @@ static void parse_arg(
         exit (1);
         //ctl->fstTTL = ctl->maxTTL;
     }
+    if (ctl->dueTTL > 0 && ctl->dueTTL < ctl->fstTTL) {
+        fprintf (stderr, "%s: dueTTL(%d) cannot be less than firstTTL(%d). \n", 
+                argv[0], ctl->dueTTL, ctl->fstTTL);
+        exit (1);
+    }
+    if (ctl->dueTTL > ctl->maxTTL) {
+        fprintf (stderr, "%s: dueTTL(%d) cannot be larger than maxTTL(%d). \n", 
+                argv[0], ctl->dueTTL, ctl->maxTTL);
+        exit (1);
+    }
 
     if (optind > argc - 1)
         return;
@@ -751,6 +772,7 @@ int main(
     ctl.mtrtype = IPPROTO_ICMP;
     ctl.fstTTL = 1;
     ctl.maxTTL = 30;
+    ctl.dueTTL = 0;
     ctl.maxUnknown = 12;
     ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;

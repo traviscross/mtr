@@ -258,12 +258,23 @@ static void net_process_ping(
             display_rawhost(ctl, index, &nh->addrs[i], mpls);
         }
 
-        /* Always save the latest host in nh->addr. This
+        /* Save the latest host in nh->addr only, if the answer was from remotehost and option -D enabled.
+           This allows to see responses coming through routes with different TTLs and from the target host.
+        */
+        if ((ctl->dueTTL > 0) && (addrcmp(&addrcopy, remoteaddress, ctl->af) == 0)) {
+           if (ctl->dueTTL <= (index + 1)) {
+                 memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
+                 nh->mpls = *mpls;
+                 display_rawhost(ctl, index, &nh->addr, mpls);
+           }
+        } else {
+        /* Save the latest host in nh->addr. This
          * allows maxTTL to change whenever path changes.
          */
         memcpy(&nh->addr, addrcopy, sockaddr_addr_size(sourcesockaddr));
         nh->mpls = *mpls;
         display_rawhost(ctl, index, &nh->addr, mpls);
+        }
     }
 
     nh->jitter = totusec - nh->last;
@@ -587,8 +598,9 @@ int net_send_batch(
            but I don't remember why. It makes mtr stop skipping sections of unknown
            hosts. Removed in 0.65.
            If the line proves necessary, it should at least NOT trigger that line
-           when host[i].addr == 0 */
-        if (host_addr_cmp(i, remoteaddress, ctl->af) == 0) {
+           when host[i].addr == 0
+           Keep this behavior if the newly added -D (dueTTL) option is not enabled */
+        if ((host_addr_cmp(i, remoteaddress, ctl->af) == 0) && (ctl->dueTTL == 0)) {
             restart = 1;
             numhosts = i + 1; /* Saves batch_at - index number of probes in the next round!*/
             break;
@@ -596,9 +608,9 @@ int net_send_batch(
     }
 
     if (                        /* success in reaching target */
-           (host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0) ||
+           ((host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0) && (ctl->dueTTL == 0)) ||
            /* fail in consecutive maxUnknown (firewall?) */
-           (n_unknown > ctl->maxUnknown) ||
+           ((n_unknown > ctl->maxUnknown) && (ctl->dueTTL == 0)) ||
            /* or reach limit  */
            (batch_at >= ctl->maxTTL - 1)) {
         restart = 1;
