@@ -612,7 +612,7 @@ int net_send_batch(
     if (                        /* success in reaching target */
            (host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0 && ctl->dueTTL <= (batch_at + 1)) ||
            /* fail in consecutive maxUnknown (firewall?) */
-           (n_unknown > ctl->maxUnknown && ctl->dueTTL >= (batch_at + 1)) ||
+           (n_unknown > ctl->maxUnknown && ctl->dueTTL <= (batch_at + 1)) ||
            /* or reach limit  */
            (batch_at >= ctl->maxTTL - 1)) {
         restart = 1;
