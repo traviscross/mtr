@@ -599,22 +599,24 @@ int net_send_batch(
            hosts. Removed in 0.65.
            If the line proves necessary, it should at least NOT trigger that line
            when host[i].addr == 0
-           Keep this behavior if the newly added -D (dueTTL) option is not enabled */
-        if ((host_addr_cmp(i, remoteaddress, ctl->af) == 0) && (ctl->dueTTL == 0)) {
+           Overall, this "if" statement terminates the batch immediately after
+           receiving the first response from "remoteaddress".
+           Keep this behavior, but take into account the state of added -D (dueTTL) option. */
+        if (host_addr_cmp(i, remoteaddress, ctl->af) == 0 && ctl->dueTTL <= (i + 1)) {
             restart = 1;
-            numhosts = i + 1; /* Saves batch_at - index number of probes in the next round!*/
+            numhosts = i - ctl->fstTTL + 2; /* Saves batch_at - index number of probes in the next round!*/
             break;
         }
     }
 
     if (                        /* success in reaching target */
-           ((host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0) && (ctl->dueTTL == 0)) ||
+           (host_addr_cmp(batch_at, remoteaddress, ctl->af) == 0 && ctl->dueTTL <= (batch_at + 1)) ||
            /* fail in consecutive maxUnknown (firewall?) */
-           ((n_unknown > ctl->maxUnknown) && (ctl->dueTTL == 0)) ||
+           (n_unknown > ctl->maxUnknown && ctl->dueTTL <= (batch_at + 1)) ||
            /* or reach limit  */
            (batch_at >= ctl->maxTTL - 1)) {
         restart = 1;
-        numhosts = batch_at + 1;
+        numhosts = batch_at - ctl->fstTTL + 2;
     }
 
     if (restart) {
