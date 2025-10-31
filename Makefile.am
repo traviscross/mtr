@@ -103,6 +103,7 @@ mtr_packet_SOURCES = \
 	packet/command.c packet/command.h \
 	packet/platform.h \
 	packet/probe.c packet/probe.h \
+	packet/utils.h \
 	packet/protocols.h \
 	packet/timeval.c packet/timeval.h \
 	packet/wait.h \

@@ -68,7 +68,7 @@ typedef int time_t;
 #define MaxHost 256
 #define MinPort 1024
 #define MaxPort 65535
-#define MAXPACKET 4470          /* largest test packet size */
+#define MAXPACKET 65535          /* largest test packet size */
 #define MINPACKET 28            /* 20 bytes IP header and 8 bytes ICMP or UDP */
 #define MAXLABELS 8             /* http://kb.juniper.net/KB2190 (+ 3 just in case) */
 
