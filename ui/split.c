@@ -110,18 +110,19 @@ void split_redraw(
             snprintf(newLine, sizeof(newLine), "???");
         }
 
-        if (strcmp(newLine, Lines[at]) == 0) {
-            /* The same, so do nothing */
-#if DEBUG
-            printf("SAME LINE\n");
-#endif
-        } else {
+        if (strcmp(newLine, Lines[at]) != 0) {
+	    // something changed, so we print it.
             printf("%d %s\n", at + 1, newLine);
             fflush(stdout);
             xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
             if (LineCount < (at + 1)) {
                 LineCount = at + 1;
             }
+        } else {
+            /* The same, so do nothing */
+#if DEBUG
+            printf("SAME LINE\n");
+#endif
         }
     }
 }

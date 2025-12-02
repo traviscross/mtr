@@ -30,6 +30,11 @@
 #endif
 #include <errno.h>
 
+#ifdef __APPLE__
+#define BIND_8_COMPAT
+#include <dns_sd.h>
+#include <sys/select.h>
+#endif
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
@@ -70,10 +75,110 @@ static items_t items_a;         /* without hash: items */
 static char txtrec[NAMELEN + 1];        /* without hash: txtrec */
 static items_t *items = &items_a;
 
+#ifdef __APPLE__
+typedef struct query_context {
+    char txt[NAMELEN + 1];
+    bool more;
+} query_context_t;
+
+static void query_callback(
+    DNSServiceRef sdRef,
+    DNSServiceFlags flags,
+    uint32_t interfaceIndex,
+    DNSServiceErrorType errorCode,
+    const char *fullname,
+    uint16_t rrtype,
+    uint16_t rrclass,
+    uint16_t rdlen,
+    const void *rdata,
+    uint32_t ttl,
+    void *context
+) {
+    struct query_context *q_context = (struct query_context *)context;
+
+    if (errorCode == kDNSServiceErr_NoError && rdlen > 1) {
+        memset(q_context->txt, 0, sizeof(q_context->txt));
+        int remain = sizeof(q_context->txt) - 1;
+        char *p = q_context->txt;
+        const unsigned char *ptr = rdata;
+        const unsigned char *end = ptr + rdlen;
+
+        while (ptr < end) {
+            int len = *ptr++;
+            if (ptr + len > end) {
+                break;
+            }
+            memcpy(p, ptr, (len < remain) ? len : remain);
+            p += len;
+            ptr += len;
+            remain -= len;
+            if (remain <= 0) break;
+        }
+    }
+    q_context->more = (flags & kDNSServiceFlagsMoreComing) && (errorCode == kDNSServiceErr_NoError);
+}
+#endif
 
 static char *ipinfo_lookup(
     const char *domain)
 {
+#ifdef __APPLE__
+    DNSServiceRef serviceRef;
+    struct query_context context = {};
+    DNSServiceErrorType error;
+
+    error = DNSServiceQueryRecord(&serviceRef, 0, 0, domain,
+                                  kDNSServiceType_TXT, kDNSServiceClass_IN,
+                                  query_callback, &context);
+
+    if (error != kDNSServiceErr_NoError) {
+        fprintf(stderr, "mtr: DNSServiceQueryRecord failed: %d\n", error);
+        return xstrdup(UNKN);
+    }
+
+    int dns_sd_fd = DNSServiceRefSockFD(serviceRef);
+    if (dns_sd_fd < 0) {
+        fprintf(stderr, "mtr: DNSServiceRefSockFD failed\n");
+        DNSServiceRefDeallocate(serviceRef);
+        return xstrdup(UNKN);
+    }
+
+    do {
+        fd_set rdfds;
+        struct timeval tv;
+        int result;
+
+        FD_ZERO(&rdfds);
+        FD_SET(dns_sd_fd, &rdfds);
+
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        result = select(dns_sd_fd + 1, &rdfds, NULL, NULL, &tv);
+
+        if (result > 0) {
+            if (FD_ISSET(dns_sd_fd, &rdfds)) {
+                DNSServiceProcessResult(serviceRef);
+            }
+        } else {
+            break;
+        }
+    } while (context.more);
+
+    DNSServiceRefDeallocate(serviceRef);
+
+    if (context.txt[0]) {
+        if (iihash) {
+            DEB_syslog(LOG_INFO, "Malloc-txt(%p): %s", context.txt, context.txt);
+            return strdup(context.txt);
+        } else {
+            xstrncpy(txtrec, context.txt, sizeof(txtrec));
+            return txtrec;
+        }
+    }
+
+    return xstrdup(UNKN);
+#else
     unsigned char answer[PACKETSZ], *pt;
     char host[128];
     char *txt;
@@ -150,6 +255,7 @@ static char *ipinfo_lookup(
         DEB_syslog(LOG_INFO, "Malloc-txt(%p): %s", txt, txt);
 
     return txt;
+#endif
 }
 
 /* originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated */
