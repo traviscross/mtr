@@ -6,7 +6,7 @@ Description
 This small, self-contained Python library serves as a high-level API for the
 creation and management of virtual network topologies in a Linux environment.
 By leveraging Linux's networking capabilities, it allows for the dynamic
-establishment of virutal network environments, links, and complex route and rule
+establishment of virtual network environments, links, and complex route and rule
 configurations. It only relies on iproute2, libc, and Python 3.10. The core
 architecture revolves around the `Network` base class, from which custom network
 topologies can be designed. A typical use-case involves inheriting from this base
@@ -697,4 +697,3 @@ def _supported() -> Tuple[bool, Optional[str]]:
         return False, 'The ip utility must be installed (iproute2)'
 
     return True, None
-

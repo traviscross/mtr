@@ -64,7 +64,7 @@ int tokenize_command(
 /*
     Parse a command string (or command reply string) into a command_t
     structure for later semantic interpretation.  Returns EINVAL if the
-    command string is unparseable or zero for success.
+    command string is unparsable or zero for success.
 
     command_string will be modified in-place with NUL characters terminating
     tokens, and the command_t will use pointers to the contents of
