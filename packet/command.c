@@ -156,7 +156,7 @@ void check_support_command(
 }
 
 /*
-    If a named send_probe argument is recognized, fill in the probe paramters
+    If a named send_probe argument is recognized, fill in the probe parameters
     structure with the argument value.
 */
 static

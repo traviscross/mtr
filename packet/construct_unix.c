@@ -470,7 +470,7 @@ int set_stream_socket_options(
 
 
 /*
-    Open a TCP or SCTP socket, respecting the probe paramters as much as
+    Open a TCP or SCTP socket, respecting the probe parameters as much as
     we can, and use it as an outgoing probe.
 */
 static
