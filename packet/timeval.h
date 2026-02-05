@@ -21,6 +21,9 @@
 
 #include <sys/time.h>
 
+int getmonotime(
+    struct timeval *timeval);
+
 void normalize_timeval(
     struct timeval *timeval);
 
