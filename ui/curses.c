@@ -67,7 +67,7 @@
 #include "utils.h"
 
 
-enum { NUM_FACTORS = 8 };
+enum { NUM_FACTORS = 10 };
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static char block_map[NUM_FACTORS];
@@ -79,15 +79,17 @@ static const wchar_t *braille_map[NUM_FACTORS] = {
 
 enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
 static const int block_col[NUM_FACTORS + 1] = {
-    COLOR_PAIR(red) | A_BOLD,
-    A_NORMAL,
-    COLOR_PAIR(green),
-    COLOR_PAIR(green) | A_BOLD,
-    COLOR_PAIR(yellow) | A_BOLD,
-    COLOR_PAIR(magenta) | A_BOLD,
-    COLOR_PAIR(magenta),
-    COLOR_PAIR(red),
-    COLOR_PAIR(red) | A_BOLD
+    COLOR_PAIR(red) | A_BOLD,      // ???
+    COLOR_PAIR(green) | A_BOLD,    // "."
+    COLOR_PAIR(green) | A_BOLD,    // "1"
+    COLOR_PAIR(green) | A_BOLD,    // "2"
+    COLOR_PAIR(yellow) | A_BOLD,   // "3"
+    COLOR_PAIR(yellow) | A_BOLD,   // "4"
+    COLOR_PAIR(magenta) | A_BOLD,  // "5"
+    COLOR_PAIR(red) | A_BOLD,      // "a"
+    COLOR_PAIR(red) | A_BOLD,      // "b"
+    COLOR_PAIR(red),               // "c"
+    COLOR_PAIR(red)                // ">"
 };
 
 static void pwcenter(
@@ -553,9 +555,26 @@ static void mtr_gen_scale(
             }
         }
     }
-    range = high_ms - low_ms;
+
+// printf("low_ms=%d  high_ms=%d\n", low_ms, high_ms);
+
+    high_ms = 200000;
+    low_ms = 0;
+    scale[0] = 5;     // .
+    scale[1] = 15;    // 1
+    scale[2] = 25;    // 2
+    scale[3] = 35;    // 3
+    scale[4] = 45;    // 4
+    scale[5] = 55;    // 5
+    scale[6] = 100;   // a
+    scale[7] = 200;   // b
+    scale[8] = 400;   // c
+    scale[9] = 1000;  // >
+
+    // range = high_ms - low_ms;
     for (i = 0; i < NUM_FACTORS; i++) {
-        scale[i] = low_ms + ((double) range * factors[i]);
+       scale[i] = scale[i] * 1000;
+        //scale[i] = low_ms + ((double) range * factors[i]);
     }
 }
 
@@ -572,7 +591,8 @@ static void mtr_curses_init(
     }
 
     /* Initialize block_map.  The block_split is always smaller than 9 */
-    block_split = (NUM_FACTORS - 2) / 2;
+    // block_split = (NUM_FACTORS - 2) / 2;
+    block_split = 5;
     for (i = 1; i <= block_split; i++) {
         block_map[i] = '0' + i;
     }
