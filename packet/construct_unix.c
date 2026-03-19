@@ -725,6 +725,21 @@ int construct_ip4_packet(
         }
     }
 
+    /*
+       Solaris/illumos raw ICMP sockets are stricter than Linux and can reject
+       bind() on the shared send socket with EINVAL.  Pre-0.96 this raw ICMP
+       path did not bind the socket, so preserve that behavior there.
+
+       This restores default ICMP probing on Solaris/illumos, but the -a local
+       address selection is not enforced for raw ICMP on those platforms.
+     */
+#if defined(__sun)
+    if (net_state->platform.ip4_socket_raw &&
+        param->protocol == IPPROTO_ICMP) {
+        bind_send_socket = false;
+    }
+#endif
+
     /*  Bind to our local address  */
     if (bind_send_socket && bind(send_socket, (struct sockaddr *)&probe->local_addr,
                 sizeof(struct sockaddr_in))) {
