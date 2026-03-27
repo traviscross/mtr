@@ -16,7 +16,29 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef HAVE_CLOCK_GETTIME
+#include <time.h>
+#endif
+
 #include "timeval.h"
+
+/*
+    Return timeval using monotonic clock.
+*/
+int getmonotime(
+    struct timeval *tv)
+{
+#ifdef HAVE_CLOCK_GETTIME
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+        return -1;
+    }
+    TIMESPEC_TO_TIMEVAL(tv, &ts);
+    return 0;
+#else
+    return gettimeofday(tv, NULL);
+#endif
+}
 
 /*
     Ensure that a timevalue has a microsecond value in the range
