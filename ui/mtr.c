@@ -816,6 +816,11 @@ int main(
 
     parse_arg(&ctl, &names_head, argc, argv);
 
+
+    if (geteuid() != 0) {
+        error(EXIT_FAILURE, 0, "need to be run as root. Use sudo or su.");
+    }
+
     while (optind < argc) {
         char *name = argv[optind++];
         append_to_names(&names_head, name);
