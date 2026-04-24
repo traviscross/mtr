@@ -73,7 +73,7 @@ static int scale[NUM_FACTORS];
 static char block_map[NUM_FACTORS];
 #ifdef WITH_BRAILLE_DISPLAY
 static const wchar_t *braille_map[NUM_FACTORS] = {
-    L"⣀", L"⣀", L"⣤", L"⣤", L"⣶", L"⣶", L"⣿", L"🮐"
+    L"⣀", L"⣀", L"⣤", L"⣤", L"⣶", L"⣶", L"⣿", L"⣿"
 };
 #endif
 
@@ -651,7 +651,7 @@ static const wchar_t *braille_char_lookup(
 
     int i = scale_ms_to_braille_factor(ms);
     if ((unsigned)i >= 4)
-        return L"🮐"; // this is the max
+        return L"⣿"; // max (U+28FF stays in BMP, safe on 16-bit wchar_t)
 
     return braille_set[i];
 }
@@ -693,7 +693,7 @@ static const wchar_t *braille_char_double(
 
     int left_i = scale_ms_to_braille_factor(left_ms);
     if ((unsigned)left_i >= 4)
-        return L"🮐"; // this is the max
+        return L"⣿"; // max (U+28FF stays in BMP, safe on 16-bit wchar_t)
 
     return braille_char_lookup(right_ms, braille_double_lookup[left_i]);
 }
