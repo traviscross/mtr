@@ -21,6 +21,9 @@
 #include "mtr.h"
 
 #include <locale.h>
+#ifdef __CYGWIN__
+#include <windows.h>
+#endif
 #include <assert.h>
 #include <strings.h>
 #include <unistd.h>
@@ -39,7 +42,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#if defined(HAVE_NCURSES_H)
+/* On Cygwin, <ncurses.h> is the non-wide variant and lacks addwstr/add_wch.
+   Include <ncursesw/ncurses.h> directly when the braille display is built. */
+#if defined(__CYGWIN__) && defined(WITH_BRAILLE_DISPLAY)
+#include <ncursesw/ncurses.h>
+#elif defined(HAVE_NCURSES_H)
 #include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
 #include <ncurses/curses.h>
@@ -717,7 +724,7 @@ static void mtr_print_braille(
         wstr = L"▁";
 
     attrset(block_col[f + 1]);
-    printw("%ls", wstr);
+    addwstr(wstr);
     attrset(A_NORMAL);
 }
 
@@ -966,7 +973,7 @@ void mtr_curses_redraw(
             attrset(block_col[i + 1]);
 #ifdef WITH_BRAILLE_DISPLAY
             if (use_braille_map)
-                printw("%ls", braille_map[i]);
+                addwstr(braille_map[i]);
             else
 #endif
                 printw("%c", block_map[i]);
@@ -988,7 +995,12 @@ void mtr_curses_open(
 
 #ifdef WITH_BRAILLE_DISPLAY
     // initialize all locale variables, before ncurses starts
-    setlocale(LC_ALL, "");
+#ifdef __CYGWIN__
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+#endif
+    if (!setlocale(LC_ALL, "C.UTF-8"))
+        setlocale(LC_ALL, "");
 #endif
 
     initscr();
