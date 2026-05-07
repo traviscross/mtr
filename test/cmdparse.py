@@ -119,6 +119,14 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertIn('Drop', reply.stdout)
         self.assertIn('Jint', reply.stdout)
 
+    def test_help_lists_report_on_exit(self):
+        'Test that the curses exit snapshot option remains advertised.'
+
+        reply = self.run_mtr('--help')
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertIn('--report-on-exit', reply.stdout)
+
     def test_port_with_tcp_succeeds_flag(self):
         'Test that specifying -P with -T (TCP) succeeds.'
 
