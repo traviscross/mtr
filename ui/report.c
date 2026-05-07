@@ -229,8 +229,9 @@ void report_close(
                     for (k = 0; k < mpls->labels; k++) {
                         printf
                             ("    |  |+-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mpls->label[k], mpls->tc[k], mpls->s[k],
-                             mpls->ttl[k]);
+                             mpls->label[k], (unsigned int) mpls->tc[k],
+                             (unsigned int) mpls->s[k],
+                             (unsigned int) mpls->ttl[k]);
                     }
                 }
 
@@ -239,16 +240,18 @@ void report_close(
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->tc[k], mplss->s[k],
-                             mplss->ttl[k]);
+                             mplss->label[k], (unsigned int) mplss->tc[k],
+                             (unsigned int) mplss->s[k],
+                             (unsigned int) mplss->ttl[k]);
                     }
                 } else {
                     printf("    |   |-- %s\n", strlongip(ctl->af, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->tc[k], mplss->s[k],
-                             mplss->ttl[k]);
+                             mplss->label[k], (unsigned int) mplss->tc[k],
+                             (unsigned int) mplss->s[k],
+                             (unsigned int) mplss->ttl[k]);
                     }
                 }
 #endif
@@ -266,8 +269,9 @@ void report_close(
             int k;
             for (k = 0; k < mpls->labels; k++) {
                 printf("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                       mpls->label[k], mpls->tc[k], mpls->s[k],
-                       mpls->ttl[k]);
+                       mpls->label[k], (unsigned int) mpls->tc[k],
+                       (unsigned int) mpls->s[k],
+                       (unsigned int) mpls->ttl[k]);
             }
         }
 #endif

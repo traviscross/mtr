@@ -186,15 +186,20 @@ static void read_from_file(
 
     FILE *in;
     char line[512];
+    int close_input;
+    int read_error;
+    int read_errno;
 
     if (!filename || strcmp(filename, "-") == 0) {
         clearerr(stdin);
         in = stdin;
+        close_input = 0;
     } else {
         in = fopen(filename, "r");
         if (!in) {
             error(EXIT_FAILURE, errno, "open %s", filename);
         }
+        close_input = 1;
     }
 
     while (fgets(line, sizeof(line), in)) {
@@ -202,12 +207,16 @@ static void read_from_file(
         append_to_names(names, name);
     }
 
-    if (ferror(in)) {
-        error(EXIT_FAILURE, errno, "ferror %s", filename);
+    read_error = ferror(in);
+    read_errno = errno;
+
+    if (close_input && fclose(in)) {
+        error(EXIT_FAILURE, errno, "close %s", filename);
     }
 
-    if (in != stdin)
-        fclose(in);
+    if (read_error) {
+        error(EXIT_FAILURE, read_errno, "ferror %s", filename);
+    }
 }
 
 /*

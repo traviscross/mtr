@@ -376,7 +376,8 @@ static char *get_ipinfo(
         ENTRY *found_item;
 
         DEB_syslog(LOG_INFO, ">> Search: %s", key);
-        item.key = key;;
+        item.key = key;
+        item.data = NULL;
         if ((found_item = hsearch(item, FIND))) {
             if (!(val = (*((items_t *) found_item->data))[ctl->ipinfo_no]))
                 val = (*((items_t *) found_item->data))[0];

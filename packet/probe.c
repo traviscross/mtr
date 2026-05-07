@@ -232,9 +232,11 @@ void format_mpls_string(
             append_pos += strlen(append_pos);
         }
 
-        snprintf(append_pos, buffer_size, "%d,%d,%d,%d",
-                 mpls->label, mpls->traffic_class,
-                 mpls->bottom_of_stack, mpls->ttl);
+        snprintf(append_pos, buffer_size, "%u,%u,%u,%u",
+                 (unsigned int) mpls->label,
+                 (unsigned int) mpls->traffic_class,
+                 (unsigned int) mpls->bottom_of_stack,
+                 (unsigned int) mpls->ttl);
 
         buffer_size -= strlen(append_pos);
         append_pos += strlen(append_pos);
@@ -283,7 +285,7 @@ void respond_to_probe(
     }
 
     snprintf(response, COMMAND_BUFFER_SIZE,
-             "%d %s %s %s round-trip-time %d",
+             "%d %s %s %s round-trip-time %u",
              probe->token, result, ip_argument, ip_text, round_trip_us);
 
     if (mpls_count) {
@@ -317,7 +319,7 @@ int find_source_addr(
     const struct sockaddr_storage *destaddr)
 {
     int sock;
-    int len;
+    socklen_t len;
     struct sockaddr_storage dest_with_port;
 #ifdef __linux__
     // The Linux code needs these.
