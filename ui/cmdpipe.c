@@ -662,7 +662,8 @@ void handle_reply_errors(
 
     if (!strcmp(reply_name, "permission-denied")) {
         display_close(ctl);
-        error(EXIT_FAILURE, 0, "Permission denied");
+        error(EXIT_FAILURE, 0,
+              "mtr-packet reported permission denied while sending a probe");
     }
 
     if (!strcmp(reply_name, "address-in-use")) {
