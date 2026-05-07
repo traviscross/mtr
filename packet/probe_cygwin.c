@@ -273,6 +273,8 @@ void WINAPI on_icmp_reply(
     ICMP_ECHO_REPLY *reply4;
     ICMPV6_ECHO_REPLY *reply6;
 
+    remote_addr = request->dest_sockaddr;
+
     if (request->ip_version == 6) {
         reply6 = request->reply6;
         reply_count = Icmp6ParseReplies(reply6, sizeof(ICMPV6_ECHO_REPLY));
