@@ -38,11 +38,26 @@
 #include <sys/capability.h>
 #endif
 
+#define MIN_UNPRIVILEGED_PORT 1024
+#define UDP_PORT_RANGE 65536
+
 /*  A source of data for computing a checksum  */
 struct checksum_source_t {
     const void *data;
     size_t size;
 };
+
+static
+uint16_t udp_source_port_from_pid(void)
+{
+    uint16_t port = getpid() & 0xffff;
+
+    if (port < MIN_UNPRIVILEGED_PORT) {
+        port += UDP_PORT_RANGE - MIN_UNPRIVILEGED_PORT;
+    }
+
+    return port;
+}
 
 /*  Compute the IP checksum (or ICMP checksum) of a packet.  */
 static
@@ -164,7 +179,7 @@ void set_udp_ports(
         if (param->local_port) {
             udp->srcport = htons(param->local_port);
         } else {
-            udp->srcport = htons(getpid());
+            udp->srcport = htons(udp_source_port_from_pid());
         }
 
         udp->checksum = 0;

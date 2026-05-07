@@ -452,7 +452,8 @@ instead, so the destination port changes for each probe.
 .TP
 .B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
 The source port number for UDP traces.  When this option is not given,
-UDP traces use the mtr process ID as the source port, unless
+UDP traces use the low 16 bits of the mtr process ID as the source port,
+rotating privileged ports into the high end of the UDP port range unless
 .B \-\-port
 was given; in that case, UDP traces encode the probe sequence number in
 the source port instead.
