@@ -46,6 +46,14 @@
 #define MAX_FORMAT_STR 320
 
 
+static int is_useful_hostname(
+    const char *hostname)
+{
+    return hostname && hostname[0] != '\0'
+        && !(hostname[0] == '.' && hostname[1] == '\0');
+}
+
+
 void report_open(
     void)
 {
@@ -64,7 +72,7 @@ static size_t snprint_addr(
     if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
         struct hostent *host =
             ctl->dns ? addr2host((void *) addr, ctl->af) : NULL;
-        if (!host)
+        if (!host || !is_useful_hostname(host->h_name))
             return snprintf(dst, dst_len, "%s", strlongip(ctl->af, addr));
         else if (ctl->dns && ctl->show_ips)
             return snprintf(dst, dst_len, "%s (%s)", host->h_name,
