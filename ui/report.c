@@ -82,8 +82,9 @@ static void print_mpls(
 {
     int k;
     for (k = 0; k < mpls->labels; k++)
-        printf("       [MPLS: Lbl %lu TC %u S %cu TTL %u]\n",
-               mpls->label[k], mpls->tc[k], mpls->s[k], mpls->ttl[k]);
+        printf("       [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
+               mpls->label[k], (unsigned int) mpls->tc[k],
+               (unsigned int) mpls->s[k], (unsigned int) mpls->ttl[k]);
 }
 #endif
 

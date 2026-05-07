@@ -486,8 +486,9 @@ static void mtr_curses_hosts(
 
             for (k = 0; k < mpls->labels && ctl->enablempls; k++) {
                 printw("\n    [MPLS: Lbl %lu TC %u S %u TTL %u]",
-                       mpls->label[k], mpls->tc[k], mpls->s[k],
-                       mpls->ttl[k]);
+                       mpls->label[k], (unsigned int) mpls->tc[k],
+                       (unsigned int) mpls->s[k],
+                       (unsigned int) mpls->ttl[k]);
             }
 
             /* Multi path */
@@ -517,8 +518,9 @@ static void mtr_curses_hosts(
                 }
                 for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                     printw("\n    [MPLS: Lbl %lu TC %u S %u TTL %u]",
-                           mplss->label[k], mplss->tc[k], mplss->s[k],
-                           mplss->ttl[k]);
+                           mplss->label[k], (unsigned int) mplss->tc[k],
+                           (unsigned int) mplss->s[k],
+                           (unsigned int) mplss->ttl[k]);
                 }
                 attroff(A_BOLD);
             }
