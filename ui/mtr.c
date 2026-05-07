@@ -749,6 +749,61 @@ int get_addrinfo_from_name(
 }
 
 
+static int count_names(
+    names_t *names)
+{
+    int count = 0;
+
+    while (names != NULL) {
+        count++;
+        names = names->next;
+    }
+
+    return count;
+}
+
+
+static int validate_report_targets(
+    struct mtr_ctl *ctl,
+    names_t *names)
+{
+    struct mtr_ctl lookup_ctl = *ctl;
+
+    while (names != NULL) {
+        int gai_error;
+        struct addrinfo hints;
+        struct addrinfo *res = NULL;
+
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = lookup_ctl.af;
+        hints.ai_socktype = SOCK_DGRAM;
+        gai_error = getaddrinfo(names->name, NULL, &hints, &res);
+        if (gai_error) {
+            if (gai_error == EAI_SYSTEM) {
+                error(0, 0, "Failed to resolve host: %s", names->name);
+            } else {
+                error(0, 0, "Failed to resolve host: %s: %s", names->name,
+                      gai_strerror(gai_error));
+            }
+#if defined(ENABLE_IPV6) && defined(EAI_ADDRFAMILY)
+            if (gai_error == EAI_ADDRFAMILY && lookup_ctl.af != AF_UNSPEC) {
+                error(0, 0,
+                      "multiple report targets must use the same address family");
+            }
+#endif
+            return -1;
+        }
+
+        lookup_ctl.af = res->ai_family;
+        freeaddrinfo(res);
+        names = names->next;
+    }
+
+    ctl->af = lookup_ctl.af;
+    return 0;
+}
+
+
 int main(
     int argc,
     char **argv)
@@ -824,6 +879,11 @@ int main(
     /* default: localhost. */
     if (!names_head)
         append_to_names(&names_head, "localhost");
+
+    if (!ctl.Interactive && count_names(names_head) > 1 &&
+        validate_report_targets(&ctl, names_head) != 0) {
+        return EXIT_FAILURE;
+    }
 
     names_walk = names_head;
     while (names_walk != NULL) {

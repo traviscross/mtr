@@ -184,6 +184,14 @@ generates a significant amount of network traffic.  Using
 .B mtr
 to measure the quality of your network may result in decreased
 network performance.
+.PP
+Report mode can process multiple hosts in sequence. All hosts in one
+invocation must resolve to the same address family; use separate invocations
+or force an address family with
+.B \-4
+or
+.B \-6
+when tracing mixed IPv4 and IPv6 targets.
 .TP
 .B \-w\fR, \fB\-\-report\-wide
 This option puts
