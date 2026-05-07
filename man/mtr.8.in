@@ -341,9 +341,12 @@ ll.
 .br
 
 It is possible to cycle between these fields at runtime (using the \fBy\fR key).
+IP information lookup is disabled by default unless this option or
+\fB-z\fR is used.
 .TP
 .B \-z\fR, \fB\-\-aslookup
 Displays the Autonomous System (AS) number alongside each hop.  Equivalent to \fB\-\-ipinfo 0\fR.
+In curses mode, use the \fBz\fR key to toggle ASN display on or off at runtime.
 .IP
 Example (columns to the right not shown for clarity):
 .nf
