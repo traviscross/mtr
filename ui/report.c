@@ -505,13 +505,13 @@ void csv_close(
         if (!ctl->ipinfo_no) {
             char *fmtinfo = fmt_ipinfo(ctl, addr);
             fmtinfo = trim(fmtinfo, '\0');
-            printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
-                   (long long) now, "OK", ctl->Hostname, at + 1, name,
+            printf("MTR.%s,%lld,OK,%s,%d,%s,%s", PACKAGE_VERSION,
+                   (long long) now, ctl->Hostname, at + 1, name,
                    fmtinfo);
         } else
 #endif
-            printf("MTR.%s,%lld,%s,%s,%d,%s", PACKAGE_VERSION,
-                   (long long) now, "OK", ctl->Hostname, at + 1, name);
+            printf("MTR.%s,%lld,OK,%s,%d,%s", PACKAGE_VERSION,
+                   (long long) now, ctl->Hostname, at + 1, name);
 
         for (i = 0; i < MAXFLD; i++) {
             j = ctl->fld_index[ctl->fld_active[i]];
@@ -557,13 +557,13 @@ void csv_close(
                     if (!ctl->ipinfo_no) {
                         char *fmtinfo = fmt_ipinfo(ctl, addr2);
                         fmtinfo = trim(fmtinfo, '\0');
-                        printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
-                            (long long) now, "OK", ctl->Hostname, at + 1, name,
+                        printf("MTR.%s,%lld,OK,%s,%d,%s,%s", PACKAGE_VERSION,
+                            (long long) now, ctl->Hostname, at + 1, name,
                             fmtinfo);
                     } else
 #endif
-                        printf("MTR.%s,%lld,%s,%s,%d,%s", PACKAGE_VERSION,
-                           (long long) now, "OK", ctl->Hostname, at + 1, name);
+                        printf("MTR.%s,%lld,OK,%s,%d,%s", PACKAGE_VERSION,
+                           (long long) now, ctl->Hostname, at + 1, name);
 
                     /* Use values associated with the first ip discovered for this hop */
                     for (i = 0; i < MAXFLD; i++) {
