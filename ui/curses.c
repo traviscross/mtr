@@ -139,6 +139,26 @@ static char *format_number(
 }
 
 
+static const char *probe_protocol_name(
+    int protocol)
+{
+    switch (protocol) {
+    case IPPROTO_ICMP:
+        return "ICMP";
+    case IPPROTO_UDP:
+        return "UDP";
+    case IPPROTO_TCP:
+        return "TCP";
+#ifdef HAS_SCTP
+    case IPPROTO_SCTP:
+        return "SCTP";
+#endif
+    default:
+        return "unknown";
+    }
+}
+
+
 int mtr_curses_keyaction(
     struct mtr_ctl *ctl)
 {
@@ -876,8 +896,8 @@ void mtr_curses_redraw(
 
     move(0, 0);
     attron(A_BOLD);
-    snprintf(buf, sizeof(buf), "%s%s%s", "My traceroute  [v",
-             PACKAGE_VERSION, "]");
+    snprintf(buf, sizeof(buf), "%s%s%s%s", "My traceroute  [v",
+             PACKAGE_VERSION, "] ", probe_protocol_name(ctl->mtrtype));
     pwcenter(buf);
     attroff(A_BOLD);
 
