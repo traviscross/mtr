@@ -446,9 +446,16 @@ Use Stream Control Transmission Protocol packets instead of ICMP ECHO.
 .TP
 .B \-P \fIPORT\fR, \fB\-\-port \fIPORT
 The target port number for TCP/SCTP/UDP traces.
+When this option is not given, TCP and SCTP traces use port 80.
+UDP traces encode the probe sequence number in the destination port
+instead, so the destination port changes for each probe.
 .TP
 .B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
-The source port number for UDP traces.
+The source port number for UDP traces.  When this option is not given,
+UDP traces use the mtr process ID as the source port, unless
+.B \-\-port
+was given; in that case, UDP traces encode the probe sequence number in
+the source port instead.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
 The number of seconds to keep probe sockets open before giving up on
