@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "mtr.h"
 #include "dns.h"
@@ -71,8 +72,10 @@ char *strlongip(
 #define UNUSED_IF_NO_IPV6 ATTRIBUTE_UNUSED
 #endif
 
-static int todns[2], fromdns[2];
+static int todns[2] = { -1, -1 };
+static int fromdns[2] = { -1, -1 };
 static FILE *fromdnsfp;
+static pid_t dns_pid;
 
 static int longipstr(
     char *s,
@@ -133,6 +136,10 @@ void dns_open(
         int i;
         FILE *infp;
 
+        if (setpgid(0, 0) < 0) {
+            error(EXIT_FAILURE, errno, "can't create DNS process group");
+        }
+
         /* Automatically reap children. */
         if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
             error(EXIT_FAILURE, errno, "signal");
@@ -186,6 +193,10 @@ void dns_open(
         int flags;
 
         /* the parent. */
+        if (setpgid(pid, pid) < 0 && errno != EACCES) {
+            error(0, errno, "can't set DNS process group");
+        }
+        dns_pid = pid;
         close(todns[0]);        /* close the pipe ends we don't need. */
         close(fromdns[1]);
         fromdnsfp = fdopen(fromdns[0], "r");
@@ -193,6 +204,44 @@ void dns_open(
         flags |= O_NONBLOCK;
         fcntl(fromdns[0], F_SETFL, flags);
     }
+}
+
+void dns_close(
+    void)
+{
+    int status;
+
+    if (todns[1] >= 0) {
+        close(todns[1]);
+        todns[1] = -1;
+    }
+    if (fromdnsfp) {
+        fclose(fromdnsfp);
+        fromdnsfp = NULL;
+        fromdns[0] = -1;
+    } else if (fromdns[0] >= 0) {
+        close(fromdns[0]);
+        fromdns[0] = -1;
+    }
+
+    if (dns_pid <= 0) {
+        return;
+    }
+
+    if (kill(-dns_pid, SIGTERM) < 0 && errno != ESRCH) {
+        error(0, errno, "kill DNS process group");
+    }
+
+    while (waitpid(dns_pid, &status, 0) < 0) {
+        if (errno != EINTR) {
+            if (errno != ECHILD) {
+                error(0, errno, "wait DNS process");
+            }
+            break;
+        }
+    }
+
+    dns_pid = 0;
 }
 
 int dns_waitfd(

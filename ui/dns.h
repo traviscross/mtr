@@ -24,6 +24,8 @@
 
 extern void dns_open(
     void);
+extern void dns_close(
+    void);
 extern int dns_waitfd(
     void);
 extern void dns_ack(

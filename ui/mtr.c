@@ -866,6 +866,7 @@ int main(
 
         net_end_transit();
         display_close(&ctl);
+        dns_close();
         unlock(stdout);
 
         if (ctl.Interactive)
