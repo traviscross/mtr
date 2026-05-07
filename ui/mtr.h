@@ -113,6 +113,7 @@ struct mtr_ctl {
     int fld_index[FLD_INDEX_SZ];        /* default display field (defined by key in net.h) and order */
     char available_options[MAXFLD];
     int display_offset;         /* only used in text mode */
+    int Interrupted;
     void *gtk_data;             /* pointer to hold arbitrary gtk data */
     unsigned int                /* bit field to hold named booleans */
      ForceMaxPing:1,

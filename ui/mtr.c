@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -868,6 +869,10 @@ int main(
         display_close(&ctl);
         unlock(stdout);
 
+        if (ctl.Interrupted) {
+            exit_val = 128 + SIGINT;
+            break;
+        }
         if (ctl.Interactive)
             break;
         else
