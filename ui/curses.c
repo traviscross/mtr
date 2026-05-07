@@ -876,8 +876,8 @@ void mtr_curses_redraw(
 
     move(0, 0);
     attron(A_BOLD);
-    snprintf(buf, sizeof(buf), "%s%s%s", "My traceroute  [v",
-             PACKAGE_VERSION, "]");
+    snprintf(buf, sizeof(buf), "My traceroute on %s  [v%s]",
+             ctl->LocalHostname, PACKAGE_VERSION);
     pwcenter(buf);
     attroff(A_BOLD);
 
