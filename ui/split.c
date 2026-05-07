@@ -23,10 +23,15 @@
 #include "config.h"
 
 #include <ctype.h>
-#include <stdlib.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "mtr.h"
 #include "display.h"
@@ -36,22 +41,6 @@
 #include "split.h"
 #include "utils.h"
 
-#ifdef HAVE_CURSES
-#if defined(HAVE_NCURSES_H)
-#include <ncurses.h>
-#elif defined(HAVE_NCURSES_CURSES_H)
-#include <ncurses/curses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#else
-#error No curses header file available
-#endif
-#else
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
-
 
 /* There is 256 hops max in the IP header (coded with a byte) */
 #define MAX_LINE_COUNT 256
@@ -59,6 +48,18 @@
 
 static char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
 static int LineCount;
+static struct termios saved_termios;
+static int have_saved_termios;
+
+
+static void split_restore_terminal(
+    void)
+{
+    if (have_saved_termios) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &saved_termios);
+        have_saved_termios = 0;
+    }
+}
 
 
 #define DEBUG 0
@@ -132,12 +133,25 @@ void split_open(
     void)
 {
     int i;
+    struct termios raw_termios;
 #if DEBUG
     printf("split_open()\n");
 #endif
     LineCount = -1;
     for (i = 0; i < MAX_LINE_COUNT; i++) {
         xstrncpy(Lines[i], "", MAX_LINE_SIZE);
+    }
+
+    if (isatty(STDIN_FILENO) &&
+        tcgetattr(STDIN_FILENO, &saved_termios) == 0) {
+        raw_termios = saved_termios;
+        raw_termios.c_lflag &= ~ICANON;
+        raw_termios.c_cc[VMIN] = 0;
+        raw_termios.c_cc[VTIME] = 0;
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &raw_termios) == 0) {
+            have_saved_termios = 1;
+            atexit(split_restore_terminal);
+        }
     }
 }
 
@@ -148,30 +162,33 @@ void split_close(
 #if DEBUG
     printf("split_close()\n");
 #endif
+    split_restore_terminal();
 }
 
 
 int split_keyaction(
     void)
 {
-#ifdef HAVE_CURSES
-    unsigned char c = getch();
-#else
     fd_set readfds;
     struct timeval tv;
     char c;
+    int rv;
 
     FD_ZERO(&readfds);
-    FD_SET(0, &readfds);
+    FD_SET(STDIN_FILENO, &readfds);
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (select(1, &readfds, NULL, NULL, &tv) > 0) {
-        if (read(0, &c, 1) <= 0)
-          return ActionQuit;
-    } else
+    do {
+        rv = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
+    } while (rv < 0 && errno == EINTR);
+
+    if (rv > 0) {
+        if (read(STDIN_FILENO, &c, 1) <= 0)
+            return ActionQuit;
+    } else {
         return 0;
-#endif
+    }
 
 #if DEBUG
     printf("split_keyaction()\n");
