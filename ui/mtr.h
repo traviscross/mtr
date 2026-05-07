@@ -27,6 +27,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "packet/ports.h"
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -66,8 +68,6 @@ typedef int time_t;
 #define SAVED_PINGS 400
 #define MAX_PATH 128
 #define MaxHost 256
-#define MinPort 1024
-#define MaxPort 65535
 #define MAXPACKET 65535          /* largest test packet size */
 #define MINPACKET 28            /* 20 bytes IP header and 8 bytes ICMP or UDP */
 #define MAXLABELS 8             /* http://kb.juniper.net/KB2190 (+ 3 just in case) */
