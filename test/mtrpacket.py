@@ -275,7 +275,7 @@ class MtrPacketTest(unittest.TestCase):
         '''Read the next reply from mtr-packet.
 
         Attempt to read the next command reply from mtr-packet.  If no reply
-        is available withing the timeout time, raise ReadReplyTimeout
+        is available within the timeout time, raise ReadReplyTimeout
         instead.'''
 
         start_time = time.time()

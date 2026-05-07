@@ -177,11 +177,10 @@ void handle_inner_ip4_packet(
     const struct SCTPHeader *sctp;
 #endif
 
-    if (ip->protocol == IPPROTO_ICMP) {
-        if (packet_length < ip_icmp_size) {
+    if (packet_length < ip_icmp_size) {
             return;
-        }
-
+    }
+    if (ip->protocol == IPPROTO_ICMP) {
         icmp = (struct ICMPHeader *) (ip + 1);
 
         find_and_receive_probe(net_state, remote_addr, timestamp,
