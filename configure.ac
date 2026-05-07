@@ -138,6 +138,10 @@ AS_IF([test "x$with_ncurses" = "xyes"],
     [initscr], [ncursesw ncurses curses],
     [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
     [with_ncurses=no])
+   AC_SEARCH_LIBS(
+     [raw], [tinfow tinfo termcap],
+     [],
+     [with_ncurses=no])
 ])
 AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 
