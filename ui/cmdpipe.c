@@ -241,8 +241,7 @@ void execute_packet_child(
     /*
        Then try to find it where WE were executed from.
      */
-    strncpy (buf, myname, 240);
-    strcat (buf, "-packet");
+    snprintf(buf, sizeof(buf), "%s-packet", myname);
     mtr_packet_path = buf;
     execl(mtr_packet_path, "mtr-packet", (char *) NULL);
 
