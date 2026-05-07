@@ -162,6 +162,9 @@ void dns_open(
             close(i);
         }
         infp = fdopen(todns[0], "r");
+        if (!infp) {
+            error(EXIT_FAILURE, errno, "fdopen DNS lookup pipe");
+        }
 
         while (fgets(buf, sizeof(buf), infp)) {
             ip_t host;
@@ -207,9 +210,17 @@ void dns_open(
         close(todns[0]);        /* close the pipe ends we don't need. */
         close(fromdns[1]);
         fromdnsfp = fdopen(fromdns[0], "r");
+        if (fromdnsfp == NULL) {
+            error(EXIT_FAILURE, errno, "fdopen DNS result pipe");
+        }
         flags = fcntl(fromdns[0], F_GETFL, 0);
+        if (flags < 0) {
+            error(EXIT_FAILURE, errno, "fcntl DNS result pipe");
+        }
         flags |= O_NONBLOCK;
-        fcntl(fromdns[0], F_SETFL, flags);
+        if (fcntl(fromdns[0], F_SETFL, flags) < 0) {
+            error(EXIT_FAILURE, errno, "fcntl DNS result pipe");
+        }
     }
 }
 
