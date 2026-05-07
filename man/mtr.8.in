@@ -29,6 +29,9 @@ mtr \- a network diagnostic tool
 .BI \--displaymode \ MODE\c
 ]
 [\c
+.BI \--scale \ SCALE\c
+]
+[\c
 .B \-\-raw\c
 ]
 [\c
@@ -221,6 +224,19 @@ Use this option to select the initial display mode: 0 (default)
 selects statistics, 1 selects the stripchart without latency
 information, and 2 selects the stripchart with latency
 information.
+.TP
+.B -\-scale \fISCALE
+Use this option to select fixed latency thresholds for the stripchart
+display modes.
+.I SCALE
+can be
+.BR fast ,
+.BR average ,
+.BR slow ,
+or nine strictly increasing millisecond thresholds separated by colons,
+for example
+.BR 5:15:25:35:45:55:101:200:400 .
+Without this option, the stripchart keeps using the dynamic scale.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force

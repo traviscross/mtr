@@ -20,6 +20,7 @@
 
 #include "mtr.h"
 
+#include <limits.h>
 #include <locale.h>
 #ifdef __CYGWIN__
 #include <windows.h>
@@ -74,27 +75,29 @@
 #include "utils.h"
 
 
-enum { NUM_FACTORS = 8 };
+enum { NUM_FACTORS = MTR_SCALE_FACTORS };
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static char block_map[NUM_FACTORS];
 #ifdef WITH_BRAILLE_DISPLAY
 static const wchar_t *braille_map[NUM_FACTORS] = {
-    L"⣀", L"⣀", L"⣤", L"⣤", L"⣶", L"⣶", L"⣿", L"⣿"
+    L"⣀", L"⣀", L"⣤", L"⣤", L"⣦", L"⣦", L"⣶", L"⣶", L"⣿", L"⣿"
 };
 #endif
 
 enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
 static const int block_col[NUM_FACTORS + 1] = {
     COLOR_PAIR(red) | A_BOLD,
-    A_NORMAL,
-    COLOR_PAIR(green),
+    COLOR_PAIR(green) | A_BOLD,
+    COLOR_PAIR(green) | A_BOLD,
     COLOR_PAIR(green) | A_BOLD,
     COLOR_PAIR(yellow) | A_BOLD,
+    COLOR_PAIR(yellow) | A_BOLD,
     COLOR_PAIR(magenta) | A_BOLD,
-    COLOR_PAIR(magenta),
+    COLOR_PAIR(red) | A_BOLD,
+    COLOR_PAIR(red) | A_BOLD,
     COLOR_PAIR(red),
-    COLOR_PAIR(red) | A_BOLD
+    COLOR_PAIR(red)
 };
 
 static void pwcenter(
@@ -546,6 +549,14 @@ static void mtr_gen_scale(
     for (i = 0; i < NUM_FACTORS; i++) {
         scale[i] = 0;
     }
+    if (ctl->fixed_scale) {
+        for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+            scale[i] = ctl->scale[i];
+        }
+        scale[NUM_FACTORS - 1] = INT_MAX;
+        return;
+    }
+
     max = net_max(ctl);
     for (at = ctl->display_offset; at < max; at++) {
         saved = net_saved_pings(at);
@@ -579,7 +590,7 @@ static void mtr_curses_init(
     }
 
     /* Initialize block_map.  The block_split is always smaller than 9 */
-    block_split = (NUM_FACTORS - 2) / 2;
+    block_split = NUM_FACTORS / 2;
     for (i = 1; i <= block_split; i++) {
         block_map[i] = '0' + i;
     }

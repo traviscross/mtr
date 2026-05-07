@@ -136,6 +136,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -t, --curses                     use curses terminal interface\n", out);       
 #endif       
     fputs("     --displaymode MODE           select initial display mode\n", out);       
+    fputs("     --scale SCALE                set stripchart scale thresholds\n", out);
 #ifdef HAVE_GTK       
     fputs(" -g, --gtk                        use GTK+ xwindow interface\n", out);
 #endif       
@@ -285,6 +286,87 @@ static void init_fld_options(
 }
 
 
+static void set_fixed_scale(
+    struct mtr_ctl *ctl,
+    const int *thresholds)
+{
+    int i;
+
+    for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+        ctl->scale[i] = thresholds[i] * 1000;
+    }
+    ctl->fixed_scale = 1;
+}
+
+
+static void parse_scale(
+    struct mtr_ctl *ctl,
+    const char *scale_arg)
+{
+    static const int fast_scale[MTR_SCALE_THRESHOLDS] = {
+        1, 2, 3, 4, 5, 10, 20, 40, 80
+    };
+    static const int average_scale[MTR_SCALE_THRESHOLDS] = {
+        5, 15, 25, 35, 45, 55, 101, 200, 400
+    };
+    static const int slow_scale[MTR_SCALE_THRESHOLDS] = {
+        50, 100, 150, 200, 300, 500, 750, 1000, 2000
+    };
+    const char *cursor = scale_arg;
+    int thresholds[MTR_SCALE_THRESHOLDS];
+    int previous = -1;
+    int i;
+
+    if (!strcmp(scale_arg, "fast")) {
+        set_fixed_scale(ctl, fast_scale);
+        return;
+    }
+    if (!strcmp(scale_arg, "average")) {
+        set_fixed_scale(ctl, average_scale);
+        return;
+    }
+    if (!strcmp(scale_arg, "slow")) {
+        set_fixed_scale(ctl, slow_scale);
+        return;
+    }
+
+    for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+        char *end;
+        long threshold;
+
+        errno = 0;
+        threshold = strtol(cursor, &end, 10);
+        if (cursor == end || errno || threshold < 0 ||
+            threshold > INT_MAX / 1000) {
+            error(EXIT_FAILURE, 0, "invalid scale threshold: %s", scale_arg);
+        }
+        if (threshold <= previous) {
+            error(EXIT_FAILURE, 0,
+                  "scale thresholds must be strictly increasing: %s",
+                  scale_arg);
+        }
+
+        thresholds[i] = threshold;
+        previous = threshold;
+
+        if (i == MTR_SCALE_THRESHOLDS - 1) {
+            if (*end) {
+                error(EXIT_FAILURE, 0,
+                      "scale expects %d thresholds: %s",
+                      MTR_SCALE_THRESHOLDS, scale_arg);
+            }
+        } else if (*end != ':') {
+            error(EXIT_FAILURE, 0,
+                  "scale expects %d colon-separated thresholds: %s",
+                  MTR_SCALE_THRESHOLDS, scale_arg);
+        }
+        cursor = end + 1;
+    }
+
+    set_fixed_scale(ctl, thresholds);
+}
+
+
 static void parse_arg(
     struct mtr_ctl *ctl,
     names_t ** names,
@@ -301,9 +383,10 @@ static void parse_arg(
      */
     enum {
         OPT_DISPLAYMODE = CHAR_MAX + 1,
-        OPT_IPINFO4 = CHAR_MAX + 2,
+        OPT_SCALE = CHAR_MAX + 2,
+        OPT_IPINFO4 = CHAR_MAX + 3,
 #ifdef ENABLE_IPV6
-        OPT_IPINFO6 = CHAR_MAX + 3,
+        OPT_IPINFO6 = CHAR_MAX + 4,
 #endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
@@ -332,6 +415,7 @@ static void parse_arg(
         {"json", 0, NULL, 'j'},
 #endif
         {"displaymode", 1, NULL, OPT_DISPLAYMODE},
+        {"scale", 1, NULL, OPT_SCALE},
         {"split", 0, NULL, 'p'},        /* BL */
         /* maybe above should change to -d 'x' */
 
@@ -446,6 +530,9 @@ static void parse_arg(
             if ((DisplayModeMAX - 1) < ctl->display_mode)
                 error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
                       DisplayModeDefault, (DisplayModeMAX - 1), optarg);
+            break;
+        case OPT_SCALE:
+            parse_scale(ctl, optarg);
             break;
         case 'c':
             ctl->MaxPing =
