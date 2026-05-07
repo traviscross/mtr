@@ -10,6 +10,12 @@ There are several different ways to provide the privileges:
 2. Run mtr as the root user.
 3. Make mtr-packet a setuid-root binary.
 
+and IMPORTANT:
+
+4a. Not supported: configure sudo to allow selected users to run
+   (only) mtr.
+4b. Workaround: Suported way to allow selected users to run mtr. 
+
 Details:
 
 1. Add limited privileges on systems that support this.
@@ -28,8 +34,8 @@ capability to the mtr-packet binary, run the following command as root:
 2. Run mtr as the root user.
 
 You can limit mtr usage to the root user by not putting a setuid bit
-on the mtr-packet binary. In that case, the security implications are
-minimal.
+/net_raw capability on the mtr-packet binary. In that case, the
+security implications are minimal.
 
 
 3. Make mtr-packet a setuid-root binary.
@@ -37,8 +43,9 @@ minimal.
 The mtr-packet binary can be made setuid-root, which is what "make install"
 does only if using setcap (above) fails.  Using setcap is tried first.
 
-When mtr-packet is installed as suid-root, some concern over security is
-justified.  mtr-packet does the following two things after it is launched:
+When mtr-packet is installed as suid-root, some concern over security
+is justified.  mtr-packet does the following things after it is
+launched:
 
 *  mtr-packet open sockets for sending raw packets and for receiving
    ICMP packets.
@@ -60,6 +67,76 @@ from or write to any system files other than those normally accessible
 by the user running mtr.  The only privileges gained are access to the raw
 socket, which would allow the malicious user to listen to all ICMP packets
 arriving at the system, and to send forged packets with arbitrary contents.
+
+4a. Not supported: Allowing selected users to selecively run mtr using sudo. 
+
+Unix and derived systems like Linux have a privilege system. 
+It is not the best, but it works. 
+
+Certain operations within the system, like accessing hardware or
+setting the system time are considered privileged because you can mess
+up the system if used maliciously. Similarly some networking things
+are dangerous for the local system or could confuse other systems on
+the network, so these are also privileged.
+
+The way Unix(like) systems handle this is classically that only the
+root user can perform the calls that implement these privileged
+operations. Stuff that can't work without some privileged operation is
+then implemented in a program that enforces certain rules to make
+things safe, and the program is given "root" privileges (or on modern
+Linux: just a capability). The program is then responsible for
+not allowing privilege escalations.
+
+mtr is pretty good at managing this situation by running a small
+code-base until doing the privleged stuff, and then dropping
+privileges.
+
+Now, if you remove the "elevated privileges" and use "sudo" to allow a
+limited group of people to run mtr, then "sudo" passes "too much
+privleges" to mtr. Suddenly the whole code within mtr runs with
+elevated privleges. This is NOT GOOD. We have now (may 2026) had two
+reports of issues with this. I expect that there are dozens more
+inside the various libraries that mtr uses, and these are out of my
+control. So... sudo simply should not be used to allow certain users
+mtr-access, while not giving them full "root-access". It does not
+work. 
+
+Security works if you build defences in the right place, and trying to
+make the whole of mtr (including gui libraries!) safe for use as
+root-user without allowing access to privileges not intended is
+unworkable.
+
+mtr still provides a weak attempt to cater to this situation. 
+If you attempt this configuration you must create a file
+/etc/mtr.is.run.under.sudo . If it exists, mtr will attempt to
+plug a few holes. 
+
+So in conclusion: You cannot allow a group of users access to mtr
+using the sudo mechanism and then expect mtr to maintain your system
+security. 
+
+mtr expects to run setuid-root and protects against privilege
+escalation in that scenario. It is not guaranteed to protect against
+privilege escalations if you run it under sudo.
+
+4b.  Workaround: Suported ways to allow selected users to run mtr. 
+
+4b1: YOU the system administrator that wants this configuration could
+write a script or C-program that sanitizes the commandline arguments
+and environment before invoking mtr. Configure sudo to allow the group
+of users to execute that program, not the mtr-binary. This puts the
+responsibiltiy to get it right on you, not the mtr (authors). This is
+difficult to get right. Don't do it. You are not good enough to pull
+this off.
+
+4b2: Better solution: Install mtr-packet as usual with the setcap, or
+setuid-root. Change the group of the binary to the group of
+mtr-allowed-users, and remove the "other" execute bit.  If for some
+reason this is not possible, move the mtr-packet binary to a directory
+where only the mtr-allowd-users can access it. Then put a symlink in
+the normal location. (But i've tested the simple solution (chmod o-x
+mtr-packet) on Linux and that works.)
+
 
 
 If you have further questions or comments about security issues,

@@ -488,7 +488,10 @@ static void parse_arg(
             }
             break;
         case 'F':
-            read_from_file(names, optarg);
+            if (access ("/etc/mtr.is.run.under.sudo", F_OK) != 0)
+               read_from_file(names, optarg);
+            else 
+               error (EXIT_FAILURE, 0, "-F option is disabled under sudo.\n");
             break;
         case 'm':
             ctl->maxTTL = strtoint_or_err(optarg, "invalid argument");
