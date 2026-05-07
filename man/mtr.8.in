@@ -238,6 +238,12 @@ Use the raw output format.  This format is better suited for
 archival of the measurement results.  It could be parsed to
 be presented into any of the other display methods.
 .IP
+Raw output uses one line per event.  Reply lines have the form
+.BR "p " "position " "round-trip-time " sequence ,
+where
+.I round-trip-time
+is an integer number of microseconds.
+.IP
 Example of the raw output format:
 .nf
 h 0 10.1.1.1
