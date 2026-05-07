@@ -76,6 +76,58 @@ static size_t snprint_addr(
 }
 
 
+static void print_xml_attr(
+    const char *name,
+    const char *value)
+{
+    const unsigned char *p;
+
+    printf(" %s=\"", name);
+    for (p = (const unsigned char *) value; *p; p++) {
+        switch (*p) {
+        case '&':
+            printf("&amp;");
+            break;
+        case '<':
+            printf("&lt;");
+            break;
+        case '>':
+            printf("&gt;");
+            break;
+        case '"':
+            printf("&quot;");
+            break;
+        case '\'':
+            printf("&apos;");
+            break;
+        default:
+            putchar(*p);
+            break;
+        }
+    }
+    printf("\"");
+}
+
+
+static char *host_name_for_addr(
+    struct mtr_ctl *ctl,
+    ip_t *addr)
+{
+    struct hostent *host;
+
+    if (!ctl->dns)
+        return NULL;
+    if (!addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af))
+        return NULL;
+
+    host = addr2host((void *) addr, ctl->af);
+    if (!host)
+        return NULL;
+
+    return host->h_name;
+}
+
+
 #ifdef HAVE_IPINFO
 static void print_mpls(
     struct mplslen *mpls)
@@ -405,6 +457,8 @@ void xml_close(
 {
     int i, j, at, max;
     ip_t *addr;
+    char *host_name;
+    char host_addr[MAX_FORMAT_STR];
     char name[MAX_FORMAT_STR];
     char buf[128];
 
@@ -430,8 +484,20 @@ void xml_close(
     for (; at < max; at++) {
         addr = net_addr(at);
         snprint_addr(ctl, name, sizeof(name), addr);
+        if (addrcmp((void *) addr, (void *) &ctl->unspec_addr, ctl->af)) {
+            snprintf(host_addr, sizeof(host_addr), "%s",
+                     strlongip(ctl->af, addr));
+        } else {
+            snprintf(host_addr, sizeof(host_addr), "%s", "???");
+        }
+        host_name = host_name_for_addr(ctl, addr);
 
-        printf("    <HUB COUNT=\"%d\" HOST=\"%s\">\n", at + 1, name);
+        printf("    <HUB COUNT=\"%d\"", at + 1);
+        print_xml_attr("HOST", name);
+        print_xml_attr("ADDR", host_addr);
+        if (host_name)
+            print_xml_attr("HOSTNAME", host_name);
+        printf(">\n");
         for (i = 0; i < MAXFLD; i++) {
             const char *title;
 
