@@ -114,6 +114,13 @@ static void set_sockaddr_ip(
     memcpy(sockaddr_addr_offset(sa), ip, sockaddr_addr_size(sa));
 }
 
+static int is_useful_hostname(
+    const char *hostname)
+{
+    return hostname[0] != '\0'
+        && !(hostname[0] == '.' && hostname[1] == '\0');
+}
+
 void dns_open(
     void)
 {
@@ -176,7 +183,7 @@ void dns_open(
 
                 rv = getnameinfo((struct sockaddr *) &sa, salen,
                                  hostname, sizeof(hostname), NULL, 0, 0);
-                if (rv == 0) {
+                if (rv == 0 && is_useful_hostname(hostname)) {
                     snprintf(result, sizeof(result),
                              "%s %s\n", strlongip(family, &host), hostname);
 
