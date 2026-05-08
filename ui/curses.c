@@ -71,6 +71,7 @@
 #include "dns.h"
 #include "asn.h"
 #include "display.h"
+#include "format.h"
 #include "utils.h"
 
 
@@ -107,35 +108,6 @@ static void pwcenter(
     getmaxyx(stdscr, __unused_int, maxx);
     cx = (size_t) (maxx - strlen(str)) / 2;
     printw("%*s%s", (int) cx, "", str);
-}
-
-
-static char *format_number(
-    int n,
-    int w,
-    char *buf)
-{
-    if (w != 5)
-        /* XXX todo: implement w != 5.. */
-        snprintf(buf, w + 1, "%s", "unimpl");
-    else if (n < 100000)
-        /* buf is good as-is */ ;
-    else if (n < 1000000)
-        snprintf(buf, w + 1, "%3dk%1d", n / 1000, (n % 1000) / 100);
-    else if (n < 10000000)
-        snprintf(buf, w + 1, "%1dM%03d", n / 1000000,
-                 (n % 1000000) / 1000);
-    else if (n < 100000000)
-        snprintf(buf, w + 1, "%2dM%02d", n / 1000000,
-                 (n % 1000000) / 10000);
-    else if (n < 1000000000)
-        snprintf(buf, w + 1, "%3dM%01d", n / 1000000,
-                 (n % 1000000) / 100000);
-    else                        /* if (n < 10000000000) */
-        snprintf(buf, w + 1, "%1dG%03d", n / 1000000000,
-                 (n % 1000000000) / 1000000);
-
-    return buf;
 }
 
 
@@ -408,9 +380,9 @@ static void format_field(
     const char *format,
     int n)
 {
-    if (index(format, 'N')) {
+    if (strcmp(format, " %5d") == 0) {
         *dst++ = ' ';
-        format_number(n, 5, dst);
+        mtr_format_count(n, 5, dst);
     } else if (strchr(format, 'f')) {
         /* this is for fields where we measure integer microseconds but
            display floating point milliseconds. Convert to float here. */
