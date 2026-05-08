@@ -228,7 +228,8 @@ clears spurious error messages that may overwrite other parts of the display.
 Use this option to select the initial display mode: 0 (default)
 selects statistics, 1 selects the stripchart without latency
 information, and 2 selects the stripchart with latency
-information.
+information.  If braille graphs were enabled at build time and wide
+curses support is available, 3 selects a braille stripchart.
 In stripchart modes,
 .B ?
 marks a probe that has not received a response, and
