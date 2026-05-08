@@ -28,6 +28,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(HAVE_ARC4RANDOM_UNIFORM) && defined(HAVE_BSD_STDLIB_H)
+#include <bsd/stdlib.h>
+#endif
+
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #else
@@ -46,6 +50,16 @@
 #define MaxSequence 65536
 
 static int packetsize;          /* packet size used by ping */
+
+static int random_uniform(
+    int upper_bound)
+{
+#ifdef HAVE_ARC4RANDOM_UNIFORM
+    return (int) arc4random_uniform((unsigned int) upper_bound);
+#else
+    return rand() % upper_bound;
+#endif
+}
 
 struct nethost {
     ip_t addr;                  /* Latest host to respond */
@@ -582,14 +596,14 @@ int net_send_batch(
                 packetsize = MINPACKET;
             } else {
                 packetsize =
-                    MINPACKET + rand() % (-ctl->cpacketsize - MINPACKET);
+                    MINPACKET + random_uniform(-ctl->cpacketsize - MINPACKET);
             }
         } else {
             packetsize = ctl->cpacketsize;
         }
         if (ctl->bitpattern < 0) {
             ctl->bitpattern =
-                -(int) (256 + 255 * (rand() / (RAND_MAX + 0.1)));
+                -(256 + random_uniform(256));
         }
     }
 

@@ -43,6 +43,7 @@ AC_CHECK_SIZEOF([unsigned long], [4])
 # Check headers.
 AC_CHECK_HEADERS([ \
   arpa/nameser_compat.h \
+  bsd/stdlib.h \
   curses.h \
   cursesX.h \
   error.h \
@@ -67,6 +68,9 @@ AC_CHECK_FUNCS([ \
   __fpending \
   fcntl \
 ])
+AC_SEARCH_LIBS([arc4random_uniform], [bsd],
+  [AC_DEFINE([HAVE_ARC4RANDOM_UNIFORM], [1],
+    [Define to 1 if arc4random_uniform is available.])])
 
 AC_CHECK_FUNC([error], [with_error=no],
   [AC_CHECK_FUNCS([verr verrx vwarn vwarnx], [with_error=yes],
