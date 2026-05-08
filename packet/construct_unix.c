@@ -897,9 +897,7 @@ int construct_ip6_packet(
 
 #ifdef SO_BINDTODEVICE
     if (param->local_device) {
-        if (setsockopt(send_socket,
-                       SOL_SOCKET, SO_BINDTODEVICE, param->local_device,
-                       strlen(param->local_device))) {
+        if (set_bind_to_device(send_socket, param->local_device)) {
             return -1;
         }
     }
