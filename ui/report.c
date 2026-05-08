@@ -491,12 +491,6 @@ void csv_close(
     ip_t *addr2 = NULL;
     char name[MAX_FORMAT_STR];
 
-    for (i = 0; i < MAXFLD; i++) {
-        j = ctl->fld_index[ctl->fld_active[i]];
-        if (j < 0)
-            continue;
-    }
-
     max = net_max(ctl);
     at = net_min(ctl);
     for (; at < max; at++) {
