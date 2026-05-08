@@ -189,13 +189,10 @@ void report_close(
     }
 #ifdef HAVE_IPINFO
     len_tmp = len_hosts;
-    if (ctl->ipinfo_no >= 0 && iiwidth_len) {
-        ctl->ipinfo_no %= iiwidth_len;
+    if (is_printii(ctl) && iiwidth_len) {
         if (ctl->reportwide) {
             len_hosts++;        /* space */
-            len_tmp += get_iiwidth(ctl->ipinfo_no);
-            if (!ctl->ipinfo_no)
-                len_tmp += 2;   /* align header: AS */
+            len_tmp += get_iiwidth_selected(ctl);
         }
     }
     snprintf(fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
@@ -418,7 +415,7 @@ void json_close(struct mtr_ctl *ctl)
             goto on_error;
 
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
+        if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
             char* fmtinfo = fmt_ipinfo(ctl, addr);
             if (fmtinfo != NULL)
                 fmtinfo = trim(fmtinfo, '\0');
@@ -571,7 +568,7 @@ void csv_close(
         if (at == net_min(ctl)) {
             printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
 #ifdef HAVE_IPINFO
-            if (!ctl->ipinfo_no) {
+            if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
                 printf("Asn,");
             }
 #endif
@@ -588,7 +585,7 @@ void csv_close(
             printf("\n");
         }
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
+        if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
             char *fmtinfo = fmt_ipinfo(ctl, addr);
             fmtinfo = trim(fmtinfo, '\0');
             printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
@@ -644,7 +641,7 @@ void csv_close(
 
                 if (!found) {
 #ifdef HAVE_IPINFO
-                    if (!ctl->ipinfo_no) {
+                    if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
                         char *fmtinfo = fmt_ipinfo(ctl, addr2);
                         fmtinfo = trim(fmtinfo, '\0');
                         printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,

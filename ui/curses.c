@@ -947,7 +947,7 @@ void mtr_curses_redraw(
 
 #ifdef HAVE_IPINFO
         if (is_printii(ctl))
-            padding += get_iiwidth(ctl->ipinfo_no);
+            padding += get_iiwidth_selected(ctl);
 #endif
         max_cols =
             maxx <= SAVED_PINGS + padding ? maxx - padding : SAVED_PINGS;
