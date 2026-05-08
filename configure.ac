@@ -287,6 +287,22 @@ AC_ARG_ENABLE([bash-completion],
   [], [enable_bash_completion=yes]
 )
 AM_CONDITIONAL([BUILD_BASH_COMPLETION], [test "x$enable_bash_completion" = xyes])
+
+mtr_packet_prefix=
+mtr_packet_suffix=
+AS_IF([test "x$program_prefix" != "xNONE"], [
+  mtr_packet_prefix=$program_prefix
+])
+AS_IF([test "x$program_suffix" != "xNONE"], [
+  mtr_packet_suffix=$program_suffix
+])
+MTR_PACKET_NAME="${mtr_packet_prefix}mtr-packet${mtr_packet_suffix}"
+AC_SUBST([MTR_PACKET_NAME])
+AC_DEFINE_UNQUOTED(
+  [MTR_PACKET_NAME],
+  ["$MTR_PACKET_NAME"],
+  [Name of the installed mtr-packet executable after program transforms.])
+
 echo "build options:"
 echo "--------------"
 echo "libasan  :$with_libasan"
