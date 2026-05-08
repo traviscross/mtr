@@ -579,6 +579,10 @@ void csv_close(
                 j = ctl->fld_index[ctl->fld_active[i]];
                 if (j < 0)
                     continue;
+                if (data_fields[j].key == ' ') {
+                    printf(",");
+                    continue;
+                }
                 printf("%s,", data_fields[j].title);
             }
             printf("\n");
@@ -599,6 +603,10 @@ void csv_close(
             j = ctl->fld_index[ctl->fld_active[i]];
             if (j < 0)
                 continue;
+            if (data_fields[j].key == ' ') {
+                printf(",");
+                continue;
+            }
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
@@ -652,6 +660,10 @@ void csv_close(
                         j = ctl->fld_index[ctl->fld_active[i]];
                         if (j < 0)
                             continue;
+                        if (data_fields[j].key == ' ') {
+                            printf(",");
+                            continue;
+                        }
 
                         /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
                         if (strchr(data_fields[j].format, 'f')) {
