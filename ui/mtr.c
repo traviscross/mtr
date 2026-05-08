@@ -409,7 +409,7 @@ static void parse_arg(
         {"interval", 1, NULL, 'i'},
         {"report-cycles", 1, NULL, 'c'},
         {"psize", 1, NULL, 's'},        /* overload psize<0, ->rand(min,max) */
-        {"bitpattern", 1, NULL, 'B'},   /* overload B>255, ->rand(0,255) */
+        {"bitpattern", 1, NULL, 'B'},   /* -1 random, otherwise 0..255 */
         {"tos", 1, NULL, 'Q'},  /* typeof service (0,255) */
         {"mpls", 0, NULL, 'e'},
         {"interface", 1, NULL, 'I'},
@@ -599,8 +599,10 @@ static void parse_arg(
         case 'B':
             ctl->bitpattern =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->bitpattern > 255)
-                ctl->bitpattern = -1;
+            if (ctl->bitpattern < -1 || ctl->bitpattern > 255) {
+                error(EXIT_FAILURE, 0, "value out of range (-1 - 255): %s",
+                      optarg);
+            }
             break;
         case 'G':
             ctl->GraceTime = strtofloat_or_err(optarg, "invalid argument");

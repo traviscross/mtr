@@ -400,9 +400,8 @@ If set to a negative number, every iteration will use a different, random
 packet size up to that number.
 .TP
 .B \-B \fINUM\fR, \fB\-\-bitpattern \fINUM
-Specifies bit pattern to use in payload.  Should be within range 0 - 255.  If
-.I NUM
-is greater than 255, a random pattern is used.
+Specifies bit pattern to use in payload.  Should be within range 0 - 255,
+or -1 to use a random pattern.
 .TP
 .B \-G \fISECONDS\fR, \fB\-\-gracetime \fISECONDS
 Use this option to specify the positive number of seconds to wait for responses
