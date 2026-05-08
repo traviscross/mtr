@@ -40,6 +40,13 @@ static inline void xstrncpy(
     dest[n - 1] = 0;
 }
 
+static inline int is_useful_hostname(
+    const char *hostname)
+{
+    return hostname && hostname[0] != '\0'
+        && !(hostname[0] == '.' && hostname[1] == '\0');
+}
+
 extern void *xmalloc(
     const size_t size);
 extern char *xstrdup(
