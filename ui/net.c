@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef HAVE_ERROR_H
@@ -65,6 +66,7 @@ struct nethost {
     int jworst;                 /* max jitter */
     int jinta;                  /* estimated variance,? rfc1889's "Interarrival Jitter" */
     int transit;
+    time_t seen;
     int saved[SAVED_PINGS];
     int saved_seq_offset;
     struct mplslen mpls;
@@ -325,6 +327,9 @@ static void net_process_ping(
     nh->sent = 0;
     nh->up = 1;
     nh->transit = 0;
+    if (ctl->cache) {
+        nh->seen = time(NULL);
+    }
 
     net_save_return(index, sequence[seq].saved_seq, totusec);
     display_rawping(ctl, index, totusec, seq);
@@ -588,7 +593,11 @@ int net_send_batch(
         }
     }
 
-    net_send_query(ctl, batch_at, abs(packetsize));
+    if (!ctl->cache || !host[batch_at].up ||
+        host[batch_at].seen == 0 ||
+        time(NULL) - host[batch_at].seen > ctl->cache_timeout) {
+        net_send_query(ctl, batch_at, abs(packetsize));
+    }
 
     for (i = ctl->fstTTL - 1; i < batch_at; i++) {
         if (host_addr_cmp(i, &ctl->unspec_addr, ctl->af) == 0)

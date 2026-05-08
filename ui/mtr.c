@@ -121,6 +121,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);       
     fputs(" -e, --mpls                       display information from ICMP extensions\n", out);       
     fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);       
+    fputs("     --cache SECONDS              skip recently seen hops for SECONDS\n", out);
 #ifdef SO_MARK       
     fputs(" -M, --mark MARK                  mark each sent packet\n", out);
 #endif       
@@ -363,6 +364,9 @@ static void parse_arg(
         OPT_IPINFO4 = CHAR_MAX + 2,
 #ifdef ENABLE_IPV6
         OPT_IPINFO6 = CHAR_MAX + 3,
+        OPT_CACHE = CHAR_MAX + 4,
+#else
+        OPT_CACHE = CHAR_MAX + 3,
 #endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
@@ -428,6 +432,7 @@ static void parse_arg(
         {"localport", 1, NULL, 'L'},    /* source port number for UDP */
         {"timeout", 1, NULL, 'Z'},      /* timeout for probe sockets */
         {"gracetime", 1, NULL, 'G'},    /* gracetime for replies after last probe */
+        {"cache", 1, NULL, OPT_CACHE},  /* skip probes to recently seen hops */
 #ifdef SO_MARK
         {"mark", 1, NULL, 'M'}, /* use SO_MARK */
 #endif
@@ -607,6 +612,14 @@ static void parse_arg(
             if (ctl->GraceTime <= 0.0) {
                 error(EXIT_FAILURE, 0, "wait time must be positive");
             }
+            break;
+        case OPT_CACHE:
+            ctl->cache_timeout =
+                strtoint_or_err(optarg, "invalid argument");
+            if (ctl->cache_timeout <= 0) {
+                error(EXIT_FAILURE, 0, "cache timeout must be positive");
+            }
+            ctl->cache = 1;
             break;
         case 'Q':
             ctl->tos =
@@ -929,6 +942,7 @@ int main(
     ctl.MaxPing = 10;
     ctl.WaitTime = 1.0;
     ctl.GraceTime = 5.0;
+    ctl.cache_timeout = 60;
     ctl.dns = 1;
     ctl.use_dns = 1;
     ctl.cpacketsize = 64;

@@ -108,6 +108,7 @@ struct mtr_ctl {
     int remoteport;             /* target port for TCP tracing */
     int localport;              /* source port for UDP tracing */
     int probe_timeout;          /* timeout for probe sockets */
+    int cache_timeout;          /* seconds to skip probes for recently seen hops */
     unsigned char fld_active[2 * MAXFLD];       /* SO_MARK to set for ping packet */
     int display_mode;           /* display mode selector */
     int fld_index[FLD_INDEX_SZ];        /* default display field (defined by key in net.h) and order */
@@ -117,7 +118,7 @@ struct mtr_ctl {
     void *gtk_data;             /* pointer to hold arbitrary gtk data */
     unsigned int                /* bit field to hold named booleans */
      ForceMaxPing:1,
-        use_dns:1,
+        use_dns:1, cache:1,
         show_ips:1,
         enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5, CompactLayout:1;
 #ifdef HAVE_IPINFO
