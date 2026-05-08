@@ -17,13 +17,60 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''Test mtr-packet's command parsing.'''
+'''Test mtr and mtr-packet command parsing.'''
 
 
+import os
+import subprocess
 import time
 import unittest
 
 import mtrpacket
+
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MTR = os.path.join(PROJECT_ROOT, 'mtr')
+
+
+class TestMtrCommandParse(unittest.TestCase):
+    '''Test cases with malformed mtr command-line arguments.'''
+
+    def run_mtr(self, *args):
+        return subprocess.run(
+            [MTR] + list(args),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+    def test_first_ttl_cannot_exceed_max_ttl(self):
+        'Test that conflicting first/max TTL options fail fast.'
+
+        reply = self.run_mtr('--first-ttl', '91', '--max-ttl', '90')
+
+        self.assertNotEqual(reply.returncode, 0)
+        self.assertIn(
+            'firstTTL(91) cannot be larger than maxTTL(90)',
+            reply.stderr,
+        )
+
+    def test_first_ttl_can_equal_max_ttl(self):
+        'Test that a single requested TTL depth remains valid.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '--first-ttl',
+            '91',
+            '--max-ttl',
+            '91',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
 
 
 class TestCommandParse(mtrpacket.MtrPacketTest):
