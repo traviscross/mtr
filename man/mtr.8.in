@@ -121,7 +121,7 @@ mtr \- a network diagnostic tool
 [\c
 .BI \-M \ MARK\c
 ]
-.I HOSTNAME
+.IR HOSTNAME [ :PORT ]
 .SH DESCRIPTION
 .B mtr
 combines the functionality of the
@@ -466,6 +466,11 @@ The target port number for TCP/SCTP/UDP traces.
 When this option is not given, TCP and SCTP traces use port 80.
 UDP traces encode the probe sequence number in the destination port
 instead, so the destination port changes for each probe.
+For TCP/SCTP/UDP traces, the target can also be written as
+.IR HOSTNAME : PORT .
+Use
+.IR [ ADDRESS ] : PORT
+when specifying a port for a literal IPv6 address.
 .TP
 .B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
 The source port number for UDP traces.  When this option is not given,

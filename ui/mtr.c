@@ -88,13 +88,14 @@ const struct fields data_fields[MAXFLD] = {
 
 typedef struct names {
     char *name;
+    int remoteport;
     struct names *next;
 } names_t;
 
 static void __attribute__ ((__noreturn__)) usage(FILE * out)
 {
     fputs("\nUsage:\n", out);
-    fputs(" mtr [options] hostname\n", out);
+    fputs(" mtr [options] hostname[:port]\n", out);
     fputs("\n", out);
     fputs(" -F, --filename FILE              read hostname(s) from a file\n",
           out);      
@@ -178,6 +179,54 @@ static void append_to_names(
     name->next = NULL;
 
     *name_tail = name;
+}
+
+static int parse_target_port(
+    const char *port)
+{
+    int remoteport = strtoint_or_err(port, "invalid argument");
+
+    if (remoteport < 1 || MaxPort < remoteport) {
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
+    }
+
+    return remoteport;
+}
+
+static void split_target_port(
+    names_t *names,
+    int mtrtype)
+{
+    if (mtrtype == IPPROTO_ICMP) {
+        return;
+    }
+
+    while (names != NULL) {
+        char *port = NULL;
+
+        if (names->name[0] == '[') {
+            char *close = strchr(names->name, ']');
+
+            if (close && close[1] == ':' && close[2] != '\0') {
+                port = close + 2;
+                *close = '\0';
+                memmove(names->name, names->name + 1, close - names->name);
+            }
+        } else {
+            char *colon = strchr(names->name, ':');
+
+            if (colon && strchr(colon + 1, ':') == NULL && colon[1] != '\0') {
+                port = colon + 1;
+                *colon = '\0';
+            }
+        }
+
+        if (port) {
+            names->remoteport = parse_target_port(port);
+        }
+
+        names = names->next;
+    }
 }
 
 static void read_from_file(
@@ -934,15 +983,20 @@ int main(
     if (!names_head)
         append_to_names(&names_head, "localhost");
 
+    split_target_port(names_head, ctl.mtrtype);
+
     if (!ctl.Interactive && count_names(names_head) > 1 &&
         validate_report_targets(&ctl, names_head) != 0) {
         return EXIT_FAILURE;
     }
 
+    int default_remoteport = ctl.remoteport;
     names_walk = names_head;
     while (names_walk != NULL) {
 
         ctl.Hostname = names_walk->name;
+        ctl.remoteport =
+            names_walk->remoteport ? names_walk->remoteport : default_remoteport;
         if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
             xstrncpy(ctl.LocalHostname, "UNKNOWNHOST",
                      sizeof(ctl.LocalHostname));
