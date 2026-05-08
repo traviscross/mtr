@@ -203,6 +203,13 @@ AC_CHECK_DECLS([errno], [], [], [[
 #include <errno.h>
 #include <sys/errno.h>
   ]])
+AC_CHECK_DECLS([AI_IDN], [], [], [[
+#include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#include <netdb.h>
+  ]])
 
 AC_CHECK_TYPE([socklen_t],
   [AC_DEFINE([HAVE_SOCKLEN_T], [], [Define if your system has socklen_t])], [],
