@@ -164,9 +164,12 @@ static inline int close_stream(
     const int some_pending = (__fpending(stream) != 0);
     const int prev_fail = (ferror(stream) != 0);
     const int fclose_fail = (fclose(stream) != 0);
+    const int fclose_errno = fclose_fail ? errno : 0;
 
-    if (prev_fail || (fclose_fail && (some_pending || errno != EBADF))) {
-        if (!fclose_fail && !(errno == EPIPE))
+    if (prev_fail || (fclose_fail && (some_pending || fclose_errno != EBADF))) {
+        if (fclose_fail)
+            errno = fclose_errno;
+        else
             errno = 0;
         return EOF;
     }

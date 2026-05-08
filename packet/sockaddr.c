@@ -10,11 +10,13 @@ void *sockaddr_addr_offset(const void *x)
 
 	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
-		return ((void *)(x) + offsetof(struct sockaddr_in, sin_addr));
+		return (void *) ((const char *)(x) +
+			offsetof(struct sockaddr_in, sin_addr));
 	} else
 	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
-		return ((void *)(x) + offsetof(struct sockaddr_in6, sin6_addr));
+		return (void *) ((const char *)(x) +
+			offsetof(struct sockaddr_in6, sin6_addr));
 	}
 
 	return NULL;
@@ -58,11 +60,13 @@ in_port_t *sockaddr_port_offset(const void *x)
 
 	if ( ((struct sockaddr *)(x))->sa_family == AF_INET )
 	{
-		return ((void *)(x) + offsetof(struct sockaddr_in, sin_port));
+		return (in_port_t *) ((const char *)(x) +
+			offsetof(struct sockaddr_in, sin_port));
 	} else
 	if ( ((struct sockaddr *)(x))->sa_family == AF_INET6 )
 	{
-		return ((void *)(x) + offsetof(struct sockaddr_in6, sin6_port));
+		return (in_port_t *) ((const char *)(x) +
+			offsetof(struct sockaddr_in6, sin6_port));
 	}
 
 	return NULL;

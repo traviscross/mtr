@@ -277,7 +277,10 @@ void dns_ack(
     struct dns_results *r;
 
     while (fgets(buf, sizeof(buf), fromdnsfp)) {
-        sscanf(buf, "%s %s", host, name);
+        if (sscanf(buf, "%1024s %1024s", host, name) != 2) {
+            error(0, 0, "dns_ack: malformed DNS lookup result");
+            continue;
+        }
 
         longipstr(host, &hostip, ctl->af);
         r = findip(ctl, &hostip);

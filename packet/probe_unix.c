@@ -563,7 +563,7 @@ void send_probe(
     char packet[PACKET_BUFFER_SIZE];
     struct probe_t *probe;
     int trytimes;
-    int packet_size;
+    int packet_size = 0;
 
     probe = alloc_probe(net_state, param->command_token);
     if (probe == NULL) {
@@ -821,7 +821,8 @@ void receive_replies_from_recv_socket(
                     packet, packet_length, &timestamp);
         } else if (icmp_hostunreach_received) {
             /* handle packet based on send socket protocol */
-            int proto, length = sizeof(int);
+            int proto;
+            socklen_t length = sizeof(proto);
 
             if (getsockopt(socket, SOL_SOCKET, SO_PROTOCOL, &proto, &length) < 0) {
                 error(EXIT_FAILURE, errno, "getsockopt SO_PROTOCOL error");
@@ -855,7 +856,7 @@ void receive_replies_from_probe_socket(
     int probe_socket;
     struct timeval zero_time;
     int err;
-    int err_length = sizeof(int);
+    socklen_t err_length = sizeof(err);
     fd_set write_set;
 
     probe_socket = probe->platform.socket;
