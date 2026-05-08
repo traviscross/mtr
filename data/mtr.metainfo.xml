@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>nl.bitwizard.mtr.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-only</project_license>
+  <name>My Traceroute</name>
+  <summary>Trace packet routes between network hosts</summary>
+  <description>
+    <p>
+      My Traceroute combines the functionality of traceroute and ping in a
+      single network diagnostic tool. It shows the route packets take to a
+      network host together with latency and packet loss statistics for each
+      hop.
+    </p>
+  </description>
+  <launchable type="desktop-id">mtr.desktop</launchable>
+  <url type="homepage">https://www.bitwizard.nl/mtr/</url>
+  <provides>
+    <binary>mtr</binary>
+  </provides>
+</component>
