@@ -81,6 +81,22 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertIn('port number specified (-P)', reply.stderr)
         self.assertIn('protocol is ICMP', reply.stderr)
 
+    def test_report_loss_uses_two_decimal_places(self):
+        'Test report mode preserves fine-grained loss percentage precision.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
+        self.assertIn('Loss%', reply.stdout)
+        self.assertIn('0.00%', reply.stdout)
+
     def test_port_with_tcp_succeeds_flag(self):
         'Test that specifying -P with -T (TCP) succeeds.'
 

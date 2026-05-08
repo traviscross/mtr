@@ -373,7 +373,7 @@ static void percent_formatter(
     gfloat f;
     gchar text[64];
     gtk_tree_model_get(tree_model, iter, POINTER_TO_INT(data), &f, -1);
-    snprintf(text, sizeof(text), "%.1f%%", f);
+    snprintf(text, sizeof(text), "%.2f%%", f);
     g_object_set(cell, "text", text, NULL);
 }
 
