@@ -10,6 +10,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "format.h"
 
@@ -39,6 +40,24 @@ char *mtr_format_count(
     else
         snprintf(buf, width + 1, "%1dG%03d", n / 1000000000,
                  (n % 1000000000) / 1000000);
+
+    return buf;
+}
+
+char *mtr_format_latency_ms(
+    int usec,
+    char *buf,
+    size_t buf_size)
+{
+    int abs_usec = usec < 0 ? -usec : usec;
+
+    if (abs_usec < 1000) {
+        snprintf(buf, buf_size, "%.1f", usec / 1000.0);
+    } else if (abs_usec < 10000 && usec % 1000 != 0) {
+        snprintf(buf, buf_size, "%.1f", usec / 1000.0);
+    } else {
+        snprintf(buf, buf_size, "%d", usec / 1000);
+    }
 
     return buf;
 }

@@ -31,6 +31,22 @@ static void check_count(
     }
 }
 
+static void check_latency(
+    int value,
+    const char *expected)
+{
+    char buf[16];
+
+    memset(buf, 0, sizeof(buf));
+    mtr_format_latency_ms(value, buf, sizeof(buf));
+
+    if (strcmp(buf, expected) != 0) {
+        fprintf(stderr, "%d usec formatted as '%s', expected '%s'\n",
+                value, buf, expected);
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main(
     void)
 {
@@ -48,6 +64,15 @@ int main(
     check_count(100000000, "100M0");
     check_count(999999999, "999M9");
     check_count(1000000000, "1G000");
+
+    check_latency(0, "0.0");
+    check_latency(250, "0.2");
+    check_latency(999, "1.0");
+    check_latency(1000, "1");
+    check_latency(1250, "1.2");
+    check_latency(9999, "10.0");
+    check_latency(10000, "10");
+    check_latency(12345, "12");
 
     return EXIT_SUCCESS;
 }
