@@ -45,6 +45,16 @@ class TestMtrCommandParse(unittest.TestCase):
             universal_newlines=True,
         )
 
+    def run_mtr_detached(self, *args):
+        return subprocess.run(
+            [MTR] + list(args),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+            universal_newlines=True,
+        )
+
     def test_first_ttl_cannot_exceed_max_ttl(self):
         'Test that conflicting first/max TTL options fail fast.'
 
@@ -79,6 +89,7 @@ class TestMtrCommandParse(unittest.TestCase):
 
         reply = self.run_mtr(
             '--report',
+
             '--report-cycles',
             '1',
             '--no-dns',
@@ -89,6 +100,19 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertEqual(reply.stderr, '')
         self.assertIn('Loss%', reply.stdout)
         self.assertIn('0.00%', reply.stdout)
+
+    def test_split_exits_with_closed_stdin(self):
+        'Test split mode exits when stdin is /dev/null.'
+
+        reply = self.run_mtr_detached(
+            '--split',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
 
     def test_mtr_options_preserves_quoted_order_spaces(self):
         'Test that quoted MTR_OPTIONS values can contain order separators.'
