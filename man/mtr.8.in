@@ -29,6 +29,12 @@ mtr \- a network diagnostic tool
 .BI \--displaymode \ MODE\c
 ]
 [\c
+.B \-\-compact\c
+]
+[\c
+.B \-\-report\-on\-exit\c
+]
+[\c
 .B \-\-raw\c
 ]
 [\c
@@ -194,6 +200,11 @@ mode.  When in this mode,
 .B mtr
 will not cut hostnames in the report.
 .TP
+.B \-\-report\-on\-exit
+Use this option with the curses interface to print a report snapshot after
+leaving curses mode. This keeps the last trace visible in terminals that switch
+to an alternate screen while curses is active.
+.TP
 .B \-x\fR, \fB\-\-xml
 Use this option to tell
 .B mtr
@@ -221,6 +232,9 @@ Use this option to select the initial display mode: 0 (default)
 selects statistics, 1 selects the stripchart without latency
 information, and 2 selects the stripchart with latency
 information.
+.TP
+.B -\-compact
+Use this option to start the curses interface in compact mode.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
