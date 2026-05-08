@@ -719,6 +719,7 @@ void receive_replies(
         request->reply4 = NULL;
     }
     free(request);
+    request = NULL;
 }
 
 /*
