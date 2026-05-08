@@ -699,22 +699,63 @@ static void parse_mtr_options(
     char *string)
 {
     int argc = 1;
-    char *argv[128], *p;
+    char *argv[128], *arg, *input, *output, *option_string;
+    int quote;
 
     if (!string)
         return;
     argv[0] = xstrdup(PACKAGE_NAME);
-    argc = 1;
-    p = strtok(string, " \t");
-    while (p != NULL && ((size_t) argc < (sizeof(argv) / sizeof(argv[0])))) {
-        argv[argc++] = p;
-        p = strtok(NULL, " \t");
+    option_string = xstrdup(string);
+    input = option_string;
+    output = option_string;
+
+    while ((size_t) argc < (sizeof(argv) / sizeof(argv[0]))) {
+        while (*input && isspace((unsigned char) *input))
+            input++;
+        if (!*input)
+            break;
+
+        arg = output;
+        quote = 0;
+        while (*input) {
+            if (quote) {
+                if (*input == quote) {
+                    input++;
+                    quote = 0;
+                } else if (*input == '\\' && input[1]) {
+                    input++;
+                    *output++ = *input++;
+                } else {
+                    *output++ = *input++;
+                }
+            } else if (isspace((unsigned char) *input)) {
+                break;
+            } else if (*input == '"' || *input == '\'') {
+                quote = *input++;
+            } else if (*input == '\\' && input[1]) {
+                input++;
+                *output++ = *input++;
+            } else {
+                *output++ = *input++;
+            }
+        }
+
+        if (quote) {
+            error(EXIT_FAILURE, 0, "unterminated quote in MTR_OPTIONS");
+        }
+        if (*input && isspace((unsigned char) *input)) {
+            input++;
+        }
+
+        *output++ = '\0';
+        argv[argc++] = arg;
     }
-    if (p != NULL) {
-        error(0, 0, "Warning: extra arguments ignored: %s", p);
+    if (*input) {
+        error(0, 0, "Warning: extra arguments ignored: %s", input);
     }
 
     parse_arg(ctl, names, argc, argv);
+    free(option_string);
     free(argv[0]);
     optind = 0;
 }
