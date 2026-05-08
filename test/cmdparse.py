@@ -127,6 +127,31 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertEqual(reply.returncode, 0)
         self.assertIn('--report-on-exit', reply.stdout)
 
+    def test_bad_host_fails_in_output_modes(self):
+        'Test failed host resolution exits non-zero in output modes.'
+
+        modes = [
+            '--csv',
+            '--raw',
+            '--report',
+            '--xml',
+        ]
+
+        reply = self.run_mtr('--help')
+        if '--json' in reply.stdout:
+            modes.append('--json')
+
+        for mode in modes:
+            reply = self.run_mtr(
+                mode,
+                '--report-cycles',
+                '1',
+                'nonexistent.invalid',
+            )
+
+            self.assertNotEqual(reply.returncode, 0)
+            self.assertIn('Failed to resolve host', reply.stderr)
+
     def test_port_with_tcp_succeeds_flag(self):
         'Test that specifying -P with -T (TCP) succeeds.'
 
