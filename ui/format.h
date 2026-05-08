@@ -10,9 +10,16 @@
 #ifndef MTR_FORMAT_H
 #define MTR_FORMAT_H
 
+#include <stddef.h>
+
 char *mtr_format_count(
     int n,
     int width,
     char *buf);
+
+char *mtr_format_latency_ms(
+    int usec,
+    char *buf,
+    size_t buf_size);
 
 #endif
