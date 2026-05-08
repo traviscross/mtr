@@ -221,6 +221,11 @@ Use this option to select the initial display mode: 0 (default)
 selects statistics, 1 selects the stripchart without latency
 information, and 2 selects the stripchart with latency
 information.
+In stripchart modes,
+.B ?
+marks a probe that has not received a response, and
+.B >
+marks a response slower than the largest latency bucket shown in the scale.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
