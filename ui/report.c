@@ -47,14 +47,6 @@
 #define MAX_FORMAT_STR 320
 
 
-static int is_useful_hostname(
-    const char *hostname)
-{
-    return hostname && hostname[0] != '\0'
-        && !(hostname[0] == '.' && hostname[1] == '\0');
-}
-
-
 void report_open(
     void)
 {
