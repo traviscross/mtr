@@ -100,10 +100,15 @@ int send_synchronous_command(
     if (read_length < 0) {
         return -1;
     }
+    if (read_length == 0) {
+        errno = EPIPE;
+        return -1;
+    }
 
     /*  Parse the query reply  */
     reply[read_length] = 0;
     if (parse_command(result, reply)) {
+        errno = EPROTO;
         return -1;
     }
 
@@ -202,6 +207,17 @@ int check_packet_features(
 #endif
 
     return 0;
+}
+
+
+static
+void fail_packet_startup(
+    int saved_errno)
+{
+    error(0, saved_errno, "Failure to start mtr-packet");
+    error(EXIT_FAILURE, 0,
+          "mtr-packet did not answer the startup check; "
+          "check that it is installed and allowed to open probe sockets");
 }
 
 
@@ -313,7 +329,7 @@ int open_command_pipe(
            execute the mtr-packet binary, we will discover that here.
          */
         if (check_feature(ctl, cmdpipe, "send-probe")) {
-            error(EXIT_FAILURE, errno, "Failure to start mtr-packet");
+            fail_packet_startup(errno);
         }
 
         if (check_packet_features(ctl, cmdpipe)) {
