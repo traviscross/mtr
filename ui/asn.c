@@ -67,7 +67,8 @@
 #define UNKN	"???"
 
 static int iihash = 0;
-static char fmtinfo[32];
+static char fmtinfo[128];
+static char fmtfield[128];
 
 /* items width: ASN, Route, Country, Registry, Allocated */
 static const int iiwidth[] = { 12, 19, 4, 8, 11 };       /* item len + space */
@@ -263,7 +264,8 @@ static char *ipinfo_lookup(
 /* originX.asn.cymru.com txtrec:    ASN | Route | Country | Registry | Allocated */
 static char *split_txtrec(
     struct mtr_ctl *ctl,
-    char *txt_rec)
+    char *txt_rec,
+    int ipinfo_no)
 {
     char *prev;
     char *next;
@@ -298,10 +300,10 @@ static char *split_txtrec(
 
     if (i > ctl->ipinfo_max)
         ctl->ipinfo_max = i;
-    if (ctl->ipinfo_no >= i) {
+    if (ipinfo_no >= i) {
         return (*items)[0];
     } else
-        return (*items)[ctl->ipinfo_no];
+        return (*items)[ipinfo_no];
 }
 
 #ifdef ENABLE_IPV6
@@ -328,9 +330,69 @@ static bool is_well_known_nat64(struct in6_addr *addr){
 }
 #endif
 
+void set_ipinfo_field(
+    struct mtr_ctl *ctl,
+    int ipinfo_no)
+{
+    ctl->ipinfo_no = ipinfo_no;
+    ctl->ipinfo_fields[0] = ipinfo_no;
+    ctl->ipinfo_field_count = 1;
+}
+
+void parse_ipinfo_fields(
+    struct mtr_ctl *ctl,
+    const char *fields)
+{
+    char *fields_copy;
+    char *field;
+    char *next;
+
+    fields_copy = xstrdup(fields);
+    ctl->ipinfo_field_count = 0;
+
+    for (field = fields_copy; field != NULL; field = next) {
+        char *end;
+        int ipinfo_no;
+
+        next = strchr(field, ',');
+        if (next != NULL) {
+            *next = '\0';
+            next++;
+        }
+
+        if (*field == '\0') {
+            error(EXIT_FAILURE, 0, "empty ipinfo field in '%s'", fields);
+        }
+
+        errno = 0;
+        ipinfo_no = strtol(field, &end, 0);
+        if (errno != 0 || field == end || *end != '\0') {
+            error(EXIT_FAILURE, errno, "invalid ipinfo field '%s' in '%s'",
+                  field, fields);
+        }
+        if (ipinfo_no < 0 || 4 < ipinfo_no) {
+            error(EXIT_FAILURE, 0, "ipinfo value %d out of range (0 - 4)",
+                  ipinfo_no);
+        }
+        if (ctl->ipinfo_field_count == MAX_IPINFO_FIELDS) {
+            error(EXIT_FAILURE, 0, "too many ipinfo fields in '%s'", fields);
+        }
+
+        ctl->ipinfo_fields[ctl->ipinfo_field_count++] = ipinfo_no;
+    }
+
+    if (ctl->ipinfo_field_count == 0) {
+        error(EXIT_FAILURE, 0, "empty ipinfo field in '%s'", fields);
+    }
+
+    ctl->ipinfo_no = ctl->ipinfo_fields[0];
+    free(fields_copy);
+}
+
 static char *get_ipinfo(
     struct mtr_ctl *ctl,
-    ip_t * addr)
+    ip_t * addr,
+    int ipinfo_no)
 {
     char key[NAMELEN];
     char lookup_key[NAMELEN];
@@ -381,7 +443,7 @@ static char *get_ipinfo(
         item.key = key;
         item.data = NULL;
         if ((found_item = hsearch(item, FIND))) {
-            if (!(val = (*((items_t *) found_item->data))[ctl->ipinfo_no]))
+            if (!(val = (*((items_t *) found_item->data))[ipinfo_no]))
                 val = (*((items_t *) found_item->data))[0];
             DEB_syslog(LOG_INFO, "Found (hashed): %s", val);
         }
@@ -389,7 +451,7 @@ static char *get_ipinfo(
 
     if (!val) {
         DEB_syslog(LOG_INFO, "Lookup: %s", key);
-        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key)))) {
+        if ((val = split_txtrec(ctl, ipinfo_lookup(lookup_key), ipinfo_no))) {
             DEB_syslog(LOG_INFO, "Looked up: %s", key);
             if (iihash)
                 if ((item.key = xstrdup(key))) {
@@ -419,22 +481,86 @@ ATTRIBUTE_CONST int get_iiwidth(
     return iiwidth[ipinfo_no % len];
 }
 
+int get_iiwidth_selected(
+    struct mtr_ctl *ctl)
+{
+    int width = 0;
+    int i;
+
+    for (i = 0; i < ctl->ipinfo_field_count; i++) {
+        if (i)
+            width++;
+        width += get_iiwidth(ctl->ipinfo_fields[i]);
+        if (ctl->ipinfo_fields[i] == 0)
+            width += 2;        /* align header: AS */
+    }
+
+    return width;
+}
+
+int ipinfo_field_selected(
+    struct mtr_ctl *ctl,
+    int ipinfo_no)
+{
+    int i;
+
+    for (i = 0; i < ctl->ipinfo_field_count; i++) {
+        if (ctl->ipinfo_fields[i] == ipinfo_no)
+            return 1;
+    }
+
+    return 0;
+}
+
+char *fmt_ipinfo_field(
+    struct mtr_ctl *ctl,
+    ip_t * addr,
+    int ipinfo_no)
+{
+    char *ipinfo = get_ipinfo(ctl, addr, ipinfo_no);
+    char fmt[8];
+
+    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ipinfo_no ? "" : "AS",
+             get_iiwidth(ipinfo_no));
+    snprintf(fmtfield, sizeof(fmtfield), fmt, ipinfo ? ipinfo : UNKN);
+
+    return fmtfield;
+}
+
 char *fmt_ipinfo(
     struct mtr_ctl *ctl,
     ip_t * addr)
 {
-    char *ipinfo = get_ipinfo(ctl, addr);
-    char fmt[8];
-    snprintf(fmt, sizeof(fmt), "%s%%-%ds", ctl->ipinfo_no ? "" : "AS",
-             get_iiwidth(ctl->ipinfo_no));
-    snprintf(fmtinfo, sizeof(fmtinfo), fmt, ipinfo ? ipinfo : UNKN);
+    size_t offset = 0;
+    int i;
+
+    fmtinfo[0] = '\0';
+    for (i = 0; i < ctl->ipinfo_field_count; i++) {
+        int ipinfo_no = ctl->ipinfo_fields[i];
+        char *ipinfo = fmt_ipinfo_field(ctl, addr, ipinfo_no);
+        int written;
+
+        if (i && offset < sizeof(fmtinfo) - 1) {
+            fmtinfo[offset++] = ' ';
+            fmtinfo[offset] = '\0';
+        }
+
+        written = snprintf(fmtinfo + offset, sizeof(fmtinfo) - offset, "%s",
+                           ipinfo);
+        if (written < 0 || (size_t) written >= sizeof(fmtinfo) - offset) {
+            fmtinfo[sizeof(fmtinfo) - 1] = '\0';
+            break;
+        }
+        offset += written;
+    }
+
     return fmtinfo;
 }
 
 int is_printii(
     struct mtr_ctl *ctl)
 {
-    return (ctl->ipinfo_no >= 0);
+    return (ctl->ipinfo_field_count > 0);
 }
 
 void asn_open(

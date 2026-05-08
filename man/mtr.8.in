@@ -359,8 +359,10 @@ I%Interarrival Jitter
 Example:
 -o "LSD NBAW  X"
 .TP
-.B \-y \fIn\fR, \fB\-\-ipinfo \fIn
-Displays information about each IP hop.  Valid values for \fIn\fR are:
+.B \-y \fIFIELDS\fR, \fB\-\-ipinfo \fIFIELDS
+Displays information about each IP hop.
+.I FIELDS
+can be one value or a comma-separated list of values.  Valid field values are:
 .TS
 tab(%);
 ll.
@@ -372,7 +374,7 @@ ll.
 .TE
 .br
 
-It is possible to cycle between these fields at runtime (using the \fBy\fR key).
+In curses mode, use the \fBy\fR key to cycle between these fields one at a time.
 IP information lookup is disabled by default unless this option or
 \fB-z\fR is used.
 .TP

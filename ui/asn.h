@@ -25,9 +25,24 @@ extern void asn_close(
 extern char *fmt_ipinfo(
     struct mtr_ctl *ctl,
     ip_t * addr);
+extern char *fmt_ipinfo_field(
+    struct mtr_ctl *ctl,
+    ip_t * addr,
+    int ipinfo_no);
+extern int ipinfo_field_selected(
+    struct mtr_ctl *ctl,
+    int ipinfo_no);
 extern ATTRIBUTE_CONST size_t get_iiwidth_len(
     void);
 extern ATTRIBUTE_CONST int get_iiwidth(
     int ipinfo_no);
+extern int get_iiwidth_selected(
+    struct mtr_ctl *ctl);
 extern int is_printii(
     struct mtr_ctl *ctl);
+extern void set_ipinfo_field(
+    struct mtr_ctl *ctl,
+    int ipinfo_no);
+extern void parse_ipinfo_fields(
+    struct mtr_ctl *ctl,
+    const char *fields);

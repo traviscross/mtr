@@ -171,6 +171,7 @@ void report_close(
     char fmt[16];
     size_t len = 0;
     size_t len_hosts = 33;
+    size_t stat_start = len_hosts;
 #ifdef HAVE_IPINFO
     int len_tmp;
     const size_t iiwidth_len = get_iiwidth_len();
@@ -191,13 +192,11 @@ void report_close(
     }
 #ifdef HAVE_IPINFO
     len_tmp = len_hosts;
-    if (ctl->ipinfo_no >= 0 && iiwidth_len) {
-        ctl->ipinfo_no %= iiwidth_len;
+    if (is_printii(ctl) && iiwidth_len) {
+        len_tmp += get_iiwidth_selected(ctl);
+        stat_start = len_tmp;
         if (ctl->reportwide) {
             len_hosts++;        /* space */
-            len_tmp += get_iiwidth(ctl->ipinfo_no);
-            if (!ctl->ipinfo_no)
-                len_tmp += 2;   /* align header: AS */
         }
     }
     snprintf(fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
@@ -205,7 +204,7 @@ void report_close(
     snprintf(fmt, sizeof(fmt), "HOST: %%-%zus", len_hosts);
 #endif
     snprintf(buf, sizeof(buf), fmt, ctl->LocalHostname);
-    len = ctl->reportwide ? strlen(buf) : len_hosts;
+    len = ctl->reportwide ? strlen(buf) : stat_start;
     for (i = 0; i < MAXFLD; i++) {
         j = ctl->fld_index[ctl->fld_active[i]];
         if (j < 0)
@@ -236,7 +235,7 @@ void report_close(
 #ifdef HAVE_IPINFO
         }
 #endif
-        len = ctl->reportwide ? strlen(buf) : len_hosts;
+        len = ctl->reportwide ? strlen(buf) : stat_start;
         for (i = 0; i < MAXFLD; i++) {
             j = ctl->fld_index[ctl->fld_active[i]];
             if (j < 0)
@@ -420,8 +419,8 @@ void json_close(struct mtr_ctl *ctl)
             goto on_error;
 
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
-            char* fmtinfo = fmt_ipinfo(ctl, addr);
+        if (ipinfo_field_selected(ctl, 0)) {
+            char* fmtinfo = fmt_ipinfo_field(ctl, addr, 0);
             if (fmtinfo != NULL)
                 fmtinfo = trim(fmtinfo, '\0');
 
@@ -573,7 +572,7 @@ void csv_close(
         if (at == net_min(ctl)) {
             printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
 #ifdef HAVE_IPINFO
-            if (!ctl->ipinfo_no) {
+            if (ipinfo_field_selected(ctl, 0)) {
                 printf("Asn,");
             }
 #endif
@@ -590,8 +589,8 @@ void csv_close(
             printf("\n");
         }
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
-            char *fmtinfo = fmt_ipinfo(ctl, addr);
+        if (ipinfo_field_selected(ctl, 0)) {
+            char *fmtinfo = fmt_ipinfo_field(ctl, addr, 0);
             fmtinfo = trim(fmtinfo, '\0');
             printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
                    (long long) now, "OK", ctl->Hostname, at + 1, name,
@@ -646,8 +645,8 @@ void csv_close(
 
                 if (!found) {
 #ifdef HAVE_IPINFO
-                    if (!ctl->ipinfo_no) {
-                        char *fmtinfo = fmt_ipinfo(ctl, addr2);
+                    if (ipinfo_field_selected(ctl, 0)) {
+                        char *fmtinfo = fmt_ipinfo_field(ctl, addr2, 0);
                         fmtinfo = trim(fmtinfo, '\0');
                         printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
                             (long long) now, "OK", ctl->Hostname, at + 1, name,
