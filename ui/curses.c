@@ -147,6 +147,25 @@ int mtr_curses_keyaction(
     float f = 0.0;
     char buf[MAXFLD + 1];
 
+#ifdef KEY_RESIZE
+    /*
+       Some curses implementations may queue many resize events while the
+       terminal is being dragged.  Drain a bounded batch so real key input
+       can be handled again after the resize settles.
+     */
+    if (c == KEY_RESIZE) {
+        int resize_events;
+
+        for (resize_events = 0; resize_events < 100 && c == KEY_RESIZE;
+             resize_events++) {
+            c = getch();
+        }
+        if (c == KEY_RESIZE) {
+            flushinp();
+        }
+    }
+#endif
+
     if (c == 'Q') {             /* must be checked before c = tolower(c) */
         mvprintw(2, 0, "Type of Service(tos): %d\n", ctl->tos);
         mvprintw(3, 0,
