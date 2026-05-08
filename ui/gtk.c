@@ -248,8 +248,8 @@ static gint Host_activate(
 
     ctl->af = DEFAULT_AF;  // should this obey the cmd line option?
     ctl->Hostname = gtk_entry_get_text(GTK_ENTRY(entry));
-    if (get_addrinfo_from_name(ctl, &res, ctl->Hostname) == 0) {
-        net_reopen(ctl, res);
+    if (get_addrinfo_from_name(ctl, &res, ctl->Hostname) == 0 &&
+        net_reopen(ctl, res) == 0) {
         freeaddrinfo(res);
         net_send_batch(ctl);
         /* If we are "Paused" at this point it is usually because someone
@@ -257,6 +257,9 @@ static gint Host_activate(
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Pause_Button), 0);
     } else {
         int pos = strlen(gtk_entry_get_text(GTK_ENTRY(entry)));
+        if (res) {
+            freeaddrinfo(res);
+        }
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Pause_Button), 1);
         gtk_editable_insert_text(GTK_EDITABLE(entry), ": not found", -1,
                                  &pos);

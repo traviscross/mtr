@@ -791,23 +791,27 @@ int net_open(
 {
     int err;
 
+    if (!addrcmp(sockaddr_addr_offset(res->ai_addr), &ctl->unspec_addr, res->ai_family))
+        return -1;
+
     /*  Spawn the mtr-packet child process  */
     err = open_command_pipe(ctl, &packet_command_pipe);
     if (err) {
         return err;
     }
 
-    net_reopen(ctl, res);
-
-    return 0;
+    return net_reopen(ctl, res);
 }
 
 
-void net_reopen(
+int net_reopen(
     struct mtr_ctl *ctl,
     struct addrinfo *res)
 {
     int at;
+
+    if (!addrcmp(sockaddr_addr_offset(res->ai_addr), &ctl->unspec_addr, res->ai_family))
+        return -1;
 
     for (at = 0; at < MaxHost; at++) {
         memset(&host[at], 0, sizeof(host[at]));
@@ -832,6 +836,7 @@ void net_reopen(
         net_find_local_address(ctl);
     }
 
+    return 0;
 }
 
 

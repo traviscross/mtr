@@ -34,7 +34,7 @@
 extern int net_open(
     struct mtr_ctl *ctl,
     struct addrinfo *res);
-extern void net_reopen(
+extern int net_reopen(
     struct mtr_ctl *ctl,
     struct addrinfo *res);
 extern void net_reset(
