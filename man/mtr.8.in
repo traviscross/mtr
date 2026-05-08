@@ -485,6 +485,12 @@ The number of seconds to keep probe sockets open before giving up on
 the connection.  Using large values for this, especially combined with
 a short interval, will use up a lot of file descriptors.
 .TP
+.B \-\-cache \fISECONDS
+Skip probes to hops that have replied within the last
+.IR SECONDS .
+This reduces probe traffic on stable paths, but cached hops keep their
+previous statistics until they are probed again.
+.TP
 .B \-M \fIMARK\fR, \fB\-\-mark \fIMARK
 Set the mark for each packet sent through this socket similar to the
 netfilter MARK target but socket-based.
