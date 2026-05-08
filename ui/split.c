@@ -55,7 +55,7 @@
 
 /* There is 256 hops max in the IP header (coded with a byte) */
 #define MAX_LINE_COUNT 256
-#define MAX_LINE_SIZE  256
+#define MAX_LINE_SIZE  1024
 
 static char Lines[MAX_LINE_COUNT][MAX_LINE_SIZE];
 static int LineCount;
@@ -114,7 +114,8 @@ void split_redraw(
 	    // something changed, so we print it.
             printf("%d %s\n", at + 1, newLine);
             fflush(stdout);
-            xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
+           // xstrncpy(Lines[at], newLine, MAX_LINE_SIZE);
+            snprintf(Lines[at], MAX_LINE_SIZE, "%s", newLine);
             if (LineCount < (at + 1)) {
                 LineCount = at + 1;
             }

@@ -257,7 +257,6 @@ void respond_to_probe(
     char ip_text[INET6_ADDRSTRLEN];
     char response[COMMAND_BUFFER_SIZE];
     char mpls_str[COMMAND_BUFFER_SIZE];
-    int remaining_size;
     const char *result;
     const char *ip_argument;
 
@@ -286,6 +285,10 @@ void respond_to_probe(
              "%d %s %s %s round-trip-time %d",
              probe->token, result, ip_argument, ip_text, round_trip_us);
 
+#if 0
+// This is the old code. I think the new code should do the same, but to be
+// sure, I want one commit with both versions side-by-side. 
+    int remaining_size;
     if (mpls_count) {
         format_mpls_string(mpls_str, COMMAND_BUFFER_SIZE, mpls_count,
                            mpls);
@@ -296,6 +299,19 @@ void respond_to_probe(
         remaining_size = COMMAND_BUFFER_SIZE - strlen(response) - 1;
         strncat(response, mpls_str, remaining_size);
     }
+#else
+    if (mpls_count) {
+        format_mpls_string(mpls_str, COMMAND_BUFFER_SIZE, mpls_count, mpls);
+
+        // Get the current length to use as an offset
+        size_t current_len = strlen(response);
+
+        // snprintf returns the number of chars it *would* have written, 
+        // but it safely stops at COMMAND_BUFFER_SIZE - 1.
+        snprintf(response + current_len, COMMAND_BUFFER_SIZE - current_len, 
+             " mpls %s", mpls_str);
+    }
+#endif
 
     puts(response);
     free_probe(net_state, probe);
