@@ -833,6 +833,44 @@ static void init_rand(
     srand(((getpid() & 0xffff) << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
+static void unmap_v4mapped_addrinfo(
+    int requested_family,
+    struct addrinfo *res)
+{
+#if defined(ENABLE_IPV6) && defined(IN6_IS_ADDR_V4MAPPED)
+    struct sockaddr_in6 *addr6;
+    struct sockaddr_in addr4;
+
+    if (requested_family != AF_UNSPEC ||
+        res == NULL ||
+        res->ai_family != AF_INET6 ||
+        res->ai_addr == NULL ||
+        res->ai_addrlen < sizeof(struct sockaddr_in6)) {
+        return;
+    }
+
+    addr6 = (struct sockaddr_in6 *) res->ai_addr;
+    if (!IN6_IS_ADDR_V4MAPPED(&addr6->sin6_addr)) {
+        return;
+    }
+
+    memset(&addr4, 0, sizeof(addr4));
+    addr4.sin_family = AF_INET;
+    addr4.sin_port = addr6->sin6_port;
+    memcpy(&addr4.sin_addr,
+           &addr6->sin6_addr.s6_addr[sizeof(addr6->sin6_addr.s6_addr) -
+                                     sizeof(addr4.sin_addr)],
+           sizeof(addr4.sin_addr));
+
+    memcpy(res->ai_addr, &addr4, sizeof(addr4));
+    res->ai_addrlen = sizeof(addr4);
+    res->ai_family = AF_INET;
+#else
+    (void) requested_family;
+    (void) res;
+#endif
+}
+
 /*
     For historical reasons, we need a hostent structure to represent
     our remote target for probing.  The obsolete way of doing this
@@ -865,6 +903,7 @@ int get_addrinfo_from_name(
         return -1;
     }
 
+    unmap_v4mapped_addrinfo(hints.ai_family, *res);
     ctl->af = (*res)->ai_family;
     return 0;
 }
@@ -918,6 +957,7 @@ static int validate_report_targets(
             return -1;
         }
 
+        unmap_v4mapped_addrinfo(hints.ai_family, res);
         lookup_ctl.af = res->ai_family;
         freeaddrinfo(res);
         names = names->next;
