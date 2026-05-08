@@ -40,6 +40,7 @@
 #include "net.h"
 #include "dns.h"
 #include "asn.h"
+#include "display.h"
 #include "utils.h"
 
 #define MAXLOADBAL 5
@@ -73,6 +74,22 @@ static size_t snprint_addr(
             return snprintf(dst, dst_len, "%s", host->h_name);
     } else
         return snprintf(dst, dst_len, "%s", "???");
+}
+
+static size_t snprint_hop_name(
+    struct mtr_ctl *ctl,
+    char *dst,
+    size_t dst_len,
+    int at,
+    ip_t *addr)
+{
+    int err = net_err(at);
+
+    if (err != 0) {
+        return snprintf(dst, dst_len, "(%s)", host_error_to_string(err));
+    }
+
+    return snprint_addr(ctl, dst, dst_len, addr);
 }
 
 
@@ -112,7 +129,7 @@ void report_close(
         for (; at < max; at++) {
             size_t nlen;
             addr = net_addr(at);
-            if ((nlen = snprint_addr(ctl, name, sizeof(name), addr)))
+            if ((nlen = snprint_hop_name(ctl, name, sizeof(name), at, addr)))
                 if (len_hosts < nlen)
                     len_hosts = nlen;
         }
@@ -150,7 +167,7 @@ void report_close(
     for (; at < max; at++) {
         addr = net_addr(at);
         mpls = net_mpls(at);
-        snprint_addr(ctl, name, sizeof(name), addr);
+        snprint_hop_name(ctl, name, sizeof(name), at, addr);
 
 #ifdef HAVE_IPINFO
         if (is_printii(ctl)) {
@@ -337,7 +354,7 @@ void json_close(struct mtr_ctl *ctl)
     at = net_min(ctl);
     for (; at < max; at++) {
         addr = net_addr(at);
-        snprint_addr(ctl, name, sizeof(name), addr);
+        snprint_hop_name(ctl, name, sizeof(name), at, addr);
 
         jh = json_pack("{si ss}", "count", at + 1, "host", name);
         if (!jh)
@@ -484,7 +501,7 @@ void csv_close(
     at = net_min(ctl);
     for (; at < max; at++) {
         addr = net_addr(at);
-        snprint_addr(ctl, name, sizeof(name), addr);
+        snprint_hop_name(ctl, name, sizeof(name), at, addr);
 
         if (at == net_min(ctl)) {
             printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");

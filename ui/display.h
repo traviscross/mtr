@@ -88,6 +88,8 @@ extern void display_rawhost(
     struct mplslen *mpls);
 extern int display_keyaction(
     struct mtr_ctl *ctl);
+extern char *host_error_to_string(
+    int err);
 extern void display_loop(
     struct mtr_ctl *ctl);
 extern void display_clear(
