@@ -32,6 +32,15 @@ mtr \- a network diagnostic tool
 .BI \--displaymode \ MODE\c
 ]
 [\c
+.B \-\-compact\c
+]
+[\c
+.B \-\-report\-on\-exit\c
+]
+[\c
+.BI \--scale \ SCALE\c
+]
+[\c
 .B \-\-raw\c
 ]
 [\c
@@ -252,6 +261,22 @@ marks the smallest bucket, digits and lowercase letters mark intermediate
 buckets, and
 .B >
 marks values above the last displayed bucket.
+.TP
+.B -\-compact
+Use this option to start the curses interface in compact mode.
+.TP
+.B -\-scale \fISCALE
+Use this option to select fixed latency thresholds for the stripchart
+display modes.
+.I SCALE
+can be
+.BR fast ,
+.BR average ,
+.BR slow ,
+or nine strictly increasing millisecond thresholds separated by colons,
+for example
+.BR 5:15:25:35:45:55:101:200:400 .
+Without this option, the stripchart keeps using the dynamic scale.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force

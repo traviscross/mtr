@@ -66,6 +66,11 @@ typedef int time_t;
 #define MAXFLD 20               /* max stats fields to display */
 #define FLD_INDEX_SZ 256
 
+enum {
+    MTR_SCALE_FACTORS = 10,
+    MTR_SCALE_THRESHOLDS = MTR_SCALE_FACTORS - 1
+};
+
 /* net related definitions */
 #define SAVED_PINGS 400
 #define MAX_PATH 128
@@ -116,6 +121,7 @@ struct mtr_ctl {
     int cache_timeout;          /* seconds to skip probes for recently seen hops */
     unsigned char fld_active[2 * MAXFLD];       /* SO_MARK to set for ping packet */
     int display_mode;           /* display mode selector */
+    int scale[MTR_SCALE_THRESHOLDS];    /* fixed stripchart scale thresholds */
     int fld_index[FLD_INDEX_SZ];        /* default display field (defined by key in net.h) and order */
     char available_options[MAXFLD];
     int display_offset;         /* only used in text mode */
@@ -126,7 +132,7 @@ struct mtr_ctl {
         use_dns:1, cache:1,
         show_ips:1,
         enablempls:1, dns:1, reportwide:1, Interactive:1, DisplayMode:5,
-        CompactLayout:1, ReportOnExit:1;
+        CompactLayout:1, ReportOnExit:1, fixed_scale:1;
 #ifdef HAVE_IPINFO
 #ifdef ENABLE_IPV6
     char *ipinfo_provider6;
