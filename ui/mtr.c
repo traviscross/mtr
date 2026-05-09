@@ -692,9 +692,8 @@ static void parse_arg(
             ctl->tos =
                 strtoint_or_err(optarg, "invalid argument");
             if (ctl->tos > 255 || ctl->tos < 0) {
-                /* error message, should do more checking for valid values,
-                 * details in rfc2474 */
-                ctl->tos = 0;
+                error(EXIT_FAILURE, 0, "value out of range (0 - 255): %s",
+                      optarg);
             }
             break;
         case 'u':
