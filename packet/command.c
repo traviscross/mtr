@@ -98,37 +98,37 @@ const char *check_support(
         return PACKAGE_VERSION;
     }
 
-    if (!strcmp(feature, "ip-4")) {
+    if (!strcmp(feature, COMMAND_ARG_IP4)) {
         return check_ip_version_support(net_state, 4);
     }
 
-    if (!strcmp(feature, "ip-6")) {
+    if (!strcmp(feature, COMMAND_ARG_IP6)) {
         return check_ip_version_support(net_state, 6);
     }
 
-    if (!strcmp(feature, "send-probe")) {
+    if (!strcmp(feature, COMMAND_NAME_SEND_PROBE)) {
         return "ok";
     }
 
-    if (!strcmp(feature, "icmp")) {
+    if (!strcmp(feature, COMMAND_PROTOCOL_ICMP)) {
         return check_protocol_support(net_state, IPPROTO_ICMP);
     }
 
-    if (!strcmp(feature, "udp")) {
+    if (!strcmp(feature, COMMAND_PROTOCOL_UDP)) {
         return check_protocol_support(net_state, IPPROTO_UDP);
     }
 
-    if (!strcmp(feature, "tcp")) {
+    if (!strcmp(feature, COMMAND_PROTOCOL_TCP)) {
         return check_protocol_support(net_state, IPPROTO_TCP);
     }
 #ifdef IPPROTO_SCTP
-    if (!strcmp(feature, "sctp")) {
+    if (!strcmp(feature, COMMAND_PROTOCOL_SCTP)) {
         return check_protocol_support(net_state, IPPROTO_SCTP);
     }
 #endif
 
 #ifdef SO_MARK
-    if (!strcmp(feature, "mark")) {
+    if (!strcmp(feature, COMMAND_ARG_MARK)) {
         return "ok";
     }
 #endif
@@ -168,42 +168,42 @@ bool decode_probe_argument(
     char *endstr = NULL;
 
     /*  Pass IPv4 addresses as string values  */
-    if (!strcmp(name, "ip-4")) {
+    if (!strcmp(name, COMMAND_ARG_IP4)) {
         param->ip_version = 4;
         param->remote_address = value;
     }
 
     /*  IPv6 address  */
-    if (!strcmp(name, "ip-6")) {
+    if (!strcmp(name, COMMAND_ARG_IP6)) {
         param->ip_version = 6;
         param->remote_address = value;
     }
 
     /*  IPv4 address to send from  */
-    if (!strcmp(name, "local-ip-4")) {
+    if (!strcmp(name, COMMAND_ARG_LOCAL_IP4)) {
         param->local_address = value;
     }
 
     /*  IPv6 address to send from  */
-    if (!strcmp(name, "local-ip-6")) {
+    if (!strcmp(name, COMMAND_ARG_LOCAL_IP6)) {
         param->local_address = value;
     }
 
     /*  Device name to send from  */
-    if (!strcmp(name, "local-device")) {
+    if (!strcmp(name, COMMAND_ARG_LOCAL_DEVICE)) {
         param->local_device = value;
     }
 
     /*  Protocol for the probe  */
-    if (!strcmp(name, "protocol")) {
-        if (!strcmp(value, "icmp")) {
+    if (!strcmp(name, COMMAND_ARG_PROTOCOL)) {
+        if (!strcmp(value, COMMAND_PROTOCOL_ICMP)) {
             param->protocol = IPPROTO_ICMP;
-        } else if (!strcmp(value, "udp")) {
+        } else if (!strcmp(value, COMMAND_PROTOCOL_UDP)) {
             param->protocol = IPPROTO_UDP;
-        } else if (!strcmp(value, "tcp")) {
+        } else if (!strcmp(value, COMMAND_PROTOCOL_TCP)) {
             param->protocol = IPPROTO_TCP;
 #ifdef IPPROTO_SCTP
-        } else if (!strcmp(value, "sctp")) {
+        } else if (!strcmp(value, COMMAND_PROTOCOL_SCTP)) {
             param->protocol = IPPROTO_SCTP;
 #endif
         } else {
@@ -212,7 +212,7 @@ bool decode_probe_argument(
     }
 
     /*  Destination port for the probe  */
-    if (!strcmp(name, "port")) {
+    if (!strcmp(name, COMMAND_ARG_PORT)) {
         param->dest_port = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -220,7 +220,7 @@ bool decode_probe_argument(
     }
 
     /*  The local port to send UDP probes from  */
-    if (!strcmp(name, "local-port")) {
+    if (!strcmp(name, COMMAND_ARG_LOCAL_PORT)) {
         param->local_port = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -237,7 +237,7 @@ bool decode_probe_argument(
     }
 
     /*  The "type of service" field for the IP header  */
-    if (!strcmp(name, "tos")) {
+    if (!strcmp(name, COMMAND_ARG_TOS)) {
         param->type_of_service = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -245,7 +245,7 @@ bool decode_probe_argument(
     }
 
     /*  The Linux packet mark for mark-based routing  */
-    if (!strcmp(name, "mark")) {
+    if (!strcmp(name, COMMAND_ARG_MARK)) {
         param->routing_mark = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -253,7 +253,7 @@ bool decode_probe_argument(
     }
 
     /*  The size of the packet (including headers)  */
-    if (!strcmp(name, "size")) {
+    if (!strcmp(name, COMMAND_ARG_SIZE)) {
         param->packet_size = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -261,7 +261,7 @@ bool decode_probe_argument(
     }
 
     /*  The packet's bytes will be filled with this value  */
-    if (!strcmp(name, "bit-pattern")) {
+    if (!strcmp(name, COMMAND_ARG_BIT_PATTERN)) {
         param->bit_pattern = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -269,7 +269,7 @@ bool decode_probe_argument(
     }
 
     /*  Time-to-live values  */
-    if (!strcmp(name, "ttl")) {
+    if (!strcmp(name, COMMAND_ARG_TTL)) {
         param->ttl = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -277,7 +277,7 @@ bool decode_probe_argument(
     }
 
     /*  Number of seconds to wait for a reply  */
-    if (!strcmp(name, "timeout")) {
+    if (!strcmp(name, COMMAND_ARG_TIMEOUT)) {
         param->timeout = strtol(value, &endstr, 10);
         if (*endstr != 0) {
             return false;
@@ -364,7 +364,7 @@ void dispatch_command(
 {
     if (!strcmp(command->command_name, "check-support")) {
         check_support_command(command, net_state);
-    } else if (!strcmp(command->command_name, "send-probe")) {
+    } else if (!strcmp(command->command_name, COMMAND_NAME_SEND_PROBE)) {
         send_probe_command(command, net_state);
     } else {
         /*  For unrecognized commands, respond with an error  */
