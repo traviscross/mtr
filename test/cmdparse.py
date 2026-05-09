@@ -35,11 +35,13 @@ MTR = os.path.join(PROJECT_ROOT, 'mtr')
 class TestMtrCommandParse(unittest.TestCase):
     '''Test cases with malformed mtr command-line arguments.'''
 
-    def run_mtr(self, *args):
+    def run_mtr(self, *args, **kwargs):
+        env = kwargs.get('env')
         return subprocess.run(
             [MTR] + list(args),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
             universal_newlines=True,
         )
 
@@ -87,6 +89,26 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertEqual(reply.stderr, '')
         self.assertIn('Loss%', reply.stdout)
         self.assertIn('0.00%', reply.stdout)
+
+    def test_mtr_options_preserves_quoted_order_spaces(self):
+        'Test that quoted MTR_OPTIONS values can contain order separators.'
+
+        env = os.environ.copy()
+        env['MTR_OPTIONS'] = '--order "SRDL NBAGVW JMXI"'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '127.0.0.1',
+            env=env,
+        )
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
+        self.assertIn('Drop', reply.stdout)
+        self.assertIn('Jint', reply.stdout)
 
 
 class TestCommandParse(mtrpacket.MtrPacketTest):
