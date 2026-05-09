@@ -345,6 +345,65 @@ static void init_fld_options(
     ctl->available_options[i] = 0;
 }
 
+static void print_build_feature(
+    const char *name,
+    int enabled)
+{
+    printf("  %-8s %s\n", name, enabled ? "yes" : "no");
+}
+
+static void print_version(
+    int verbose)
+{
+    printf("mtr " PACKAGE_VERSION "\n");
+
+    if (verbose < 2) {
+        return;
+    }
+
+    puts("features:");
+#ifdef ENABLE_IPV6
+    print_build_feature("ipv6", 1);
+#else
+    print_build_feature("ipv6", 0);
+#endif
+#ifdef HAVE_CURSES
+    print_build_feature("curses", 1);
+#else
+    print_build_feature("curses", 0);
+#endif
+#ifdef HAVE_CURSESW
+    print_build_feature("cursesw", 1);
+#else
+    print_build_feature("cursesw", 0);
+#endif
+#ifdef ENABLE_BRAILLE
+    print_build_feature("braille", 1);
+#else
+    print_build_feature("braille", 0);
+#endif
+#ifdef HAVE_GTK
+    print_build_feature("gtk", 1);
+#else
+    print_build_feature("gtk", 0);
+#endif
+#ifdef HAVE_JANSSON
+    print_build_feature("json", 1);
+#else
+    print_build_feature("json", 0);
+#endif
+#ifdef HAVE_IPINFO
+    print_build_feature("ipinfo", 1);
+#else
+    print_build_feature("ipinfo", 0);
+#endif
+#ifdef SO_MARK
+    print_build_feature("mark", 1);
+#else
+    print_build_feature("mark", 0);
+#endif
+}
+
 
 static void parse_arg(
     struct mtr_ctl *ctl,
@@ -444,6 +503,7 @@ static void parse_arg(
     enum { num_options = sizeof(long_options) / sizeof(struct option) };
     char short_options[num_options * 2];
     size_t n, p;
+    int version_count = 0;
 
     for (n = p = 0; n < num_options; n++) {
         if (CHAR_MAX < long_options[n].val) {
@@ -465,8 +525,7 @@ static void parse_arg(
 
         switch (opt) {
         case 'v':
-            printf("mtr " PACKAGE_VERSION "\n");
-            exit(EXIT_SUCCESS);
+            version_count++;
             break;
         case 'h':
             usage(stdout);
@@ -724,6 +783,11 @@ static void parse_arg(
         default:
             usage(stderr);
         }
+    }
+
+    if (version_count > 0) {
+        print_version(version_count);
+        exit(EXIT_SUCCESS);
     }
 
     if (ctl->DisplayMode == DisplayReport ||
