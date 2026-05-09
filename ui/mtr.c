@@ -188,7 +188,7 @@ static int parse_target_port(
 {
     int remoteport = strtoint_or_err(port, "invalid argument");
 
-    if (remoteport < 1 || MaxPort < remoteport) {
+    if (!MTR_IS_VALID_PORT(remoteport)) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
     }
 
@@ -731,7 +731,7 @@ static void parse_arg(
         case 'P':
             ctl->remoteport =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->remoteport < 1 || MaxPort < ctl->remoteport) {
+            if (!MTR_IS_VALID_PORT(ctl->remoteport)) {
                 error(EXIT_FAILURE, 0, "Illegal port number: %d",
                       ctl->remoteport);
             }
@@ -739,7 +739,7 @@ static void parse_arg(
         case 'L':
             ctl->localport =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->localport < MinPort || MaxPort < ctl->localport) {
+            if (!MTR_IS_VALID_PORT(ctl->localport)) {
                 error(EXIT_FAILURE, 0, "Illegal port number: %d",
                       ctl->localport);
             }

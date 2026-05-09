@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#include "ports.h"
 #include "portability/queue.h"
 
 #ifdef PLATFORM_CYGWIN

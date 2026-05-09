@@ -66,6 +66,7 @@ mtr_SOURCES = ui/mtr.c ui/mtr.h \
               ui/select.c ui/select.h \
               ui/utils.c ui/utils.h \
               packet/cmdparse.c packet/cmdparse.h \
+              packet/ports.h \
               packet/sockaddr.c packet/sockaddr.h \
               ui/mtr-curses.h \
               img/mtr_icon.xpm \
@@ -112,6 +113,7 @@ mtr_packet_SOURCES = \
 	packet/packet.c \
 	packet/cmdparse.c packet/cmdparse.h \
 	packet/command.c packet/command.h \
+	packet/ports.h \
 	packet/platform.h \
 	packet/probe.c packet/probe.h \
 	packet/utils.h \

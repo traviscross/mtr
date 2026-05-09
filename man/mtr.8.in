@@ -496,6 +496,10 @@ rotating privileged ports into the high end of the UDP port range unless
 .B \-\-port
 was given; in that case, UDP traces encode the probe sequence number in
 the source port instead.
+Valid port numbers are 1 through 65535.  Ports below 1024 can be used
+only when the operating system allows the packet helper to bind
+privileged local ports; otherwise the probe fails with a permission
+error.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
 The number of seconds to keep probe sockets open before giving up on

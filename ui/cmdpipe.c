@@ -688,6 +688,13 @@ void handle_reply_errors(
 
     if (!strcmp(reply_name, "permission-denied")) {
         display_close(ctl);
+        if (ctl->mtrtype == IPPROTO_UDP &&
+            MTR_IS_PRIVILEGED_PORT(ctl->localport)) {
+            error(EXIT_FAILURE, 0,
+                  "permission denied binding UDP source port %d; "
+                  "the OS did not allow this privileged local port",
+                  ctl->localport);
+        }
         error(EXIT_FAILURE, 0,
               "mtr-packet reported permission denied while sending a probe");
     }
