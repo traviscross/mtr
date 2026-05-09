@@ -71,6 +71,7 @@ typedef int time_t;
 #define MAXPACKET 65535          /* largest test packet size */
 #define MINPACKET 28            /* 20 bytes IP header and 8 bytes ICMP or UDP */
 #define MAXLABELS 8             /* http://kb.juniper.net/KB2190 (+ 3 just in case) */
+#define MAX_IPINFO_FIELDS 5
 
 /* Stream Control Transmission Protocol is defined in netinet/in.h */
 #ifdef IPPROTO_SCTP
@@ -90,6 +91,8 @@ struct mtr_ctl {
     char *InterfaceAddress;
     char LocalHostname[128];
     int ipinfo_no;
+    int ipinfo_fields[MAX_IPINFO_FIELDS];
+    int ipinfo_field_count;
     int ipinfo_max;
     int cpacketsize;            /* packet size used by ping */
     int bitpattern;             /* packet bit pattern used by ping */

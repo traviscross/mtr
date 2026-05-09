@@ -147,7 +147,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
     fputs(" -o, --order FIELDS               select output fields\n", out);
 #ifdef HAVE_IPINFO       
-    fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
+    fputs(" -y, --ipinfo FIELDS              select IP information fields in output\n",
           out);       
     fputs(" -z, --aslookup                   display AS number\n", out);
     fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
@@ -701,15 +701,10 @@ static void parse_arg(
 #endif
 #ifdef HAVE_IPINFO
         case 'y':
-            ctl->ipinfo_no =
-                strtoint_or_err(optarg, "invalid argument");
-            if (ctl->ipinfo_no < 0 || 4 < ctl->ipinfo_no) {
-                error(EXIT_FAILURE, 0, "value %d out of range (0 - 4)",
-                      ctl->ipinfo_no);
-            }
+            parse_ipinfo_fields(ctl, optarg);
             break;
         case 'z':
-            ctl->ipinfo_no = 0;
+            set_ipinfo_field(ctl, 0);
             break;
         case OPT_IPINFO4:
             ctl->ipinfo_provider4 = optarg;
@@ -963,6 +958,7 @@ int main(
     ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
+    ctl.ipinfo_field_count = 0;
     ctl.ipinfo_max = -1;
 #ifdef HAVE_IPINFO
     ctl.ipinfo_provider4 = "origin.asn.cymru.com";

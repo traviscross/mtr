@@ -89,7 +89,6 @@ class TestMtrCommandParse(unittest.TestCase):
 
         reply = self.run_mtr(
             '--report',
-
             '--report-cycles',
             '1',
             '--no-dns',
@@ -166,6 +165,31 @@ class TestMtrCommandParse(unittest.TestCase):
 
             self.assertNotEqual(reply.returncode, 0)
             self.assertIn('Failed to resolve host', reply.stderr)
+
+    def test_ipinfo_accepts_multiple_fields(self):
+        'Test parsing a comma-separated ipinfo field list.'
+
+        reply = self.run_mtr('--help')
+        if '--ipinfo' not in reply.stdout:
+            self.skipTest('No ipinfo support')
+
+        reply = self.run_mtr('--ipinfo', '0,1', '--help')
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
+
+    def test_ipinfo_rejects_bad_field_list(self):
+        'Test malformed comma-separated ipinfo field lists.'
+
+        reply = self.run_mtr('--help')
+        if '--ipinfo' not in reply.stdout:
+            self.skipTest('No ipinfo support')
+
+        for fields in ('0,,1', '0,5', '0,x'):
+            reply = self.run_mtr('--ipinfo', fields, '--help')
+
+            self.assertNotEqual(reply.returncode, 0)
+            self.assertIn('ipinfo', reply.stderr)
 
 
 class TestCommandParse(mtrpacket.MtrPacketTest):
