@@ -953,7 +953,7 @@ int get_addrinfo_from_name(
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ctl->af;
     hints.ai_socktype = SOCK_DGRAM;
-#if HAVE_DECL_AI_IDN
+#ifdef AI_IDN
     hints.ai_flags = AI_IDN;
 #endif
     gai_error = getaddrinfo(name, NULL, &hints, res);
@@ -1001,7 +1001,7 @@ static int validate_report_targets(
         memset(&hints, 0, sizeof hints);
         hints.ai_family = lookup_ctl.af;
         hints.ai_socktype = SOCK_DGRAM;
-#if HAVE_DECL_AI_IDN
+#ifdef AI_IDN
         hints.ai_flags = AI_IDN;
 #endif
         gai_error = getaddrinfo(names->name, NULL, &hints, &res);

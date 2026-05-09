@@ -23,7 +23,9 @@
 #include "config.h"
 
 #include <stdint.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
