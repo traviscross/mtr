@@ -7,11 +7,13 @@ EXTRA_DIST = \
 
 sbin_PROGRAMS = mtr mtr-packet
 TESTS = \
+	test/capability-drop.py \
 	test/cmdparse.py \
 	test/param.py \
 	test/probe.py
 
 TEST_FILES = \
+	test/capability-drop.py \
 	test/cmdparse.py \
 	test/mtrpacket.py \
 	test/param.py \
