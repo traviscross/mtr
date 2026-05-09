@@ -178,6 +178,8 @@ mode.  When in this mode,
 will run for the number of cycles specified by the
 .B \-c
 option, and then print statistics and exit.
+Use report mode when you need a final result that remains in terminal
+scrollback or can be redirected to a file.
 .TP
 \c
 This mode is useful for generating statistics about network quality.
@@ -243,6 +245,13 @@ In stripchart modes,
 marks a probe that has not received a response, and
 .B >
 marks a response slower than the largest latency bucket shown in the scale.
+The scale buckets are chosen from the current minimum and maximum visible
+round-trip times; in the default stripchart,
+.B .
+marks the smallest bucket, digits and lowercase letters mark intermediate
+buckets, and
+.B >
+marks values above the last displayed bucket.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
