@@ -34,12 +34,7 @@
 #define SOL_IP IPPROTO_IP
 #endif
 
-#ifdef HAVE_LIBCAP
-#include <sys/capability.h>
-#endif
-
-#define MIN_UNPRIVILEGED_PORT 1024
-#define UDP_PORT_RANGE 65536
+#include "ports.h"
 
 /*  A source of data for computing a checksum  */
 struct checksum_source_t {
@@ -52,8 +47,8 @@ uint16_t udp_source_port_from_pid(void)
 {
     uint16_t port = getpid() & 0xffff;
 
-    if (port < MIN_UNPRIVILEGED_PORT) {
-        port += UDP_PORT_RANGE - MIN_UNPRIVILEGED_PORT;
+    if (port < MTR_UNPRIVILEGED_PORT_MIN) {
+        port += MTR_UDP_PORT_RANGE - MTR_UNPRIVILEGED_PORT_MIN;
     }
 
     return port;
@@ -101,6 +96,39 @@ void construct_addr_port(
 {
     memcpy(addr_with_port, addr, sizeof(struct sockaddr_storage));
     *sockaddr_port_offset(addr_with_port) = htons(port);
+}
+
+static
+int check_udp_bind_allowed(
+    const struct sockaddr_storage *addr,
+    socklen_t addr_len)
+{
+    int saved_errno;
+    int udp_socket;
+
+    udp_socket = socket(addr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp_socket == -1) {
+        return -1;
+    }
+
+    /*
+       Raw sockets can put any UDP source port in the packet header.  For
+       privileged ports, first prove that this process can bind the same port
+       after capability dropping, so raw packet construction cannot bypass the
+       kernel's local-port permission policy.
+     */
+    if (bind(udp_socket, (const struct sockaddr *) addr, addr_len)) {
+        saved_errno = errno;
+        close(udp_socket);
+        errno = saved_errno;
+        return -1;
+    }
+
+    if (close(udp_socket)) {
+        return -1;
+    }
+
+    return 0;
 }
 
 /*  Construct an ICMP header for IPv4  */
@@ -298,99 +326,25 @@ int construct_udp6_packet(
     return 0;
 }
 
-/*
-    This defines a common interface which elevates privileges on
-    platforms with LIBCAP and acts as a NOOP on platforms without
-    it.
-*/
-#ifdef HAVE_LIBCAP
-
-typedef cap_value_t mayadd_cap_value_t;
-#define MAYADD_CAP_NET_RAW CAP_NET_RAW
-#define MAYADD_CAP_NET_ADMIN CAP_NET_ADMIN
-
-#else /* ifdef HAVE_LIBCAP */
-
-typedef int mayadd_cap_value_t;
-#define MAYADD_CAP_NET_RAW ((mayadd_cap_value_t) 0)
-#define MAYADD_CAP_NET_ADMIN ((mayadd_cap_value_t) 0)
-
-#endif /* ifdef HAVE_LIBCAP */
-
-UNUSED static
-int set_privileged_socket_opt(int socket, int option_name,
-    void const * option_value, socklen_t option_len,
-    UNUSED mayadd_cap_value_t required_cap) {
-
-    int result = -1;
-
-    // Add CAP_NET_ADMIN to the effective set if libcap is present
-#ifdef HAVE_LIBCAP
-    static cap_value_t cap_add[1];
-    cap_add[0] = required_cap;
-
-    // Get the capabilities of the current process
-    cap_t cap = cap_get_proc();
-    if (cap == NULL) {
-        goto cleanup_and_exit;
-    }
-
-    // Set the required capability flag
-    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
-        CAP_SET)) {
-        goto cleanup_and_exit;
-    }
-
-    // Apply the modified capabilities to the current process
-    if (cap_set_proc(cap)) {
-        goto cleanup_and_exit;
-    }
-#endif /* ifdef HAVE_LIBCAP */
-
-    // Set the socket mark
-    int set_sock_err = setsockopt(socket, SOL_SOCKET, option_name, option_value, option_len);
-
-    // Drop CAP_NET_ADMIN from the effective set if libcap is present
-#ifdef HAVE_LIBCAP
-
-    // Clear the CAP_NET_ADMIN capability flag
-    if (cap_set_flag(cap, CAP_EFFECTIVE, N_ENTRIES(cap_add), cap_add,
-        CAP_CLEAR)) {
-        goto cleanup_and_exit;
-    }
-
-    // Apply the modified capabilities to the current process
-    if (cap_set_proc(cap)) {
-        goto cleanup_and_exit;
-    }
-#endif /* ifdef HAVE_LIBCAP */
-
-    if(!set_sock_err) {
-        result = 0; // Success
-    }
-
-#ifdef HAVE_LIBCAP
-cleanup_and_exit:
-    cap_free(cap);
-#endif /* ifdef HAVE_LIBCAP */
-
-    return result;
-}
-
 /* Set the socket mark */
 #ifdef SO_MARK
 static
-int set_socket_mark(int socket, unsigned int mark) {
-    return set_privileged_socket_opt(socket, SO_MARK, &mark, sizeof(mark),
-        MAYADD_CAP_NET_ADMIN);
+int set_socket_mark(
+    int socket,
+    unsigned int mark)
+{
+    return setsockopt(socket, SOL_SOCKET, SO_MARK, &mark, sizeof(mark));
 }
 #endif /* ifdef SO_MARK */
 
 #ifdef SO_BINDTODEVICE
 static
-int set_bind_to_device(int socket, char const * device) {
-    return set_privileged_socket_opt(socket, SO_BINDTODEVICE, device,
-            strlen(device), MAYADD_CAP_NET_RAW);
+int set_bind_to_device(
+    int socket,
+    char const *device)
+{
+    return setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, device,
+                      strlen(device));
 }
 #endif /* ifdef SO_BINDTODEVICE */
 
@@ -670,6 +624,13 @@ int construct_ip4_packet(
             (net_state, probe, packet_buffer, packet_size, param)) {
             return -1;
         }
+
+        if (net_state->platform.ip4_socket_raw &&
+            MTR_IS_PRIVILEGED_PORT(param->local_port) &&
+            check_udp_bind_allowed(&probe->local_addr,
+                                   sizeof(struct sockaddr_in))) {
+            return -1;
+        }
     } else {
         errno = EINVAL;
         return -1;
@@ -821,6 +782,13 @@ int construct_ip6_packet(
 
         if (construct_udp6_packet
             (net_state, probe, packet_buffer, packet_size, param)) {
+            return -1;
+        }
+
+        if (net_state->platform.ip6_socket_raw &&
+            MTR_IS_PRIVILEGED_PORT(param->local_port) &&
+            check_udp_bind_allowed(&probe->local_addr,
+                                   sizeof(struct sockaddr_in6))) {
             return -1;
         }
     } else {

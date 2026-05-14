@@ -42,70 +42,29 @@
 
 #ifdef HAVE_LIBCAP
 static
-void drop_excess_capabilities() {
-
-    /*
-      By default, the root user has all capabilities, which poses a security risk.
-
-      Some capabilities must be retained in the permitted set so that it can be added
-      to the effective set when needed.
-    */
-    cap_value_t cap_permitted[] = {
-#ifdef SO_MARK
-        /*
-          CAP_NET_ADMIN is needed to set the routing mark (SO_MARK) on a socket
-        */
-        CAP_NET_ADMIN,
-#endif /* ifdef SOMARK */
-
-#ifdef SO_BINDTODEVICE
-        /*
-          The CAP_NET_RAW capability is necessary for binding to a network device using
-          the SO_BINDTODEVICE socket option. Although this capability is not needed for
-          the initial bind operation, it is required when calling setsockopt after data has
-          been sent.
-
-          Given the current architecture, the socket is re-bound to the device every time
-          a probe is sent. Therefore, CAP_NET_RAW is required when specifying an interface
-          using the -I or --interface options.
-        */
-        CAP_NET_RAW,
-#endif /* ifdef SO_BINDTODEVICE */
-    };
-
-    cap_t current_cap = cap_get_proc();
+void drop_all_capabilities()
+{
     cap_t wanted_cap = cap_get_proc();
 
-    if(!current_cap || !wanted_cap) {
+    if (!wanted_cap) {
         goto pcap_error;
     }
 
-    // Clear all capabilities from the 'wanted_cap' set
-    if(cap_clear(wanted_cap)) {
+    if (cap_clear(wanted_cap)) {
         goto pcap_error;
     }
 
-    // Retain only the necessary capabilities defined in 'cap_permitted' in the permitted set.
-    // This approach ensures the principle of least privilege.
-    // If the user has dropped capabilities, the code assumes those features will not be needed.
-    for(unsigned i = 0; i < N_ENTRIES(cap_permitted); i++) {
-        cap_flag_value_t is_set;
-
-        if(cap_get_flag(current_cap, cap_permitted[i], CAP_PERMITTED, &is_set)) {
-            goto pcap_error;
-        }
-
-        if(cap_set_flag(wanted_cap, CAP_PERMITTED, 1, &cap_permitted[i], is_set)) {
-            goto pcap_error;
-        }
-    }
-
-    // Update the process's capabilities to match 'wanted_cap'
-    if(cap_set_proc(wanted_cap)) {
+    /*
+       mtr-packet opens any sockets that need elevated privileges before this
+       point.  Do not keep capabilities in the permitted set for later
+       re-enabling: once privilege is dropped, later packet handling must not be
+       able to regain it.
+     */
+    if (cap_set_proc(wanted_cap)) {
         goto pcap_error;
     }
 
-    if(cap_free(current_cap) || cap_free(wanted_cap)) {
+    if (cap_free(wanted_cap)) {
         goto pcap_error;
     }
 
@@ -113,7 +72,6 @@ void drop_excess_capabilities() {
 
 pcap_error:
 
-    cap_free(current_cap);
     cap_free(wanted_cap);
     error(EXIT_FAILURE, errno, "Failed to drop capabilities");
 }
@@ -134,10 +92,10 @@ int drop_elevated_permissions(
     }
 
     /*
-       Drop all process capabilities.
+       Drop all process capabilities permanently.
      */
 #ifdef HAVE_LIBCAP
-    drop_excess_capabilities();
+    drop_all_capabilities();
 #endif
 
     return 0;

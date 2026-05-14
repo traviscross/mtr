@@ -20,11 +20,13 @@
 
 #include "mtr.h"
 
+#include <limits.h>
 #include <locale.h>
 #ifdef __CYGWIN__
 #include <windows.h>
 #endif
 #include <assert.h>
+#include <errno.h>
 #include <strings.h>
 #include <unistd.h>
 
@@ -71,30 +73,33 @@
 #include "dns.h"
 #include "asn.h"
 #include "display.h"
+#include "format.h"
 #include "utils.h"
 
 
-enum { NUM_FACTORS = 8 };
+enum { NUM_FACTORS = MTR_SCALE_FACTORS };
 static double factors[NUM_FACTORS];
 static int scale[NUM_FACTORS];
 static char block_map[NUM_FACTORS];
 #ifdef WITH_BRAILLE_DISPLAY
 static const wchar_t *braille_map[NUM_FACTORS] = {
-    L"⣀", L"⣀", L"⣤", L"⣤", L"⣶", L"⣶", L"⣿", L"⣿"
+    L"⣀", L"⣀", L"⣤", L"⣤", L"⣦", L"⣦", L"⣶", L"⣶", L"⣿", L"⣿"
 };
 #endif
 
 enum { black = 1, red, green, yellow, blue, magenta, cyan, white };
 static const int block_col[NUM_FACTORS + 1] = {
     COLOR_PAIR(red) | A_BOLD,
-    A_NORMAL,
-    COLOR_PAIR(green),
+    COLOR_PAIR(green) | A_BOLD,
+    COLOR_PAIR(green) | A_BOLD,
     COLOR_PAIR(green) | A_BOLD,
     COLOR_PAIR(yellow) | A_BOLD,
+    COLOR_PAIR(yellow) | A_BOLD,
     COLOR_PAIR(magenta) | A_BOLD,
-    COLOR_PAIR(magenta),
+    COLOR_PAIR(red) | A_BOLD,
+    COLOR_PAIR(red) | A_BOLD,
     COLOR_PAIR(red),
-    COLOR_PAIR(red) | A_BOLD
+    COLOR_PAIR(red)
 };
 
 static void pwcenter(
@@ -110,35 +115,6 @@ static void pwcenter(
 }
 
 
-static char *format_number(
-    int n,
-    int w,
-    char *buf)
-{
-    if (w != 5)
-        /* XXX todo: implement w != 5.. */
-        snprintf(buf, w + 1, "%s", "unimpl");
-    else if (n < 100000)
-        /* buf is good as-is */ ;
-    else if (n < 1000000)
-        snprintf(buf, w + 1, "%3dk%1d", n / 1000, (n % 1000) / 100);
-    else if (n < 10000000)
-        snprintf(buf, w + 1, "%1dM%03d", n / 1000000,
-                 (n % 1000000) / 1000);
-    else if (n < 100000000)
-        snprintf(buf, w + 1, "%2dM%02d", n / 1000000,
-                 (n % 1000000) / 10000);
-    else if (n < 1000000000)
-        snprintf(buf, w + 1, "%3dM%01d", n / 1000000,
-                 (n % 1000000) / 100000);
-    else                        /* if (n < 10000000000) */
-        snprintf(buf, w + 1, "%1dG%03d", n / 1000000000,
-                 (n % 1000000000) / 1000000);
-
-    return buf;
-}
-
-
 int mtr_curses_keyaction(
     struct mtr_ctl *ctl)
 {
@@ -146,6 +122,25 @@ int mtr_curses_keyaction(
     int i = 0;
     float f = 0.0;
     char buf[MAXFLD + 1];
+
+#ifdef KEY_RESIZE
+    /*
+       Some curses implementations may queue many resize events while the
+       terminal is being dragged.  Drain a bounded batch so real key input
+       can be handled again after the resize settles.
+     */
+    if (c == KEY_RESIZE) {
+        int resize_events;
+
+        for (resize_events = 0; resize_events < 100 && c == KEY_RESIZE;
+             resize_events++) {
+            c = getch();
+        }
+        if (c == KEY_RESIZE) {
+            flushinp();
+        }
+    }
+#endif
 
     if (c == 'Q') {             /* must be checked before c = tolower(c) */
         mvprintw(2, 0, "Type of Service(tos): %d\n", ctl->tos);
@@ -199,8 +194,12 @@ int mtr_curses_keyaction(
         return ActionAS;
 #endif
     case '+':
+    case KEY_NPAGE:
+    case KEY_DOWN:
         return ActionScrollDown;
     case '-':
+    case KEY_PPAGE:
+    case KEY_UP:
         return ActionScrollUp;
     case 's':
         mvprintw(2, 0, "Change Packet Size: %d\n", ctl->cpacketsize);
@@ -226,7 +225,7 @@ int mtr_curses_keyaction(
         return ActionNone;
     case 'b':
         mvprintw(2, 0, "Ping Bit Pattern: %d\n", ctl->bitpattern);
-        mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), <0 random.\n");
+        mvprintw(3, 0, "Pattern Range: 0(0x00)-255(0xff), -1 random.\n");
         move(2, 18);
         refresh();
         while ((c = getch()) != '\n' && i < MAXFLD) {
@@ -237,9 +236,15 @@ int mtr_curses_keyaction(
             buf[i++] = c;       /* need more checking on 'c' */
         }
         buf[i] = '\0';
-        ctl->bitpattern = atoi(buf);
-        if (ctl->bitpattern > 255)
-            ctl->bitpattern = -1;
+        char *end = NULL;
+        errno = 0;
+        long new_bitpattern = strtol(buf, &end, 10);
+        if (errno != 0 || buf == end || *end != '\0' ||
+            new_bitpattern < -1 || new_bitpattern > 255) {
+            printf("\a");
+            return ActionNone;
+        }
+        ctl->bitpattern = new_bitpattern;
         return ActionNone;
     case 'i':
         mvprintw(2, 0, "Interval : %0.0f\n\n", ctl->WaitTime);
@@ -384,7 +389,7 @@ int mtr_curses_keyaction(
             ("  m <n>   set the max time-to-live, default n= # of hops\n");
         printw("  s <n>   set the packet size to n or random(n<0)\n");
         printw
-            ("  b <c>   set ping bit pattern to c(0..255) or random(c<0)\n");
+            ("  b <c>   set ping bit pattern to c(0..255) or random(c=-1)\n");
         printw("  Q <t>   set ping packet's TOS to t\n");
         printw("  u       switch between ICMP ECHO and UDP datagrams\n");
         printw("  t       switch between ICMP ECHO and TCP\n");
@@ -408,9 +413,9 @@ static void format_field(
     const char *format,
     int n)
 {
-    if (index(format, 'N')) {
+    if (strcmp(format, " %5d") == 0) {
         *dst++ = ' ';
-        format_number(n, 5, dst);
+        mtr_format_count(n, 5, dst);
     } else if (strchr(format, 'f')) {
         /* this is for fields where we measure integer microseconds but
            display floating point milliseconds. Convert to float here. */
@@ -551,6 +556,14 @@ static void mtr_gen_scale(
     for (i = 0; i < NUM_FACTORS; i++) {
         scale[i] = 0;
     }
+    if (ctl->fixed_scale) {
+        for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+            scale[i] = ctl->scale[i];
+        }
+        scale[NUM_FACTORS - 1] = INT_MAX;
+        return;
+    }
+
     max = net_max(ctl);
     for (at = ctl->display_offset; at < max; at++) {
         saved = net_saved_pings(at);
@@ -584,7 +597,7 @@ static void mtr_curses_init(
     }
 
     /* Initialize block_map.  The block_split is always smaller than 9 */
-    block_split = (NUM_FACTORS - 2) / 2;
+    block_split = NUM_FACTORS / 2;
     for (i = 1; i <= block_split; i++) {
         block_map[i] = '0' + i;
     }
@@ -947,7 +960,7 @@ void mtr_curses_redraw(
 
 #ifdef HAVE_IPINFO
         if (is_printii(ctl))
-            padding += get_iiwidth(ctl->ipinfo_no);
+            padding += get_iiwidth_selected(ctl);
 #endif
         max_cols =
             maxx <= SAVED_PINGS + padding ? maxx - padding : SAVED_PINGS;
@@ -974,6 +987,8 @@ void mtr_curses_redraw(
 #endif
 
         for (i = 0; i < NUM_FACTORS; i++) {
+            char latency[16];
+
             printw("  ");
             attrset(block_col[i + 1]);
 #ifdef WITH_BRAILLE_DISPLAY
@@ -984,7 +999,9 @@ void mtr_curses_redraw(
                 printw("%c", block_map[i]);
             attrset(A_NORMAL);
             if (i < NUM_FACTORS-1)
-                printw(":%d ms", scale[i] / 1000);
+                printw(":%s ms",
+                       mtr_format_latency_ms(scale[i], latency,
+                                             sizeof(latency)));
         }
     }
 
@@ -1011,6 +1028,7 @@ void mtr_curses_open(
     initscr();
     raw();
     noecho();
+    keypad(stdscr, TRUE);
     start_color();
     if (use_default_colors() == OK)
         bg_col = -1;

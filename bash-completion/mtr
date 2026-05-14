@@ -54,8 +54,10 @@ _mtr_module()
         --filename --inet --inet6 --udp --tcp --address --first-ttl
         --max-ttl --max-unknown --port --localport --psize --bitpattern
         --interval --gracetime --tos --mpls --timeout --mark --report
-        --report-wide --report-cycles --json --xml --csv --raw --split
-        --curses --displaymode --gtk --no-dns --show-ips --order --ipinfo
+        --report-wide --report-on-exit --report-cycles --json --xml --csv
+        --raw --split
+        --curses --displaymode --compact --scale --gtk
+        --no-dns --show-ips --order --ipinfo
         --aslookup --help --version
       '
       COMPREPLY=( $(compgen -W "${OPTS[*]}" -- "$cur") )
