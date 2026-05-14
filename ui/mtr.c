@@ -69,7 +69,7 @@ char *myname;
 const struct fields data_fields[MAXFLD] = {
     /* key, Remark, Header, Format, Width, CallBackFunc */
     {' ', "<sp>: Space between fields", " ", " ", 1, &net_drop},
-    {'L', "L: Loss Ratio", "Loss%", " %4.1f%%", 6, &net_loss},
+    {'L', "L: Loss Ratio", "Loss%", " %6.2f%%", 8, &net_loss},
     {'D', "D: Dropped Packets", "Drop", " %4d", 5, &net_drop},
     {'R', "R: Received Packets", "Rcv", " %5d", 6, &net_returned},
     {'S', "S: Sent Packets", "Snt", " %5d", 6, &net_xmit},
@@ -124,21 +124,24 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs("     --cache SECONDS              skip recently seen hops for SECONDS\n", out);
 #ifdef SO_MARK       
     fputs(" -M, --mark MARK                  mark each sent packet\n", out);
-#endif       
+#endif
     fputs(" -r, --report                     output using report mode\n", out);
     fputs(" -w, --report-wide                output wide report\n", out);
+    fputs("     --report-on-exit             print report after curses exits\n", out);
     fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);       
 #ifdef HAVE_JANSSON       
     fputs(" -j, --json                       output json\n", out);
-#endif       
+#endif
     fputs(" -x, --xml                        output xml\n", out);
     fputs(" -C, --csv                        output comma separated values\n", out);       
     fputs(" -l, --raw                        output raw format\n", out);
     fputs(" -p, --split                      split output\n", out);
 #ifdef HAVE_CURSES       
     fputs(" -t, --curses                     use curses terminal interface\n", out);       
-#endif       
     fputs("     --displaymode MODE           select initial display mode\n", out);       
+    fputs("     --compact                    start curses interface in compact mode\n", out);
+    fputs("     --scale SCALE                set stripchart scale thresholds\n", out);
+#endif
 #ifdef HAVE_GTK       
     fputs(" -g, --gtk                        use GTK+ xwindow interface\n", out);
 #endif       
@@ -146,7 +149,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
     fputs(" -o, --order FIELDS               select output fields\n", out);
 #ifdef HAVE_IPINFO       
-    fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
+    fputs(" -y, --ipinfo FIELDS              select IP information fields in output\n",
           out);       
     fputs(" -z, --aslookup                   display AS number\n", out);
     fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
@@ -187,7 +190,7 @@ static int parse_target_port(
 {
     int remoteport = strtoint_or_err(port, "invalid argument");
 
-    if (remoteport < 1 || MaxPort < remoteport) {
+    if (!MTR_IS_VALID_PORT(remoteport)) {
         error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
     }
 
@@ -344,6 +347,148 @@ static void init_fld_options(
     ctl->available_options[i] = 0;
 }
 
+static void print_build_feature(
+    const char *name,
+    int enabled)
+{
+    printf("  %-8s %s\n", name, enabled ? "yes" : "no");
+}
+
+static void print_version(
+    int verbose)
+{
+    printf("mtr " PACKAGE_VERSION "\n");
+
+    if (verbose < 2) {
+        return;
+    }
+
+    puts("features:");
+#ifdef ENABLE_IPV6
+    print_build_feature("ipv6", 1);
+#else
+    print_build_feature("ipv6", 0);
+#endif
+#ifdef HAVE_CURSES
+    print_build_feature("curses", 1);
+#else
+    print_build_feature("curses", 0);
+#endif
+#ifdef HAVE_CURSESW
+    print_build_feature("cursesw", 1);
+#else
+    print_build_feature("cursesw", 0);
+#endif
+#ifdef ENABLE_BRAILLE
+    print_build_feature("braille", 1);
+#else
+    print_build_feature("braille", 0);
+#endif
+#ifdef HAVE_GTK
+    print_build_feature("gtk", 1);
+#else
+    print_build_feature("gtk", 0);
+#endif
+#ifdef HAVE_JANSSON
+    print_build_feature("json", 1);
+#else
+    print_build_feature("json", 0);
+#endif
+#ifdef HAVE_IPINFO
+    print_build_feature("ipinfo", 1);
+#else
+    print_build_feature("ipinfo", 0);
+#endif
+#ifdef SO_MARK
+    print_build_feature("mark", 1);
+#else
+    print_build_feature("mark", 0);
+#endif
+}
+
+
+#ifdef HAVE_CURSES
+static void set_fixed_scale(
+    struct mtr_ctl *ctl,
+    const int *thresholds)
+{
+    int i;
+
+    for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+        ctl->scale[i] = thresholds[i] * 1000;
+    }
+    ctl->fixed_scale = 1;
+}
+
+
+static void parse_scale(
+    struct mtr_ctl *ctl,
+    const char *scale_arg)
+{
+    static const int fast_scale[MTR_SCALE_THRESHOLDS] = {
+        1, 2, 3, 4, 5, 10, 20, 40, 80
+    };
+    static const int average_scale[MTR_SCALE_THRESHOLDS] = {
+        5, 15, 25, 35, 45, 55, 101, 200, 400
+    };
+    static const int slow_scale[MTR_SCALE_THRESHOLDS] = {
+        50, 100, 150, 200, 300, 500, 750, 1000, 2000
+    };
+    const char *cursor = scale_arg;
+    int thresholds[MTR_SCALE_THRESHOLDS];
+    int previous = -1;
+    int i;
+
+    if (!strcmp(scale_arg, "fast")) {
+        set_fixed_scale(ctl, fast_scale);
+        return;
+    }
+    if (!strcmp(scale_arg, "average")) {
+        set_fixed_scale(ctl, average_scale);
+        return;
+    }
+    if (!strcmp(scale_arg, "slow")) {
+        set_fixed_scale(ctl, slow_scale);
+        return;
+    }
+
+    for (i = 0; i < MTR_SCALE_THRESHOLDS; i++) {
+        char *end;
+        long threshold;
+
+        errno = 0;
+        threshold = strtol(cursor, &end, 10);
+        if (cursor == end || errno || threshold < 0 ||
+            threshold > INT_MAX / 1000) {
+            error(EXIT_FAILURE, 0, "invalid scale threshold: %s", scale_arg);
+        }
+        if (threshold <= previous) {
+            error(EXIT_FAILURE, 0,
+                  "scale thresholds must be strictly increasing: %s",
+                  scale_arg);
+        }
+
+        thresholds[i] = threshold;
+        previous = threshold;
+
+        if (i == MTR_SCALE_THRESHOLDS - 1) {
+            if (*end) {
+                error(EXIT_FAILURE, 0,
+                      "scale expects %d thresholds: %s",
+                      MTR_SCALE_THRESHOLDS, scale_arg);
+            }
+        } else if (*end != ':') {
+            error(EXIT_FAILURE, 0,
+                  "scale expects %d colon-separated thresholds: %s",
+                  MTR_SCALE_THRESHOLDS, scale_arg);
+        }
+        cursor = end + 1;
+    }
+
+    set_fixed_scale(ctl, thresholds);
+}
+#endif
+
 
 static void parse_arg(
     struct mtr_ctl *ctl,
@@ -361,12 +506,15 @@ static void parse_arg(
      */
     enum {
         OPT_DISPLAYMODE = CHAR_MAX + 1,
-        OPT_IPINFO4 = CHAR_MAX + 2,
+        OPT_REPORT_ON_EXIT = CHAR_MAX + 2,
+        OPT_SCALE = CHAR_MAX + 3,
+        OPT_IPINFO4 = CHAR_MAX + 4,
+        OPT_COMPACT = CHAR_MAX + 5,
 #ifdef ENABLE_IPV6
-        OPT_IPINFO6 = CHAR_MAX + 3,
-        OPT_CACHE = CHAR_MAX + 4,
+        OPT_IPINFO6 = CHAR_MAX + 6,
+        OPT_CACHE = CHAR_MAX + 7,
 #else
-        OPT_CACHE = CHAR_MAX + 3,
+        OPT_CACHE = CHAR_MAX + 6,
 #endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
@@ -382,6 +530,7 @@ static void parse_arg(
 
         {"report", 0, NULL, 'r'},
         {"report-wide", 0, NULL, 'w'},
+        {"report-on-exit", 0, NULL, OPT_REPORT_ON_EXIT},
         {"xml", 0, NULL, 'x'},
 #ifdef HAVE_CURSES
         {"curses", 0, NULL, 't'},
@@ -394,7 +543,11 @@ static void parse_arg(
 #ifdef HAVE_JANSSON
         {"json", 0, NULL, 'j'},
 #endif
+#ifdef HAVE_CURSES
         {"displaymode", 1, NULL, OPT_DISPLAYMODE},
+        {"compact", 0, NULL, OPT_COMPACT},
+        {"scale", 1, NULL, OPT_SCALE},
+#endif
         {"split", 0, NULL, 'p'},        /* BL */
         /* maybe above should change to -d 'x' */
 
@@ -441,6 +594,7 @@ static void parse_arg(
     enum { num_options = sizeof(long_options) / sizeof(struct option) };
     char short_options[num_options * 2];
     size_t n, p;
+    int version_count = 0;
 
     for (n = p = 0; n < num_options; n++) {
         if (CHAR_MAX < long_options[n].val) {
@@ -462,8 +616,7 @@ static void parse_arg(
 
         switch (opt) {
         case 'v':
-            printf("mtr " PACKAGE_VERSION "\n");
-            exit(EXIT_SUCCESS);
+            version_count++;
             break;
         case 'h':
             usage(stdout);
@@ -475,6 +628,9 @@ static void parse_arg(
         case 'w':
             ctl->reportwide = 1;
             ctl->DisplayMode = DisplayReport;
+            break;
+        case OPT_REPORT_ON_EXIT:
+            ctl->ReportOnExit = 1;
             break;
 #ifdef HAVE_CURSES
         case 't':
@@ -504,6 +660,7 @@ static void parse_arg(
             ctl->DisplayMode = DisplayXML;
             break;
 
+#ifdef HAVE_CURSES
         case OPT_DISPLAYMODE:
             ctl->display_mode =
                 strtoint_or_err(optarg, "invalid argument");
@@ -511,6 +668,13 @@ static void parse_arg(
                 error(EXIT_FAILURE, 0, "value out of range (%d - %d): %s",
                       DisplayModeDefault, (DisplayModeMAX - 1), optarg);
             break;
+        case OPT_COMPACT:
+            ctl->CompactLayout = 1;
+            break;
+        case OPT_SCALE:
+            parse_scale(ctl, optarg);
+            break;
+#endif
         case 'c':
             ctl->MaxPing =
                 strtoint_or_err(optarg, "invalid argument");
@@ -627,9 +791,8 @@ static void parse_arg(
             ctl->tos =
                 strtoint_or_err(optarg, "invalid argument");
             if (ctl->tos > 255 || ctl->tos < 0) {
-                /* error message, should do more checking for valid values,
-                 * details in rfc2474 */
-                ctl->tos = 0;
+                error(EXIT_FAILURE, 0, "value out of range (0 - 255): %s",
+                      optarg);
             }
             break;
         case 'u':
@@ -667,7 +830,7 @@ static void parse_arg(
         case 'P':
             ctl->remoteport =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->remoteport < 1 || MaxPort < ctl->remoteport) {
+            if (!MTR_IS_VALID_PORT(ctl->remoteport)) {
                 error(EXIT_FAILURE, 0, "Illegal port number: %d",
                       ctl->remoteport);
             }
@@ -675,7 +838,7 @@ static void parse_arg(
         case 'L':
             ctl->localport =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->localport < MinPort || MaxPort < ctl->localport) {
+            if (!MTR_IS_VALID_PORT(ctl->localport)) {
                 error(EXIT_FAILURE, 0, "Illegal port number: %d",
                       ctl->localport);
             }
@@ -695,15 +858,10 @@ static void parse_arg(
 #endif
 #ifdef HAVE_IPINFO
         case 'y':
-            ctl->ipinfo_no =
-                strtoint_or_err(optarg, "invalid argument");
-            if (ctl->ipinfo_no < 0 || 4 < ctl->ipinfo_no) {
-                error(EXIT_FAILURE, 0, "value %d out of range (0 - 4)",
-                      ctl->ipinfo_no);
-            }
+            parse_ipinfo_fields(ctl, optarg);
             break;
         case 'z':
-            ctl->ipinfo_no = 0;
+            set_ipinfo_field(ctl, 0);
             break;
         case OPT_IPINFO4:
             ctl->ipinfo_provider4 = optarg;
@@ -723,6 +881,11 @@ static void parse_arg(
         default:
             usage(stderr);
         }
+    }
+
+    if (version_count > 0) {
+        print_version(version_count);
+        exit(EXIT_SUCCESS);
     }
 
     if (ctl->DisplayMode == DisplayReport ||
@@ -833,6 +996,44 @@ static void init_rand(
     srand(((getpid() & 0xffff) << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
+static void unmap_v4mapped_addrinfo(
+    int requested_family,
+    struct addrinfo *res)
+{
+#if defined(ENABLE_IPV6) && defined(IN6_IS_ADDR_V4MAPPED)
+    struct sockaddr_in6 *addr6;
+    struct sockaddr_in addr4;
+
+    if (requested_family != AF_UNSPEC ||
+        res == NULL ||
+        res->ai_family != AF_INET6 ||
+        res->ai_addr == NULL ||
+        res->ai_addrlen < sizeof(struct sockaddr_in6)) {
+        return;
+    }
+
+    addr6 = (struct sockaddr_in6 *) res->ai_addr;
+    if (!IN6_IS_ADDR_V4MAPPED(&addr6->sin6_addr)) {
+        return;
+    }
+
+    memset(&addr4, 0, sizeof(addr4));
+    addr4.sin_family = AF_INET;
+    addr4.sin_port = addr6->sin6_port;
+    memcpy(&addr4.sin_addr,
+           &addr6->sin6_addr.s6_addr[sizeof(addr6->sin6_addr.s6_addr) -
+                                     sizeof(addr4.sin_addr)],
+           sizeof(addr4.sin_addr));
+
+    memcpy(res->ai_addr, &addr4, sizeof(addr4));
+    res->ai_addrlen = sizeof(addr4);
+    res->ai_family = AF_INET;
+#else
+    (void) requested_family;
+    (void) res;
+#endif
+}
+
 /*
     For historical reasons, we need a hostent structure to represent
     our remote target for probing.  The obsolete way of doing this
@@ -851,7 +1052,7 @@ int get_addrinfo_from_name(
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ctl->af;
     hints.ai_socktype = SOCK_DGRAM;
-#if HAVE_DECL_AI_IDN
+#ifdef AI_IDN
     hints.ai_flags = AI_IDN;
 #endif
     gai_error = getaddrinfo(name, NULL, &hints, res);
@@ -865,6 +1066,7 @@ int get_addrinfo_from_name(
         return -1;
     }
 
+    unmap_v4mapped_addrinfo(hints.ai_family, *res);
     ctl->af = (*res)->ai_family;
     return 0;
 }
@@ -898,7 +1100,7 @@ static int validate_report_targets(
         memset(&hints, 0, sizeof hints);
         hints.ai_family = lookup_ctl.af;
         hints.ai_socktype = SOCK_DGRAM;
-#if HAVE_DECL_AI_IDN
+#ifdef AI_IDN
         hints.ai_flags = AI_IDN;
 #endif
         gai_error = getaddrinfo(names->name, NULL, &hints, &res);
@@ -918,6 +1120,7 @@ static int validate_report_targets(
             return -1;
         }
 
+        unmap_v4mapped_addrinfo(hints.ai_family, res);
         lookup_ctl.af = res->ai_family;
         freeaddrinfo(res);
         names = names->next;
@@ -957,6 +1160,7 @@ int main(
     ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
+    ctl.ipinfo_field_count = 0;
     ctl.ipinfo_max = -1;
 #ifdef HAVE_IPINFO
     ctl.ipinfo_provider4 = "origin.asn.cymru.com";

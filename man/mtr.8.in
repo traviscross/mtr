@@ -17,6 +17,9 @@ mtr \- a network diagnostic tool
 .B \-\-report-wide\c
 ]
 [\c
+.B \-\-report\-on\-exit\c
+]
+[\c
 .B \-\-xml\c
 ]
 [\c
@@ -27,6 +30,15 @@ mtr \- a network diagnostic tool
 ]
 [\c
 .BI \--displaymode \ MODE\c
+]
+[\c
+.B \-\-compact\c
+]
+[\c
+.B \-\-report\-on\-exit\c
+]
+[\c
+.BI \--scale \ SCALE\c
 ]
 [\c
 .B \-\-raw\c
@@ -175,6 +187,8 @@ mode.  When in this mode,
 will run for the number of cycles specified by the
 .B \-c
 option, and then print statistics and exit.
+Use report mode when you need a final result that remains in terminal
+scrollback or can be redirected to a file.
 .TP
 \c
 This mode is useful for generating statistics about network quality.
@@ -201,6 +215,11 @@ into
 mode.  When in this mode,
 .B mtr
 will not cut hostnames in the report.
+.TP
+.B \-\-report\-on\-exit
+Use this option with the curses interface to print a report snapshot after
+leaving curses mode. This keeps the last trace visible in terminals that switch
+to an alternate screen while curses is active.
 .TP
 .B \-x\fR, \fB\-\-xml
 Use this option to tell
@@ -235,6 +254,29 @@ In stripchart modes,
 marks a probe that has not received a response, and
 .B >
 marks a response slower than the largest latency bucket shown in the scale.
+The scale buckets are chosen from the current minimum and maximum visible
+round-trip times; in the default stripchart,
+.B .
+marks the smallest bucket, digits and lowercase letters mark intermediate
+buckets, and
+.B >
+marks values above the last displayed bucket.
+.TP
+.B -\-compact
+Use this option to start the curses interface in compact mode.
+.TP
+.B -\-scale \fISCALE
+Use this option to select fixed latency thresholds for the stripchart
+display modes.
+.I SCALE
+can be
+.BR fast ,
+.BR average ,
+.BR slow ,
+or nine strictly increasing millisecond thresholds separated by colons,
+for example
+.BR 5:15:25:35:45:55:101:200:400 .
+Without this option, the stripchart keeps using the dynamic scale.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
@@ -479,6 +521,10 @@ rotating privileged ports into the high end of the UDP port range unless
 .B \-\-port
 was given; in that case, UDP traces encode the probe sequence number in
 the source port instead.
+Valid port numbers are 1 through 65535.  Ports below 1024 can be used
+only when the operating system allows the packet helper to bind
+privileged local ports; otherwise the probe fails with a permission
+error.
 .TP
 .B \-Z \fISECONDS\fR, \fB\-\-timeout \fISECONDS
 The number of seconds to keep probe sockets open before giving up on
