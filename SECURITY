@@ -109,7 +109,7 @@ unworkable.
 mtr still provides a weak attempt to cater to this situation. 
 If you attempt this configuration you must create a file
 /etc/mtr.is.run.under.sudo . If it exists, mtr will attempt to
-plug a few holes. 
+plug a few holes.
 
 So in conclusion: You cannot allow a group of users access to mtr
 using the sudo mechanism and then expect mtr to maintain your system
@@ -134,8 +134,8 @@ setuid-root. Change the group of the binary to the group of
 mtr-allowed-users, and remove the "other" execute bit.  If for some
 reason this is not possible, move the mtr-packet binary to a directory
 where only the mtr-allowd-users can access it. Then put a symlink in
-the normal location. (But i've tested the simple solution (chmod o-x
-mtr-packet) on Linux and that works.)
+the normal location. (But i've tested the simple solution (chown
+mtrusers mtr-packet; chmod o-x mtr-packet) on Linux and that works.)
 
 
 
