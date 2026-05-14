@@ -199,8 +199,12 @@ int mtr_curses_keyaction(
         return ActionAS;
 #endif
     case '+':
+    case KEY_NPAGE:
+    case KEY_DOWN:
         return ActionScrollDown;
     case '-':
+    case KEY_PPAGE:
+    case KEY_UP:
         return ActionScrollUp;
     case 's':
         mvprintw(2, 0, "Change Packet Size: %d\n", ctl->cpacketsize);
@@ -1011,6 +1015,7 @@ void mtr_curses_open(
     initscr();
     raw();
     noecho();
+    keypad(stdscr, TRUE);
     start_color();
     if (use_default_colors() == OK)
         bg_col = -1;
