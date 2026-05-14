@@ -226,11 +226,7 @@ bool decode_probe_argument(
             return false;
         }
 
-        /*
-           Don't allow using a local port which requires
-           privileged binding.
-         */
-        if (param->local_port < 1024) {
+        if (!MTR_IS_VALID_PORT(param->local_port)) {
             param->local_port = 0;
             return false;
         }

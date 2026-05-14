@@ -334,6 +334,11 @@ class TestProbeUDP(mtrpacket.MtrPacketTest):
         reply = self.parse_reply()
         self.assertEqual('reply', reply.command_name)
 
+        cmd = '83 send-probe protocol udp local-port 80 ' + address
+        self.write_command(cmd)
+        reply = self.parse_reply()
+        self.assertIn(reply.command_name, ('reply', 'permission-denied'))
+
     def test_udp_v4(self):
         'Test IPv4 UDP probes'
 
