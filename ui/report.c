@@ -47,14 +47,6 @@
 #define MAX_FORMAT_STR 320
 
 
-static int is_useful_hostname(
-    const char *hostname)
-{
-    return hostname && hostname[0] != '\0'
-        && !(hostname[0] == '.' && hostname[1] == '\0');
-}
-
-
 void report_open(
     void)
 {
@@ -307,8 +299,9 @@ void report_close(
                     for (k = 0; k < mpls->labels; k++) {
                         printf
                             ("    |  |+-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mpls->label[k], mpls->tc[k], mpls->s[k],
-                             mpls->ttl[k]);
+                             mpls->label[k], (unsigned int) mpls->tc[k],
+                             (unsigned int) mpls->s[k],
+                             (unsigned int) mpls->ttl[k]);
                     }
                 }
 
@@ -317,16 +310,18 @@ void report_close(
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->tc[k], mplss->s[k],
-                             mplss->ttl[k]);
+                             mplss->label[k], (unsigned int) mplss->tc[k],
+                             (unsigned int) mplss->s[k],
+                             (unsigned int) mplss->ttl[k]);
                     }
                 } else {
                     printf("    |   |-- %s\n", strlongip(ctl->af, addr2));
                     for (k = 0; k < mplss->labels && ctl->enablempls; k++) {
                         printf
                             ("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                             mplss->label[k], mplss->tc[k], mplss->s[k],
-                             mplss->ttl[k]);
+                             mplss->label[k], (unsigned int) mplss->tc[k],
+                             (unsigned int) mplss->s[k],
+                             (unsigned int) mplss->ttl[k]);
                     }
                 }
 #endif
@@ -344,8 +339,9 @@ void report_close(
             int k;
             for (k = 0; k < mpls->labels; k++) {
                 printf("    |   +-- [MPLS: Lbl %lu TC %u S %u TTL %u]\n",
-                       mpls->label[k], mpls->tc[k], mpls->s[k],
-                       mpls->ttl[k]);
+                       mpls->label[k], (unsigned int) mpls->tc[k],
+                       (unsigned int) mpls->s[k],
+                       (unsigned int) mpls->ttl[k]);
             }
         }
 #endif
@@ -583,6 +579,10 @@ void csv_close(
                 j = ctl->fld_index[ctl->fld_active[i]];
                 if (j < 0)
                     continue;
+                if (data_fields[j].key == ' ') {
+                    printf(",");
+                    continue;
+                }
                 printf("%s,", data_fields[j].title);
             }
             printf("\n");
@@ -603,6 +603,10 @@ void csv_close(
             j = ctl->fld_index[ctl->fld_active[i]];
             if (j < 0)
                 continue;
+            if (data_fields[j].key == ' ') {
+                printf(",");
+                continue;
+            }
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
@@ -656,6 +660,10 @@ void csv_close(
                         j = ctl->fld_index[ctl->fld_active[i]];
                         if (j < 0)
                             continue;
+                        if (data_fields[j].key == ' ') {
+                            printf(",");
+                            continue;
+                        }
 
                         /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
                         if (strchr(data_fields[j].format, 'f')) {

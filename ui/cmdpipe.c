@@ -231,6 +231,7 @@ void execute_packet_child(
     void)
 {
     char buf[256];
+    char *path_end;
     /*
        Allow the MTR_PACKET environment variable to override
        the path to the mtr-packet executable.  This is necessary
@@ -246,25 +247,34 @@ void execute_packet_child(
     if (access ("/etc/mtr.is.run.under.sudo", F_OK) != 0)
         mtr_packet_path = getenv("MTR_PACKET");
     if (mtr_packet_path == NULL)
-        mtr_packet_path = "mtr-packet";
+        mtr_packet_path = MTR_PACKET_NAME;
 
     /*
        First, try to execute mtr-packet from PATH
        or MTR_PACKET environment variable.
      */
-    execlp(mtr_packet_path, "mtr-packet", (char *) NULL);
+    execlp(mtr_packet_path, MTR_PACKET_NAME, (char *) NULL);
 
     /*
        Then try to find it where WE were executed from.
      */
-    strncpy (buf, myname, 240);
-    strcat (buf, "-packet");
-    mtr_packet_path = buf;
-    execl(mtr_packet_path, "mtr-packet", (char *) NULL);
+    path_end = strrchr(myname, '/');
+
+    if (path_end != NULL) {
+        size_t dir_length = path_end - myname + 1;
+
+        if (dir_length + strlen(MTR_PACKET_NAME) < sizeof(buf)) {
+            memcpy(buf, myname, dir_length);
+            strcpy(buf + dir_length, MTR_PACKET_NAME);
+            mtr_packet_path = buf;
+            execl(mtr_packet_path, MTR_PACKET_NAME, (char *) NULL);
+        }
+    }
 
     /*
        If mtr-packet is not found, try to use mtr-packet from current directory
      */
+    execl("./" MTR_PACKET_NAME, "./" MTR_PACKET_NAME, (char *) NULL);
     execl("./mtr-packet", "./mtr-packet", (char *) NULL);
 
     /*  Both exec attempts failed, so nothing to do but exit  */

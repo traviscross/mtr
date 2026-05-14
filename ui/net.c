@@ -25,7 +25,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <time.h>
 #include <unistd.h>
+
+#if defined(HAVE_ARC4RANDOM_UNIFORM) && defined(HAVE_BSD_STDLIB_H)
+#include <bsd/stdlib.h>
+#endif
 
 #ifdef HAVE_ERROR_H
 #include <error.h>
@@ -46,6 +51,16 @@
 
 static int packetsize;          /* packet size used by ping */
 
+static int random_uniform(
+    int upper_bound)
+{
+#ifdef HAVE_ARC4RANDOM_UNIFORM
+    return (int) arc4random_uniform((unsigned int) upper_bound);
+#else
+    return rand() % upper_bound;
+#endif
+}
+
 struct nethost {
     ip_t addr;                  /* Latest host to respond */
     ip_t addrs[MAX_PATH];        /* For Multi paths/Path Changes: List of all hosts that have responded */
@@ -65,6 +80,7 @@ struct nethost {
     int jworst;                 /* max jitter */
     int jinta;                  /* estimated variance,? rfc1889's "Interarrival Jitter" */
     int transit;
+    time_t seen;
     int saved[SAVED_PINGS];
     int saved_seq_offset;
     struct mplslen mpls;
@@ -325,6 +341,9 @@ static void net_process_ping(
     nh->sent = 0;
     nh->up = 1;
     nh->transit = 0;
+    if (ctl->cache) {
+        nh->seen = time(NULL);
+    }
 
     net_save_return(index, sequence[seq].saved_seq, totusec);
     display_rawping(ctl, index, totusec, seq);
@@ -577,18 +596,22 @@ int net_send_batch(
                 packetsize = MINPACKET;
             } else {
                 packetsize =
-                    MINPACKET + rand() % (-ctl->cpacketsize - MINPACKET);
+                    MINPACKET + random_uniform(-ctl->cpacketsize - MINPACKET);
             }
         } else {
             packetsize = ctl->cpacketsize;
         }
         if (ctl->bitpattern < 0) {
             ctl->bitpattern =
-                -(int) (256 + 255 * (rand() / (RAND_MAX + 0.1)));
+                -(256 + random_uniform(256));
         }
     }
 
-    net_send_query(ctl, batch_at, abs(packetsize));
+    if (!ctl->cache || !host[batch_at].up ||
+        host[batch_at].seen == 0 ||
+        time(NULL) - host[batch_at].seen > ctl->cache_timeout) {
+        net_send_query(ctl, batch_at, abs(packetsize));
+    }
 
     for (i = ctl->fstTTL - 1; i < batch_at; i++) {
         if (host_addr_cmp(i, &ctl->unspec_addr, ctl->af) == 0)
@@ -768,23 +791,27 @@ int net_open(
 {
     int err;
 
+    if (!addrcmp(sockaddr_addr_offset(res->ai_addr), &ctl->unspec_addr, res->ai_family))
+        return -1;
+
     /*  Spawn the mtr-packet child process  */
     err = open_command_pipe(ctl, &packet_command_pipe);
     if (err) {
         return err;
     }
 
-    net_reopen(ctl, res);
-
-    return 0;
+    return net_reopen(ctl, res);
 }
 
 
-void net_reopen(
+int net_reopen(
     struct mtr_ctl *ctl,
     struct addrinfo *res)
 {
     int at;
+
+    if (!addrcmp(sockaddr_addr_offset(res->ai_addr), &ctl->unspec_addr, res->ai_family))
+        return -1;
 
     for (at = 0; at < MaxHost; at++) {
         memset(&host[at], 0, sizeof(host[at]));
@@ -809,6 +836,7 @@ void net_reopen(
         net_find_local_address(ctl);
     }
 
+    return 0;
 }
 
 

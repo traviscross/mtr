@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=My Traceroute
+Comment=Trace packet routes between network hosts
+Exec=mtr --gtk
+Icon=mtr
+Terminal=false
+Type=Application
+Categories=GTK;Network;Monitor;
+Keywords=network;trace;traceroute;ping;

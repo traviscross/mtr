@@ -121,7 +121,7 @@ mtr \- a network diagnostic tool
 [\c
 .BI \-M \ MARK\c
 ]
-.I HOSTNAME
+.IR HOSTNAME [ :PORT ]
 .SH DESCRIPTION
 .B mtr
 combines the functionality of the
@@ -184,6 +184,14 @@ generates a significant amount of network traffic.  Using
 .B mtr
 to measure the quality of your network may result in decreased
 network performance.
+.PP
+Report mode can process multiple hosts in sequence. All hosts in one
+invocation must resolve to the same address family; use separate invocations
+or force an address family with
+.B \-4
+or
+.B \-6
+when tracing mixed IPv4 and IPv6 targets.
 .TP
 .B \-w\fR, \fB\-\-report\-wide
 This option puts
@@ -220,7 +228,13 @@ clears spurious error messages that may overwrite other parts of the display.
 Use this option to select the initial display mode: 0 (default)
 selects statistics, 1 selects the stripchart without latency
 information, and 2 selects the stripchart with latency
-information.
+information.  If braille graphs were enabled at build time and wide
+curses support is available, 3 selects a braille stripchart.
+In stripchart modes,
+.B ?
+marks a probe that has not received a response, and
+.B >
+marks a response slower than the largest latency bucket shown in the scale.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
@@ -237,6 +251,12 @@ for more information about GTK+.
 Use the raw output format.  This format is better suited for
 archival of the measurement results.  It could be parsed to
 be presented into any of the other display methods.
+.IP
+Raw output uses one line per event.  Reply lines have the form
+.BR "p " "position " "round-trip-time " sequence ,
+where
+.I round-trip-time
+is an integer number of microseconds.
 .IP
 Example of the raw output format:
 .nf
@@ -380,9 +400,8 @@ If set to a negative number, every iteration will use a different, random
 packet size up to that number.
 .TP
 .B \-B \fINUM\fR, \fB\-\-bitpattern \fINUM
-Specifies bit pattern to use in payload.  Should be within range 0 - 255.  If
-.I NUM
-is greater than 255, a random pattern is used.
+Specifies bit pattern to use in payload.  Should be within range 0 - 255,
+or -1 to use a random pattern.
 .TP
 .B \-G \fISECONDS\fR, \fB\-\-gracetime \fISECONDS
 Use this option to specify the positive number of seconds to wait for responses
@@ -447,6 +466,11 @@ The target port number for TCP/SCTP/UDP traces.
 When this option is not given, TCP and SCTP traces use port 80.
 UDP traces encode the probe sequence number in the destination port
 instead, so the destination port changes for each probe.
+For TCP/SCTP/UDP traces, the target can also be written as
+.IR HOSTNAME : PORT .
+Use
+.IR [ ADDRESS ] : PORT
+when specifying a port for a literal IPv6 address.
 .TP
 .B \-L \fILOCALPORT\fR, \fB\-\-localport \fILOCALPORT
 The source port number for UDP traces.  When this option is not given,
@@ -460,6 +484,12 @@ the source port instead.
 The number of seconds to keep probe sockets open before giving up on
 the connection.  Using large values for this, especially combined with
 a short interval, will use up a lot of file descriptors.
+.TP
+.B \-\-cache \fISECONDS
+Skip probes to hops that have replied within the last
+.IR SECONDS .
+This reduces probe traffic on stable paths, but cached hops keep their
+previous statistics until they are probed again.
 .TP
 .B \-M \fIMARK\fR, \fB\-\-mark \fIMARK
 Set the mark for each packet sent through this socket similar to the

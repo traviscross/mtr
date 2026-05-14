@@ -114,13 +114,6 @@ static void set_sockaddr_ip(
     memcpy(sockaddr_addr_offset(sa), ip, sockaddr_addr_size(sa));
 }
 
-static int is_useful_hostname(
-    const char *hostname)
-{
-    return hostname[0] != '\0'
-        && !(hostname[0] == '.' && hostname[1] == '\0');
-}
-
 void dns_open(
     void)
 {
@@ -277,7 +270,10 @@ void dns_ack(
     struct dns_results *r;
 
     while (fgets(buf, sizeof(buf), fromdnsfp)) {
-        sscanf(buf, "%s %s", host, name);
+        if (sscanf(buf, "%1024s %1024s", host, name) != 2) {
+            error(0, 0, "dns_ack: malformed DNS lookup result");
+            continue;
+        }
 
         longipstr(host, &hostip, ctl->af);
         r = findip(ctl, &hostip);

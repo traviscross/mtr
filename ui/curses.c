@@ -217,8 +217,11 @@ int mtr_curses_keyaction(
         }
         buf[i] = '\0';
         int new_packetsize = atoi(buf);
-        if (abs(ctl->cpacketsize) >= MINPACKET && abs(ctl->cpacketsize) < MAXPACKET) {
+        if (abs(new_packetsize) >= MINPACKET
+            && abs(new_packetsize) <= MAXPACKET) {
             ctl->cpacketsize = new_packetsize;
+        } else {
+            printf("\a");
         }
         return ActionNone;
     case 'b':

@@ -75,7 +75,9 @@ void raw_rawhost(
         int k;
         for (k = 0; k < mpls->labels; k++)
             printf("m %d %lu %u %u %u\n",
-                   host, mpls->label[k], mpls->tc[k], mpls->s[k], mpls->ttl[k]);
+                   host, mpls->label[k], (unsigned int) mpls->tc[k],
+                   (unsigned int) mpls->s[k],
+                   (unsigned int) mpls->ttl[k]);
     }
 
     fflush(stdout);

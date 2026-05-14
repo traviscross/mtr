@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -87,13 +88,14 @@ const struct fields data_fields[MAXFLD] = {
 
 typedef struct names {
     char *name;
+    int remoteport;
     struct names *next;
 } names_t;
 
 static void __attribute__ ((__noreturn__)) usage(FILE * out)
 {
     fputs("\nUsage:\n", out);
-    fputs(" mtr [options] hostname\n", out);
+    fputs(" mtr [options] hostname[:port]\n", out);
     fputs("\n", out);
     fputs(" -F, --filename FILE              read hostname(s) from a file\n",
           out);      
@@ -119,6 +121,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);       
     fputs(" -e, --mpls                       display information from ICMP extensions\n", out);       
     fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);       
+    fputs("     --cache SECONDS              skip recently seen hops for SECONDS\n", out);
 #ifdef SO_MARK       
     fputs(" -M, --mark MARK                  mark each sent packet\n", out);
 #endif       
@@ -179,6 +182,54 @@ static void append_to_names(
     *name_tail = name;
 }
 
+static int parse_target_port(
+    const char *port)
+{
+    int remoteport = strtoint_or_err(port, "invalid argument");
+
+    if (remoteport < 1 || MaxPort < remoteport) {
+        error(EXIT_FAILURE, 0, "Illegal port number: %d", remoteport);
+    }
+
+    return remoteport;
+}
+
+static void split_target_port(
+    names_t *names,
+    int mtrtype)
+{
+    if (mtrtype == IPPROTO_ICMP) {
+        return;
+    }
+
+    while (names != NULL) {
+        char *port = NULL;
+
+        if (names->name[0] == '[') {
+            char *close = strchr(names->name, ']');
+
+            if (close && close[1] == ':' && close[2] != '\0') {
+                port = close + 2;
+                *close = '\0';
+                memmove(names->name, names->name + 1, close - names->name);
+            }
+        } else {
+            char *colon = strchr(names->name, ':');
+
+            if (colon && strchr(colon + 1, ':') == NULL && colon[1] != '\0') {
+                port = colon + 1;
+                *colon = '\0';
+            }
+        }
+
+        if (port) {
+            names->remoteport = parse_target_port(port);
+        }
+
+        names = names->next;
+    }
+}
+
 static void read_from_file(
     names_t ** names,
     const char *filename)
@@ -186,15 +237,20 @@ static void read_from_file(
 
     FILE *in;
     char line[512];
+    int close_input;
+    int read_error;
+    int read_errno;
 
     if (!filename || strcmp(filename, "-") == 0) {
         clearerr(stdin);
         in = stdin;
+        close_input = 0;
     } else {
         in = fopen(filename, "r");
         if (!in) {
             error(EXIT_FAILURE, errno, "open %s", filename);
         }
+        close_input = 1;
     }
 
     while (fgets(line, sizeof(line), in)) {
@@ -202,12 +258,16 @@ static void read_from_file(
         append_to_names(names, name);
     }
 
-    if (ferror(in)) {
-        error(EXIT_FAILURE, errno, "ferror %s", filename);
+    read_error = ferror(in);
+    read_errno = errno;
+
+    if (close_input && fclose(in)) {
+        error(EXIT_FAILURE, errno, "close %s", filename);
     }
 
-    if (in != stdin)
-        fclose(in);
+    if (read_error) {
+        error(EXIT_FAILURE, read_errno, "ferror %s", filename);
+    }
 }
 
 /*
@@ -304,6 +364,9 @@ static void parse_arg(
         OPT_IPINFO4 = CHAR_MAX + 2,
 #ifdef ENABLE_IPV6
         OPT_IPINFO6 = CHAR_MAX + 3,
+        OPT_CACHE = CHAR_MAX + 4,
+#else
+        OPT_CACHE = CHAR_MAX + 3,
 #endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
@@ -350,7 +413,7 @@ static void parse_arg(
         {"interval", 1, NULL, 'i'},
         {"report-cycles", 1, NULL, 'c'},
         {"psize", 1, NULL, 's'},        /* overload psize<0, ->rand(min,max) */
-        {"bitpattern", 1, NULL, 'B'},   /* overload B>255, ->rand(0,255) */
+        {"bitpattern", 1, NULL, 'B'},   /* -1 random, otherwise 0..255 */
         {"tos", 1, NULL, 'Q'},  /* typeof service (0,255) */
         {"mpls", 0, NULL, 'e'},
         {"interface", 1, NULL, 'I'},
@@ -369,6 +432,7 @@ static void parse_arg(
         {"localport", 1, NULL, 'L'},    /* source port number for UDP */
         {"timeout", 1, NULL, 'Z'},      /* timeout for probe sockets */
         {"gracetime", 1, NULL, 'G'},    /* gracetime for replies after last probe */
+        {"cache", 1, NULL, OPT_CACHE},  /* skip probes to recently seen hops */
 #ifdef SO_MARK
         {"mark", 1, NULL, 'M'}, /* use SO_MARK */
 #endif
@@ -540,14 +604,24 @@ static void parse_arg(
         case 'B':
             ctl->bitpattern =
                 strtoint_or_err(optarg, "invalid argument");
-            if (ctl->bitpattern > 255)
-                ctl->bitpattern = -1;
+            if (ctl->bitpattern < -1 || ctl->bitpattern > 255) {
+                error(EXIT_FAILURE, 0, "value out of range (-1 - 255): %s",
+                      optarg);
+            }
             break;
         case 'G':
             ctl->GraceTime = strtofloat_or_err(optarg, "invalid argument");
             if (ctl->GraceTime <= 0.0) {
                 error(EXIT_FAILURE, 0, "wait time must be positive");
             }
+            break;
+        case OPT_CACHE:
+            ctl->cache_timeout =
+                strtoint_or_err(optarg, "invalid argument");
+            if (ctl->cache_timeout <= 0) {
+                error(EXIT_FAILURE, 0, "cache timeout must be positive");
+            }
+            ctl->cache = 1;
             break;
         case 'Q':
             ctl->tos =
@@ -689,22 +763,63 @@ static void parse_mtr_options(
     char *string)
 {
     int argc = 1;
-    char *argv[128], *p;
+    char *argv[128], *arg, *input, *output, *option_string;
+    int quote;
 
     if (!string)
         return;
     argv[0] = xstrdup(PACKAGE_NAME);
-    argc = 1;
-    p = strtok(string, " \t");
-    while (p != NULL && ((size_t) argc < (sizeof(argv) / sizeof(argv[0])))) {
-        argv[argc++] = p;
-        p = strtok(NULL, " \t");
+    option_string = xstrdup(string);
+    input = option_string;
+    output = option_string;
+
+    while ((size_t) argc < (sizeof(argv) / sizeof(argv[0]))) {
+        while (*input && isspace((unsigned char) *input))
+            input++;
+        if (!*input)
+            break;
+
+        arg = output;
+        quote = 0;
+        while (*input) {
+            if (quote) {
+                if (*input == quote) {
+                    input++;
+                    quote = 0;
+                } else if (*input == '\\' && input[1]) {
+                    input++;
+                    *output++ = *input++;
+                } else {
+                    *output++ = *input++;
+                }
+            } else if (isspace((unsigned char) *input)) {
+                break;
+            } else if (*input == '"' || *input == '\'') {
+                quote = *input++;
+            } else if (*input == '\\' && input[1]) {
+                input++;
+                *output++ = *input++;
+            } else {
+                *output++ = *input++;
+            }
+        }
+
+        if (quote) {
+            error(EXIT_FAILURE, 0, "unterminated quote in MTR_OPTIONS");
+        }
+        if (*input && isspace((unsigned char) *input)) {
+            input++;
+        }
+
+        *output++ = '\0';
+        argv[argc++] = arg;
     }
-    if (p != NULL) {
-        error(0, 0, "Warning: extra arguments ignored: %s", p);
+    if (*input) {
+        error(0, 0, "Warning: extra arguments ignored: %s", input);
     }
 
     parse_arg(ctl, names, argc, argv);
+    free(option_string);
     free(argv[0]);
     optind = 0;
 }
@@ -715,7 +830,7 @@ static void init_rand(
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    srand((getpid() << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
+    srand(((getpid() & 0xffff) << 16) ^ getuid() ^ tv.tv_sec ^ tv.tv_usec);
 }
 
 /*
@@ -736,6 +851,9 @@ int get_addrinfo_from_name(
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ctl->af;
     hints.ai_socktype = SOCK_DGRAM;
+#if HAVE_DECL_AI_IDN
+    hints.ai_flags = AI_IDN;
+#endif
     gai_error = getaddrinfo(name, NULL, &hints, res);
     if (gai_error) {
         if (gai_error == EAI_SYSTEM)
@@ -748,6 +866,64 @@ int get_addrinfo_from_name(
     }
 
     ctl->af = (*res)->ai_family;
+    return 0;
+}
+
+
+static int count_names(
+    names_t *names)
+{
+    int count = 0;
+
+    while (names != NULL) {
+        count++;
+        names = names->next;
+    }
+
+    return count;
+}
+
+
+static int validate_report_targets(
+    struct mtr_ctl *ctl,
+    names_t *names)
+{
+    struct mtr_ctl lookup_ctl = *ctl;
+
+    while (names != NULL) {
+        int gai_error;
+        struct addrinfo hints;
+        struct addrinfo *res = NULL;
+
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = lookup_ctl.af;
+        hints.ai_socktype = SOCK_DGRAM;
+#if HAVE_DECL_AI_IDN
+        hints.ai_flags = AI_IDN;
+#endif
+        gai_error = getaddrinfo(names->name, NULL, &hints, &res);
+        if (gai_error) {
+            if (gai_error == EAI_SYSTEM) {
+                error(0, 0, "Failed to resolve host: %s", names->name);
+            } else {
+                error(0, 0, "Failed to resolve host: %s: %s", names->name,
+                      gai_strerror(gai_error));
+            }
+#if defined(ENABLE_IPV6) && defined(EAI_ADDRFAMILY)
+            if (gai_error == EAI_ADDRFAMILY && lookup_ctl.af != AF_UNSPEC) {
+                error(0, 0,
+                      "multiple report targets must use the same address family");
+            }
+#endif
+            return -1;
+        }
+
+        lookup_ctl.af = res->ai_family;
+        freeaddrinfo(res);
+        names = names->next;
+    }
+
+    ctl->af = lookup_ctl.af;
     return 0;
 }
 
@@ -768,6 +944,7 @@ int main(
     ctl.MaxPing = 10;
     ctl.WaitTime = 1.0;
     ctl.GraceTime = 5.0;
+    ctl.cache_timeout = 60;
     ctl.dns = 1;
     ctl.use_dns = 1;
     ctl.cpacketsize = 64;
@@ -828,10 +1005,20 @@ int main(
     if (!names_head)
         append_to_names(&names_head, "localhost");
 
+    split_target_port(names_head, ctl.mtrtype);
+
+    if (!ctl.Interactive && count_names(names_head) > 1 &&
+        validate_report_targets(&ctl, names_head) != 0) {
+        return EXIT_FAILURE;
+    }
+
+    int default_remoteport = ctl.remoteport;
     names_walk = names_head;
     while (names_walk != NULL) {
 
         ctl.Hostname = names_walk->name;
+        ctl.remoteport =
+            names_walk->remoteport ? names_walk->remoteport : default_remoteport;
         if (gethostname(ctl.LocalHostname, sizeof(ctl.LocalHostname))) {
             xstrncpy(ctl.LocalHostname, "UNKNOWNHOST",
                      sizeof(ctl.LocalHostname));
@@ -872,6 +1059,10 @@ int main(
         dns_close();
         unlock(stdout);
 
+        if (ctl.Interrupted) {
+            exit_val = 128 + SIGINT;
+            break;
+        }
         if (ctl.Interactive)
             break;
         else

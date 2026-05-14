@@ -28,6 +28,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <signal.h>
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #else
@@ -42,6 +43,15 @@
 #include "select.h"
 
 #define MIN_DISPLAY_REDRAW_USEC 100000
+
+static volatile sig_atomic_t interrupted;
+
+static void interrupt_handler(
+    int signum ATTRIBUTE_UNUSED)
+{
+    interrupted = 1;
+}
+
 
 static int timeval_after_or_equal(
     const struct timeval *a,
@@ -113,12 +123,20 @@ void select_loop(
     struct timeval intervaltime;
     static double dnsinterval = 0;
 
+    interrupted = 0;
+    signal(SIGINT, interrupt_handler);
+
     memset(&startgrace, 0, sizeof(startgrace));
 
     gettimeofday(&lasttime, NULL);
     nextredraw = lasttime;
 
     while (1) {
+        if (interrupted) {
+            ctl->Interrupted = 1;
+            return;
+        }
+
         dt = calc_deltatime(ctl->WaitTime);
         intervaltime.tv_sec = dt / 1000000;
         intervaltime.tv_usec = dt % 1000000;
@@ -248,7 +266,12 @@ void select_loop(
                 rv = select(maxfd, (void *) &readfd, NULL, NULL,
                             &selecttime);
             }
-        } while ((rv < 0) && (errno == EINTR));
+        } while ((rv < 0) && (errno == EINTR) && !interrupted);
+
+        if (interrupted) {
+            ctl->Interrupted = 1;
+            return;
+        }
 
         if (rv < 0) {
             error(EXIT_FAILURE, errno, "Select failed");

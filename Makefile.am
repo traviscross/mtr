@@ -2,8 +2,8 @@ EXTRA_DIST = \
 	BSDCOPYING \
 	SECURITY \
 	build-aux/mtr.bat \
-	img/mtr_icon.xpm
-	$(TEST_FILES)
+	img/mtr_icon.xpm \
+	img/mtr.png
 
 sbin_PROGRAMS = mtr mtr-packet
 TESTS = \
@@ -41,8 +41,13 @@ dist_man_MANS = mtr.8 mtr-packet.8
 PATHFILES += man/mtr.8 man/mtr-packet.8
 
 install-exec-hook:
-	`setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/mtr-packet` \
-	|| chmod u+s $(DESTDIR)$(sbindir)/mtr-packet
+	mtr_packet_name=`echo mtr-packet | sed '$(transform)'`; \
+	if command -v setcap >/dev/null 2>&1; then \
+		setcap cap_net_raw+ep $(DESTDIR)$(sbindir)/$$mtr_packet_name \
+		|| chmod u+s $(DESTDIR)$(sbindir)/$$mtr_packet_name; \
+	else \
+		chmod u+s $(DESTDIR)$(sbindir)/$$mtr_packet_name; \
+	fi
 
 mtr_SOURCES = ui/mtr.c ui/mtr.h \
               ui/net.c ui/net.h \
@@ -169,6 +174,17 @@ endif  # if CYGWIN
 
 if BUILD_BASH_COMPLETION
 dist_bashcompletion_DATA = bash-completion/mtr
+endif
+
+if WITH_GTK
+desktopdir = $(datadir)/applications
+dist_desktop_DATA = data/mtr.desktop
+
+appstreamdir = $(datadir)/metainfo
+dist_appstream_DATA = data/mtr.metainfo.xml
+
+icondir = $(datadir)/icons/hicolor/48x48/apps
+dist_icon_DATA = img/mtr.png
 endif
 
 dist-hook:
