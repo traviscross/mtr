@@ -20,7 +20,9 @@
 
 #include <sys/types.h>
 #include <stdio.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -189,13 +191,10 @@ void report_close(
     }
 #ifdef HAVE_IPINFO
     len_tmp = len_hosts;
-    if (ctl->ipinfo_no >= 0 && iiwidth_len) {
-        ctl->ipinfo_no %= iiwidth_len;
+    if (is_printii(ctl) && iiwidth_len) {
         if (ctl->reportwide) {
             len_hosts++;        /* space */
-            len_tmp += get_iiwidth(ctl->ipinfo_no);
-            if (!ctl->ipinfo_no)
-                len_tmp += 2;   /* align header: AS */
+            len_tmp += get_iiwidth_selected(ctl);
         }
     }
     snprintf(fmt, sizeof(fmt), "HOST: %%-%ds", len_tmp);
@@ -418,7 +417,7 @@ void json_close(struct mtr_ctl *ctl)
             goto on_error;
 
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
+        if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
             char* fmtinfo = fmt_ipinfo(ctl, addr);
             if (fmtinfo != NULL)
                 fmtinfo = trim(fmtinfo, '\0');
@@ -569,26 +568,24 @@ void csv_close(
         snprint_hop_name(ctl, name, sizeof(name), at, addr);
 
         if (at == net_min(ctl)) {
-            printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
+            printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip");
 #ifdef HAVE_IPINFO
-            if (!ctl->ipinfo_no) {
-                printf("Asn,");
+            if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
+                printf(",Asn");
             }
 #endif
             for (i = 0; i < MAXFLD; i++) {
                 j = ctl->fld_index[ctl->fld_active[i]];
                 if (j < 0)
                     continue;
-                if (data_fields[j].key == ' ') {
-                    printf(",");
+                if (data_fields[j].key == ' ')
                     continue;
-                }
-                printf("%s,", data_fields[j].title);
+                printf(",%s", data_fields[j].title);
             }
             printf("\n");
         }
 #ifdef HAVE_IPINFO
-        if (!ctl->ipinfo_no) {
+        if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
             char *fmtinfo = fmt_ipinfo(ctl, addr);
             fmtinfo = trim(fmtinfo, '\0');
             printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
@@ -603,10 +600,8 @@ void csv_close(
             j = ctl->fld_index[ctl->fld_active[i]];
             if (j < 0)
                 continue;
-            if (data_fields[j].key == ' ') {
-                printf(",");
+            if (data_fields[j].key == ' ')
                 continue;
-            }
 
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
@@ -644,7 +639,7 @@ void csv_close(
 
                 if (!found) {
 #ifdef HAVE_IPINFO
-                    if (!ctl->ipinfo_no) {
+                    if (ctl->ipinfo_field_count == 1 && !ctl->ipinfo_no) {
                         char *fmtinfo = fmt_ipinfo(ctl, addr2);
                         fmtinfo = trim(fmtinfo, '\0');
                         printf("MTR.%s,%lld,%s,%s,%d,%s,%s", PACKAGE_VERSION,
@@ -660,10 +655,8 @@ void csv_close(
                         j = ctl->fld_index[ctl->fld_active[i]];
                         if (j < 0)
                             continue;
-                        if (data_fields[j].key == ' ') {
-                            printf(",");
+                        if (data_fields[j].key == ' ')
                             continue;
-                        }
 
                         /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
                         if (strchr(data_fields[j].format, 'f')) {

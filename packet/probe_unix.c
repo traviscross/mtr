@@ -542,7 +542,7 @@ void report_packet_error(
         printf("%d no-route-network\n", command_token);
     } else if (errno == EHOSTUNREACH) {
         printf("%d no-route-host\n", command_token);
-    } else if (errno == EPERM) {
+    } else if (errno == EACCES || errno == EPERM) {
         printf("%d permission-denied\n", command_token);
     } else if (errno == EADDRINUSE) {
         printf("%d address-in-use\n", command_token);

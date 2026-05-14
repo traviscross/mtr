@@ -1,6 +1,6 @@
 /*
     mtr  --  a network diagnostic tool
-    Copyright (C) 1997,1998  Matt Kimball
+    Copyright (C) 2026  Darafei Praliaskouski
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as
@@ -16,26 +16,18 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "mtr.h"
+#ifndef PORTS_H
+#define PORTS_H
 
-extern void asn_open(
-    struct mtr_ctl *ctl);
-extern void asn_close(
-    struct mtr_ctl *ctl);
-extern char *fmt_ipinfo(
-    struct mtr_ctl *ctl,
-    ip_t * addr);
-extern ATTRIBUTE_CONST size_t get_iiwidth_len(
-    void);
-extern ATTRIBUTE_CONST int get_iiwidth(
-    int ipinfo_no);
-extern int get_iiwidth_selected(
-    struct mtr_ctl *ctl);
-extern int is_printii(
-    struct mtr_ctl *ctl);
-extern void set_ipinfo_field(
-    struct mtr_ctl *ctl,
-    int ipinfo_no);
-extern void parse_ipinfo_fields(
-    struct mtr_ctl *ctl,
-    const char *fields);
+#define MTR_PORT_MIN 1
+#define MTR_PORT_MAX 65535
+#define MTR_UNPRIVILEGED_PORT_MIN 1024
+#define MTR_UDP_PORT_RANGE 65536
+
+#define MTR_IS_VALID_PORT(port) \
+    ((port) >= MTR_PORT_MIN && (port) <= MTR_PORT_MAX)
+
+#define MTR_IS_PRIVILEGED_PORT(port) \
+    ((port) >= MTR_PORT_MIN && (port) < MTR_UNPRIVILEGED_PORT_MIN)
+
+#endif

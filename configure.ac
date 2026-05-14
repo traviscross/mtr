@@ -52,6 +52,7 @@ AC_CHECK_HEADERS([ \
   linux/errqueue.h \
   ncurses.h \
   ncurses/curses.h \
+  netdb.h \
   netinet/in.h \
   socket.h \
   sys/cdefs.h \
@@ -142,6 +143,10 @@ AS_IF([test "x$with_ncurses" = "xyes"],
     [initscr], [ncursesw ncurses curses],
     [AC_DEFINE([HAVE_CURSES], [1], [Define if a curses library available])],
     [with_ncurses=no])
+   AC_SEARCH_LIBS(
+     [raw], [tinfow tinfo termcap],
+     [],
+     [with_ncurses=no])
 ])
 AM_CONDITIONAL([WITH_CURSES], [test "x$with_ncurses" = xyes])
 
@@ -207,14 +212,6 @@ AC_CHECK_DECLS([errno], [], [], [[
 #include <errno.h>
 #include <sys/errno.h>
   ]])
-AC_CHECK_DECLS([AI_IDN], [], [], [[
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#include <netdb.h>
-  ]])
-
 AC_CHECK_TYPE([socklen_t],
   [AC_DEFINE([HAVE_SOCKLEN_T], [], [Define if your system has socklen_t])], [],
   [[#include <netinet/in.h>
