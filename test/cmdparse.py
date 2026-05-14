@@ -35,11 +35,13 @@ MTR = os.path.join(PROJECT_ROOT, 'mtr')
 class TestMtrCommandParse(unittest.TestCase):
     '''Test cases with malformed mtr command-line arguments.'''
 
-    def run_mtr(self, *args):
+    def run_mtr(self, *args, **kwargs):
+        env = kwargs.get('env')
         return subprocess.run(
             [MTR] + list(args),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
             universal_newlines=True,
         )
 
@@ -71,6 +73,75 @@ class TestMtrCommandParse(unittest.TestCase):
 
         self.assertEqual(reply.returncode, 0)
         self.assertEqual(reply.stderr, '')
+
+    def test_report_loss_uses_two_decimal_places(self):
+        'Test report mode preserves fine-grained loss percentage precision.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
+        self.assertIn('Loss%', reply.stdout)
+        self.assertIn('0.00%', reply.stdout)
+
+    def test_mtr_options_preserves_quoted_order_spaces(self):
+        'Test that quoted MTR_OPTIONS values can contain order separators.'
+
+        env = os.environ.copy()
+        env['MTR_OPTIONS'] = '--order "SRDL NBAGVW JMXI"'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '127.0.0.1',
+            env=env,
+        )
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertEqual(reply.stderr, '')
+        self.assertIn('Drop', reply.stdout)
+        self.assertIn('Jint', reply.stdout)
+
+    def test_help_lists_report_on_exit(self):
+        'Test that the curses exit snapshot option remains advertised.'
+
+        reply = self.run_mtr('--help')
+
+        self.assertEqual(reply.returncode, 0)
+        self.assertIn('--report-on-exit', reply.stdout)
+
+    def test_bad_host_fails_in_output_modes(self):
+        'Test failed host resolution exits non-zero in output modes.'
+
+        modes = [
+            '--csv',
+            '--raw',
+            '--report',
+            '--xml',
+        ]
+
+        reply = self.run_mtr('--help')
+        if '--json' in reply.stdout:
+            modes.append('--json')
+
+        for mode in modes:
+            reply = self.run_mtr(
+                mode,
+                '--report-cycles',
+                '1',
+                'nonexistent.invalid',
+            )
+
+            self.assertNotEqual(reply.returncode, 0)
+            self.assertIn('Failed to resolve host', reply.stderr)
 
 
 class TestCommandParse(mtrpacket.MtrPacketTest):
