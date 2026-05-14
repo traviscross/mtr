@@ -69,7 +69,7 @@ char *myname;
 const struct fields data_fields[MAXFLD] = {
     /* key, Remark, Header, Format, Width, CallBackFunc */
     {' ', "<sp>: Space between fields", " ", " ", 1, &net_drop},
-    {'L', "L: Loss Ratio", "Loss%", " %4.1f%%", 6, &net_loss},
+    {'L', "L: Loss Ratio", "Loss%", " %6.2f%%", 8, &net_loss},
     {'D', "D: Dropped Packets", "Drop", " %4d", 5, &net_drop},
     {'R', "R: Received Packets", "Rcv", " %5d", 6, &net_returned},
     {'S', "S: Sent Packets", "Snt", " %5d", 6, &net_xmit},
@@ -127,6 +127,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
 #endif       
     fputs(" -r, --report                     output using report mode\n", out);
     fputs(" -w, --report-wide                output wide report\n", out);
+    fputs("     --report-on-exit             print report after curses exits\n", out);
     fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);       
 #ifdef HAVE_JANSSON       
     fputs(" -j, --json                       output json\n", out);
@@ -146,7 +147,7 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
     fputs(" -o, --order FIELDS               select output fields\n", out);
 #ifdef HAVE_IPINFO       
-    fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
+    fputs(" -y, --ipinfo FIELDS              select IP information fields in output\n",
           out);       
     fputs(" -z, --aslookup                   display AS number\n", out);
     fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
@@ -361,12 +362,13 @@ static void parse_arg(
      */
     enum {
         OPT_DISPLAYMODE = CHAR_MAX + 1,
-        OPT_IPINFO4 = CHAR_MAX + 2,
+        OPT_REPORT_ON_EXIT = CHAR_MAX + 2,
+        OPT_IPINFO4 = CHAR_MAX + 3,
 #ifdef ENABLE_IPV6
-        OPT_IPINFO6 = CHAR_MAX + 3,
-        OPT_CACHE = CHAR_MAX + 4,
+        OPT_IPINFO6 = CHAR_MAX + 4,
+        OPT_CACHE = CHAR_MAX + 5,
 #else
-        OPT_CACHE = CHAR_MAX + 3,
+        OPT_CACHE = CHAR_MAX + 4,
 #endif /* ifdef ENABLE_IPV6 */
     };
     static const struct option long_options[] = {
@@ -382,6 +384,7 @@ static void parse_arg(
 
         {"report", 0, NULL, 'r'},
         {"report-wide", 0, NULL, 'w'},
+        {"report-on-exit", 0, NULL, OPT_REPORT_ON_EXIT},
         {"xml", 0, NULL, 'x'},
 #ifdef HAVE_CURSES
         {"curses", 0, NULL, 't'},
@@ -475,6 +478,9 @@ static void parse_arg(
         case 'w':
             ctl->reportwide = 1;
             ctl->DisplayMode = DisplayReport;
+            break;
+        case OPT_REPORT_ON_EXIT:
+            ctl->ReportOnExit = 1;
             break;
 #ifdef HAVE_CURSES
         case 't':
@@ -695,15 +701,10 @@ static void parse_arg(
 #endif
 #ifdef HAVE_IPINFO
         case 'y':
-            ctl->ipinfo_no =
-                strtoint_or_err(optarg, "invalid argument");
-            if (ctl->ipinfo_no < 0 || 4 < ctl->ipinfo_no) {
-                error(EXIT_FAILURE, 0, "value %d out of range (0 - 4)",
-                      ctl->ipinfo_no);
-            }
+            parse_ipinfo_fields(ctl, optarg);
             break;
         case 'z':
-            ctl->ipinfo_no = 0;
+            set_ipinfo_field(ctl, 0);
             break;
         case OPT_IPINFO4:
             ctl->ipinfo_provider4 = optarg;
@@ -957,6 +958,7 @@ int main(
     ctl.maxDisplayPath = 8;
     ctl.probe_timeout = 10 * 1000000;
     ctl.ipinfo_no = -1;
+    ctl.ipinfo_field_count = 0;
     ctl.ipinfo_max = -1;
 #ifdef HAVE_IPINFO
     ctl.ipinfo_provider4 = "origin.asn.cymru.com";
