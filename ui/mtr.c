@@ -69,7 +69,7 @@ char *myname;
 const struct fields data_fields[MAXFLD] = {
     /* key, Remark, Header, Format, Width, CallBackFunc */
     {' ', "<sp>: Space between fields", " ", " ", 1, &net_drop},
-    {'L', "L: Loss Ratio", "Loss%", " %4.1f%%", 6, &net_loss},
+    {'L', "L: Loss Ratio", "Loss%", " %6.2f%%", 8, &net_loss},
     {'D', "D: Dropped Packets", "Drop", " %4d", 5, &net_drop},
     {'R', "R: Received Packets", "Rcv", " %5d", 6, &net_returned},
     {'S', "S: Sent Packets", "Snt", " %5d", 6, &net_xmit},
