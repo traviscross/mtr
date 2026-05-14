@@ -7,11 +7,16 @@ EXTRA_DIST = \
 
 sbin_PROGRAMS = mtr mtr-packet
 TESTS = \
+	test/capability-drop.py \
+	test/dist-version.sh \
+	format-count-test \
 	test/cmdparse.py \
 	test/param.py \
 	test/probe.py
 
 TEST_FILES = \
+	test/capability-drop.py \
+	test/dist-version.sh \
 	test/cmdparse.py \
 	test/mtrpacket.py \
 	test/param.py \
@@ -50,6 +55,7 @@ install-exec-hook:
 	fi
 
 mtr_SOURCES = ui/mtr.c ui/mtr.h \
+              ui/format.c ui/format.h \
               ui/net.c ui/net.h \
               ui/cmdpipe.c ui/cmdpipe.h \
               ui/dns.c ui/dns.h \
@@ -158,7 +164,7 @@ dist-windows-bin: distdir-win
 
 else  # if CYGWIN
 
-check_PROGRAMS = mtr-packet-listen
+check_PROGRAMS = mtr-packet-listen format-count-test
 
 mtr_packet_SOURCES += \
 	packet/construct_unix.c packet/construct_unix.h \
@@ -168,6 +174,10 @@ mtr_packet_SOURCES += \
 
 mtr_packet_listen_SOURCES = \
 	test/packet_listen.c
+
+format_count_test_SOURCES = \
+	test/format_count.c \
+	ui/format.c ui/format.h
 
 endif  # if CYGWIN
 
