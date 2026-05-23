@@ -72,6 +72,61 @@ class TestMtrCommandParse(unittest.TestCase):
         self.assertEqual(reply.returncode, 0)
         self.assertEqual(reply.stderr, '')
 
+    def test_port_with_icmp_fails_flag(self):
+        'Test that specifying -P with default ICMP protocol fails.'
+
+        reply = self.run_mtr('-P', '80', '127.0.0.1')
+
+        self.assertNotEqual(reply.returncode, 0)
+        self.assertIn('port number specified (-P)', reply.stderr)
+        self.assertIn('protocol is ICMP', reply.stderr)
+
+    def test_port_with_tcp_succeeds_flag(self):
+        'Test that specifying -P with -T (TCP) succeeds.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '--tcp',
+            '-P',
+            '80',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+
+    def test_port_with_udp_succeeds_flag(self):
+        'Test that specifying -P with -u (UDP) succeeds.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '--udp',
+            '-P',
+            '53',
+            '127.0.0.1',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+
+    def test_port_with_tcp_succeeds_hostname(self):
+        'Test that specifying hostname:port with -T (TCP) succeeds.'
+
+        reply = self.run_mtr(
+            '--report',
+            '--report-cycles',
+            '1',
+            '--no-dns',
+            '--tcp',
+            '127.0.0.1:80',
+        )
+
+        self.assertEqual(reply.returncode, 0)
+
 
 class TestCommandParse(mtrpacket.MtrPacketTest):
     '''Test cases with malformed commands and version checks'''

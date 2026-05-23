@@ -463,6 +463,9 @@ Use Stream Control Transmission Protocol packets instead of ICMP ECHO.
 .TP
 .B \-P \fIPORT\fR, \fB\-\-port \fIPORT
 The target port number for TCP/SCTP/UDP traces.
+.B This option requires
+.BR \-T " (TCP), " \-u " (UDP), or " \-S " (SCTP)"
+and cannot be used with the default ICMP protocol.
 When this option is not given, TCP and SCTP traces use port 80.
 UDP traces encode the probe sequence number in the destination port
 instead, so the destination port changes for each probe.
