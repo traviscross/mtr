@@ -24,6 +24,28 @@ enum {
     MAX_COMMAND_TOKENS = MAX_COMMAND_ARGUMENTS * 2 + 2
 };
 
+#define COMMAND_NAME_SEND_PROBE "send-probe"
+
+#define COMMAND_ARG_BIT_PATTERN "bit-pattern"
+#define COMMAND_ARG_IP4 "ip-4"
+#define COMMAND_ARG_IP6 "ip-6"
+#define COMMAND_ARG_LOCAL_DEVICE "local-device"
+#define COMMAND_ARG_LOCAL_IP4 "local-ip-4"
+#define COMMAND_ARG_LOCAL_IP6 "local-ip-6"
+#define COMMAND_ARG_LOCAL_PORT "local-port"
+#define COMMAND_ARG_MARK "mark"
+#define COMMAND_ARG_PORT "port"
+#define COMMAND_ARG_PROTOCOL "protocol"
+#define COMMAND_ARG_SIZE "size"
+#define COMMAND_ARG_TIMEOUT "timeout"
+#define COMMAND_ARG_TOS "tos"
+#define COMMAND_ARG_TTL "ttl"
+
+#define COMMAND_PROTOCOL_ICMP "icmp"
+#define COMMAND_PROTOCOL_SCTP "sctp"
+#define COMMAND_PROTOCOL_TCP "tcp"
+#define COMMAND_PROTOCOL_UDP "udp"
+
 /*  Parsed commands, or command replies, ready for semantic interpretation  */
 struct command_t {
     /*  A unique value for matching command requests with replies  */
