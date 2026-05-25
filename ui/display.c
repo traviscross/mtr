@@ -146,6 +146,8 @@ void display_close(
         asn_close(ctl);
 #endif
         mtr_curses_close();
+        if (ctl->ReportOnExit)
+            report_close(ctl);
         break;
 #endif
     case DisplaySplit:

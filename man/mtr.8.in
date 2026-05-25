@@ -17,6 +17,9 @@ mtr \- a network diagnostic tool
 .B \-\-report-wide\c
 ]
 [\c
+.B \-\-report\-on\-exit\c
+]
+[\c
 .B \-\-xml\c
 ]
 [\c
@@ -175,6 +178,8 @@ mode.  When in this mode,
 will run for the number of cycles specified by the
 .B \-c
 option, and then print statistics and exit.
+Use report mode when you need a final result that remains in terminal
+scrollback or can be redirected to a file.
 .TP
 \c
 This mode is useful for generating statistics about network quality.
@@ -201,6 +206,11 @@ into
 mode.  When in this mode,
 .B mtr
 will not cut hostnames in the report.
+.TP
+.B \-\-report\-on\-exit
+Use this option with the curses interface to print a report snapshot after
+leaving curses mode. This keeps the last trace visible in terminals that switch
+to an alternate screen while curses is active.
 .TP
 .B \-x\fR, \fB\-\-xml
 Use this option to tell
@@ -235,6 +245,13 @@ In stripchart modes,
 marks a probe that has not received a response, and
 .B >
 marks a response slower than the largest latency bucket shown in the scale.
+The scale buckets are chosen from the current minimum and maximum visible
+round-trip times; in the default stripchart,
+.B .
+marks the smallest bucket, digits and lowercase letters mark intermediate
+buckets, and
+.B >
+marks values above the last displayed bucket.
 .TP
 .B \-g\fR, \fB\-\-gtk
 Use this option to force
@@ -342,8 +359,10 @@ I%Interarrival Jitter
 Example:
 -o "LSD NBAW  X"
 .TP
-.B \-y \fIn\fR, \fB\-\-ipinfo \fIn
-Displays information about each IP hop.  Valid values for \fIn\fR are:
+.B \-y \fIFIELDS\fR, \fB\-\-ipinfo \fIFIELDS
+Displays information about each IP hop.
+.I FIELDS
+can be one value or a comma-separated list of values.  Valid field values are:
 .TS
 tab(%);
 ll.
@@ -355,7 +374,7 @@ ll.
 .TE
 .br
 
-It is possible to cycle between these fields at runtime (using the \fBy\fR key).
+In curses mode, use the \fBy\fR key to cycle between these fields one at a time.
 IP information lookup is disabled by default unless this option or
 \fB-z\fR is used.
 .TP
