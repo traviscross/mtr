@@ -20,7 +20,9 @@
 
 #include <sys/types.h>
 #include <stdio.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>

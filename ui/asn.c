@@ -39,7 +39,9 @@
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
 #endif
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <netinet/in.h>
 #include <resolv.h>
 #include <string.h>
