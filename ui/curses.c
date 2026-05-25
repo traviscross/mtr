@@ -976,6 +976,8 @@ void mtr_curses_redraw(
 #endif
 
         for (i = 0; i < NUM_FACTORS; i++) {
+            char latency[16];
+
             printw("  ");
             attrset(block_col[i + 1]);
 #ifdef WITH_BRAILLE_DISPLAY
@@ -986,7 +988,9 @@ void mtr_curses_redraw(
                 printw("%c", block_map[i]);
             attrset(A_NORMAL);
             if (i < NUM_FACTORS-1)
-                printw(":%d ms", scale[i] / 1000);
+                printw(":%s ms",
+                       mtr_format_latency_ms(scale[i], latency,
+                                             sizeof(latency)));
         }
     }
 
