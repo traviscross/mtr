@@ -993,7 +993,7 @@ static void init_rand(
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    srand((getpid() ^ (getuid() << 16) ^ tv.tv_sec ^ tv.tv_usec);
+    srand(getpid() ^ (getuid() << 16) ^ tv.tv_sec ^ tv.tv_usec);
 }
 
 static void unmap_v4mapped_addrinfo(
