@@ -342,9 +342,16 @@ void select_loop(
                 ctl->ipinfo_no++;
                 if (ctl->ipinfo_no > ctl->ipinfo_max)
                     ctl->ipinfo_no = 0;
+                set_ipinfo_field(ctl, ctl->ipinfo_no);
                 break;
             case ActionAS:
-                ctl->ipinfo_no = ctl->ipinfo_no ? 0 : ctl->ipinfo_max;
+                if (ctl->ipinfo_no == 0 && ctl->ipinfo_max >= 0)
+                    set_ipinfo_field(ctl, ctl->ipinfo_max);
+                else if (ctl->ipinfo_no == 0) {
+                    ctl->ipinfo_no = -1;
+                    ctl->ipinfo_field_count = 0;
+                } else
+                    set_ipinfo_field(ctl, 0);
                 break;
 #endif
 

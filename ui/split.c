@@ -200,6 +200,22 @@ int split_keyaction(
         return ActionQuit;
     if (tolower(c) == 'r')
         return ActionReset;
+    if (tolower(c) == 'p')
+        return ActionPause;
+    if (c == ' ')
+        return ActionResume;
+    if (tolower(c) == 'd')
+        return ActionDisplay;
+    if (tolower(c) == 'c')
+        return ActionCompact;
+    if (tolower(c) == 'e')
+        return ActionMPLS;
+    if (tolower(c) == 'n')
+        return ActionDNS;
+    if (c == '+')
+        return ActionScrollDown;
+    if (c == '-')
+        return ActionScrollUp;
 
     return 0;
 }

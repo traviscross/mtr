@@ -18,7 +18,9 @@
 
 /*  Prototypes for functions in net.c  */
 #include <sys/types.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
