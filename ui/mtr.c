@@ -98,64 +98,64 @@ static void __attribute__ ((__noreturn__)) usage(FILE * out)
     fputs(" mtr [options] hostname[:port]\n", out);
     fputs("\n", out);
     fputs(" -F, --filename FILE              read hostname(s) from a file\n",
-          out);      
+          out);
     fputs(" -4                               use IPv4 only\n", out);
-#ifdef ENABLE_IPV6      
+#ifdef ENABLE_IPV6
     fputs(" -6                               use IPv6 only\n", out);
-#endif      
-    fputs(" -u, --udp                        use UDP instead of ICMP echo\n", out);      
-    fputs(" -T, --tcp                        use TCP instead of ICMP echo\n", out);      
-    fputs(" -I, --interface NAME             use named network interface\n", out);      
-    fputs(" -a, --address ADDRESS            bind the outgoing socket to ADDRESS\n", out);  
+#endif
+    fputs(" -u, --udp                        use UDP instead of ICMP echo\n", out);
+    fputs(" -T, --tcp                        use TCP instead of ICMP echo\n", out);
+    fputs(" -I, --interface NAME             use named network interface\n", out);
+    fputs(" -a, --address ADDRESS            bind the outgoing socket to ADDRESS\n", out);
     fputs(" -f, --first-ttl NUMBER           set what TTL to start\n", out);
     fputs(" -m, --max-ttl NUMBER             maximum number of hops\n", out);
     fputs(" -D, --due-ttl NUMBER             set what TTL must be reached\n", out);
     fputs(" -U, --max-unknown NUMBER         maximum unknown host\n", out);
     fputs(" -E, --max-display-path NUMBER    maximum number of ECMP paths to display\n", out);
-    fputs(" -P, --port PORT                  target port number for TCP, SCTP, or UDP\n", out);  
+    fputs(" -P, --port PORT                  target port number for TCP, SCTP, or UDP\n", out);
     fputs(" -L, --localport LOCALPORT        source port number for UDP\n", out);
-    fputs(" -s, --psize PACKETSIZE           set the packet size used for probing\n", out);       
-    fputs(" -B, --bitpattern NUMBER          set bit pattern to use in payload\n", out);       
+    fputs(" -s, --psize PACKETSIZE           set the packet size used for probing\n", out);
+    fputs(" -B, --bitpattern NUMBER          set bit pattern to use in payload\n", out);
     fputs(" -i, --interval SECONDS           ICMP echo request interval\n", out);
-    fputs(" -G, --gracetime SECONDS          number of seconds to wait for responses\n", out);       
-    fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);       
-    fputs(" -e, --mpls                       display information from ICMP extensions\n", out);       
-    fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);       
+    fputs(" -G, --gracetime SECONDS          number of seconds to wait for responses\n", out);
+    fputs(" -Q, --tos NUMBER                 type of service field in IP header\n", out);
+    fputs(" -e, --mpls                       display information from ICMP extensions\n", out);
+    fputs(" -Z, --timeout SECONDS            seconds to keep probe sockets open\n", out);
     fputs("     --cache SECONDS              skip recently seen hops for SECONDS\n", out);
-#ifdef SO_MARK       
+#ifdef SO_MARK
     fputs(" -M, --mark MARK                  mark each sent packet\n", out);
-#endif       
+#endif
     fputs(" -r, --report                     output using report mode\n", out);
     fputs(" -w, --report-wide                output wide report\n", out);
-    fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);       
-#ifdef HAVE_JANSSON       
+    fputs(" -c, --report-cycles COUNT        set the number of pings sent\n", out);
+#ifdef HAVE_JANSSON
     fputs(" -j, --json                       output json\n", out);
-#endif       
+#endif
     fputs(" -x, --xml                        output xml\n", out);
-    fputs(" -C, --csv                        output comma separated values\n", out);       
+    fputs(" -C, --csv                        output comma separated values\n", out);
     fputs(" -l, --raw                        output raw format\n", out);
     fputs(" -p, --split                      split output\n", out);
-#ifdef HAVE_CURSES       
-    fputs(" -t, --curses                     use curses terminal interface\n", out);       
-#endif       
-    fputs("     --displaymode MODE           select initial display mode\n", out);       
-#ifdef HAVE_GTK       
+#ifdef HAVE_CURSES
+    fputs(" -t, --curses                     use curses terminal interface\n", out);
+#endif
+    fputs("     --displaymode MODE           select initial display mode\n", out);
+#ifdef HAVE_GTK
     fputs(" -g, --gtk                        use GTK+ xwindow interface\n", out);
-#endif       
+#endif
     fputs(" -n, --no-dns                     do not resolve host names\n", out);
-    fputs(" -b, --show-ips                   show IP numbers and host names\n", out);       
+    fputs(" -b, --show-ips                   show IP numbers and host names\n", out);
     fputs(" -o, --order FIELDS               select output fields\n", out);
-#ifdef HAVE_IPINFO       
+#ifdef HAVE_IPINFO
     fputs(" -y, --ipinfo NUMBER              select IP information in output\n",
-          out);       
+          out);
     fputs(" -z, --aslookup                   display AS number\n", out);
     fputs("     --ipinfo_provider4           provider for IPv4 AS lookups\n", out);
 #ifdef ENABLE_IPV6
     fputs("     --ipinfo_provider6           provider for IPv6 AS lookups\n", out);
 #endif
-#endif       
+#endif
     fputs(" -h, --help                       display this help and exit\n", out);
-    fputs(" -v, --version                    output version information and exit\n", out);  
+    fputs(" -v, --version                    output version information and exit\n", out);
     fputs("\n", out);
     fputs("See the 'man 8 mtr' for details.\n", out);
     exit(out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -554,7 +554,7 @@ static void parse_arg(
         case 'F':
             if (access ("/etc/mtr.is.run.under.sudo", F_OK) != 0)
                read_from_file(names, optarg);
-            else 
+            else
                error (EXIT_FAILURE, 0, "-F option is disabled under sudo.\n");
             break;
         case 'm':
@@ -735,18 +735,18 @@ static void parse_arg(
         ctl->Interactive = 0;
 
     if (ctl->fstTTL > ctl->maxTTL) {
-        fprintf (stderr, "%s: firstTTL(%d) cannot be larger than maxTTL(%d). \n", 
+        fprintf (stderr, "%s: firstTTL(%d) cannot be larger than maxTTL(%d). \n",
 		argv[0], ctl->fstTTL, ctl->maxTTL);
         exit (1);
         //ctl->fstTTL = ctl->maxTTL;
     }
     if (ctl->dueTTL > 0 && ctl->dueTTL < ctl->fstTTL) {
-        fprintf (stderr, "%s: dueTTL(%d) cannot be less than firstTTL(%d). \n", 
+        fprintf (stderr, "%s: dueTTL(%d) cannot be less than firstTTL(%d). \n",
                 argv[0], ctl->dueTTL, ctl->fstTTL);
         exit (1);
     }
     if (ctl->dueTTL > ctl->maxTTL) {
-        fprintf (stderr, "%s: dueTTL(%d) cannot be larger than maxTTL(%d). \n", 
+        fprintf (stderr, "%s: dueTTL(%d) cannot be larger than maxTTL(%d). \n",
                 argv[0], ctl->dueTTL, ctl->maxTTL);
         exit (1);
     }
@@ -1006,6 +1006,11 @@ int main(
         append_to_names(&names_head, "localhost");
 
     split_target_port(names_head, ctl.mtrtype);
+
+    /* Validate that port is not specified with ICMP protocol */
+    if (ctl.mtrtype == IPPROTO_ICMP && ctl.remoteport != 0) {
+        error(EXIT_FAILURE, 0, "port number specified (-P) but protocol is ICMP; use -T (TCP) or -u (UDP)");
+    }
 
     if (!ctl.Interactive && count_names(names_head) > 1 &&
         validate_report_targets(&ctl, names_head) != 0) {
