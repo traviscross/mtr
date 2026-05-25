@@ -56,7 +56,8 @@ _mtr_module()
         --interval --gracetime --tos --mpls --timeout --mark --report
         --report-wide --report-on-exit --report-cycles --json --xml --csv
         --raw --split
-        --curses --displaymode --gtk --no-dns --show-ips --order --ipinfo
+        --curses --displaymode --compact --scale --gtk
+        --no-dns --show-ips --order --ipinfo
         --aslookup --help --version
       '
       COMPREPLY=( $(compgen -W "${OPTS[*]}" -- "$cur") )
