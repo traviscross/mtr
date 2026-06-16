@@ -199,6 +199,8 @@ static char *ipinfo_lookup(
             DEB_syslog(LOG_INFO, "Malloc-txt: %s", UNKN);
         return xstrdup(UNKN);
     }
+    // Clip len to PACKETSZ. -- Michał Majchrowicz
+    if (len > PACKETSZ) len = PACKETSZ;
 
     pt = answer + sizeof(HEADER);
 
