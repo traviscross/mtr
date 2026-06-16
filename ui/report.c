@@ -570,10 +570,10 @@ void csv_close(
         snprint_hop_name(ctl, name, sizeof(name), at, addr);
 
         if (at == net_min(ctl)) {
-            printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip,");
+            printf("Mtr_Version,Start_Time,Status,Host,Hop,Ip");
 #ifdef HAVE_IPINFO
             if (ipinfo_field_selected(ctl, 0)) {
-                printf("Asn,");
+                printf(",Asn");
             }
 #endif
             for (i = 0; i < MAXFLD; i++) {
@@ -584,7 +584,7 @@ void csv_close(
                     printf(",");
                     continue;
                 }
-                printf("%s,", data_fields[j].title);
+                printf(",%s", data_fields[j].title);
             }
             printf("\n");
         }
@@ -608,7 +608,6 @@ void csv_close(
                 printf(",");
                 continue;
             }
-
             /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
             if (strchr(data_fields[j].format, 'f')) {
                 printf(",%.2f",
@@ -665,7 +664,6 @@ void csv_close(
                             printf(",");
                             continue;
                         }
-
                         /* 1000.0 is a temporary hack for stats usec to ms, impacted net_loss. */
                         if (strchr(data_fields[j].format, 'f')) {
                             printf(",%.2f",
