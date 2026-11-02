@@ -64,7 +64,7 @@ _mtr_module()
       return 0
       ;;
   esac
-  COMPREPLY=( $(compgen -W "ip_address hostname" -- "$cur") )
+  _comp_compgen_known_hosts -- "$cur"
   return 0
 }
 complete -F _mtr_module mtr
