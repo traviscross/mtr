@@ -1246,6 +1246,7 @@ int main(
 
         if (net_open(&ctl, res) != 0) {
             error(0, 0, "Unable to start net module");
+            freeaddrinfo(res);
             if (ctl.Interactive)
                 exit(EXIT_FAILURE);
             else {
