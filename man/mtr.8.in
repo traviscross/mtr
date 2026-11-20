@@ -172,7 +172,9 @@ Use IPv4 only.
 Use IPv6 only.  (IPV4 may be used for DNS lookups.)
 .TP
 .B \-F \fIFILENAME\fR, \fB\-\-filename \fIFILENAME
-Reads the list of hostnames from the specified file.
+Reads the list of hostnames from the specified file, one per line.
+Blank lines are ignored. A # character begins a comment that extends to
+the end of the line. Use - to read from standard input.
 .TP
 .B \-r\fR, \fB\-\-report
 This option puts
