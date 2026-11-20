@@ -9,6 +9,7 @@ sbin_PROGRAMS = mtr mtr-packet
 TESTS = \
 	test/capability-drop.py \
 	test/dist-version.sh \
+	test/file_hosts.py \
 	format-count-test \
 	test/cmdparse.py \
 	test/param.py \
@@ -17,6 +18,7 @@ TESTS = \
 TEST_FILES = \
 	test/capability-drop.py \
 	test/dist-version.sh \
+	test/file_hosts.py \
 	test/cmdparse.py \
 	test/mtrpacket.py \
 	test/param.py \
