@@ -243,6 +243,7 @@ static void read_from_file(
     int close_input;
     int read_error;
     int read_errno;
+    int in_comment = 0;
 
     if (!filename || strcmp(filename, "-") == 0) {
         clearerr(stdin);
@@ -257,8 +258,22 @@ static void read_from_file(
     }
 
     while (fgets(line, sizeof(line), in)) {
-        char *name = trim(line, '\0');
-        append_to_names(names, name);
+        char *comment;
+        char *name;
+
+        if (in_comment) {
+            in_comment = strchr(line, '\n') == NULL;
+            continue;
+        }
+        comment = strchr(line, '#');
+        if (comment) {
+            in_comment = strchr(comment, '\n') == NULL;
+            *comment = '\0';
+        }
+        name = trim(line, '\0');
+        if (*name) {
+            append_to_names(names, name);
+        }
     }
 
     read_error = ferror(in);

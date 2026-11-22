@@ -31,5 +31,7 @@ jobs:
         run: make -j $(nproc)
       - name: Run sample mtr against 1.1.1.1
         run: ./mtr --report --report-cycles 1 -m 1 1.1.1.1
+      - name: Run test - file_hosts.py
+        run: python3 ./test/file_hosts.py
       - name: Run test - cmdparse.py
         run: sudo python3 ./test/cmdparse.py
