@@ -4,8 +4,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v8
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.14
       - name: Install flake8
@@ -15,14 +15,15 @@ jobs:
   compile-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v8
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.14
-      - uses: egor-tensin/setup-gcc@v1.3
+      - uses: egor-tensin/setup-gcc@v2
         with:
           version: latest
           platform: x64
+        if: ${{ !env.ACT }}
       - name: Bootstrap
         run: ./bootstrap.sh
       - name: Configure
