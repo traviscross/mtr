@@ -33,7 +33,7 @@ import unittest
 #
 try:
     # pylint: disable=locally-disabled, unused-import
-    from typing import Dict, List
+    from typing import Dict, List  # noqa: F401
 except ImportError:
     pass
 
