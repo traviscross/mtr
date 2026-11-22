@@ -9,7 +9,7 @@ jobs:
         with:
           python-version: 3.14
       - name: Install flake8
-        run: pip3 install flake8==3.9.2 flake8-bandit==2.1.2 bandit==1.7.2 pbr==7.0.3
+        run: pip3 install flake8 flake8-bandit bandit pbr
       - name: Run flake8
         run: python3 -m flake8 .
   compile-linux:
