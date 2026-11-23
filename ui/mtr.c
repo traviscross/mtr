@@ -703,10 +703,12 @@ static void parse_arg(
             }
             break;
         case 'I':
-            ctl->InterfaceName = optarg;
+            free(ctl->InterfaceName);
+            ctl->InterfaceName = xstrdup(optarg);
             break;
         case 'a':
-            ctl->InterfaceAddress = optarg;
+            free(ctl->InterfaceAddress);
+            ctl->InterfaceAddress = xstrdup(optarg);
             break;
         case 'e':
             ctl->enablempls = 1;
@@ -879,11 +881,13 @@ static void parse_arg(
             set_ipinfo_field(ctl, 0);
             break;
         case OPT_IPINFO4:
-            ctl->ipinfo_provider4 = optarg;
+            free(ctl->ipinfo_provider4);
+            ctl->ipinfo_provider4 = xstrdup(optarg);
             break;
 #ifdef ENABLE_IPV6
         case OPT_IPINFO6:
-            ctl->ipinfo_provider6 = optarg;
+            free(ctl->ipinfo_provider6);
+            ctl->ipinfo_provider6 = xstrdup(optarg);
             break;
 #endif
 #endif
@@ -1146,6 +1150,24 @@ static int validate_report_targets(
 }
 
 
+static void free_ctl_options(
+    struct mtr_ctl *ctl)
+{
+    free(ctl->InterfaceName);
+    ctl->InterfaceName = NULL;
+    free(ctl->InterfaceAddress);
+    ctl->InterfaceAddress = NULL;
+#ifdef HAVE_IPINFO
+    free(ctl->ipinfo_provider4);
+    ctl->ipinfo_provider4 = NULL;
+#ifdef ENABLE_IPV6
+    free(ctl->ipinfo_provider6);
+    ctl->ipinfo_provider6 = NULL;
+#endif
+#endif
+}
+
+
 int main(
     int argc,
     char **argv)
@@ -1178,9 +1200,9 @@ int main(
     ctl.ipinfo_field_count = 0;
     ctl.ipinfo_max = -1;
 #ifdef HAVE_IPINFO
-    ctl.ipinfo_provider4 = "origin.asn.cymru.com";
+    ctl.ipinfo_provider4 = xstrdup("origin.asn.cymru.com");
 #ifdef ENABLE_IPV6
-    ctl.ipinfo_provider6 = "origin6.asn.cymru.com";
+    ctl.ipinfo_provider6 = xstrdup("origin6.asn.cymru.com");
 #endif
 #endif
 
@@ -1233,6 +1255,7 @@ int main(
 
     if (!ctl.Interactive && count_names(names_head) > 1 &&
         validate_report_targets(&ctl, names_head) != 0) {
+        free_ctl_options(&ctl);
         return EXIT_FAILURE;
     }
 
@@ -1304,6 +1327,8 @@ int main(
         free(item);
         item = NULL;
     }
+
+    free_ctl_options(&ctl);
 
     return exit_val;
 }
