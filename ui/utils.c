@@ -51,7 +51,7 @@ char *trim(
     while (*p && (isspace((unsigned char) *p) || (c && *p == c)))
         p++;
     if (str < p) {
-        len = strlen(str);
+        len = strlen(p);
         memmove(str, p, len + 1);
     }
 
